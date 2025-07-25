@@ -2,12 +2,12 @@
 // Licensed under the GNU Affero General Public License v3 (AGPL-3.0).
 // license that can be found in the LICENSE file.
 
-package consts
+package errorx
 
 import (
 	"errors"
 	"fmt"
-	"github.com/xh-polaris/psych-pkg/util/logx"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 )
 
 const unknowCode = 999
@@ -37,7 +37,7 @@ func (e Errorx) Error() string {
 
 // EndE 的作用是记录错误日志, 并返回一个与err相同的Errorx
 func EndE(err error) error {
-	logx.Error("error: ", err)
+	log.Error("error: ", err)
 	var ex Errorx
 	if errors.As(err, &ex) {
 		return ex
@@ -47,12 +47,12 @@ func EndE(err error) error {
 
 // EndM 记录错误日志, 并返回一个自定义消息的Errorx
 func EndM(err error, msg string) error {
-	logx.Error("error: ", msg)
+	log.Error("error: ", msg)
 	return &Errorx{Code: unknowCode, Msg: msg}
 }
 
 // EndX 记录错误日志, 并返回一个自定义消息和code的Errorx
 func EndX(err error, code int, msg string) error {
-	logx.Error("error: ", msg)
+	log.Error("error: ", msg)
 	return &Errorx{Code: code, Msg: msg}
 }
