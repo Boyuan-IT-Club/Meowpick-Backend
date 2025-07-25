@@ -1,41 +1,40 @@
-package adaptor
+package common
 
 import (
+	"context"
 	"errors"
-	"net/http"
-	"reflect"
-
-	"github.com/gin-gonic/gin"
-
-	// 注意：请根据您的项目实际路径修改以下 import
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/gin-gonic/gin"
+	"net/http"
+	"reflect"
 )
 
-// PostProcess 处理http响应, 专门为 Gin 框架适配。
-// 在 Controller 中调用业务处理后，使用此函数来统一格式化输出。
-func PostProcess(c *gin.Context, req, resp any, err error) {
-	// 从 Gin 的 Context 中获取标准的 context.Context，用于日志记录
-	ctx := c.Request.Context()
+// PostProcess 处理http响应, resp要求指针或接口类型
+// 在日志中记录本次调用详情, 同时向响应头中注入符合b3规范的链路信息, 主要是trace_id
+// 最佳实践:
+// - 在controller中调用业务处理, 处理结束后调用PostProcess
+func PostProcess(ctx context.Context, c *gin.Context, req, resp any, err error) {
 	log.CtxInfo(ctx, "[%s] req=%s, resp=%s, err=%v", c.FullPath(), util.JSONF(req), util.JSONF(resp), err)
 
 	// 无错, 正常响应
 	if err == nil {
 		response := makeResponse(resp)
-		// 已将 hertz.StatusOK 替换为 http.StatusOK
 		c.JSON(http.StatusOK, response)
-		return
 	}
 
-	var ex *exception.Errorx
-	if errors.As(err, &ex) { // 自定义业务异常
-		// 对于业务逻辑中的已知错误，返回 200 状态码，错误信息在 JSON 体中体现
-		c.JSON(http.StatusOK, ex)
-	} else { // 其他未捕获的常规错误, 状态码 500
-		log.CtxError(ctx, "internal server error, err=%s", err.Error())
-		// 为安全起见，不向客户端暴露详细的服务器错误信息
-		c.String(http.StatusInternalServerError, "Internal Server Error")
+	var ex errorx.Errorx
+	if errors.As(err, &ex) { // errorx错误
+		StatusCode := http.StatusOK
+		c.JSON(StatusCode, &errorx.Errorx{
+			Code: ex.Code,
+			Msg:  ex.Msg,
+		})
+	} else { // 常规错误, 状态码500
+		log.CtxError(ctx, "internal error, err=%s", err.Error())
+		code := http.StatusInternalServerError
+		c.String(code, err.Error())
 	}
 }
 
@@ -43,31 +42,20 @@ func PostProcess(c *gin.Context, req, resp any, err error) {
 func makeResponse(resp any) map[string]any {
 	v := reflect.ValueOf(resp)
 	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
-		// 如果 resp 不是预期的类型，返回 nil，让上层处理
 		return nil
 	}
 	// 构建返回数据
 	v = v.Elem()
-	response := make(map[string]any)
-
-	// 确保字段存在且类型正确
-	codeField := v.FieldByName("Code")
-	if codeField.IsValid() && codeField.CanInt() {
-		response["code"] = codeField.Int()
+	response := map[string]any{
+		"code": v.FieldByName("Code").Int(),
+		"msg":  v.FieldByName("Msg").String(),
 	}
-
-	msgField := v.FieldByName("Msg")
-	if msgField.IsValid() && msgField.Kind() == reflect.String {
-		response["msg"] = msgField.String()
-	}
-
 	data := make(map[string]any)
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Type().Field(i)
 		if jsonTag := field.Tag.Get("json"); jsonTag != "" && field.Name != "Code" && field.Name != "Msg" {
-			fieldValue := v.Field(i)
-			if !fieldValue.IsZero() {
-				data[jsonTag] = fieldValue.Interface()
+			if fieldValue := v.Field(i).Interface(); !reflect.ValueOf(fieldValue).IsZero() {
+				data[jsonTag] = fieldValue
 			}
 		}
 	}
