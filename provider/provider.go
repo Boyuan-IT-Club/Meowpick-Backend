@@ -33,13 +33,13 @@ type Provider struct {
 }
 
 var RpcSet = wire.NewSet(
-	// TODO: 在这里添加 RPC 客户端的 Set
-	// 例如: platform_sts.PlatformStsSet,
+// TODO: 在这里添加 RPC 客户端的 Set
+// 例如: platform_sts.PlatformStsSet,
 )
 
 var ApplicationSet = wire.NewSet(
-	// TODO: 在这里添加 Service 的 Set
-	// 例如: service.UserServiceSet,
+// TODO: 在这里添加 Service 的 Set
+// 例如: service.UserServiceSet,
 )
 
 var InfrastructureSet = wire.NewSet(
