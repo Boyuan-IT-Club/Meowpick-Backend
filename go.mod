@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
 	github.com/zeromicro/go-zero v1.8.5
+	go.mongodb.org/mongo-driver v1.17.4
 )
 
 require (
