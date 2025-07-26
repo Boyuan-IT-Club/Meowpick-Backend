@@ -22,6 +22,7 @@ func PostProcess(ctx context.Context, c *gin.Context, req, resp any, err error) 
 	if err == nil {
 		response := makeResponse(resp)
 		c.JSON(http.StatusOK, response)
+		return
 	}
 
 	var ex errorx.Errorx
