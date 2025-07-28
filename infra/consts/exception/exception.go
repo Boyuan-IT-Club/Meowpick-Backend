@@ -56,3 +56,20 @@ func EndX(err error, code int, msg string) error {
 	log.Error("error: ", msg)
 	return &Errorx{Code: code, Msg: msg}
 }
+
+// 定义常量错误
+// 认证相关
+var (
+	ErrTokenCreationFailed     = New(1001, "AuthToken creation failed")
+	ErrReqNoCode               = New(1002, "no code in request")
+	ErrFetchOpenIDFailed       = New(1003, "failed to fetch open id")
+	ErrAuthTokenCreationFailed = New(1004, "auth token creation failed")
+)
+
+// 数据库相关
+var (
+	ErrUserNotFound     = New(2001, "User Not Found")
+	ErrUserDuplicate    = New(2002, "User Duplicate")
+	ErrUserInsertFailed = New(2003, "User Insert Failed")
+	ErrFindFailed       = New(2004, "User Find Operation Failed")
+)
