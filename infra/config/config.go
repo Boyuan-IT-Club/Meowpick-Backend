@@ -18,6 +18,19 @@ type Auth struct {
 	AccessExpire int64
 }
 
+//type SMTPConf struct {
+//	Host     string `json:",env=SMTP_HOST"`
+//	Port     int    `json:",default=587"`
+//	Username string `json:",env=SMTP_USER"`
+//	Password string `json:",env=SMTP_PASS"`
+//	From     string `json:",default=no-reply@meowpick.com"`
+//}
+//
+//type EmailVerifyConf struct {
+//	ExpireSeconds int `json:",default=300"` // 验证码有效期(秒)
+//	DailyLimit    int `json:",default=10"`  // 每日发送上限
+//}
+
 type Config struct {
 	service.ServiceConf
 	ListenOn string
@@ -27,8 +40,11 @@ type Config struct {
 		URL string
 		DB  string
 	}
-	Cache cache.CacheConf
-	Redis *redis.RedisConf
+	Cache       cache.CacheConf
+	Redis       *redis.RedisConf
+	WeAppSecret string
+	//SMTP        SMTPConf
+	//EmailVerify EmailVerifyConf
 }
 
 func NewConfig() (*Config, error) {
