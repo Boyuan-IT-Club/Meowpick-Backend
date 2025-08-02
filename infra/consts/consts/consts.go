@@ -9,7 +9,3 @@ const (
 	CreatedTime = "createdTime"
 	UpdatedTime = "updatedTime"
 )
-
-// Controller
-
-// Service

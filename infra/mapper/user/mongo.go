@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,7 +21,7 @@ type IMongoMapper interface {
 	Insert(ctx context.Context, user *User) (err error)
 	Update(ctx context.Context, user *User) (err error)
 
-	FindById(ctx context.Context, userId primitive.ObjectID) (user *User, err error)
+	FindById(ctx context.Context, userId string) (user *User, err error)
 	FindByWXOpenId(ctx context.Context, wxOpenId string) (user *User, err error)
 }
 
@@ -42,8 +43,9 @@ func (m *MongoMapper) Insert(ctx context.Context, user *User) error {
 		user.UpdatedAt = user.CreatedAt
 		// Username, EmailVerified, Ban, Admin 字段留空 默认为nil/false
 	}
-	_, err := m.conn.InsertOneNoCache(ctx, user)
+	_, err := m.conn.InsertOneNoCache(ctx, user) // TODO 可以考虑用openID做cache key
 	if err != nil {
+		log.Error("用户插入失败")
 		return errorx.ErrUserInsertFailed
 	}
 	return nil
@@ -55,7 +57,7 @@ func (m *MongoMapper) Update(ctx context.Context, user *User) error {
 	return err
 }
 
-func (m *MongoMapper) FindById(ctx context.Context, userId primitive.ObjectID) (*User, error) {
+func (m *MongoMapper) FindById(ctx context.Context, userId string) (*User, error) {
 	var user User
 	err := m.conn.FindOneNoCache(ctx, &user, bson.M{"_id": userId})
 	if err != nil {

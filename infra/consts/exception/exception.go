@@ -60,10 +60,13 @@ func EndX(err error, code int, msg string) error {
 // 定义常量错误
 // 认证相关
 var (
+	ErrWrongTokenFmt           = New(1000, "invalid authorization header format")
 	ErrTokenCreationFailed     = New(1001, "AuthToken creation failed")
-	ErrReqNoCode               = New(1002, "no code in request")
-	ErrFetchOpenIDFailed       = New(1003, "failed to fetch open id")
+	ErrReqNoToken              = New(1002, "no token in request")
+	ErrTokenUninitialized      = New(1003, "token uninitialized")
 	ErrAuthTokenCreationFailed = New(1004, "auth token creation failed")
+	ErrTokenInvalid            = New(1005, "token invalid")
+	ErrTokenExpired            = New(1006, "token expired")
 )
 
 // 数据库相关
