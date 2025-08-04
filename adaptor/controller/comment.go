@@ -1,13 +1,12 @@
 package controller
 
 import (
+	common "github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
-	"net/http"
 )
 
 type CommentController struct {
@@ -19,24 +18,14 @@ var CommentControllerSet = wire.NewSet(
 )
 
 func CreateComment(c *gin.Context) {
+	var err error
 	var req cmd.CreateCommentCmd
+	var resp *cmd.CreateCommentResp
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数格式错误或缺少必填项"})
-		return
+	if err = c.ShouldBindJSON(&req); err == nil {
+		// TODO: 这里的 userID 将在未来由“认证中间件”提供
+		userID := "66a0d533722904b3952243d4"
+		resp, err = provider.Get().CommentService.CreateComment(c, &req, userID)
 	}
-
-	// TODO: 这里的 userID 将在未来由“认证中间件”提供
-	userID := "66a0d533722904b3952243d4"
-
-	p := provider.Get()
-	standardCtx := c.Request.Context()
-	createdComment, err := p.CommentService.CreateComment(standardCtx, &req, userID)
-	if err != nil {
-		log.CtxError(standardCtx, "Service CreateComment failed: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "服务器内部错误，请稍后重试"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, createdComment)
+	common.PostProcess(c, req, resp, err)
 }

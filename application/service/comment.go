@@ -9,7 +9,7 @@ import (
 )
 
 type ICommentService interface {
-	CreateComment(ctx context.Context, req *cmd.CreateCommentCmd, userId string) (*comment.Comment, error)
+	CreateComment(ctx context.Context, req *cmd.CreateCommentCmd, userId string) (*cmd.CreateCommentResp, error)
 }
 
 type CommentService struct {
@@ -22,27 +22,32 @@ var CommentServiceSet = wire.NewSet(
 	wire.Bind(new(ICommentService), new(*CommentService)),
 )
 
-func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateCommentCmd, userId string) (*comment.Comment, error) {
-	userIDObj, err := primitive.ObjectIDFromHex(userId)
+func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateCommentCmd, userId string) (*cmd.CreateCommentResp, error) {
+	uid, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
 		return nil, err
 	}
-	courseIDObj, err := primitive.ObjectIDFromHex(req.CourseID)
+	cid, err := primitive.ObjectIDFromHex(req.CourseID)
 	if err != nil {
 		return nil, err
 	}
 
 	newComment := &comment.Comment{
-		UserID:   userIDObj,
-		CourseID: courseIDObj,
+		UserID:   uid,
+		CourseID: cid,
 		Content:  req.Content,
 		Tags:     req.Tags,
 	}
 
-	err = s.CommentMapper.Insert(ctx, newComment)
-	if err != nil {
+	if err = s.CommentMapper.Insert(ctx, newComment); err != nil {
 		return nil, err
 	}
 
-	return newComment, nil
+	resp := &cmd.CreateCommentResp{
+		Code:    200,
+		Msg:     "success",
+		Comment: newComment,
+	}
+
+	return resp, nil
 }
