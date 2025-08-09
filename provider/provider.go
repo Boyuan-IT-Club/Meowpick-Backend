@@ -27,7 +27,8 @@ func Get() *Provider {
 type Provider struct {
 	Config *config.Config
 	// TODO: 在这里添加需要注入的 Service 接口
-	UserService service.IUserService
+	AuthService service.AuthService
+	UserService service.IAuthService
 }
 
 var RpcSet = wire.NewSet(
@@ -37,7 +38,8 @@ var RpcSet = wire.NewSet(
 
 var ApplicationSet = wire.NewSet(
 	// TODO: 在这里添加 Service 的 Set
-	// 例如: service.UserServiceSet,
+	// 例如: service.AuthServiceSet,
+	service.AuthServiceSet,
 	service.UserServiceSet,
 )
 

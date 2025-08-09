@@ -14,22 +14,22 @@ import (
 	"github.com/google/wire"
 )
 
-type IUserService interface {
+type IAuthService interface {
 	SignIn(ctx context.Context, req *cmd.SignInRequest) (resp *cmd.SignInResponse, err error)
 }
 
-type UserService struct {
+type AuthService struct {
 	UserMapper *user.MongoMapper
 }
 
-var UserServiceSet = wire.NewSet(
-	wire.Struct(new(UserService), "*"),
-	wire.Bind(new(IUserService), new(*UserService)),
+var AuthServiceSet = wire.NewSet(
+	wire.Struct(new(AuthService), "*"),
+	wire.Bind(new(IAuthService), new(*AuthService)),
 )
 
-func (u *UserService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp *cmd.SignInResponse, err error) {
+func (a *AuthService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp *cmd.SignInResponse, err error) {
 	// 1. 查找或创建用户
-	oldUser, err := u.UserMapper.FindByWXOpenId(ctx, req.OpenID)
+	oldUser, err := a.UserMapper.FindByWXOpenId(ctx, req.OpenID)
 	if err != nil || oldUser == nil {
 		newUser := user.User{
 			ID:        primitive.NewObjectID(),
@@ -37,7 +37,7 @@ func (u *UserService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp 
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
-		if err := u.UserMapper.Insert(ctx, &newUser); err != nil {
+		if err = a.UserMapper.Insert(ctx, &newUser); err != nil {
 			return nil, errorx.ErrUserInsertFailed
 		}
 		oldUser = &newUser
@@ -51,7 +51,7 @@ func (u *UserService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp 
 	if existingToken != "" {
 		if claims, err := token.ParseAndValidate(existingToken); err == nil {
 			// 验证用户匹配且不需要续期
-			if claims.UserID == oldUser.ID && !token.ShouldRenew(claims) {
+			if claims.UserID == oldUser.ID.Hex() && !token.ShouldRenew(claims) {
 				return &cmd.SignInResponse{
 					AccessToken: existingToken,
 					ExpiresIn:   int64(time.Until(claims.ExpiresAt.Time).Seconds()),
@@ -61,8 +61,7 @@ func (u *UserService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp 
 	}
 
 	// 4. 签发新Token
-	tokenStr, err = token.NewAuthorizedToken(oldUser)
-	if err != nil {
+	if tokenStr, err = token.NewAuthorizedToken(oldUser); err != nil {
 		return nil, errorx.ErrTokenCreationFailed
 	}
 

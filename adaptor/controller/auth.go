@@ -14,19 +14,18 @@ func SignIn(c *gin.Context) {
 	var err error
 	var req cmd.SignInRequest
 
-	err = c.ShouldBindJSON(&req)
-	if err != nil {
+	if err = c.ShouldBindJSON(&req); err != nil {
 		c.String(consts.StatusBadRequest, err.Error())
 		return
 	}
 
 	// 调用service
-	p := provider.Get().UserService
+	p := provider.Get().AuthService
 	resp, err := p.SignIn(c.Request.Context(), &req)
-	common.PostProcess(c.Request.Context(), c, &req, resp, err)
+	common.PostProcess(c, &req, resp, err)
 }
 
 // 注册路由
-func RegisterUserRoutes(r *gin.Engine) {
+func RegisterAuthRoutes(r *gin.Engine) {
 	r.POST("/sign_in", SignIn)
 }

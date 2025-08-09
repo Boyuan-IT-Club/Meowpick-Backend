@@ -7,34 +7,25 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"strings"
 	"time"
 )
 
-var (
-	jwtConfig *config.Auth
-)
-
-// Init 初始化token包（需在main中调用）
-func Init(conf *config.Config) {
-	jwtConfig = &conf.Auth
-}
-
 type Claims struct {
-	UserID primitive.ObjectID `json:"userId"` // 业务系统用户ID
-	OpenID string             `json:"openId"` // 微信OpenID
+	UserID string `json:"userId"` // 业务系统用户ID
+
 	//DeviceID             string `json:"deviceId"` // 设备标识（可选）
 	jwt.RegisteredClaims // 标准字段（exp, iat, iss等）
 }
 
 // NewAuthorizedToken 签发accessToken(jwt)
 func NewAuthorizedToken(user *user.User) (string, error) {
+	jwtConfig := config.GetConfig().Auth
 	claims := Claims{
-		UserID: user.ID,
-		OpenID: user.OpenId,
+		UserID: user.ID.Hex(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * time.Duration(jwtConfig.AccessExpire))),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -44,6 +35,24 @@ func NewAuthorizedToken(user *user.User) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(jwtConfig.SecretKey))
+}
+
+// GetUserId 给controller层的接口 用于从jwt提取userId
+func GetUserId(ctx *gin.Context) (string, error) {
+	var token string
+	var err error
+
+	if token, err = ExtractToken(ctx.Request.Header); err != nil {
+		return "", err
+	}
+
+	var claims *Claims
+	if claims, err = Parse(token); err != nil {
+		ctx.Set("tokenError", err)
+		return "", err
+	}
+
+	return claims.UserID, err
 }
 
 // ExtractToken 从Header中提取Token
@@ -89,11 +98,13 @@ func ShouldRenew(claims *Claims) bool {
 
 // Parse 基础Token解析 返回一个Claim指针
 func Parse(tokenStr string) (*Claims, error) {
+	secretKey := config.GetConfig().Auth.SecretKey
+
 	token, err := jwt.ParseWithClaims(
 		tokenStr,
 		&Claims{},
 		func(t *jwt.Token) (interface{}, error) {
-			return []byte(jwtConfig.SecretKey), nil
+			return []byte(secretKey), nil
 		},
 	)
 
@@ -109,19 +120,11 @@ func Parse(tokenStr string) (*Claims, error) {
 	return claims, nil
 }
 
-// ParseUserID 解析jwt中的user.ID 返回一个primitive.ObjectID对象
-func ParseUserID(tokenStr *string) (UserID primitive.ObjectID, err error) {
+// ParseUserID 解析jwt中的user.ID 返回string类型
+func ParseUserID(tokenStr *string) (UserID string, err error) {
 	claims, err := Parse(*tokenStr)
 	if err != nil {
 		return UserID, err
 	}
 	return claims.UserID, nil
-}
-
-func ParseOpenID(tokenStr string) (string, error) {
-	claims, err := Parse(tokenStr)
-	if err != nil {
-		return "", err
-	}
-	return claims.OpenID, nil
 }

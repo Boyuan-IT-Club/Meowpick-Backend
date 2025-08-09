@@ -58,15 +58,15 @@ func EndX(err error, code int, msg string) error {
 }
 
 // 定义常量错误
-// 认证相关
+// 登录认证相关
 var (
-	ErrWrongTokenFmt           = New(1000, "invalid authorization header format")
 	ErrTokenCreationFailed     = New(1001, "AuthToken creation failed")
-	ErrReqNoToken              = New(1002, "no token in request")
-	ErrTokenUninitialized      = New(1003, "token uninitialized")
-	ErrAuthTokenCreationFailed = New(1004, "auth token creation failed")
-	ErrTokenInvalid            = New(1005, "token invalid")
-	ErrTokenExpired            = New(1006, "token expired")
+	ErrReqNoToken              = New(1002, "No token in request")
+	ErrTokenUninitialized      = New(1003, "Token uninitialized")
+	ErrAuthTokenCreationFailed = New(1004, "Auth token creation failed")
+	ErrTokenInvalid            = New(1005, "Token invalid")
+	ErrTokenExpired            = New(1006, "Token expired")
+	ErrWrongTokenFmt           = New(1007, "Invalid authorization header format")
 )
 
 // 数据库相关
@@ -74,5 +74,16 @@ var (
 	ErrUserNotFound     = New(2001, "User Not Found")
 	ErrUserDuplicate    = New(2002, "User Duplicate")
 	ErrUserInsertFailed = New(2003, "User Insert Failed")
-	ErrFindFailed       = New(2004, "User Find Operation Failed")
+	ErrFindUserFailed   = New(2004, "User Find Operation Failed")
+	ErrUserUpdateFailed = New(2005, "User Update Failed")
+	ErrInvalidObjectID  = New(2006, "Invalid Object ID")
+)
+
+// 邮箱服务相关
+var (
+	ErrEmailVerifyFailed    = New(3001, "Email verify failed")
+	ErrEmailCodeStoreFailed = New(3002, "Email Verify Code Store Failed")
+	ErrWrongEmailCode       = New(3003, "Wrong email code")
+	ErrEmailCodeExpired     = New(3004, "Email Verify Code Expired")
+	ErrEmailCodeNotExist    = New(3005, "Email Verify Code Do Not Exist")
 )
