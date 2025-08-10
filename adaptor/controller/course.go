@@ -1,24 +1,24 @@
 package controller
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/gin-gonic/gin"
 	"net/http" //获取状态码
 )
 
 type CourseController struct {
-	courseSvc service.CourseService
+	courseSvc service.ICourseService
 }
 
-func NewCourseController(courseSvc service.CourseService) *CourseController {
+func NewCourseController(courseSvc service.ICourseService) *CourseController {
 	return &CourseController{courseSvc: courseSvc}
 }
 
 // ctx (Context) 是 Gin 框架传入的，包含了所有请求和响应的信息
 func (c *CourseController) ListCourses(ctx *gin.Context) {
 
-	var query dto.CourseQuery
+	var query dto.CourseQueryCmd
 	// ShouldBindQuery会自动把 URL 中的 ?key=value 参数解析并填充到 query 这个结构体变量里
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		// 如果解析出错（比如用户传的参数类型不对），说明是客户端的错，返回 400 Bad Request
