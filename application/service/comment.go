@@ -5,11 +5,11 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
 	"github.com/google/wire"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 type ICommentService interface {
-	CreateComment(ctx context.Context, req *cmd.CreateCommentCmd, userId string) (*cmd.CreateCommentResp, error)
+	CreateComment(ctx context.Context, req *cmd.CreateCommentReq, userId string) (*cmd.CreateCommentResp, error)
 }
 
 type CommentService struct {
@@ -22,31 +22,35 @@ var CommentServiceSet = wire.NewSet(
 	wire.Bind(new(ICommentService), new(*CommentService)),
 )
 
-func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateCommentCmd, userId string) (*cmd.CreateCommentResp, error) {
-	uid, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		return nil, err
-	}
-	cid, err := primitive.ObjectIDFromHex(req.CourseID)
-	if err != nil {
-		return nil, err
-	}
+func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateCommentReq, userId string) (*cmd.CreateCommentResp, error) {
+	now := time.Now()
 
 	newComment := &comment.Comment{
-		UserID:   uid,
-		CourseID: cid,
-		Content:  req.Content,
-		Tags:     req.Tags,
+		UserID:    userId,
+		CourseID:  req.CourseID,
+		Content:   req.Content,
+		Tags:      req.Tags,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
-	if err = s.CommentMapper.Insert(ctx, newComment); err != nil {
+	if err := s.CommentMapper.Insert(ctx, newComment); err != nil {
 		return nil, err
+	}
+
+	commentResp := &cmd.ResponseComment{
+		UserID:   newComment.UserID,
+		CourseID: newComment.CourseID,
+		Content:  newComment.Content,
+		Tags:     newComment.Tags,
+		CreateAt: newComment.CreatedAt,
+		UpdateAt: newComment.UpdatedAt,
 	}
 
 	resp := &cmd.CreateCommentResp{
 		Code:    200,
 		Msg:     "success",
-		Comment: newComment,
+		Comment: commentResp,
 	}
 
 	return resp, nil

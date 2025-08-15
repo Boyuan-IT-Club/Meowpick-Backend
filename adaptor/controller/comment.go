@@ -19,7 +19,7 @@ var CommentControllerSet = wire.NewSet(
 
 func CreateComment(c *gin.Context) {
 	var err error
-	var req cmd.CreateCommentCmd
+	var req cmd.CreateCommentReq
 	var resp *cmd.CreateCommentResp
 
 	if err = c.ShouldBindJSON(&req); err == nil {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/zeromicro/go-zero/core/stores/monc"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
@@ -27,11 +26,10 @@ func NewMongoMapper(cfg *config.Config) *MongoMapper {
 }
 
 func (m *MongoMapper) Insert(ctx context.Context, c *Comment) error {
-	if c.ID.IsZero() {
-		c.ID = primitive.NewObjectID()
-		c.CreatedAt = time.Now()
-		c.UpdatedAt = time.Now()
-	}
+	now := time.Now()
+	c.CreatedAt = now
+	c.UpdatedAt = now
+
 	_, err := m.conn.InsertOneNoCache(ctx, c)
 	return err
 }
