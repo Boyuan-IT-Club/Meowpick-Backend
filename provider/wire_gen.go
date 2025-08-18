@@ -10,6 +10,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
 )
 
 // Injectors from wire.go:
@@ -23,9 +24,14 @@ func NewProvider() (*Provider, error) {
 	commentService := service.CommentService{
 		CommentMapper: mongoMapper,
 	}
+	searchhistoryMongoMapper := searchhistory.NewMongoMapper(configConfig)
+	searchHistoryService := service.SearchHistoryService{
+		SearchHistoryMapper: searchhistoryMongoMapper,
+	}
 	providerProvider := &Provider{
-		Config:         configConfig,
-		CommentService: commentService,
+		Config:               configConfig,
+		CommentService:       commentService,
+		SearchHistoryService: searchHistoryService,
 	}
 	return providerProvider, nil
 }

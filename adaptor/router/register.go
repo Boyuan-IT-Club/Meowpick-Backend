@@ -13,5 +13,11 @@ func SetupRoutes() *gin.Engine {
 	{
 		commentGroup.POST("/add", controller.CreateComment)
 	}
+
+	searchGroup := router.Group("/api/search")
+	{
+		searchGroup.GET("/recent", controller.GetSearchHistory)
+	}
+
 	return router
 }

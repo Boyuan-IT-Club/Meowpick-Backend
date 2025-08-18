@@ -6,6 +6,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
 	"github.com/google/wire"
 )
 
@@ -25,18 +26,20 @@ func Get() *Provider {
 
 // Provider 提供controller依赖的对象
 type Provider struct {
-	Config         *config.Config
-	CommentService service.CommentService
+	Config               *config.Config
+	CommentService       service.CommentService
+	SearchHistoryService service.SearchHistoryService
 }
 
 var ApplicationSet = wire.NewSet(
 	service.CommentServiceSet,
+	service.SearchHistoryServiceSet,
 )
 
 var InfrastructureSet = wire.NewSet(
 	config.NewConfig,
 	comment.NewMongoMapper,
-	// wire.Bind(new(comment.IMongoMapper), new(*comment.MongoMapper)),
+	searchhistory.NewMongoMapper,
 )
 
 var AllProvider = wire.NewSet(

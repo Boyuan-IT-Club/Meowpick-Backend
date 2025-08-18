@@ -6,16 +6,11 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/gin-gonic/gin"
-	"github.com/google/wire"
 )
 
 type CommentController struct {
 	CommentService service.ICommentService
 }
-
-var CommentControllerSet = wire.NewSet(
-	wire.Struct(new(CommentController), "*"),
-)
 
 func CreateComment(c *gin.Context) {
 	var err error
