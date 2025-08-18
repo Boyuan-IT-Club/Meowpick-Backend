@@ -29,11 +29,6 @@ type Provider struct {
 	CommentService service.CommentService
 }
 
-var RpcSet = wire.NewSet(
-	// TODO: 在这里添加 RPC 客户端的 Set
-	// 例如: platform_sts.PlatformStsSet,
-)
-
 var ApplicationSet = wire.NewSet(
 	service.CommentServiceSet,
 )
@@ -41,9 +36,7 @@ var ApplicationSet = wire.NewSet(
 var InfrastructureSet = wire.NewSet(
 	config.NewConfig,
 	comment.NewMongoMapper,
-	wire.Bind(new(comment.IMongoMapper), new(*comment.MongoMapper)),
-
-	RpcSet,
+	// wire.Bind(new(comment.IMongoMapper), new(*comment.MongoMapper)),
 )
 
 var AllProvider = wire.NewSet(
