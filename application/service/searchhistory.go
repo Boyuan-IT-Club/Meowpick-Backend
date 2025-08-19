@@ -2,13 +2,19 @@ package service
 
 import (
 	"context"
+	"errors"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/google/wire"
+	"github.com/zeromicro/go-zero/core/stores/monc"
+	"time"
 )
 
 type ISearchHistoryService interface {
 	GetSearchHistoryByUserId(ctx context.Context, userId string) ([]*cmd.SearchHistoryVO, error)
+	LogSearch(ctx context.Context, userID string, query string)
 }
 
 type SearchHistoryService struct {
@@ -37,4 +43,38 @@ func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context, use
 	}
 
 	return vos, nil
+}
+
+func (s *SearchHistoryService) LogSearch(ctx context.Context, userID string, query string) error {
+	// 删除同名旧记录（如果存在）
+	if err := s.SearchHistoryMapper.DeleteByUserIDAndQuery(ctx, userID, query); err != nil && !errors.Is(err, monc.ErrNotFound) {
+		log.CtxError(ctx, "Failed to delete existing search history for userID=%s, query=%s: %v", userID, query, err)
+	}
+
+	// 插入新记录
+	now := time.Now()
+	newHistory := &searchhistory.SearchHistory{
+		UserID:    userID,
+		Query:     query,
+		CreatedAt: now,
+	}
+	if err := s.SearchHistoryMapper.Insert(ctx, newHistory); err != nil {
+		log.CtxError(ctx, "Failed to insert new search history for userId=%s, query=%s: %v", userID, query, err)
+		return err
+	}
+
+	// 检查总数量，超限则删除最老记录
+	count, err := s.SearchHistoryMapper.CountByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	for count > consts.SearchHistoryLimit {
+		if err := s.SearchHistoryMapper.DeleteOldestByUserID(ctx, userID); err != nil && !errors.Is(err, monc.ErrNotFound) {
+			log.CtxError(ctx, "Failed to delete oldest search history for userID=%s: %v", userID, err)
+			break
+		}
+		count--
+	}
+
+	return nil
 }

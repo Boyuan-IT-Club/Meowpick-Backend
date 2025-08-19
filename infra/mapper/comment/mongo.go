@@ -27,8 +27,12 @@ func NewMongoMapper(cfg *config.Config) *MongoMapper {
 
 func (m *MongoMapper) Insert(ctx context.Context, c *Comment) error {
 	now := time.Now()
-	c.CreatedAt = now
-	c.UpdatedAt = now
+	if c.CreatedAt.IsZero() {
+		c.CreatedAt = now
+	}
+	if c.UpdatedAt.IsZero() {
+		c.UpdatedAt = now
+	}
 
 	_, err := m.conn.InsertOneNoCache(ctx, c)
 	return err

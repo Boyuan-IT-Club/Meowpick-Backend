@@ -6,10 +6,11 @@ var PageSize int64 = 10
 const (
 	ID                 = "_id"
 	Status             = "status"
-	CreatedTime        = "createdTime"
-	UpdatedTime        = "updatedTime"
+	CreatedAt          = "createdAt"
+	UpdatedAt          = "updatedAt"
 	UserId             = "userId"
 	SearchHistoryLimit = 15
+	Query              = "query"
 )
 
 // Controller
