@@ -13,7 +13,8 @@ type SearchHistoryController struct {
 	SearchHistoryService service.ISearchHistoryService
 }
 
-// GetSearchHistory 负责处理 GET /api/search/recent 的请求
+// GetSearchHistory .
+// @router /api/search/recent [GET]
 func GetSearchHistory(c *gin.Context) {
 	c.Set(consts.UserId, "64400e63eaf657ecc88324d4") // 假设这是已登录用户的ID
 	userIDValue, exists := c.Get(consts.UserId)

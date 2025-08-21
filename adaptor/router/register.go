@@ -17,6 +17,7 @@ func SetupRoutes() *gin.Engine {
 	searchGroup := router.Group("/api/search")
 	{
 		searchGroup.GET("/recent", controller.GetSearchHistory)
+		searchGroup.POST("", controller.LogSearch)
 	}
 
 	return router

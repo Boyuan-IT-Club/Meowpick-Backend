@@ -12,6 +12,8 @@ type CommentController struct {
 	CommentService service.ICommentService
 }
 
+// CreateComment .
+// @router /api/comment/add [POST]
 func CreateComment(c *gin.Context) {
 	var err error
 	var req cmd.CreateCommentReq
