@@ -56,3 +56,48 @@ func EndX(err error, code int, msg string) error {
 	log.Error("error: ", msg)
 	return &Errorx{Code: code, Msg: msg}
 }
+
+// 定义常量错误
+// 登录认证相关
+var (
+	ErrTokenCreationFailed     = New(1001, "AuthToken creation failed")
+	ErrReqNoToken              = New(1002, "No token in request")
+	ErrTokenUninitialized      = New(1003, "Token uninitialized")
+	ErrAuthTokenCreationFailed = New(1004, "Auth token creation failed")
+	ErrTokenInvalid            = New(1005, "Token invalid")
+	ErrTokenExpired            = New(1006, "Token expired")
+	ErrWrongTokenFmt           = New(1007, "Invalid authorization header format")
+	ErrGetUserIDFailed         = New(1008, "Get userID from token failed")
+	ErrEmptyOpenID             = New(1009, "Empty openID")
+)
+
+// 数据库相关
+var (
+	ErrUserNotFound    = New(2001, "User Not Found")
+	ErrInsertFailed    = New(2003, "Insert Failed")
+	ErrFindFailed      = New(2004, "Find Operation Failed")
+	ErrUpdateFailed    = New(2005, "Update Failed")
+	ErrInvalidObjectID = New(2006, "Invalid Object ID")
+	ErrCountFailed     = New(2007, "Count Operation Failed")
+)
+
+// 邮箱服务相关
+var (
+	ErrEmailVerifyFailed    = New(3001, "Email verify failed")
+	ErrEmailCodeStoreFailed = New(3002, "Email Verify Code Store Failed")
+	ErrWrongEmailCode       = New(3003, "Wrong email code")
+	ErrEmailCodeExpired     = New(3004, "Email Verify Code Expired")
+	ErrEmailCodeNotExist    = New(3005, "Email Verify Code Do Not Exist")
+)
+
+// 点赞相关
+var (
+	ErrLikeFailed     = New(4001, "Like Failed")
+	ErrEmptyTargetID  = New(4001, "Empty Target ID")
+	ErrGetCountFailed = New(4002, "Get Count Operation Failed")
+)
+
+// 业务相关
+var (
+	ErrInvalidParams = New(5001, "Invalid Params")
+)
