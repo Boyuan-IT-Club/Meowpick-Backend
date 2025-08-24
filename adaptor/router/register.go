@@ -21,6 +21,12 @@ func SetupRoutes() *gin.Engine {
 		searchGroup.POST("", controller.LogSearch)
 		searchGroup.GET("/total", controller.GetTotalCommentsCount)
 	}
+	// AuthApi
+	authGroup := router.Group("")
+	authGroup.POST("/sign_in", controller.SignIn)
 
+	// LikeApi
+	likeGroup := router.Group("/api/action")
+	likeGroup.POST("/like/:id", controller.Like)
 	return router
 }

@@ -5,6 +5,7 @@ go 1.24.5
 require (
 	github.com/cloudwego/hertz v0.10.1
 	github.com/gin-gonic/gin v1.10.1
+	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
 	github.com/zeromicro/go-zero v1.8.5

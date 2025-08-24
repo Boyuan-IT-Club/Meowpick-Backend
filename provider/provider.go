@@ -6,7 +6,9 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
 	"github.com/google/wire"
 )
 
@@ -29,17 +31,23 @@ type Provider struct {
 	Config               *config.Config
 	CommentService       service.CommentService
 	SearchHistoryService service.SearchHistoryService
+	AuthService          service.AuthService
+	LikeService          service.LikeService
 }
 
 var ApplicationSet = wire.NewSet(
 	service.CommentServiceSet,
 	service.SearchHistoryServiceSet,
+	service.AuthServiceSet,
+	service.LikeServiceSet,
 )
 
 var InfrastructureSet = wire.NewSet(
 	config.NewConfig,
 	comment.NewMongoMapper,
 	searchhistory.NewMongoMapper,
+	user.NewMongoMapper,
+	like.NewMongoMapper,
 )
 
 var AllProvider = wire.NewSet(

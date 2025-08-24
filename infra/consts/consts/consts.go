@@ -14,4 +14,15 @@ const (
 	Deleted            = "deleted"
 )
 
-// Controller
+// 元素类别相关（如课程、评论、老师）
+const (
+	CourseType int32 = 101 + iota
+	CommentType
+)
+
+// 业务相关
+const (
+	ContextUserID = "userID"
+	ContextTarget = "targetID"
+	ContextToken  = "token"
+)
