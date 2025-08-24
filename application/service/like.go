@@ -39,21 +39,23 @@ func (s *LikeService) Like(ctx context.Context, req *cmd.CreateLikeReq) (resp *c
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
-	// 填充响应参数
-	var likeCount int64 // 根据前端乐观更新设计，这里需要先查询原点赞数，再进行这次的“点赞”操作
-	var newActive bool  // 新的点赞状态
-
-	if likeCount, err = s.LikeMapper.GetLikeCount(ctx, targetID, consts.CommentType); err != nil {
-		return nil, errorx.ErrGetCountFailed
-	}
-	if newActive, err = s.LikeMapper.ToggleLike(ctx, userID, targetID, consts.CommentType); err != nil {
+	// 步骤一：先执行点赞或取消点赞的操作
+	newActive, err := s.LikeMapper.ToggleLike(ctx, userID, targetID, consts.CommentType)
+	if err != nil {
 		return nil, errorx.ErrLikeFailed
 	}
 
-	// 创建响应并返回
+	// 步骤二：操作完成后，再去获取最新的总点赞数
+	likeCount, err := s.LikeMapper.GetLikeCount(ctx, targetID, consts.CommentType)
+	if err != nil {
+		return nil, errorx.ErrGetCountFailed
+	}
+
+	// 步骤三：使用两个最新的数据创建响应
 	resp = &cmd.LikeResp{
+		Resp:    cmd.Success(),
 		Like:    newActive,
-		LikeCnt: likeCount,
+		LikeCnt: likeCount, // <-- 现在 likeCount 是最新的准确数据了
 	}
 
 	return resp, nil

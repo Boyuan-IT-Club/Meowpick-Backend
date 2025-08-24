@@ -9,6 +9,7 @@ type SignInRequest struct {
 
 // SignInResponse 返回给前端的响应 包含了accessToken
 type SignInResponse struct {
+	*Resp
 	AccessToken string `json:"accessToken"`
 	ExpiresIn   int64  `json:"expiresIn"`
 	UserID      string `json:"userId"`

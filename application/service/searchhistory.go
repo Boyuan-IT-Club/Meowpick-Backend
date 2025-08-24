@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
+	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/google/wire"
@@ -13,8 +14,8 @@ import (
 )
 
 type ISearchHistoryService interface {
-	GetSearchHistoryByUserId(ctx context.Context, userId string) ([]*cmd.SearchHistoryVO, error)
-	LogSearch(ctx context.Context, userID string, query string) (*cmd.LogSearchResp, error)
+	GetSearchHistoryByUserId(ctx context.Context) ([]*cmd.SearchHistoryVO, error)
+	LogSearch(ctx context.Context, query string) (*cmd.Resp, error)
 }
 
 type SearchHistoryService struct {
@@ -26,8 +27,14 @@ var SearchHistoryServiceSet = wire.NewSet(
 	wire.Bind(new(ISearchHistoryService), new(*SearchHistoryService)),
 )
 
-func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context, userId string) ([]*cmd.SearchHistoryVO, error) {
-	histories, err := s.SearchHistoryMapper.FindByUserID(ctx, userId)
+func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) ([]*cmd.SearchHistoryVO, error) {
+	userID, ok := ctx.Value(consts.ContextUserID).(string)
+	if !ok || userID == "" {
+		log.Error("userID is empty or invalid")
+		return nil, errorx.ErrGetUserIDFailed
+	}
+
+	histories, err := s.SearchHistoryMapper.FindByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +52,13 @@ func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context, use
 	return vos, nil
 }
 
-func (s *SearchHistoryService) LogSearch(ctx context.Context, userID string, query string) (*cmd.LogSearchResp, error) {
+func (s *SearchHistoryService) LogSearch(ctx context.Context, query string) (*cmd.Resp, error) {
+	userID, ok := ctx.Value(consts.ContextUserID).(string)
+	if !ok || userID == "" {
+		log.Error("userID is empty or invalid")
+		return nil, errorx.ErrGetUserIDFailed
+	}
+
 	// 删除同名旧记录（如果存在）
 	if err := s.SearchHistoryMapper.DeleteByUserIDAndQuery(ctx, userID, query); err != nil && !errors.Is(err, monc.ErrNotFound) {
 		log.CtxError(ctx, "Failed to delete existing search history for userID=%s, query=%s: %v", userID, query, err)
@@ -76,10 +89,5 @@ func (s *SearchHistoryService) LogSearch(ctx context.Context, userID string, que
 		count--
 	}
 
-	resp := &cmd.LogSearchResp{
-		Code: 200,
-		Msg:  "success",
-	}
-
-	return resp, nil
+	return cmd.Success(), nil
 }

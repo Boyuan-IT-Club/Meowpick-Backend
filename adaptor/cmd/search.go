@@ -7,11 +7,6 @@ type LogSearchReq struct {
 	Query string `json:"keyword" binding:"required"`
 }
 
-type LogSearchResp struct {
-	Code int    `json:"-"`
-	Msg  string `json:"-"`
-}
-
 // SearchHistoryVO 是返回给前端的、单条搜索历史的“视图对象”。
 // 它对应 OpenAPI 文档中的 SearchHistoryVO。
 type SearchHistoryVO struct {

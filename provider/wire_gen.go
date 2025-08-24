@@ -10,7 +10,9 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
 )
 
 // Injectors from wire.go:
@@ -28,10 +30,20 @@ func NewProvider() (*Provider, error) {
 	searchHistoryService := service.SearchHistoryService{
 		SearchHistoryMapper: searchhistoryMongoMapper,
 	}
+	userMongoMapper := user.NewMongoMapper(configConfig)
+	authService := service.AuthService{
+		UserMapper: userMongoMapper,
+	}
+	likeMongoMapper := like.NewMongoMapper(configConfig)
+	likeService := service.LikeService{
+		LikeMapper: likeMongoMapper,
+	}
 	providerProvider := &Provider{
 		Config:               configConfig,
 		CommentService:       commentService,
 		SearchHistoryService: searchHistoryService,
+		AuthService:          authService,
+		LikeService:          likeService,
 	}
 	return providerProvider, nil
 }
