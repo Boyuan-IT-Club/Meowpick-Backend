@@ -1,5 +1,4 @@
 /.idea
-
-/etc/
+/etc
 /docker-compose.yml
 /Makefile

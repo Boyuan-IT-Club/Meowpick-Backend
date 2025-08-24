@@ -69,6 +69,7 @@ var (
 	ErrWrongTokenFmt           = New(1007, "Invalid authorization header format")
 	ErrGetUserIDFailed         = New(1008, "Get userID from token failed")
 	ErrEmptyOpenID             = New(1009, "Empty openID")
+	ErrNotAuthentication       = New(1010, "User Not Authenticated")
 )
 
 // 数据库相关

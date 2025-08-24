@@ -10,6 +10,7 @@ type GetLikeStatusReq struct {
 }
 
 type LikeResp struct {
+	*Resp
 	Like    bool  `json:"like"`
 	LikeCnt int64 `json:"like_cnt"` // 本地乐观更新需要这次点赞前，该评论
 }

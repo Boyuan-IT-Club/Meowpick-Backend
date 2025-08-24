@@ -8,12 +8,19 @@ import (
 func SetupRoutes() *gin.Engine {
 	router := gin.Default()
 
-	//// CommentApi
-	//commentGroup := router.Group("/api/comment")
-	//{
-	//	commentGroup.POST("/add", controller.CreateComment)
-	//}
+	// CommentApi
+	commentGroup := router.Group("/api/comment")
+	{
+		commentGroup.POST("/add", controller.CreateComment)
+	}
 
+	// SearchApi
+	searchGroup := router.Group("/api/search")
+	{
+		searchGroup.GET("/recent", controller.GetSearchHistory)
+		searchGroup.POST("", controller.LogSearch)
+		searchGroup.GET("/total", controller.GetTotalCommentsCount)
+	}
 	// AuthApi
 	authGroup := router.Group("")
 	authGroup.POST("/sign_in", controller.SignIn)

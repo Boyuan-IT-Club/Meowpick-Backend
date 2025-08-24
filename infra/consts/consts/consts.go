@@ -4,10 +4,14 @@ var PageSize int64 = 10
 
 // 数据库相关
 const (
-	ID          = "_id"
-	Status      = "status"
-	CreatedTime = "createdTime"
-	UpdatedTime = "updatedTime"
+	ID                 = "_id"
+	Status             = "status"
+	CreatedAt          = "createdAt"
+	UpdatedAt          = "updatedAt"
+	UserId             = "userId"
+	SearchHistoryLimit = 15
+	Query              = "query"
+	Deleted            = "deleted"
 )
 
 // 元素类别相关（如课程、评论、老师）

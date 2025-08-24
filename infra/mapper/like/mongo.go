@@ -8,6 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -68,7 +69,9 @@ func (m *MongoMapper) ToggleLike(ctx context.Context, userID, targetID string, t
 			//"targetType": targetType,
 		},
 	}
-	if _, err := m.conn.UpdateOneNoCache(ctx, filter, update); err != nil {
+	updateOptions := options.Update().SetUpsert(true)
+
+	if _, err := m.conn.UpdateOneNoCache(ctx, filter, update, updateOptions); err != nil {
 		return false, errorx.ErrUpdateFailed
 	}
 

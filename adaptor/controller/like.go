@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Like .
+// @router /api/action/like/{id} [POST]
 func Like(c *gin.Context) {
 	var req cmd.CreateLikeReq
 	var resp *cmd.LikeResp
@@ -16,10 +18,9 @@ func Like(c *gin.Context) {
 
 	// 解析目标id和用户id
 	req.TargetID = c.Param("id") // 前端采用路由匹配传参，直接解析即可
-	userID := token.GetUserId(c)
-	c.Set(consts.ContextUserID, userID)
-	// 未来可能需要添加targetType解析
 
+	c.Set(consts.ContextUserID, token.GetUserId(c))
+	// 未来可能需要添加targetType解析
 	resp, err = provider.Get().LikeService.Like(c, &req)
 	common.PostProcess(c, nil, resp, err)
 }
