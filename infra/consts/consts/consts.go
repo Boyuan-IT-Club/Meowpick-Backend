@@ -11,6 +11,7 @@ const (
 	UserId             = "userId"
 	SearchHistoryLimit = 15
 	Query              = "query"
+	Deleted            = "deleted"
 )
 
 // Controller

@@ -10,6 +10,7 @@ import (
 
 type ICommentService interface {
 	CreateComment(ctx context.Context, req *cmd.CreateCommentReq, userId string) (*cmd.CreateCommentResp, error)
+	GetTotalCommentsCount(ctx context.Context) (int64, error)
 }
 
 type CommentService struct {
@@ -32,6 +33,7 @@ func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateComme
 		Tags:      req.Tags,
 		CreatedAt: now,
 		UpdatedAt: now,
+		Deleted:   false,
 	}
 
 	if err := s.CommentMapper.Insert(ctx, newComment); err != nil {
@@ -54,4 +56,8 @@ func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateComme
 	}
 
 	return resp, nil
+}
+
+func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (int64, error) {
+	return s.CommentMapper.CountAll(ctx)
 }
