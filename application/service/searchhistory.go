@@ -14,7 +14,7 @@ import (
 )
 
 type ISearchHistoryService interface {
-	GetSearchHistoryByUserId(ctx context.Context) ([]*cmd.SearchHistoryVO, error)
+	GetSearchHistoryByUserId(ctx context.Context) (*cmd.GetSearchHistoryResp, error)
 	LogSearch(ctx context.Context, query string) (*cmd.Resp, error)
 }
 
@@ -27,21 +27,21 @@ var SearchHistoryServiceSet = wire.NewSet(
 	wire.Bind(new(ISearchHistoryService), new(*SearchHistoryService)),
 )
 
-func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) ([]*cmd.SearchHistoryVO, error) {
+func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*cmd.GetSearchHistoryResp, error) {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
-		log.Error("userID is empty or invalid")
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
 	histories, err := s.SearchHistoryMapper.FindByUserID(ctx, userID)
 	if err != nil {
+		log.CtxError(ctx, "FindByUserID failed for userID=%s: %v", userID, err)
 		return nil, err
 	}
 
-	vos := make([]*cmd.SearchHistoryVO, 0, len(histories))
+	vos := make([]cmd.SearchHistoryVO, 0, len(histories))
 	for _, h := range histories {
-		vo := &cmd.SearchHistoryVO{
+		vo := cmd.SearchHistoryVO{
 			ID:       h.ID,
 			Text:     h.Query,
 			CreateAt: h.CreatedAt,
@@ -49,13 +49,17 @@ func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) ([]
 		vos = append(vos, vo)
 	}
 
-	return vos, nil
+	resp := &cmd.GetSearchHistoryResp{
+		Resp:    cmd.Success(),
+		History: &vos,
+	}
+
+	return resp, nil
 }
 
 func (s *SearchHistoryService) LogSearch(ctx context.Context, query string) (*cmd.Resp, error) {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
-		log.Error("userID is empty or invalid")
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
