@@ -1,6 +1,4 @@
 /.idea
-/etc/config.yaml
-/scripts/docker-compose.yml
-/scripts/Makefile
-/etc/jwt/private_key.pem
-/etc/jwt/public_key.pem
+/etc
+/docker-compose.yml
+/Makefile
