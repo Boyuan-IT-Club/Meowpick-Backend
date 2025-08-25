@@ -37,34 +37,4 @@ func GetSearchHistory(c *gin.Context) {
 	c.Set(consts.ContextUserID, token.GetUserId(c))
 	resp, err = provider.Get().SearchHistoryService.GetSearchHistoryByUserId(c)
 	common.PostProcess(c, nil, resp, err)
-
-	//userID := token.GetUserId(c)
-	//if userID == "" {
-	//	c.JSON(http.StatusUnauthorized, gin.H{"error": "user not logged in"})
-	//	return
-	//}
-	//
-	//c.Set(consts.ContextUserID, userID)
-	//
-	//resp, err := provider.Get().SearchHistoryService.GetSearchHistoryByUserId(c)
-	//if err != nil {
-	//	log.CtxError(c, "Service GetRecentByUserID failed: %v", err)
-	//	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get search history"})
-	//	return
-	//}
-	//
-	//c.JSON(http.StatusOK, resp)
-
-	//var err error
-	//var req cmd.CreateCommentReq
-	//var resp *cmd.CreateCommentResp
-	//
-	//if err = c.ShouldBindJSON(&req); err != nil {
-	//	common.PostProcess(c, &req, nil, err)
-	//	return
-	//}
-	//
-	//c.Set(consts.ContextUserID, token.GetUserId(c))
-	//resp, err = provider.Get().CommentService.CreateComment(c, &req)
-	//common.PostProcess(c, &req, resp, err)
 }

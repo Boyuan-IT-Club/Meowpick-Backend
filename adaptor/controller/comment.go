@@ -34,13 +34,4 @@ func GetTotalCommentsCount(c *gin.Context) {
 
 	resp, err = provider.Get().CommentService.GetTotalCommentsCount(c)
 	common.PostProcess(c, nil, resp, err)
-
-	//total, err := provider.Get().CommentService.GetTotalCommentsCount(c.Request.Context())
-	//if err != nil {
-	//	log.CtxError(c.Request.Context(), "Service GetTotalCommentCount failed: %v", err)
-	//	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get total count"})
-	//	return
-	//}
-	//
-	//c.JSON(http.StatusOK, total)
 }

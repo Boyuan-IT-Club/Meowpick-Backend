@@ -18,5 +18,5 @@ type SearchHistoryVO struct {
 // GetSearchHistoryResp 是返回给前端的搜索历史列表的响应体。
 type GetSearchHistoryResp struct {
 	*Resp
-	History *[]SearchHistoryVO `json:"history"`
+	History []*SearchHistoryVO `json:"history"`
 }
