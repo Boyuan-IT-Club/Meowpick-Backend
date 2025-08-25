@@ -31,7 +31,7 @@ type Config struct {
 	Mongo    struct {
 		URL string
 		DB  string
-	} //meowpick_test
+	}
 	Cache cache.CacheConf
 	Redis *redis.RedisConf
 	WeApp WeApp

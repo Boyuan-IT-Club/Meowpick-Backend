@@ -10,7 +10,7 @@ import (
 )
 
 type ICourseService interface {
-	ListCourses(ctx context.Context, query cmd.CourseQueryCmd) (*cmd.PaginatedCoursesResp, error)
+	ListCourses(ctx context.Context, query cmd.GetCoursesReq) (*cmd.GetCoursesResp, error)
 }
 type CourseService struct {
 	CourseMapper *course.MongoMapper
@@ -22,9 +22,9 @@ var CourseServiceSet = wire.NewSet(
 	wire.Bind(new(ICourseService), new(*CourseService)),
 )
 
-func (s *CourseService) ListCourses(ctx context.Context, query cmd.CourseQueryCmd) (*cmd.PaginatedCoursesResp, error) {
+func (s *CourseService) ListCourses(ctx context.Context, req *cmd.GetCoursesReq) (*cmd.GetCoursesResp, error) {
 
-	courseListFromDB, total, err := s.CourseMapper.Find(ctx, query)
+	courseListFromDB, total, err := s.CourseMapper.Find(ctx, *req)
 
 	if err != nil {
 		return nil, err
@@ -55,11 +55,11 @@ func (s *CourseService) ListCourses(ctx context.Context, query cmd.CourseQueryCm
 	page := &cmd.PaginatedCourses{
 		List:  courseDTOList,
 		Total: total,
-		Page:  query.Page,
-		Size:  query.PageSize,
+		Page:  req.Page,
+		Size:  req.PageSize,
 	}
 
-	response := &cmd.PaginatedCoursesResp{
+	response := &cmd.GetCoursesResp{
 		Resp: cmd.Success(),
 		Page: page,
 	}

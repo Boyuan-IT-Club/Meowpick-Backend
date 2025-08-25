@@ -15,21 +15,19 @@ const (
 )
 
 type IMongoMapper interface {
-	Find(ctx context.Context, query cmd.CourseQueryCmd) ([]*Course, int64, error)
+	Find(ctx context.Context, query cmd.GetCoursesReq) ([]*Course, int64, error)
 }
 
 type MongoMapper struct {
 	conn *monc.Model
 }
 
-var _ IMongoMapper = (*MongoMapper)(nil)
-
 func NewMongoMapper(cfg *config.Config) *MongoMapper {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, CollectionName, cfg.Cache)
 	return &MongoMapper{conn: conn}
 }
 
-func (m *MongoMapper) Find(ctx context.Context, query cmd.CourseQueryCmd) ([]*Course, int64, error) {
+func (m *MongoMapper) Find(ctx context.Context, query cmd.GetCoursesReq) ([]*Course, int64, error) {
 
 	if query.Keyword == "" {
 		return []*Course{}, 0, nil

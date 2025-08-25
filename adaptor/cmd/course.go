@@ -1,6 +1,6 @@
 package cmd
 
-type CourseQueryCmd struct {
+type GetCoursesReq struct {
 	Keyword  string `form:"keyword"`
 	Page     int    `form:"page,default=1"`
 	PageSize int    `form:"pageSize,default=10"`
@@ -13,7 +13,7 @@ type PaginatedCourses struct {
 	Size  int            `json:"size"`  // 每页数量
 }
 
-type PaginatedCoursesResp struct {
+type GetCoursesResp struct {
 	*Resp
 	Page *PaginatedCourses `json:"page"`
 }

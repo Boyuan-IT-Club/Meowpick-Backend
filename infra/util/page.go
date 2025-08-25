@@ -23,7 +23,7 @@ func GetFindOptions(param QueryParam) *options.FindOptions {
 	return findOptions
 }
 
-func CheckPage(query *cmd.CourseQueryCmd) {
+func CheckPage(query *cmd.GetCoursesReq) {
 	if query.Page <= 0 {
 		query.Page = 1
 	}
