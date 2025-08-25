@@ -24,7 +24,7 @@ type MongoMapper struct {
 
 var _ IMongoMapper = (*MongoMapper)(nil)
 
-func NewCourseMapper(cfg *config.Config) *MongoMapper {
+func NewMongoMapper(cfg *config.Config) *MongoMapper {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, CollectionName, cfg.Cache)
 	return &MongoMapper{conn: conn}
 }

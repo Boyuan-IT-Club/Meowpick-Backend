@@ -1,7 +1,6 @@
-package common
+package adaptor
 
 import (
-	"context"
 	"errors"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
@@ -15,8 +14,8 @@ import (
 // 在日志中记录本次调用详情, 同时向响应头中注入符合b3规范的链路信息, 主要是trace_id
 // 最佳实践:
 // - 在controller中调用业务处理, 处理结束后调用PostProcess
-func PostProcess(ctx context.Context, c *gin.Context, req, resp any, err error) {
-	log.CtxInfo(ctx, "[%s] req=%s, resp=%s, err=%v", c.FullPath(), util.JSONF(req), util.JSONF(resp), err)
+func PostProcess(c *gin.Context, req, resp any, err error) {
+	log.CtxInfo(c, "[%s] req=%s, resp=%s, err=%v", c.FullPath(), util.JSONF(req), util.JSONF(resp), err)
 
 	// 无错, 正常响应
 	if err == nil {
@@ -33,7 +32,7 @@ func PostProcess(ctx context.Context, c *gin.Context, req, resp any, err error) 
 			Msg:  ex.Msg,
 		})
 	} else { // 常规错误, 状态码500
-		log.CtxError(ctx, "internal error, err=%s", err.Error())
+		log.CtxError(c, "internal error, err=%s", err.Error())
 		code := http.StatusInternalServerError
 		c.String(code, err.Error())
 	}

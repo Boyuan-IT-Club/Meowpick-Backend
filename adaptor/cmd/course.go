@@ -20,10 +20,10 @@ type PaginatedCoursesResp struct {
 }
 
 type CourseInList struct {
-	ID         string  `json:"_id"`
-	Name       string  `json:"name"`
-	Code       string  `json:"code"`
-	Department int32   `json:"department"`
-	Categories int32   `json:"categories"`
-	Campuses   []int32 `json:"campuses"`
+	ID             string   `json:"_id"`
+	Name           string   `json:"name"`
+	Code           string   `json:"code"`
+	DepartmentName string   `json:"department_name"`
+	CategoriesName string   `json:"categories_name"`
+	CampusesName   []string `json:"campuses_name"`
 } //只包含要传前端展示的字段

@@ -9,7 +9,12 @@ package provider
 import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
 )
 
 // Injectors from wire.go:
@@ -19,11 +24,38 @@ func NewProvider() (*Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	mongoMapper := course.NewCourseMapper(configConfig)
-	courseService := service.NewCourseService(mongoMapper)
+	mongoMapper := comment.NewMongoMapper(configConfig)
+	commentService := service.CommentService{
+		CommentMapper: mongoMapper,
+	}
+	searchhistoryMongoMapper := searchhistory.NewMongoMapper(configConfig)
+	searchHistoryService := service.SearchHistoryService{
+		SearchHistoryMapper: searchhistoryMongoMapper,
+	}
+	userMongoMapper := user.NewMongoMapper(configConfig)
+	authService := service.AuthService{
+		UserMapper: userMongoMapper,
+	}
+	likeMongoMapper := like.NewMongoMapper(configConfig)
+	likeService := service.LikeService{
+		LikeMapper: likeMongoMapper,
+	}
+	courseMongoMapper := course.NewMongoMapper(configConfig)
+	staticData, err := consts.NewStaticData()
+	if err != nil {
+		return nil, err
+	}
+	courseService := service.CourseService{
+		CourseMapper: courseMongoMapper,
+		StaticData:   staticData,
+	}
 	providerProvider := &Provider{
-		Config:        configConfig,
-		CourseService: courseService,
+		Config:               configConfig,
+		CommentService:       commentService,
+		SearchHistoryService: searchHistoryService,
+		AuthService:          authService,
+		LikeService:          likeService,
+		CourseService:        courseService,
 	}
 	return providerProvider, nil
 }

@@ -18,6 +18,11 @@ type Auth struct {
 	AccessExpire int64
 }
 
+type WeApp struct {
+	AppID     string
+	AppSecret string
+}
+
 type Config struct {
 	service.ServiceConf
 	ListenOn string
@@ -29,6 +34,9 @@ type Config struct {
 	} //meowpick_test
 	Cache cache.CacheConf
 	Redis *redis.RedisConf
+	WeApp WeApp
+	//SMTP        SMTPConf
+	//EmailVerify EmailVerifyConf
 }
 
 func NewConfig() (*Config, error) {

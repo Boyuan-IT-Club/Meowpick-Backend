@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ListCourses(ctx *gin.Context) {
+func GetCourses(ctx *gin.Context) {
 	var query *cmd.CourseQueryCmd
 	var resp *cmd.PaginatedCoursesResp
 	var err error
@@ -20,5 +20,5 @@ func ListCourses(ctx *gin.Context) {
 
 	util.CheckPage(query)
 	resp, err = provider.Get().CourseService.ListCourses(ctx.Request.Context(), *query)
-	common.PostProcess(ctx.Request.Context(), ctx, query, resp, err)
+	common.PostProcess(ctx, query, resp, err)
 }
