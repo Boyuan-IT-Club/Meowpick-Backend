@@ -2,12 +2,12 @@ package course
 
 import (
 	"context"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -15,7 +15,7 @@ const (
 )
 
 type IMongoMapper interface {
-	Find(ctx context.Context, query dto.CourseQueryCmd) ([]Course, int64, error)
+	Find(ctx context.Context, query cmd.CourseQueryCmd) ([]*Course, int64, error)
 }
 
 type MongoMapper struct {
@@ -24,12 +24,17 @@ type MongoMapper struct {
 
 var _ IMongoMapper = (*MongoMapper)(nil)
 
-func NewCourseMapper(cfg *config.Config) IMongoMapper {
+func NewCourseMapper(cfg *config.Config) *MongoMapper {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, CollectionName, cfg.Cache)
 	return &MongoMapper{conn: conn}
 }
 
-func (m *MongoMapper) Find(ctx context.Context, query dto.CourseQueryCmd) ([]Course, int64, error) {
+func (m *MongoMapper) Find(ctx context.Context, query cmd.CourseQueryCmd) ([]*Course, int64, error) {
+
+	if query.Keyword == "" {
+		return []*Course{}, 0, nil
+	}
+
 	//构建查询过滤器 (Filter)
 	filter := bson.M{}
 	if query.Keyword != "" {
@@ -46,16 +51,14 @@ func (m *MongoMapper) Find(ctx context.Context, query dto.CourseQueryCmd) ([]Cou
 	}
 
 	if total == 0 {
-		return []Course{}, 0, nil
+		return []*Course{}, 0, nil
 	}
 
 	//构建分页和排序选项
-	findOptions := options.Find()
-	findOptions.SetSkip(int64((query.Page - 1) * query.PageSize))
-	findOptions.SetLimit(int64(query.PageSize))
-	findOptions.SetSort(bson.D{{"createdAt", -1}})
+	qp := util.SetQueryParam(query.Page, query.PageSize)
+	findOptions := util.GetFindOptions(qp)
 
-	var courses []Course
+	var courses []*Course //
 	err = m.conn.Find(ctx, &courses, filter, findOptions)
 	if err != nil {
 		return nil, 0, err

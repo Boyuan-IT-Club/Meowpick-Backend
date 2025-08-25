@@ -4,11 +4,9 @@ package provider
 
 import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/google/wire"
-	// TODO: 当你创建第一个 service 时，取消这里的注释
-	// "github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 )
 
 var provider *Provider
@@ -42,6 +40,7 @@ var ApplicationSet = wire.NewSet(
 	// TODO: 在这里添加 Service 的 Set
 	// 例如: service.UserServiceSet,
 	service.NewCourseService,
+	wire.Bind(new(service.ICourseService), new(*service.CourseService)),
 )
 
 var InfrastructureSet = wire.NewSet(
@@ -49,6 +48,7 @@ var InfrastructureSet = wire.NewSet(
 	// TODO: 在这里添加 Mapper 的构造函数
 	// 例如: user.NewMongoMapper,
 	course.NewCourseMapper,
+	wire.Bind(new(course.IMongoMapper), new(*course.MongoMapper)),
 	RpcSet,
 )
 

@@ -7,8 +7,8 @@ import (
 
 type Comment struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty"    json:"id"`
-	UserID   primitive.ObjectID `bson:"userId"           json:"userId"`
-	CourseID primitive.ObjectID `bson:"courseId"         json:"courseId"`
+	UserID   string             `bson:"userId"           json:"userId"`
+	CourseID string             `bson:"courseId"         json:"courseId"`
 	Content  string             `bson:"content"          json:"content"`
 	Tags     []string           `bson:"tags"             json:"tags"`
 	// Edited   bool               `bson:"edited"           json:"edited"`
