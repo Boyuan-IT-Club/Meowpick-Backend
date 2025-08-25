@@ -20,6 +20,6 @@ func GetCourses(ctx *gin.Context) {
 	}
 
 	util.CheckPage(req)
-	resp, err = provider.Get().CourseService.ListCourses(ctx, *req)
+	resp, err = provider.Get().CourseService.ListCourses(ctx, req)
 	common.PostProcess(ctx, req, resp, err)
 }
