@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// 此为/api/course/query
 func GetCourses(ctx *gin.Context) {
 	var query *cmd.CourseQueryCmd
 	var resp *cmd.PaginatedCoursesResp
@@ -19,6 +20,6 @@ func GetCourses(ctx *gin.Context) {
 	}
 
 	util.CheckPage(query)
-	resp, err = provider.Get().CourseService.ListCourses(ctx.Request.Context(), *query)
+	resp, err = provider.Get().CourseService.ListCourses(ctx, *query)
 	common.PostProcess(ctx, query, resp, err)
 }
