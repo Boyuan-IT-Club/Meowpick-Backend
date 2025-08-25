@@ -14,8 +14,7 @@ type PaginatedCourses struct {
 }
 
 type PaginatedCoursesResp struct {
-	Code int               `json:"-"`
-	Msg  string            `json:"-"`
+	*Resp
 	Page *PaginatedCourses `json:"page"`
 }
 

@@ -60,8 +60,7 @@ func (s *CourseService) ListCourses(ctx context.Context, query cmd.CourseQueryCm
 	}
 
 	response := &cmd.PaginatedCoursesResp{
-		Code: 0,
-		Msg:  "",
+		Resp: cmd.Success(),
 		Page: page,
 	}
 
