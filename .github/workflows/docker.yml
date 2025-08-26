@@ -3,51 +3,38 @@ name: Docker Build and Push
 on:
   push:
     branches:
-      - main  # 每次 push 到 main 分支触发
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ 获取代码
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2️⃣ 获取项目版本号
       - name: Get project version
         id: get_version
         run: |
-          # 尝试从 VERSION 文件读取，如果不存在则默认 v1.0.0
           if [ -f VERSION ]; then
             VERSION=$(cat VERSION)
           else
             VERSION="v1.0.0"
           fi
-          echo "Project version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      # 3️⃣ 编译项目（以 Go 为例，可根据实际修改）
-      - name: Build project
-        run: |
-          echo "Compiling project..."
-          CGO_ENABLED=0 GOOS=linux go build -o meowpick-backend .
-
-      # 4️⃣ 构建 Docker 镜像并打 tag
-      - name: Build Docker image
-        run: |
-          docker build -t boyuanclub/meowpick-backend:$VERSION .
-          docker tag boyuanclub/meowpick-backend:$VERSION boyuanclub/meowpick-backend:latest
-
-      # 5️⃣ 登录 Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      # 6️⃣ 推送镜像到 Docker Hub
-      - name: Push Docker image to Docker Hub
+      - name: Build Docker image
+        run: |
+          docker build -t boyuanclub/meowpick-backend:$VERSION .
+          docker tag boyuanclub/meowpick-backend:$VERSION boyuanclub/meowpick-backend:latest
+
+      - name: Push Docker image
         run: |
           docker push boyuanclub/meowpick-backend:$VERSION
           docker push boyuanclub/meowpick-backend:latest
