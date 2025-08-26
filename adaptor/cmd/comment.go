@@ -23,3 +23,9 @@ type CreateCommentResp struct {
 	CreateAt time.Time `json:"crateAt"`  // 注意拼写，映射为 crateAt
 	UpdateAt time.Time `json:"updateAt"` // 注意拼写，映射为 updateAt
 }
+
+// GetTotalCommentsCountResp 对应 /api/search/total 的响应体
+type GetTotalCommentsCountResp struct {
+	*Resp
+	Count int64 `json:"count"`
+}

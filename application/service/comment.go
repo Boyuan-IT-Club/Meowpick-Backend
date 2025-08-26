@@ -13,7 +13,7 @@ import (
 
 type ICommentService interface {
 	CreateComment(ctx context.Context, req *cmd.CreateCommentReq) (*cmd.CreateCommentResp, error)
-	GetTotalCommentsCount(ctx context.Context) (int64, error)
+	GetTotalCommentsCount(ctx context.Context) (*cmd.GetTotalCommentsCountResp, error)
 }
 
 type CommentService struct {
@@ -29,7 +29,6 @@ var CommentServiceSet = wire.NewSet(
 func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateCommentReq) (*cmd.CreateCommentResp, error) {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
-		log.Error("userID is empty or invalid")
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
@@ -46,6 +45,7 @@ func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateComme
 	}
 
 	if err := s.CommentMapper.Insert(ctx, newComment); err != nil {
+		log.CtxError(ctx, "Failed to insert comment for userID=%s: %v", userID, err)
 		return nil, err
 	}
 
@@ -62,6 +62,16 @@ func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateComme
 	return resp, nil
 }
 
-func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (int64, error) {
-	return s.CommentMapper.CountAll(ctx)
+func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*cmd.GetTotalCommentsCountResp, error) {
+	count, err := s.CommentMapper.CountAll(ctx)
+	if err != nil {
+		log.CtxError(ctx, "Service GetTotalCommentCount failed: %v", err)
+		return nil, errorx.ErrGetCountFailed
+	}
+	resp := &cmd.GetTotalCommentsCountResp{
+		Resp:  cmd.Success(),
+		Count: count,
+	}
+
+	return resp, nil
 }
