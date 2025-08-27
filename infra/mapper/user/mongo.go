@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/zeromicro/go-zero/core/stores/monc"
@@ -82,7 +83,7 @@ func (m *MongoMapper) FindById(ctx context.Context, userId string) (*User, error
 	var user *User
 	var cacheKey = IDPrefix + userId
 
-	if err := m.conn.FindOne(ctx, cacheKey, user, bson.M{"_id": userId}); err != nil {
+	if err := m.conn.FindOne(ctx, cacheKey, user, bson.M{consts.ID: userId}); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return nil, errorx.ErrUserNotFound
 		}
@@ -103,7 +104,7 @@ func (m *MongoMapper) FindByWXOpenId(ctx context.Context, wxOpenId string) (*Use
 
 	// 若缓存未命中 走数据库查询
 	var user User
-	if err := m.conn.FindOneNoCache(ctx, &user, bson.M{"openId": wxOpenId}); err != nil {
+	if err := m.conn.FindOneNoCache(ctx, &user, bson.M{consts.OpenID: wxOpenId}); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return nil, errorx.ErrUserNotFound
 		}

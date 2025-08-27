@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
@@ -39,8 +40,8 @@ func NewMongoMapper(config *config.Config) *MongoMapper {
 func (m *MongoMapper) ToggleLike(ctx context.Context, userID, targetID string, targetType int32) (bool, error) {
 	// 查找现有点赞记录，准备更新
 	filter := bson.M{
-		"userid":   userID,
-		"targetId": targetID,
+		consts.UserId:   userID,
+		consts.TargetId: targetID,
 		//"targetType":targetType, // TODO 未来有需要时加上类型过滤器
 	}
 
@@ -61,11 +62,11 @@ func (m *MongoMapper) ToggleLike(ctx context.Context, userID, targetID string, t
 	// 更新
 	update := bson.M{
 		"$set": bson.M{
-			"active":    newActive,
-			"updatedAt": time.Now(),
+			consts.Active:    newActive,
+			consts.UpdatedAt: time.Now(),
 		},
 		"$setOnInsert": bson.M{
-			"createdAt": time.Now(),
+			consts.CreatedAt: time.Now(),
 			//"targetType": targetType,
 		},
 	}
@@ -81,8 +82,8 @@ func (m *MongoMapper) ToggleLike(ctx context.Context, userID, targetID string, t
 
 func (m *MongoMapper) GetLikeStatus(ctx context.Context, userID, targetID string, targetType int32) (bool, error) {
 	filter := bson.M{
-		"userId":   userID,
-		"targetId": targetID,
+		consts.UserId:   userID,
+		consts.TargetId: targetID,
 		//"targetType": targetType,
 	}
 
@@ -100,9 +101,9 @@ func (m *MongoMapper) GetLikeStatus(ctx context.Context, userID, targetID string
 
 func (m *MongoMapper) GetLikeCount(ctx context.Context, targetID string, targetType int32) (int64, error) {
 	filter := bson.M{
-		"targetId": targetID,
+		consts.TargetId: targetID,
 		//"targetType": targetType,
-		"active": true,
+		consts.Active: true,
 	}
 
 	if count, err := m.conn.CountDocuments(ctx, filter); err == nil {
