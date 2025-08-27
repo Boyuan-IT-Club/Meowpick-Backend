@@ -92,7 +92,7 @@ func (m *MongoMapper) GetLikeStatus(ctx context.Context, userID, targetID string
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return false, nil
 		}
-		return false, errorx.ErrFindFailed
+		return false, errorx.ErrGetStatusFailed
 	}
 
 	return like.Active, nil
@@ -102,6 +102,7 @@ func (m *MongoMapper) GetLikeCount(ctx context.Context, targetID string, targetT
 	filter := bson.M{
 		"targetId": targetID,
 		//"targetType": targetType,
+		"active": true,
 	}
 
 	if count, err := m.conn.CountDocuments(ctx, filter); err == nil {

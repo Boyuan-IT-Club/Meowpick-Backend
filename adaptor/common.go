@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"reflect"
+	"strings"
 )
 
 // PostProcess 处理http响应, resp要求指针或接口类型
@@ -54,7 +55,9 @@ func makeResponse(resp any) map[string]any {
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Type().Field(i)
 		if jsonTag := field.Tag.Get("json"); jsonTag != "" && field.Name != "Code" && field.Name != "Msg" {
-			if fieldValue := v.Field(i).Interface(); !reflect.ValueOf(fieldValue).IsZero() {
+
+			// 下面这行过滤了零值
+			if fieldValue := v.Field(i).Interface(); !(strings.Contains(jsonTag, "omitempty") && reflect.ValueOf(fieldValue).IsZero()) {
 				data[jsonTag] = fieldValue
 			}
 		}

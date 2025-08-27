@@ -56,7 +56,7 @@ func (m *MongoMapper) Insert(ctx context.Context, user *User) error {
 		openIDCacheKey := OpenIDPrefix + user.OpenId
 		// 仅缓存_id，不是完整用户数据
 		if err := m.conn.SetCache(openIDCacheKey, user.ID.Hex()); err != nil {
-			log.Error("ID-OpenID映射缓存失败")
+			log.Info("ID-OpenID映射缓存失败")
 		}
 	}
 
