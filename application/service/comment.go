@@ -32,6 +32,7 @@ var CommentServiceSet = wire.NewSet(
 func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateCommentReq) (*cmd.CreateCommentResp, error) {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
+		log.Error("userID is empty or invalid")
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
