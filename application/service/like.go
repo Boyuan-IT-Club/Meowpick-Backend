@@ -52,10 +52,14 @@ func (s *LikeService) Like(ctx context.Context, req *cmd.CreateLikeReq) (resp *c
 	}
 
 	// 步骤三：使用两个最新的数据创建响应
-	resp = &cmd.LikeResp{
-		Resp:    cmd.Success(),
+	vo := &cmd.LikeVO{
 		Like:    newActive,
 		LikeCnt: likeCount, // <-- 现在 likeCount 是最新的准确数据了
+	}
+
+	resp = &cmd.LikeResp{
+		Resp:   cmd.Success(),
+		LikeVO: vo,
 	}
 
 	return resp, nil

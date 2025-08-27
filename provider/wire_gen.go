@@ -23,8 +23,10 @@ func NewProvider() (*Provider, error) {
 		return nil, err
 	}
 	mongoMapper := comment.NewMongoMapper(configConfig)
+	likeMongoMapper := like.NewMongoMapper(configConfig)
 	commentService := service.CommentService{
 		CommentMapper: mongoMapper,
+		LikeMapper:    likeMongoMapper,
 	}
 	searchhistoryMongoMapper := searchhistory.NewMongoMapper(configConfig)
 	searchHistoryService := service.SearchHistoryService{
@@ -34,7 +36,6 @@ func NewProvider() (*Provider, error) {
 	authService := service.AuthService{
 		UserMapper: userMongoMapper,
 	}
-	likeMongoMapper := like.NewMongoMapper(configConfig)
 	likeService := service.LikeService{
 		LikeMapper: likeMongoMapper,
 	}

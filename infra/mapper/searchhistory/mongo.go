@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,7 +22,7 @@ type ISearchHistory interface {
 	FindByUserID(ctx context.Context, userID string) ([]*SearchHistory, error)
 	CountByUserID(ctx context.Context, userID string) (int64, error)
 	DeleteOldestByUserID(ctx context.Context, userID string) error
-	UpsertByUserIDAndQuery(ctx context.Context, userID primitive.ObjectID, query string) error
+	UpsertByUserIDAndQuery(ctx context.Context, userID string, query string) error
 }
 
 type MongoMapper struct {
@@ -37,7 +38,7 @@ func (m *MongoMapper) FindByUserID(ctx context.Context, userID string) ([]*Searc
 	var histories []*SearchHistory
 
 	ops := options.Find()
-	ops.SetSort(bson.D{{consts.CreatedAt, -1}}) // 降序, 最新的在最前面
+	ops.SetSort(util.DSort(consts.CreatedAt, -1)) // 降序, 最新的在最前面
 	ops.SetLimit(consts.SearchHistoryLimit)
 
 	filter := bson.M{consts.UserId: userID}
@@ -55,7 +56,7 @@ func (m *MongoMapper) CountByUserID(ctx context.Context, userID string) (int64, 
 func (m *MongoMapper) DeleteOldestByUserID(ctx context.Context, userID string) error {
 	var oldest SearchHistory
 	ops := options.FindOneAndDelete()
-	ops.SetSort(bson.D{{consts.CreatedAt, 1}})
+	ops.SetSort(util.DSort(consts.CreatedAt, 1))
 
 	if err := m.conn.FindOneAndDelete(ctx, "", &oldest, bson.M{consts.UserId: userID}, ops); err != nil && !errors.Is(err, monc.ErrNotFound) {
 		return err
@@ -77,7 +78,7 @@ func (m *MongoMapper) UpsertByUserIDAndQuery(ctx context.Context, userID string,
 		},
 		// 只有在没找到，需要插入新纪录的情况下，才设置这些字段
 		"$setOnInsert": bson.M{
-			consts.ID:     primitive.NewObjectID(),
+			consts.ID:     primitive.NewObjectID().Hex(),
 			consts.UserId: userID,
 			consts.Query:  query,
 		},
