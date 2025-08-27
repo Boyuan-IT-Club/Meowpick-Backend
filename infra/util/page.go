@@ -2,6 +2,7 @@ package util
 
 import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -14,7 +15,7 @@ func GetFindOptions(param *cmd.QueryParam) *options.FindOptions {
 	findOptions := options.Find()
 	findOptions.SetSkip(int64((param.Page - 1) * param.PageSize))
 	findOptions.SetLimit(int64(param.PageSize))
-	findOptions.SetSort(bson.D{{"createdAt", -1}})
+	findOptions.SetSort(bson.D{{consts.CreatedAt, -1}})
 	return findOptions
 }
 
