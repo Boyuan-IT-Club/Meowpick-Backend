@@ -13,7 +13,6 @@ func SetupRoutes() *gin.Engine {
 	{
 		commentGroup.POST("/add", controller.CreateComment)
 		commentGroup.GET("/query", controller.GetCourseComments)
-		commentGroup.POST("/history", controller.GetMyComments)
 	}
 
 	// SearchApi

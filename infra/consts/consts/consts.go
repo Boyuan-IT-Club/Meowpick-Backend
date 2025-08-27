@@ -19,6 +19,7 @@ const (
 	Categories = "categories"
 	Department = "department"
 	Campuses   = "campuses"
+
 )
 
 // 元素类别相关（如课程、评论、老师）
