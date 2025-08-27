@@ -48,8 +48,9 @@ func NewProvider() (*Provider, error) {
 		return nil, err
 	}
 	courseService := service.CourseService{
-		CourseMapper: courseMongoMapper,
-		StaticData:   staticData,
+		CourseMapper:  courseMongoMapper,
+		CommentMapper: mongoMapper,
+		StaticData:    staticData,
 	}
 	teacherMongoMapper := teacher.NewMongoMapper(configConfig)
 	teacherService := service.TeacherService{
