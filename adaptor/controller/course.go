@@ -3,7 +3,6 @@ package controller
 import (
 	common "github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +18,6 @@ func GetCourses(ctx *gin.Context) {
 		return
 	}
 
-	util.CheckPage(&req.Page, &req.PageSize)
 	resp, err = provider.Get().CourseService.ListCourses(ctx, req)
 	common.PostProcess(ctx, req, resp, err)
 }
@@ -36,6 +34,7 @@ func GetCourseDepartments(ctx *gin.Context) {
 	common.PostProcess(ctx, req, resp, err)
 }
 
+// GetCourseCategories xxx
 // @router /api/course/categories [GET]
 func GetCourseCategories(ctx *gin.Context) {
 	var req *cmd.GetCourseCategoriesReq

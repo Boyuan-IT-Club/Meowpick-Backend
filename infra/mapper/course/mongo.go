@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,7 +30,7 @@ func NewMongoMapper(cfg *config.Config) *MongoMapper {
 	return &MongoMapper{conn: conn}
 }
 
-func (m *MongoMapper) Find(ctx context.Context, query cmd.GetCoursesReq) ([]*Course, int64, error) {
+func (m *MongoMapper) Find(ctx context.Context, query *cmd.GetCoursesReq) ([]*Course, int64, error) {
 
 	if query.Keyword == "" {
 		return []*Course{}, 0, nil
@@ -52,8 +53,7 @@ func (m *MongoMapper) Find(ctx context.Context, query cmd.GetCoursesReq) ([]*Cou
 	}
 
 	//构建分页和排序选项
-	qp := util.SetQueryParam(query.Page, query.PageSize)
-	findOptions := util.GetFindOptions(qp)
+	findOptions := util.FindPageOption(query).SetSort(util.DSort(consts.CreatedAt, -1))
 
 	var courses []*Course //
 	err = m.conn.Find(ctx, &courses, filter, findOptions)
@@ -70,11 +70,8 @@ func (m *MongoMapper) GetDeparts(ctx context.Context, req *cmd.GetCoursesDeparts
 		return nil, nil
 	}
 
-	filter := bson.M{}
-	filter["$or"] = []bson.M{
-		{"name": req.Keyword},
-		{"code": req.Keyword},
-	}
+	filter := bson.M{"$or": []bson.M{{"name": req.Keyword}, {"code": req.Keyword}}}
+
 	results, err := m.conn.Distinct(ctx, "department", filter)
 	if err != nil {
 		return nil, err
@@ -94,11 +91,8 @@ func (m *MongoMapper) GetCategories(ctx context.Context, req *cmd.GetCourseCateg
 	if req.Keyword == "" {
 		return nil, nil
 	}
-	filter := bson.M{}
-	filter["$or"] = []bson.M{
-		{"name": req.Keyword},
-		{"code": req.Keyword},
-	}
+	filter := bson.M{"$or": []bson.M{{"name": req.Keyword}, {"code": req.Keyword}}}
+
 	results, err := m.conn.Distinct(ctx, "categories", filter)
 	if err != nil {
 		return nil, err
@@ -116,11 +110,7 @@ func (m *MongoMapper) GetCampuses(ctx context.Context, req *cmd.GetCourseCampuse
 	if req.Keyword == "" {
 		return nil, nil
 	}
-	filter := bson.M{}
-	filter["$or"] = []bson.M{
-		{"name": req.Keyword},
-		{"code": req.Keyword},
-	}
+	filter := bson.M{"$or": []bson.M{{"name": req.Keyword}, {"code": req.Keyword}}}
 	results, err := m.conn.Distinct(ctx, "campus", filter)
 	if err != nil {
 		return nil, err

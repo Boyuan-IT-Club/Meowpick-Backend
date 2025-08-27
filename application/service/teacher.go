@@ -23,7 +23,7 @@ var TeacherServiceSet = wire.NewSet(
 )
 
 func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetTeachersReq) (*cmd.GetTeachersResp, error) {
-	courseListFromDB, total, err := s.TeacherMapper.FindCoursesByTeacherID(ctx, *req)
+	courseListFromDB, total, err := s.TeacherMapper.FindCoursesByTeacherID(ctx, req)
 
 	if err != nil {
 		return nil, err
@@ -52,16 +52,16 @@ func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetT
 		courseDTOList = append(courseDTOList, apiCourse)
 	}
 
-	page := &cmd.PaginatedCourses{
-		List:  courseDTOList,
-		Total: total,
-		Page:  req.Page,
-		Size:  req.PageSize,
-	}
-
 	response := &cmd.GetTeachersResp{
 		Resp: cmd.Success(),
-		Page: page,
+		PaginatedCourses: &cmd.PaginatedCourses{
+			List:  courseDTOList,
+			Total: total,
+			PageParam: &cmd.PageParam{
+				Page:     req.Page,
+				PageSize: req.PageSize,
+			},
+		},
 	}
 
 	return response, nil

@@ -26,7 +26,7 @@ var CourseServiceSet = wire.NewSet(
 
 func (s *CourseService) ListCourses(ctx context.Context, req *cmd.GetCoursesReq) (*cmd.GetCoursesResp, error) {
 
-	courseListFromDB, total, err := s.CourseMapper.Find(ctx, *req)
+	courseListFromDB, total, err := s.CourseMapper.Find(ctx, req)
 
 	if err != nil {
 		return nil, err
@@ -55,16 +55,16 @@ func (s *CourseService) ListCourses(ctx context.Context, req *cmd.GetCoursesReq)
 		courseDTOList = append(courseDTOList, apiCourse)
 	}
 
-	page := &cmd.PaginatedCourses{
-		List:  courseDTOList,
-		Total: total,
-		Page:  req.Page,
-		Size:  req.PageSize,
-	}
-
 	response := &cmd.GetCoursesResp{
 		Resp: cmd.Success(),
-		Page: page,
+		PaginatedCourses: &cmd.PaginatedCourses{
+			List:  courseDTOList,
+			Total: total,
+			PageParam: &cmd.PageParam{
+				Page:     req.Page,
+				PageSize: req.PageSize,
+			},
+		},
 	}
 
 	return response, nil
