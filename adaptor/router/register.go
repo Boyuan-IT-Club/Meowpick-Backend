@@ -29,10 +29,19 @@ func SetupRoutes() *gin.Engine {
 	likeGroup := router.Group("/api/action")
 	likeGroup.POST("/like/:id", controller.Like)
 
-	// ListApi
+	// CourseApi
 	courseGroup := router.Group("/api/course")
 	{
 		courseGroup.GET("/query", controller.GetCourses)
+		courseGroup.GET("/departs", controller.GetCourseDepartments)
+		courseGroup.GET("/categories", controller.GetCourseCategories)
+		courseGroup.GET("/campuses", controller.GetCourseCampuses)
+	}
+
+	// TeacherApi
+	teacherGroup := router.Group("/api/teacher")
+	{
+		teacherGroup.GET("/query", controller.GetCoursesByTeacher)
 	}
 	return router
 }

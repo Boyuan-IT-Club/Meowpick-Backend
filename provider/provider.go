@@ -10,6 +10,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
 	"github.com/google/wire"
 )
@@ -36,6 +37,7 @@ type Provider struct {
 	AuthService          service.AuthService
 	LikeService          service.LikeService
 	CourseService        service.CourseService
+	TeacherService       service.TeacherService
 }
 
 var ApplicationSet = wire.NewSet(
@@ -44,6 +46,7 @@ var ApplicationSet = wire.NewSet(
 	service.AuthServiceSet,
 	service.LikeServiceSet,
 	service.CourseServiceSet,
+	service.TeacherServiceSet,
 )
 
 var InfrastructureSet = wire.NewSet(
@@ -54,6 +57,7 @@ var InfrastructureSet = wire.NewSet(
 	user.NewMongoMapper,
 	like.NewMongoMapper,
 	course.NewMongoMapper,
+	teacher.NewMongoMapper,
 )
 
 var AllProvider = wire.NewSet(

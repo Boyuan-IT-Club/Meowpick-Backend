@@ -1,7 +1,6 @@
 package util
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -23,11 +22,11 @@ func GetFindOptions(param QueryParam) *options.FindOptions {
 	return findOptions
 }
 
-func CheckPage(query *cmd.GetCoursesReq) {
-	if query.Page <= 0 {
-		query.Page = 1
+func CheckPage(page *int, pageSize *int) {
+	if *page <= 0 {
+		*page = 1
 	}
-	if query.PageSize <= 0 || query.PageSize > 100 {
-		query.PageSize = 10
+	if *pageSize <= 0 || *pageSize > 100 {
+		*pageSize = 10
 	}
 }

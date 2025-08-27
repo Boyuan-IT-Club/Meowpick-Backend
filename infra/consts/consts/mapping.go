@@ -21,6 +21,15 @@ func NewStaticData() (*StaticData, error) {
 	return data, nil
 }
 
+// GetCampusNameByID 是一个辅助函数，方便通过int类型的ID获取校区名称。
+func (d *StaticData) GetCampusNameByID(id int32) string {
+	key := fmt.Sprintf("%d", id)
+	if name, ok := d.Campuses[key]; ok {
+		return name
+	}
+	return "未知校区"
+}
+
 // GetDepartmentNameByID 是一个辅助函数，方便通过int类型的ID获取院系名称。
 func (d *StaticData) GetDepartmentNameByID(id int32) string {
 	key := fmt.Sprintf("%d", id)

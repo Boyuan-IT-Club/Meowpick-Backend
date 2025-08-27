@@ -19,7 +19,42 @@ func GetCourses(ctx *gin.Context) {
 		return
 	}
 
-	util.CheckPage(req)
+	util.CheckPage(&req.Page, &req.PageSize)
 	resp, err = provider.Get().CourseService.ListCourses(ctx, req)
+	common.PostProcess(ctx, req, resp, err)
+}
+
+// @router /api/course/departs [GET]
+func GetCourseDepartments(ctx *gin.Context) {
+	var req *cmd.GetCoursesDepartsReq
+	var resp *cmd.GetCoursesDepartsResp
+	var err error
+	if err = ctx.ShouldBindQuery(&req); err != nil {
+		return
+	}
+	resp, err = provider.Get().CourseService.GetDeparts(ctx, req)
+	common.PostProcess(ctx, req, resp, err)
+}
+
+// @router /api/course/categories [GET]
+func GetCourseCategories(ctx *gin.Context) {
+	var req *cmd.GetCourseCategoriesReq
+	var resp *cmd.GetCourseCategoriesResp
+	var err error
+	if err = ctx.ShouldBindQuery(&req); err != nil {
+		return
+	}
+	resp, err = provider.Get().CourseService.GetCategories(ctx, req)
+	common.PostProcess(ctx, req, resp, err)
+}
+
+func GetCourseCampuses(ctx *gin.Context) {
+	var req *cmd.GetCourseCampusesReq
+	var resp *cmd.GetCourseCampusesResp
+	var err error
+	if err = ctx.ShouldBindQuery(&req); err != nil {
+		return
+	}
+	resp, err = provider.Get().CourseService.GetCampuses(ctx, req)
 	common.PostProcess(ctx, req, resp, err)
 }

@@ -15,6 +15,9 @@ const (
 
 type IMongoMapper interface {
 	Find(ctx context.Context, query cmd.GetCoursesReq) ([]*Course, int64, error)
+	GetDeparts(ctx context.Context, req cmd.GetCoursesDepartsReq) (*cmd.GetCoursesResp, error)
+	GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) ([]int32, error)
+	GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) ([]int32, error)
 }
 
 type MongoMapper struct {
@@ -59,4 +62,75 @@ func (m *MongoMapper) Find(ctx context.Context, query cmd.GetCoursesReq) ([]*Cou
 	}
 
 	return courses, total, nil
+}
+
+func (m *MongoMapper) GetDeparts(ctx context.Context, req *cmd.GetCoursesDepartsReq) ([]int32, error) {
+
+	if req.Keyword == "" {
+		return nil, nil
+	}
+
+	filter := bson.M{}
+	filter["$or"] = []bson.M{
+		{"name": req.Keyword},
+		{"code": req.Keyword},
+	}
+	results, err := m.conn.Distinct(ctx, "department", filter)
+	if err != nil {
+		return nil, err
+	}
+
+	departmentIDs := make([]int32, 0, len(results))
+	for _, result := range results {
+		if id, ok := result.(int32); ok {
+			departmentIDs = append(departmentIDs, id)
+		}
+	}
+
+	return departmentIDs, nil
+}
+
+func (m *MongoMapper) GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) ([]int32, error) {
+	if req.Keyword == "" {
+		return nil, nil
+	}
+	filter := bson.M{}
+	filter["$or"] = []bson.M{
+		{"name": req.Keyword},
+		{"code": req.Keyword},
+	}
+	results, err := m.conn.Distinct(ctx, "categories", filter)
+	if err != nil {
+		return nil, err
+	}
+	categories := make([]int32, 0, len(results))
+	for _, result := range results {
+		if id, ok := result.(int32); ok {
+			categories = append(categories, id)
+		}
+	}
+	return categories, nil
+}
+
+func (m *MongoMapper) GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) ([]int32, error) {
+	if req.Keyword == "" {
+		return nil, nil
+	}
+	filter := bson.M{}
+	filter["$or"] = []bson.M{
+		{"name": req.Keyword},
+		{"code": req.Keyword},
+	}
+	results, err := m.conn.Distinct(ctx, "campus", filter)
+	if err != nil {
+		return nil, err
+	}
+	campuses := make([]int32, 0, len(results))
+
+	for _, result := range results {
+		if id, ok := result.(int32); ok {
+			campuses = append(campuses, id)
+		}
+	}
+	return campuses, nil
 }
