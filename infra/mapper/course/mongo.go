@@ -11,6 +11,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -20,8 +21,8 @@ const (
 
 type IMongoMapper interface {
 	FindOneByID(ctx context.Context, ID string)
-	FindManyByKeywords(ctx context.Context, query *cmd.GetCoursesReq) ([]*Course, int64, error)
-	GetDeparts(ctx context.Context, req *cmd.GetCoursesDepartsReq) (*cmd.GetCoursesResp, error)
+	FindManyByKeywords(ctx context.Context, query *cmd.ListCoursesReq) ([]*Course, int64, error)
+	GetDeparts(ctx context.Context, req *cmd.GetCoursesDepartsReq) (*cmd.ListCoursesResp, error)
 	GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) ([]int32, error)
 	GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) ([]int32, error)
 	GetCourseSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) ([]*Course, error)
@@ -57,7 +58,7 @@ func (m *MongoMapper) FindOneByID(ctx context.Context, ID string) (*Course, erro
 	return course, nil
 }
 
-func (m *MongoMapper) FindMany(ctx context.Context, query *cmd.GetCoursesReq) ([]*Course, int64, error) {
+func (m *MongoMapper) FindMany(ctx context.Context, query *cmd.ListCoursesReq) ([]*Course, int64, error) {
 
 	if query.Keyword == "" {
 		return []*Course{}, 0, nil
@@ -182,7 +183,7 @@ func (m *MongoMapper) CountCourses(ctx context.Context, req *cmd.GetSearchSugges
 // FindCoursesByTeacherID 根据教师ID查询其教授的所有课程
 func (m *MongoMapper) FindCoursesByTeacherID(ctx context.Context, req *cmd.GetTeachersReq) ([]*Course, int64, error) {
 	if req.TeacherID == "" {
-		return nil, 0, errors.New("TeacherID is required")
+		return nil, 0, errors.New("Teachers is required")
 	}
 
 	var courses []*Course

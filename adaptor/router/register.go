@@ -11,40 +11,42 @@ func SetupRoutes() *gin.Engine {
 	// CommentApi
 	commentGroup := router.Group("/api/comment")
 	{
-		commentGroup.POST("/add", controller.CreateComment)
-		commentGroup.GET("/query", controller.GetCourseComments)
+		commentGroup.POST("/add", controller.CreateComment)       // 发布评论
+		commentGroup.GET("/query", controller.ListCourseComments) // 分页获取课程下的评论
+		commentGroup.POST("/history", controller.GetMyComments)   // 获得我的吐槽
 	}
 
 	// SearchApi
 	searchGroup := router.Group("/api/search")
 	{
-		searchGroup.GET("/recent", controller.GetSearchHistory)
-		searchGroup.POST("", controller.LogSearch)
-		searchGroup.GET("/total", controller.GetTotalCommentsCount)
-		searchGroup.GET("/suggest", controller.GetSearchSuggestions)
+		searchGroup.GET("/recent", controller.GetSearchHistory)      // 搜索历史
+		searchGroup.POST("/course", controller.ListCourses)          // 模糊搜索展示课程列表
+		searchGroup.POST("/teacher", controller.ListTeachers)        // 模糊搜索展示教师列表
+		searchGroup.GET("/total", controller.GetTotalCommentsCount)  // 小程序初始化界面的总吐槽数
+		searchGroup.GET("/suggest", controller.GetSearchSuggestions) // 用户输入搜索内容期间获得搜索建议
 	}
 
 	// AuthApi
 	authGroup := router.Group("")
-	authGroup.POST("/sign_in", controller.SignIn)
+	authGroup.POST("/sign_in", controller.SignIn) // 初始化时的登录、授权
 
 	// LikeApi
 	likeGroup := router.Group("/api/action")
-	likeGroup.POST("/like/:id", controller.Like)
+	likeGroup.POST("/like/:id", controller.Like) // 为评论点赞
 
 	// CourseApi
 	courseGroup := router.Group("/api/course")
 	{
-		courseGroup.GET("/:courseID", controller.GetOneCourse)
-		courseGroup.GET("/departs", controller.GetCourseDepartments)
-		courseGroup.GET("/categories", controller.GetCourseCategories)
-		courseGroup.GET("/campuses", controller.GetCourseCampuses)
+		courseGroup.GET("/:courseID", controller.GetOneCourse)         // 精确搜索某个课程
+		courseGroup.GET("/departs", controller.GetCourseDepartments)   // 获得某课程的“所属部门”信息
+		courseGroup.GET("/categories", controller.GetCourseCategories) // 获得某课程的“课程类型”信息
+		courseGroup.GET("/campuses", controller.GetCourseCampuses)     // 获得某课程的“开设校区”信息
 	}
 
 	// TeacherApi
 	teacherGroup := router.Group("/api/teacher")
 	{
-		teacherGroup.GET("/query", controller.GetCoursesByTeacher)
+		teacherGroup.GET("/query", controller.ListCoursesByTeacher) // 分页获取某教师开设的各个课程
 	}
 	return router
 }

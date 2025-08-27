@@ -8,10 +8,9 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
-// CreateComment .
+// CreateComment 发布评论
 // @router /api/comment/add [POST]
 func CreateComment(c *gin.Context) {
 	var err error
@@ -28,9 +27,9 @@ func CreateComment(c *gin.Context) {
 	common.PostProcess(c, &req, resp, err)
 }
 
-// GetCourseComments .
+// ListCourseComments 分页获取课程评论
 // @router /api/comment/query [GET]
-func GetCourseComments(c *gin.Context) {
+func ListCourseComments(c *gin.Context) {
 	var err error
 	var req cmd.GetCourseCommentsReq
 	var resp *cmd.GetCommentsResp
@@ -41,7 +40,7 @@ func GetCourseComments(c *gin.Context) {
 	}
 
 	if req.PageParam == nil {
-		req.PageParam = &cmd.PageParam{} // 这里仅是防止空指针造成panic.{}可以留空，由之后的UnWrap方法设置默认值
+		req.PageParam = &cmd.PageParam{} // 这里仅是防止空指针造成panic {}中留空，由之后的UnWrap方法设置默认值
 		log.CtxInfo(c, "获得课程评论请求时PageParam为空，已设为默认值！")
 	}
 
@@ -51,16 +50,29 @@ func GetCourseComments(c *gin.Context) {
 	common.PostProcess(c, &req, resp, err)
 }
 
-// GetTotalCommentsCount .
+// GetTotalCommentsCount 获得小程序收录吐槽总数
 // @router /api/search/total [GET]
 func GetTotalCommentsCount(c *gin.Context) {
-	p := provider.Get()
-	total, err := p.CommentService.GetTotalCommentsCount(c.Request.Context())
-	if err != nil {
-		log.CtxError(c.Request.Context(), "Service GetTotalCommentCount failed: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get total count"})
+	var resp *cmd.GetTotalCommentsCountResp
+	var err error
+
+	resp, err = provider.Get().CommentService.GetTotalCommentsCount(c.Request.Context())
+	common.PostProcess(c, nil, resp, err)
+}
+
+// GetMyComments .
+// @router /api/comment/history [POST]
+func GetMyComments(c *gin.Context) {
+	var err error
+	var req cmd.GetMyCommentsReq
+	var resp *cmd.GetCommentsResp
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		common.PostProcess(c, &req, nil, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, total)
+	c.Set(consts.ContextUserID, token.GetUserId(c))
+	resp, err = provider.Get().CommentService.GetMyComments(c, &req)
+	common.PostProcess(c, &req, resp, err)
 }
