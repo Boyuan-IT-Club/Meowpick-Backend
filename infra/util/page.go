@@ -1,23 +1,19 @@
 package util
 
 import (
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type QueryParam struct {
-	page     int
-	pageSize int
+func SetQueryParam(page int, pageSize int) *cmd.QueryParam {
+	return &cmd.QueryParam{page, pageSize}
 }
 
-func SetQueryParam(page int, pageSize int) QueryParam {
-	return QueryParam{page, pageSize}
-}
-
-func GetFindOptions(param QueryParam) *options.FindOptions {
+func GetFindOptions(param *cmd.QueryParam) *options.FindOptions {
 	findOptions := options.Find()
-	findOptions.SetSkip(int64((param.page - 1) * param.pageSize))
-	findOptions.SetLimit(int64(param.pageSize))
+	findOptions.SetSkip(int64((param.Page - 1) * param.PageSize))
+	findOptions.SetLimit(int64(param.PageSize))
 	findOptions.SetSort(bson.D{{"createdAt", -1}})
 	return findOptions
 }
