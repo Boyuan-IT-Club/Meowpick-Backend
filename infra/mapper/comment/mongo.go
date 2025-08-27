@@ -59,7 +59,7 @@ func (m *MongoMapper) CountAll(ctx context.Context) (int64, error) {
 
 func (m *MongoMapper) FindManyByUserID(ctx context.Context, param *cmd.PageParam, userID string) ([]*Comment, int64, error) {
 	var comments []*Comment
-	filter := bson.M{consts.UserId: userID, consts.Deleted: bson.M{"$ne": true}} // TODO 修改数据库设计，原本的"uid"字段应改成"userID"
+	filter := bson.M{consts.UserId: userID, consts.Deleted: bson.M{"$ne": true}}
 
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {
