@@ -7,7 +7,6 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
@@ -35,12 +34,9 @@ func (m *MongoMapper) Find(ctx context.Context, query cmd.GetCoursesReq) ([]*Cou
 
 	//构建查询过滤器 (Filter)
 	filter := bson.M{}
-	if query.Keyword != "" {
-		regex := bson.M{"$regex": primitive.Regex{Pattern: query.Keyword, Options: "i"}}
-		filter["$or"] = []bson.M{
-			{"name": regex},
-			{"code": regex},
-		}
+	filter["$or"] = []bson.M{
+		{"name": query.Keyword},
+		{"code": query.Keyword},
 	}
 
 	total, err := m.conn.CountDocuments(ctx, filter)
