@@ -7,6 +7,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
@@ -18,10 +19,9 @@ const (
 
 type ISearchHistory interface {
 	FindByUserID(ctx context.Context, userID string) ([]*SearchHistory, error)
-	Insert(ctx context.Context, h *SearchHistory) error
-	DeleteByUserIDAndQuery(ctx context.Context, userID string, query string) error
 	CountByUserID(ctx context.Context, userID string) (int64, error)
 	DeleteOldestByUserID(ctx context.Context, userID string) error
+	UpsertByUserIDAndQuery(ctx context.Context, userID primitive.ObjectID, query string) error
 }
 
 type MongoMapper struct {
@@ -48,21 +48,6 @@ func (m *MongoMapper) FindByUserID(ctx context.Context, userID string) ([]*Searc
 	return histories, nil
 }
 
-func (m *MongoMapper) Insert(ctx context.Context, h *SearchHistory) error {
-	now := time.Now()
-	if h.CreatedAt.IsZero() {
-		h.CreatedAt = now
-	}
-
-	_, err := m.conn.InsertOneNoCache(ctx, h)
-	return err
-}
-
-func (m *MongoMapper) DeleteByUserIDAndQuery(ctx context.Context, userID string, query string) error {
-	_, err := m.conn.DeleteMany(ctx, bson.M{consts.UserId: userID, consts.Query: query})
-	return err
-}
-
 func (m *MongoMapper) CountByUserID(ctx context.Context, userID string) (int64, error) {
 	return m.conn.CountDocuments(ctx, bson.M{consts.UserId: userID})
 }
@@ -76,4 +61,31 @@ func (m *MongoMapper) DeleteOldestByUserID(ctx context.Context, userID string) e
 		return err
 	}
 	return nil
+}
+
+func (m *MongoMapper) UpsertByUserIDAndQuery(ctx context.Context, userID string, query string) error {
+	filter := bson.M{
+		consts.UserId: userID,
+		consts.Query:  query,
+	}
+
+	// 2. 定义“更新操作”
+	update := bson.M{
+		// "$set"：无论找到还是没找到，都把 updatedAt 字段设置为现在的时间
+		"$set": bson.M{
+			consts.CreatedAt: time.Now(),
+		},
+		// 只有在没找到，需要插入新纪录的情况下，才设置这些字段
+		"$setOnInsert": bson.M{
+			consts.ID:     primitive.NewObjectID(),
+			consts.UserId: userID,
+			consts.Query:  query,
+		},
+	}
+
+	// 如果没找到匹配的，就执行插入操作
+	updateOptions := options.Update().SetUpsert(true)
+
+	_, err := m.conn.UpdateOneNoCache(ctx, filter, update, updateOptions)
+	return err
 }

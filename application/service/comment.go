@@ -14,7 +14,7 @@ import (
 
 type ICommentService interface {
 	CreateComment(ctx context.Context, req *cmd.CreateCommentReq) (*cmd.CreateCommentResp, error)
-	GetTotalCommentsCount(ctx context.Context) (int64, error)
+  GetTotalCommentsCount(ctx context.Context) (*cmd.GetTotalCommentsCountResp, error)
 	GetMyComments(ctx context.Context, req *cmd.GetMyCommentsReq) (*cmd.GetCommentsResp, error)
 	GetCourseComments(ctx context.Context, req *cmd.GetCourseCommentsReq) (*cmd.GetCommentsResp, error)
 }
@@ -67,8 +67,18 @@ func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateComme
 	return resp, nil
 }
 
-func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (int64, error) {
-	return s.CommentMapper.CountAll(ctx)
+func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*cmd.GetTotalCommentsCountResp, error) {
+	count, err := s.CommentMapper.CountAll(ctx)
+	if err != nil {
+		log.CtxError(ctx, "Service GetTotalCommentCount failed: %v", err)
+		return nil, errorx.ErrGetCountFailed
+	}
+	resp := &cmd.GetTotalCommentsCountResp{
+		Resp:  cmd.Success(),
+		Count: count,
+	}
+
+	return resp, nil
 }
 
 func (s *CommentService) GetMyComments(ctx context.Context, req *cmd.GetMyCommentsReq) (*cmd.GetCommentsResp, error) {

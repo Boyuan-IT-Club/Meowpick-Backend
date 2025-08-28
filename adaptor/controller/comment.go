@@ -5,10 +5,8 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 // CreateComment .
@@ -56,13 +54,9 @@ func GetCourseComments(c *gin.Context) {
 // GetTotalCommentsCount .
 // @router /api/search/total [GET]
 func GetTotalCommentsCount(c *gin.Context) {
-	p := provider.Get()
-	total, err := p.CommentService.GetTotalCommentsCount(c.Request.Context())
-	if err != nil {
-		log.CtxError(c.Request.Context(), "Service GetTotalCommentCount failed: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get total count"})
-		return
-	}
+	var err error
+	var resp *cmd.GetTotalCommentsCountResp
 
-	c.JSON(http.StatusOK, total)
+	resp, err = provider.Get().CommentService.GetTotalCommentsCount(c)
+	common.PostProcess(c, nil, resp, err)
 }
