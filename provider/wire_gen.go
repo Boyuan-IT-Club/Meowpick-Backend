@@ -9,9 +9,12 @@ package provider
 import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
 )
 
@@ -23,8 +26,10 @@ func NewProvider() (*Provider, error) {
 		return nil, err
 	}
 	mongoMapper := comment.NewMongoMapper(configConfig)
+	likeMongoMapper := like.NewMongoMapper(configConfig)
 	commentService := service.CommentService{
 		CommentMapper: mongoMapper,
+		LikeMapper:    likeMongoMapper,
 	}
 	searchhistoryMongoMapper := searchhistory.NewMongoMapper(configConfig)
 	searchHistoryService := service.SearchHistoryService{
@@ -34,9 +39,22 @@ func NewProvider() (*Provider, error) {
 	authService := service.AuthService{
 		UserMapper: userMongoMapper,
 	}
-	likeMongoMapper := like.NewMongoMapper(configConfig)
 	likeService := service.LikeService{
 		LikeMapper: likeMongoMapper,
+	}
+	courseMongoMapper := course.NewMongoMapper(configConfig)
+	staticData, err := consts.NewStaticData()
+	if err != nil {
+		return nil, err
+	}
+	courseService := service.CourseService{
+		CourseMapper: courseMongoMapper,
+		StaticData:   staticData,
+	}
+	teacherMongoMapper := teacher.NewMongoMapper(configConfig)
+	teacherService := service.TeacherService{
+		TeacherMapper: teacherMongoMapper,
+		StaticData:    staticData,
 	}
 	providerProvider := &Provider{
 		Config:               configConfig,
@@ -44,6 +62,8 @@ func NewProvider() (*Provider, error) {
 		SearchHistoryService: searchHistoryService,
 		AuthService:          authService,
 		LikeService:          likeService,
+		CourseService:        courseService,
+		TeacherService:       teacherService,
 	}
 	return providerProvider, nil
 }

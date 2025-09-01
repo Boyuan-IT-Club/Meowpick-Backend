@@ -2,3 +2,5 @@
 /etc
 /docker-compose.yml
 /Makefile
+/vendor/
+/scripts/
