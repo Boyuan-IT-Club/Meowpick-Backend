@@ -25,28 +25,28 @@ type PageParam struct {
 	PageSize int64
 }
 
-func (qp *PageParam) UnWrap() (int64, int64) {
-	if qp.Page <= 0 {
-		qp.Page = 1
+func (p *PageParam) UnWrap() (int64, int64) {
+	if p.Page <= 0 {
+		p.Page = 1
 	}
-	if qp.PageSize <= 0 || qp.PageSize > 100 {
-		qp.PageSize = 10
+	if p.PageSize <= 0 || p.PageSize > 100 {
+		p.PageSize = 10
 	}
-	return qp.Page, qp.PageSize
+	return p.Page, p.PageSize
 }
 
-func (qp *PageParam) GetPage() int64 {
-	return qp.Page
+func (p *PageParam) GetPage() int64 {
+	return p.Page
 }
 
-func (qp *PageParam) GetPageSize() int64 {
-	return qp.PageSize
+func (p *PageParam) GetPageSize() int64 {
+	return p.PageSize
 }
 
-func (qp *PageParam) SetPage(page int64) {
-	qp.Page = page
+func (p *PageParam) SetPage(page int64) {
+	p.Page = page
 }
 
-func (qp *PageParam) SetPageSize(pageSize int64) {
-	qp.PageSize = pageSize
+func (p *PageParam) SetPageSize(pageSize int64) {
+	p.PageSize = pageSize
 }
