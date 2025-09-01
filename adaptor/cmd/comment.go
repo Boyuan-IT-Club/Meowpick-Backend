@@ -42,8 +42,8 @@ type GetMyCommentsReq struct {
 
 // GetCourseCommentsReq 是前端分页请求某一课程下的评论时，需要传递的数据结构。
 type GetCourseCommentsReq struct {
+	CourseID string `form:"id" binding:"required"` // TODO确定前端传来_id还是id
 	*PageParam
-	CourseID string `json:"_id" binding:"required"`
 }
 
 // GetCommentsResp 是后端返回给前端的、分页的评论历史数据。

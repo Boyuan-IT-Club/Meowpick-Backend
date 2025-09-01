@@ -14,6 +14,7 @@ const (
 	TargetId  = "targetId"
 	Active    = "active"
 	CourseID  = "courseId"
+	OpenID    = "openId"
 )
 
 // 元素类别相关（如课程、评论、老师）

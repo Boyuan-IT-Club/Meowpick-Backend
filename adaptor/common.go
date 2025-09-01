@@ -60,7 +60,6 @@ func makeResponse(resp any) map[string]any {
 
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Type().Field(i)
-
 		// 跳过顶层的 Code/Msg 字段（已经放到 response 里）
 		if field.Name == "Code" || field.Name == "Msg" {
 			continue

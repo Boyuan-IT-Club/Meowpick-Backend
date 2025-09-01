@@ -60,5 +60,10 @@ func (s *LikeService) Like(ctx context.Context, req *cmd.CreateLikeReq) (resp *c
 		},
 	}
 
+	resp = &cmd.LikeResp{
+		Resp:   cmd.Success(),
+		LikeVO: vo,
+	}
+
 	return resp, nil
 }

@@ -21,8 +21,8 @@ type IPageParam interface {
 }
 
 type PageParam struct {
-	Page     int64 `json:"page"`
-	PageSize int64 `json:"size"`
+	Page     int64 `form:"page" json:"page"`
+	PageSize int64 `form:"pageSize" json:"pageSize"`
 }
 
 func (p *PageParam) UnWrap() (int64, int64) {

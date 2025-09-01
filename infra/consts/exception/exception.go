@@ -101,5 +101,6 @@ var (
 
 // 业务相关
 var (
-	ErrInvalidParams = New(5001, "Invalid Params")
+	ErrInvalidParams     = New(5001, "Invalid Params")
+	ErrGetCourseIDFailed = New(5002, "Get Course ID Failed")
 )
