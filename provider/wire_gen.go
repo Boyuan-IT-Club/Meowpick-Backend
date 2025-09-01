@@ -9,7 +9,9 @@ package provider
 import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
@@ -39,12 +41,22 @@ func NewProvider() (*Provider, error) {
 	likeService := service.LikeService{
 		LikeMapper: likeMongoMapper,
 	}
+	courseMongoMapper := course.NewMongoMapper(configConfig)
+	staticData, err := consts.NewStaticData()
+	if err != nil {
+		return nil, err
+	}
+	courseService := service.CourseService{
+		CourseMapper: courseMongoMapper,
+		StaticData:   staticData,
+	}
 	providerProvider := &Provider{
 		Config:               configConfig,
 		CommentService:       commentService,
 		SearchHistoryService: searchHistoryService,
 		AuthService:          authService,
 		LikeService:          likeService,
+		CourseService:        courseService,
 	}
 	return providerProvider, nil
 }
