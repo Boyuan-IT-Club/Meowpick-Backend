@@ -36,7 +36,6 @@ func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*c
 		return nil, err
 	}
 
-	// TODO: 指针
 	vos := make([]*cmd.SearchHistoryVO, 0, len(histories))
 	for _, h := range histories {
 		vo := &cmd.SearchHistoryVO{

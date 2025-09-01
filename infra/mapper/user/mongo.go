@@ -21,7 +21,6 @@ const (
 type IMongoMapper interface {
 	Insert(ctx context.Context, user *User) (err error)
 	Update(ctx context.Context, user *User) (err error)
-
 	FindById(ctx context.Context, userId string) (user *User, err error)
 	FindByWXOpenId(ctx context.Context, wxOpenId string) (user *User, err error)
 }
@@ -38,14 +37,14 @@ func NewMongoMapper(config *config.Config) *MongoMapper {
 }
 
 func (m *MongoMapper) Insert(ctx context.Context, user *User) error {
-	if user.ID.IsZero() {
-		user.ID = primitive.NewObjectID()
+	if user.ID == "" {
+		user.ID = primitive.NewObjectID().Hex()
 		user.CreatedAt = time.Now()
 		user.UpdatedAt = user.CreatedAt
 		// Username, EmailVerified, Ban, Admin 字段留空 默认为nil/false
 	}
 
-	idCacheKey := IDPrefix + user.ID.Hex()
+	idCacheKey := IDPrefix + user.ID
 
 	if _, err := m.conn.InsertOne(ctx, idCacheKey, user); err != nil {
 		return errorx.ErrInsertFailed
@@ -55,7 +54,7 @@ func (m *MongoMapper) Insert(ctx context.Context, user *User) error {
 	if user.OpenId != "" {
 		openIDCacheKey := OpenIDPrefix + user.OpenId
 		// 仅缓存_id，不是完整用户数据
-		if err := m.conn.SetCache(openIDCacheKey, user.ID.Hex()); err != nil {
+		if err := m.conn.SetCache(openIDCacheKey, user.ID); err != nil {
 			log.Error("ID-OpenID映射缓存失败")
 		}
 	}
@@ -66,7 +65,7 @@ func (m *MongoMapper) Insert(ctx context.Context, user *User) error {
 func (m *MongoMapper) Update(ctx context.Context, user *User) error {
 	user.UpdatedAt = time.Now()
 
-	if user.ID.IsZero() {
+	if user.ID == "" {
 		return errorx.ErrInvalidObjectID
 	}
 

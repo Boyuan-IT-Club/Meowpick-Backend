@@ -33,18 +33,13 @@ var AuthServiceSet = wire.NewSet(
 func (a *AuthService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp *cmd.SignInResponse, err error) {
 	// 1. 查找或创建用户
 	var openID string
-	//if openID = util.GetWeChatOpenID(config.GetConfig().WeApp.AppID, config.GetConfig().WeApp.AppSecret, req.Code); openID == "" {
-	//	log.Error("openID为空")
-	//	return nil, errorx.ErrEmptyOpenID
-	//}
 
 	// TODO: 模拟登录逻辑（开发环境用）
 	if req.Code == "test123" {
 		openID = "debug-openid-001" // 你随便写一个唯一标识
 	} else {
 		openID = util.GetWeChatOpenID(config.GetConfig().WeApp.AppID,
-			config.GetConfig().WeApp.AppSecret,
-			req.Code)
+			config.GetConfig().WeApp.AppSecret, req.Code)
 	}
 
 	if openID == "" {
@@ -57,7 +52,7 @@ func (a *AuthService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp 
 		if errors.Is(err, errorx.ErrUserNotFound) {
 			// 创建用户并存入数据库
 			newUser := user.User{
-				ID:        primitive.NewObjectID(),
+				ID:        primitive.NewObjectID().Hex(),
 				OpenId:    openID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
@@ -80,11 +75,11 @@ func (a *AuthService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp 
 	if existingToken != "" || !ok {
 		if claims, err := token.ParseAndValidate(existingToken); err == nil {
 			// 验证用户匹配且不需要续期
-			if claims.UserID == oldUser.ID.Hex() && !token.ShouldRenew(claims) {
+			if claims.UserID == oldUser.ID && !token.ShouldRenew(claims) {
 				return &cmd.SignInResponse{
 					AccessToken: existingToken,
 					ExpiresIn:   int64(time.Until(claims.ExpiresAt.Time).Seconds()),
-					UserID:      oldUser.ID.Hex(),
+					UserID:      oldUser.ID,
 					Resp:        cmd.Success(),
 				}, nil
 			}
@@ -101,6 +96,6 @@ func (a *AuthService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp 
 		Resp:        cmd.Success(),
 		AccessToken: tokenStr,
 		ExpiresIn:   config.GetConfig().Auth.AccessExpire,
-		UserID:      oldUser.ID.Hex(),
+		UserID:      oldUser.ID,
 	}, nil
 }

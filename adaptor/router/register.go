@@ -12,6 +12,7 @@ func SetupRoutes() *gin.Engine {
 	commentGroup := router.Group("/api/comment")
 	{
 		commentGroup.POST("/add", controller.CreateComment)
+		commentGroup.POST("/history", controller.GetMyComments)
 	}
 
 	// SearchApi
