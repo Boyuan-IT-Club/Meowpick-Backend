@@ -16,13 +16,13 @@ type IPageParam interface {
 	UnWrap() (int64, int64)
 	GetPage() int64
 	GetPageSize() int64
-	SetPage(size int64)
-	SetPageSize(size int64)
+	SetPage(page int64)
+	SetPageSize(pageSize int64)
 }
 
 type PageParam struct {
-	Page     int64
-	PageSize int64
+	Page     int64 `form:"page" json:"page"`
+	PageSize int64 `form:"pageSize" json:"pageSize"`
 }
 
 func (p *PageParam) UnWrap() (int64, int64) {
@@ -32,6 +32,7 @@ func (p *PageParam) UnWrap() (int64, int64) {
 	if p.PageSize <= 0 || p.PageSize > 100 {
 		p.PageSize = 10
 	}
+
 	return p.Page, p.PageSize
 }
 

@@ -93,12 +93,14 @@ var (
 
 // 点赞相关
 var (
-	ErrLikeFailed     = New(4001, "Like Failed")
-	ErrEmptyTargetID  = New(4001, "Empty Target ID")
-	ErrGetCountFailed = New(4002, "Get Count Operation Failed")
+	ErrLikeFailed      = New(4001, "Like Failed")
+	ErrEmptyTargetID   = New(4001, "Empty Target ID")
+	ErrGetCountFailed  = New(4002, "Get Count Operation Failed")
+	ErrGetStatusFailed = New(4003, "Get Status Operation Failed")
 )
 
 // 业务相关
 var (
-	ErrInvalidParams = New(5001, "Invalid Params")
+	ErrInvalidParams     = New(5001, "Invalid Params")
+	ErrGetCourseIDFailed = New(5002, "Get Course ID Failed")
 )
