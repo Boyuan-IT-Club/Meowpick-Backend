@@ -14,6 +14,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
 )
 
@@ -50,6 +51,11 @@ func NewProvider() (*Provider, error) {
 		CourseMapper: courseMongoMapper,
 		StaticData:   staticData,
 	}
+	teacherMongoMapper := teacher.NewMongoMapper(configConfig)
+	teacherService := service.TeacherService{
+		TeacherMapper: teacherMongoMapper,
+		StaticData:    staticData,
+	}
 	providerProvider := &Provider{
 		Config:               configConfig,
 		CommentService:       commentService,
@@ -57,6 +63,7 @@ func NewProvider() (*Provider, error) {
 		AuthService:          authService,
 		LikeService:          likeService,
 		CourseService:        courseService,
+		TeacherService:       teacherService,
 	}
 	return providerProvider, nil
 }
