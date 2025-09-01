@@ -61,8 +61,11 @@ func (s *LikeService) Like(ctx context.Context, req *cmd.CreateLikeReq) (resp *c
 	}
 
 	resp = &cmd.LikeResp{
-		Resp:   cmd.Success(),
-		LikeVO: vo,
+		Resp: cmd.Success(),
+		LikeVO: &cmd.LikeVO{
+			Like:    newActive,
+			LikeCnt: likeCount, // <-- 现在 likeCount 是最新的准确数据了
+		},
 	}
 
 	return resp, nil

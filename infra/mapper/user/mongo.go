@@ -103,7 +103,7 @@ func (m *MongoMapper) FindByWXOpenId(ctx context.Context, wxOpenId string) (*Use
 
 	// 若缓存未命中 走数据库查询
 	var user User
-	if err := m.conn.FindOneNoCache(ctx, &user, bson.M{consts.OpenID: wxOpenId}); err != nil {
+	if err := m.conn.FindOneNoCache(ctx, &user, bson.M{consts.OpenId: wxOpenId}); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return nil, errorx.ErrUserNotFound
 		}

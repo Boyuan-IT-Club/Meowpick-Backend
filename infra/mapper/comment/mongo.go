@@ -74,7 +74,7 @@ func (m *MongoMapper) FindManyByUserID(ctx context.Context, req *cmd.GetMyCommen
 
 func (m *MongoMapper) FindManyByCourseID(ctx context.Context, req *cmd.GetCourseCommentsReq, courseID string) ([]*Comment, int64, error) {
 	var comments []*Comment
-	filter := bson.M{consts.CourseID: courseID, consts.Deleted: bson.M{"$ne": true}}
+	filter := bson.M{consts.CourseId: courseID, consts.Deleted: bson.M{"$ne": true}}
 
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {
