@@ -25,7 +25,7 @@ type Claims struct {
 func NewAuthorizedToken(user *user.User) (string, error) {
 	jwtConfig := config.GetConfig().Auth
 	claims := Claims{
-		UserID: user.ID.Hex(),
+		UserID: user.ID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * time.Duration(jwtConfig.AccessExpire))),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

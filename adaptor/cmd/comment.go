@@ -52,9 +52,3 @@ type GetCommentsResp struct {
 	Total int64        `json:"total"`
 	Rows  []*CommentVO `json:"rows"`
 }
-
-// GetTotalCommentsCountResp 对应 /api/search/total 的响应体
-type GetTotalCommentsCountResp struct {
-	*Resp
-	Count int64 `json:"count"`
-}

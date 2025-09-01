@@ -40,30 +40,98 @@ func PostProcess(c *gin.Context, req, resp any, err error) {
 }
 
 // makeResponse 通过反射构造嵌套格式的响应体
+// 注意：此版本会展示零值（包括 false/0/"")，并会展开顶层的 struct 或 *struct 字段到 data 下。
+// 同时会跳过 Code/Msg 的重复展开，且不会覆盖已存在的 data key。
 func makeResponse(resp any) map[string]any {
 	v := reflect.ValueOf(resp)
 	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
 		return nil
 	}
-	// 构建返回数据
+
 	v = v.Elem()
+
+	// 构建基础响应（假设 Code/Msg 存在并可取）
 	response := map[string]any{
 		"code": v.FieldByName("Code").Int(),
 		"msg":  v.FieldByName("Msg").String(),
 	}
+
 	data := make(map[string]any)
+
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Type().Field(i)
-		if jsonTag := field.Tag.Get("json"); jsonTag != "" && field.Name != "Code" && field.Name != "Msg" {
-
-			// 下面这行过滤了零值
-			if fieldValue := v.Field(i).Interface(); !(strings.Contains(jsonTag, "omitempty") && reflect.ValueOf(fieldValue).IsZero()) {
-				data[jsonTag] = fieldValue
-			}
+		// 跳过顶层的 Code/Msg 字段（已经放到 response 里）
+		if field.Name == "Code" || field.Name == "Msg" {
+			continue
 		}
+
+		fv := v.Field(i)    // reflect.Value
+		ftype := field.Type // reflect.Type
+		// 先处理 struct 或 *struct（展开内层字段到 data）
+		if (fv.Kind() == reflect.Ptr && ftype.Elem().Kind() == reflect.Struct) ||
+			(fv.Kind() == reflect.Struct && ftype.Kind() == reflect.Struct) {
+
+			var inner reflect.Value
+			var innerType reflect.Type
+
+			if fv.Kind() == reflect.Ptr {
+				// 指针指向 struct：若为 nil 则使用零值 struct，以便也能展开零值字段
+				if fv.IsNil() {
+					innerType = ftype.Elem()
+					inner = reflect.Zero(innerType)
+				} else {
+					inner = fv.Elem()
+					innerType = inner.Type()
+				}
+			} else { // 直接 struct 值
+				inner = fv
+				innerType = inner.Type()
+			}
+
+			for j := 0; j < inner.NumField(); j++ {
+				f := innerType.Field(j)
+
+				// 跳过可能来自 Resp 的 Code/Msg 字段
+				if f.Name == "Code" || f.Name == "Msg" {
+					continue
+				}
+
+				tag := f.Tag.Get("json")
+				if tag == "" || tag == "-" {
+					continue
+				}
+				key := strings.Split(tag, ",")[0]
+				if key == "" {
+					continue
+				}
+
+				// 即使是零值也要展示，所以直接取 Interface()
+				val := inner.Field(j).Interface()
+
+				// 不覆盖已存在 key（先到先得）
+				if _, exists := data[key]; !exists {
+					data[key] = val
+				}
+			}
+			continue
+		}
+
+		// 普通非 struct 字段 —— 即使是零值也展示
+		jsonTag := field.Tag.Get("json")
+		if jsonTag == "" || jsonTag == "-" {
+			continue
+		}
+		key := strings.Split(jsonTag, ",")[0]
+		if key == "" {
+			continue
+		}
+
+		data[key] = fv.Interface()
 	}
+
 	if len(data) > 0 {
 		response["data"] = data
 	}
+
 	return response
 }

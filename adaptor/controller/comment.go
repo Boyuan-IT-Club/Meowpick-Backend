@@ -60,3 +60,20 @@ func GetTotalCommentsCount(c *gin.Context) {
 	resp, err = provider.Get().CommentService.GetTotalCommentsCount(c)
 	common.PostProcess(c, nil, resp, err)
 }
+
+// GetMyComments .
+// @router /api/comment/history [POST]
+func GetMyComments(c *gin.Context) {
+	var err error
+	var req cmd.GetMyCommentsReq
+	var resp *cmd.GetCommentsResp
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		common.PostProcess(c, &req, nil, err)
+		return
+	}
+
+	c.Set(consts.ContextUserID, token.GetUserId(c))
+	resp, err = provider.Get().CommentService.GetMyComments(c, &req)
+	common.PostProcess(c, &req, resp, err)
+}
