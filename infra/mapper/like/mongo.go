@@ -97,7 +97,6 @@ func (m *MongoMapper) GetLikeCount(ctx context.Context, targetID string, targetT
 		consts.TargetId: targetID,
 		consts.Active:   bson.M{"$ne": false}, // 排除 active==false，包含缺失字段
 		//"targetType": targetType,
-		consts.Active: true,
 	}
 
 	count, err := m.conn.CountDocuments(ctx, filter)
