@@ -72,7 +72,7 @@ func (m *MongoMapper) GetDeparts(ctx context.Context, req *cmd.GetCoursesDeparts
 
 	filter := bson.M{"$or": []bson.M{{"name": req.Keyword}, {"code": req.Keyword}}}
 
-	results, err := m.conn.Distinct(ctx, "department", filter)
+	results, err := m.conn.Distinct(ctx, consts.Department, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (m *MongoMapper) GetCategories(ctx context.Context, req *cmd.GetCourseCateg
 	}
 	filter := bson.M{"$or": []bson.M{{"name": req.Keyword}, {"code": req.Keyword}}}
 
-	results, err := m.conn.Distinct(ctx, "categories", filter)
+	results, err := m.conn.Distinct(ctx, consts.Categories, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (m *MongoMapper) GetCampuses(ctx context.Context, req *cmd.GetCourseCampuse
 		return nil, nil
 	}
 	filter := bson.M{"$or": []bson.M{{"name": req.Keyword}, {"code": req.Keyword}}}
-	results, err := m.conn.Distinct(ctx, "campus", filter)
+	results, err := m.conn.Distinct(ctx, consts.Campuses, filter)
 	if err != nil {
 		return nil, err
 	}

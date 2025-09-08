@@ -9,8 +9,8 @@ import (
 )
 
 type ICourseService interface {
-	ListCourses(ctx context.Context, req cmd.GetCoursesReq) (*cmd.GetCoursesResp, error)
-	GetDeparts(ctx context.Context, req cmd.GetCoursesDepartsReq) (*cmd.GetCoursesDepartsResp, error)
+	ListCourses(ctx context.Context, req *cmd.GetCoursesReq) (*cmd.GetCoursesResp, error)
+	GetDeparts(ctx context.Context, req *cmd.GetCoursesDepartsReq) (*cmd.GetCoursesDepartsResp, error)
 	GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) (*cmd.GetCourseCategoriesResp, error)
 	GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) (*cmd.GetCourseCampusesResp, error)
 }

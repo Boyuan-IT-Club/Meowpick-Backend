@@ -33,7 +33,7 @@ func (m *MongoMapper) FindCoursesByTeacherID(ctx context.Context, req *cmd.GetTe
 	var courses []*course.Course
 
 	// 在 MongoDB 中，对数组字段进行简单的相等查询，会自动查找数组中包含该元素的文档
-	filter := bson.M{"teacherIds": req.TeacherID} //TODO
+	filter := bson.M{consts.TeacherIds: req.TeacherID} //TODO
 
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {
