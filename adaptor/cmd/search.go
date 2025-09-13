@@ -20,3 +20,17 @@ type GetSearchHistoryResp struct {
 	*Resp
 	History []*SearchHistoryVO `json:"history"`
 }
+
+type SearchSuggestionsVO struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+}
+
+type GetSearchSuggestReq struct {
+	Keyword string `form:"keyword" binding:"required"`
+}
+
+type GetSearchSuggestResp struct {
+	*Resp
+	Suggestions []*SearchSuggestionsVO `json:"suggestions"`
+}

@@ -118,7 +118,7 @@ func (s *CourseService) GetCampuses(ctx context.Context, req *cmd.GetCourseCampu
 
 	campuses := make([]string, 0, len(campusesIDs))
 	for _, dbCampus := range campusesIDs {
-		campuses = append(campuses, s.StaticData.GetCourseNameByID(dbCampus))
+		campuses = append(campuses, s.StaticData.GetCampusNameByID(dbCampus))
 	}
 
 	response := &cmd.GetCourseCampusesResp{

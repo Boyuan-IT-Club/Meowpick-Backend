@@ -8,6 +8,8 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -16,9 +18,10 @@ const (
 
 type IMongoMapper interface {
 	Find(ctx context.Context, query cmd.GetCoursesReq) ([]*Course, int64, error)
-	GetDeparts(ctx context.Context, req cmd.GetCoursesDepartsReq) (*cmd.GetCoursesResp, error)
+	GetDeparts(ctx context.Context, req *cmd.GetCoursesDepartsReq) ([]int32, error)
 	GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) ([]int32, error)
 	GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) ([]int32, error)
+	GetCourseSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) ([]*Course, error)
 }
 
 type MongoMapper struct {
@@ -123,4 +126,19 @@ func (m *MongoMapper) GetCampuses(ctx context.Context, req *cmd.GetCourseCampuse
 		}
 	}
 	return campuses, nil
+}
+
+func (m *MongoMapper) GetCourseSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) ([]*Course, error) {
+	if req.Keyword == "" {
+		return nil, nil
+	}
+	var courses []*Course
+	filter := bson.M{"name": bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
+	findOption := options.Find().SetLimit(10).SetProjection(bson.M{"name": 1})
+	err := m.conn.Find(ctx, &courses, filter, findOption)
+	if err != nil {
+		return nil, err
+	}
+
+	return courses, nil
 }

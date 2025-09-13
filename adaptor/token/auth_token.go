@@ -7,6 +7,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
@@ -43,6 +44,7 @@ func GetUserId(ctx *gin.Context) string {
 	var err error
 
 	if token, err = ExtractToken(ctx.Request.Header); err != nil {
+		log.Error("ExtractToken Failed,err:", err)
 		return ""
 	}
 
