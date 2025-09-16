@@ -61,6 +61,7 @@ func GetUserId(ctx *gin.Context) string {
 func ExtractToken(header http.Header) (string, error) {
 	authHeader := header.Get("Authorization")
 	if authHeader == "" {
+		log.Error("no Authorization header found")
 		return "", errorx.ErrReqNoToken
 	}
 
@@ -71,7 +72,7 @@ func ExtractToken(header http.Header) (string, error) {
 	} else if len(parts) == 1 {
 		return parts[0], nil
 	}
-
+	log.Error("no Bearer token found!Please check the Authorization field in the header")
 	return "", errorx.ErrWrongTokenFmt
 }
 

@@ -7,7 +7,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @router /api/course/query [GET]
+// GetOneCourse 精确搜索一个课程，返回课程元信息
+// @router /api/course/query/:courseID [GET]
+func GetOneCourse(c *gin.Context) {
+	var resp *cmd.CourseVO
+	var err error
+
+	resp, err = provider.Get().CourseService.GetOneCourse(c, c.Param("courseID"))
+	common.PostProcess(c, nil, resp, err)
+}
+
+// @router /api/course/query [GET]// TODO 修正路由：传入keyword的模糊匹配接口应该是[POST]/api/search携带req参数type="course" 建议把此接口移到search.go
 func GetCourses(ctx *gin.Context) {
 	var req *cmd.GetCoursesReq
 	var resp *cmd.GetCoursesResp

@@ -30,8 +30,6 @@ func CreateComment(c *gin.Context) {
 // GetCourseComments .
 // @router /api/comment/query [GET]
 func GetCourseComments(c *gin.Context) {
-	// TODO 修改前端代码的调用 原本是"controller.query"需要改为GetCourseComments
-	// TODO 注册router
 	var err error
 	var req cmd.GetCourseCommentsReq
 	var resp *cmd.GetCommentsResp

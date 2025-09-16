@@ -44,7 +44,7 @@ func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetT
 			Name:           dbCourse.Name,
 			Code:           dbCourse.Code,
 			DepartmentName: s.StaticData.GetDepartmentNameByID(dbCourse.Department),
-			CategoriesName: s.StaticData.GetCourseNameByID(dbCourse.Category),
+			CategoriesName: s.StaticData.GetCategoryNameByID(dbCourse.Category),
 			CampusesName:   campusNames,
 			TeachersName:   dbCourse.TeacherIDs,
 			// ... 其他需要返回给前端的字段

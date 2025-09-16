@@ -6,10 +6,12 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
+	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
@@ -17,8 +19,9 @@ const (
 )
 
 type IMongoMapper interface {
-	Find(ctx context.Context, query *cmd.GetCoursesReq) ([]*Course, int64, error)
-	GetDeparts(ctx context.Context, req *cmd.GetCoursesDepartsReq) ([]int32, error)
+	FindOneByID(ctx context.Context, ID string)
+	FindManyByKeywords(ctx context.Context, query *cmd.GetCoursesReq) ([]*Course, int64, error)
+	GetDeparts(ctx context.Context, req *cmd.GetCoursesDepartsReq) (*cmd.GetCoursesResp, error)
 	GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) ([]int32, error)
 	GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) ([]int32, error)
 	GetCourseSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) ([]*Course, error)
@@ -35,7 +38,26 @@ func NewMongoMapper(cfg *config.Config) *MongoMapper {
 	return &MongoMapper{conn: conn}
 }
 
-func (m *MongoMapper) Find(ctx context.Context, query *cmd.GetCoursesReq) ([]*Course, int64, error) {
+func (m *MongoMapper) FindOneByID(ctx context.Context, ID string) (*Course, error) {
+	// 数据库直接用string存储 无需转换
+	//courseOID, err := primitive.ObjectIDFromHex(ID)
+	//if err != nil {
+	//	log.Error("CourseID is invalid")
+	//	return nil, errorx.ErrInvalidObjectID
+	//}
+
+	var course *Course
+	if err := m.conn.FindOneNoCache(ctx, course, bson.M{"_id": ID}); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			log.Error("No course found with ID：", ID)
+			return nil, errorx.ErrFindFailed
+		}
+		return nil, err
+	}
+	return course, nil
+}
+
+func (m *MongoMapper) FindMany(ctx context.Context, query *cmd.GetCoursesReq) ([]*Course, int64, error) {
 
 	if query.Keyword == "" {
 		return []*Course{}, 0, nil
