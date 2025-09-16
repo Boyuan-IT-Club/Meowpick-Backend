@@ -44,7 +44,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSe
 
 		for _, model := range courseModels {
 			allSuggestions = append(allSuggestions, &cmd.SearchSuggestionsVO{
-				Type: "课程",
+				Type: "course",
 				Name: model.Name,
 			})
 		}
@@ -61,7 +61,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSe
 
 			for _, model := range teacherModels {
 				allSuggestions = append(allSuggestions, &cmd.SearchSuggestionsVO{
-					Type: "老师",
+					Type: "teacher",
 					Name: model.Name,
 				})
 			}
@@ -81,7 +81,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSe
 
 		for _, model := range teacherModels {
 			allSuggestions = append(allSuggestions, &cmd.SearchSuggestionsVO{
-				Type: "老师",
+				Type: "teacher",
 				Name: model.Name,
 			})
 		}

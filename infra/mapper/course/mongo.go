@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	CollectionName = "courses"
+	CollectionName = "course"
 )
 
 type IMongoMapper interface {
