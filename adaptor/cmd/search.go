@@ -20,3 +20,19 @@ type GetSearchHistoryResp struct {
 	*Resp
 	History []*SearchHistoryVO `json:"history"`
 }
+
+type SearchSuggestionsVO struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+}
+
+type GetSearchSuggestReq struct {
+	Keyword  string `form:"keyword" binding:"required"`
+	Page     int64  `form:"page,default=1" json:"page"`
+	PageSize int64  `form:"pageSize,default=10" json:"pageSize"`
+}
+
+type GetSearchSuggestResp struct {
+	*Resp
+	List []*SearchSuggestionsVO `json:"list"`
+}

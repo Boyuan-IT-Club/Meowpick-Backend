@@ -22,7 +22,9 @@ func SetupRoutes() *gin.Engine {
 		searchGroup.GET("/recent", controller.GetSearchHistory)
 		searchGroup.POST("", controller.LogSearch)
 		searchGroup.GET("/total", controller.GetTotalCommentsCount)
+		searchGroup.GET("/suggest", controller.GetSearchSuggestions)
 	}
+
 	// AuthApi
 	authGroup := router.Group("")
 	authGroup.POST("/sign_in", controller.SignIn)

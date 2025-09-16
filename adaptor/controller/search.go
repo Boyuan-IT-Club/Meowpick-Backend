@@ -38,3 +38,17 @@ func GetSearchHistory(c *gin.Context) {
 	resp, err = provider.Get().SearchHistoryService.GetSearchHistoryByUserId(c)
 	common.PostProcess(c, nil, resp, err)
 }
+
+// GetSearchSuggestions
+// @router /api/search/suggest
+func GetSearchSuggestions(c *gin.Context) {
+	var err error
+	var req *cmd.GetSearchSuggestReq
+	var resp *cmd.GetSearchSuggestResp
+	if err = c.ShouldBindQuery(&req); err != nil {
+		common.PostProcess(c, req, nil, err)
+		return
+	}
+	resp, err = provider.Get().SearchService.GetSearchSuggestions(c, req)
+	common.PostProcess(c, req, resp, err)
+}

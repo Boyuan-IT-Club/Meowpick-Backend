@@ -17,7 +17,6 @@ func GetCourses(ctx *gin.Context) {
 		// defer 会自动捕获这个 err 并处理错误响应。
 		return
 	}
-
 	resp, err = provider.Get().CourseService.ListCourses(ctx, req)
 	common.PostProcess(ctx, req, resp, err)
 }
