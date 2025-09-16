@@ -43,10 +43,7 @@ func (m *MongoMapper) Find(ctx context.Context, query *cmd.GetCoursesReq) ([]*Co
 
 	//构建查询过滤器 (Filter)
 	filter := bson.M{}
-	filter["$or"] = []bson.M{
-		{"name": query.Keyword},
-		{"code": query.Keyword},
-	}
+	filter["$or"] = []bson.M{{consts.Name: query.Keyword}, {consts.Code: query.Keyword}}
 
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {
@@ -75,7 +72,7 @@ func (m *MongoMapper) GetDeparts(ctx context.Context, req *cmd.GetCoursesDeparts
 		return nil, nil
 	}
 
-	filter := bson.M{"$or": []bson.M{{"name": req.Keyword}, {"code": req.Keyword}}}
+	filter := bson.M{"$or": []bson.M{{consts.Name: req.Keyword}, {consts.Code: req.Keyword}}}
 
 	results, err := m.conn.Distinct(ctx, consts.Department, filter)
 	if err != nil {
@@ -96,7 +93,7 @@ func (m *MongoMapper) GetCategories(ctx context.Context, req *cmd.GetCourseCateg
 	if req.Keyword == "" {
 		return nil, nil
 	}
-	filter := bson.M{"$or": []bson.M{{"name": req.Keyword}, {"code": req.Keyword}}}
+	filter := bson.M{"$or": []bson.M{{consts.Name: req.Keyword}, {consts.Code: req.Keyword}}}
 
 	results, err := m.conn.Distinct(ctx, consts.Categories, filter)
 	if err != nil {
@@ -115,7 +112,7 @@ func (m *MongoMapper) GetCampuses(ctx context.Context, req *cmd.GetCourseCampuse
 	if req.Keyword == "" {
 		return nil, nil
 	}
-	filter := bson.M{"$or": []bson.M{{"name": req.Keyword}, {"code": req.Keyword}}}
+	filter := bson.M{"$or": []bson.M{{consts.Name: req.Keyword}, {consts.Code: req.Keyword}}}
 	results, err := m.conn.Distinct(ctx, consts.Campuses, filter)
 	if err != nil {
 		return nil, err
@@ -135,7 +132,7 @@ func (m *MongoMapper) GetCourseSuggestions(ctx context.Context, req *cmd.GetSear
 		return nil, nil
 	}
 	var courses []*Course
-	filter := bson.M{"name": bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
+	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
 	pageParam := cmd.PageParam{
 		Page:     req.Page,
 		PageSize: req.PageSize,
@@ -151,7 +148,7 @@ func (m *MongoMapper) GetCourseSuggestions(ctx context.Context, req *cmd.GetSear
 }
 
 func (m *MongoMapper) CountCourses(ctx context.Context, req *cmd.GetSearchSuggestReq) (int64, error) {
-	filter := bson.M{"name": bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
+	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
 
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {

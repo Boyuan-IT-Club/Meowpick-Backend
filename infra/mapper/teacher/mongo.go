@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
@@ -30,7 +31,7 @@ func NewMongoMapper(cfg *config.Config) *MongoMapper {
 
 func (m *MongoMapper) GetTeacherSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) ([]*Teacher, error) {
 	var teachers []*Teacher
-	filter := bson.M{"name": bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
+	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
 	pageParam := cmd.PageParam{
 		Page:     req.Page,
 		PageSize: req.PageSize,
@@ -45,7 +46,7 @@ func (m *MongoMapper) GetTeacherSuggestions(ctx context.Context, req *cmd.GetSea
 }
 
 func (m *MongoMapper) CountTeachers(ctx context.Context, req *cmd.GetSearchSuggestReq) (int64, error) {
-	filter := bson.M{"name": bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
+	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return 0, err

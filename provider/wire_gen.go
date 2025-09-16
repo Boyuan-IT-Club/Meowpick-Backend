@@ -51,11 +51,11 @@ func NewProvider() (*Provider, error) {
 		CourseMapper: courseMongoMapper,
 		StaticData:   staticData,
 	}
-	teacherMongoMapper := teacher.NewMongoMapper(configConfig)
 	teacherService := service.TeacherService{
-		TeacherMapper: teacherMongoMapper,
-		StaticData:    staticData,
+		CourseMapper: courseMongoMapper,
+		StaticData:   staticData,
 	}
+	teacherMongoMapper := teacher.NewMongoMapper(configConfig)
 	searchService := service.SearchService{
 		CourseMapper:  courseMongoMapper,
 		TeacherMapper: teacherMongoMapper,
