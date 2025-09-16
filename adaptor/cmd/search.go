@@ -10,9 +10,9 @@ type LogSearchReq struct {
 // SearchHistoryVO 是返回给前端的、单条搜索历史的“视图对象”。
 // 它对应 OpenAPI 文档中的 SearchHistoryVO。
 type SearchHistoryVO struct {
-	ID       string    `json:"id"`
-	Text     string    `json:"text"`
-	CreateAt time.Time `json:"createAt"`
+	ID        string    `json:"id"`
+	Query     string    `json:"query"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // GetSearchHistoryResp 是返回给前端的搜索历史列表的响应体。

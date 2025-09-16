@@ -39,9 +39,9 @@ func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*c
 	vos := make([]*cmd.SearchHistoryVO, 0, len(histories))
 	for _, h := range histories {
 		vo := &cmd.SearchHistoryVO{
-			ID:       h.ID,
-			Text:     h.Query,
-			CreateAt: h.CreatedAt,
+			ID:        h.ID,
+			Query:     h.Query,
+			CreatedAt: h.CreatedAt,
 		}
 		vos = append(vos, vo)
 	}
