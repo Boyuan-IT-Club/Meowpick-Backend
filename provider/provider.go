@@ -38,6 +38,7 @@ type Provider struct {
 	LikeService          service.LikeService
 	CourseService        service.CourseService
 	TeacherService       service.TeacherService
+	SearchService        service.SearchService
 }
 
 var ApplicationSet = wire.NewSet(
@@ -47,6 +48,7 @@ var ApplicationSet = wire.NewSet(
 	service.LikeServiceSet,
 	service.CourseServiceSet,
 	service.TeacherServiceSet,
+	service.SearchServiceSet,
 )
 
 var InfrastructureSet = wire.NewSet(
