@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/google/wire"
 )
 
@@ -13,8 +13,8 @@ type ITeacherService interface {
 }
 
 type TeacherService struct {
-	TeacherMapper *teacher.MongoMapper
-	StaticData    *consts.StaticData
+	CourseMapper *course.MongoMapper
+	StaticData   *consts.StaticData
 }
 
 var TeacherServiceSet = wire.NewSet(
@@ -23,7 +23,7 @@ var TeacherServiceSet = wire.NewSet(
 )
 
 func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetTeachersReq) (*cmd.GetTeachersResp, error) {
-	courseListFromDB, total, err := s.TeacherMapper.FindCoursesByTeacherID(ctx, req)
+	courseListFromDB, total, err := s.CourseMapper.FindCoursesByTeacherID(ctx, req)
 
 	if err != nil {
 		return nil, err
