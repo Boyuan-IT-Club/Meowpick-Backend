@@ -1,5 +1,23 @@
 package cmd
 
+type CourseInLinkVO struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// CourseVO query接口精确搜索时返回的课程元信息
+type CourseVO struct {
+	ID         string            `json:"id"`
+	Name       string            `json:"name"`
+	Code       string            `json:"code"` // 目前前端暂未使用
+	Category   string            `json:"category"`
+	Campus     string            `json:"campus"`
+	Department string            `json:"department"`
+	Link       []*CourseInLinkVO `json:"link"`
+	Teachers   []string          `json:"teachers"`
+	TagCount   map[string]int    `json:"tagCount"` // TODO 实现setTagCount方法 沿用java版实现思路
+}
+
 type GetCoursesReq struct {
 	Keyword string `form:"keyword"`
 	*PageParam
@@ -43,6 +61,7 @@ type PaginatedCourses struct {
 	*PageParam
 }
 
+// 点击🔍后模糊搜索到的课程列表
 type CourseInList struct {
 	ID             string   `json:"_id"`
 	Name           string   `json:"name"`

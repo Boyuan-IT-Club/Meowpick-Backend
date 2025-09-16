@@ -34,7 +34,7 @@ func SetupRoutes() *gin.Engine {
 	// CourseApi
 	courseGroup := router.Group("/api/course")
 	{
-		courseGroup.GET("/query", controller.GetCourses)
+		courseGroup.GET("/:courseID", controller.GetOneCourse)
 		courseGroup.GET("/departs", controller.GetCourseDepartments)
 		courseGroup.GET("/categories", controller.GetCourseCategories)
 		courseGroup.GET("/campuses", controller.GetCourseCampuses)

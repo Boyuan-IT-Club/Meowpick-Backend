@@ -138,7 +138,7 @@ func (s *CommentService) GetCourseComments(ctx context.Context, req *cmd.GetCour
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
-	courseID := req.CourseID // TODO 调用search接口 校验courseID是否有效
+	courseID := req.CourseID
 
 	comments, total, err := s.CommentMapper.FindManyByCourseID(ctx, req, courseID)
 	if err != nil {

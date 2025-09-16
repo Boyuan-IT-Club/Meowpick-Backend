@@ -76,7 +76,7 @@ var (
 var (
 	ErrUserNotFound    = New(2001, "User Not Found")
 	ErrInsertFailed    = New(2003, "Insert Failed")
-	ErrFindFailed      = New(2004, "Find Operation Failed")
+	ErrFindFailed      = New(2004, "FindManyByKeywords Operation Failed")
 	ErrUpdateFailed    = New(2005, "Update Failed")
 	ErrInvalidObjectID = New(2006, "Invalid Object ID")
 	ErrCountFailed     = New(2007, "Count Operation Failed")
@@ -101,6 +101,7 @@ var (
 
 // 业务相关
 var (
-	ErrInvalidParams     = New(5001, "Invalid Params")
-	ErrGetCourseIDFailed = New(5002, "Get Course ID Failed")
+	ErrInvalidParams         = New(5001, "Invalid Params")
+	ErrGetCourseIDFailed     = New(5002, "Get Course ID Failed")
+	ErrCountCourseTagsFailed = New(5003, "Count Course Tags Failed")
 )
