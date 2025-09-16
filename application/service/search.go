@@ -2,12 +2,10 @@ package service
 
 import (
 	"context"
-	"github.com/google/wire"
-	"sync" // <-- 导入 sync 包用于并发控制
-
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
+	"github.com/google/wire"
 )
 
 type ISearchService interface {
@@ -25,52 +23,74 @@ var SearchServiceSet = wire.NewSet(
 )
 
 func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) (*cmd.GetSearchSuggestResp, error) {
-	var wg sync.WaitGroup // 创建一个 WaitGroup 来等待所有查询完成
+	courseTotal, err := s.CourseMapper.CountCourses(ctx, req) // 你需要在 CourseMapper 中添加这个新方法
+	if err != nil {
+		return nil, err
+	}
 
-	var courseSuggestions []*cmd.SearchSuggestionsVO
-	var teacherSuggestions []*cmd.SearchSuggestionsVO
+	targetPage := req.Page
+	targetSize := req.PageSize
 
-	// 启动一个 goroutine 去查询课程建议
-	wg.Add(1) // 任务计数器+1
-	go func() {
-		defer wg.Done()
-		courseModels, _ := s.CourseMapper.GetCourseSuggestions(ctx, req)
-		suggestions := make([]*cmd.SearchSuggestionsVO, 0, len(courseModels))
+	offset := (targetPage - 1) * targetSize
+
+	allSuggestions := make([]*cmd.SearchSuggestionsVO, 0, targetSize)
+
+	if offset < courseTotal { //请求之始为课程
+
+		courseModels, err2 := s.CourseMapper.GetCourseSuggestions(ctx, req)
+		if err2 != nil {
+			return nil, err2
+		}
+
 		for _, model := range courseModels {
-			suggestions = append(suggestions, &cmd.SearchSuggestionsVO{
+			allSuggestions = append(allSuggestions, &cmd.SearchSuggestionsVO{
 				Type: "课程",
 				Name: model.Name,
 			})
 		}
-		courseSuggestions = suggestions
-	}()
 
-	// 启动另一个 goroutine 去查询老师建议
-	wg.Add(1) // 任务计数器+1
-	go func() {
-		defer wg.Done()
-		teacherModels, _ := s.TeacherMapper.GetTeacherSuggestions(ctx, req)
-		suggestions := make([]*cmd.SearchSuggestionsVO, 0, len(teacherModels))
+		if int64(len(allSuggestions)) < targetSize {
+			teachersNeeded := targetSize - int64(len(allSuggestions))
+			// 创建一个新的请求，只获取需要的老师数量，且从第一页开始
+			teacherReq := &cmd.GetSearchSuggestReq{
+				Keyword:  req.Keyword,
+				Page:     1,
+				PageSize: teachersNeeded,
+			}
+			teacherModels, _ := s.TeacherMapper.GetTeacherSuggestions(ctx, teacherReq) // 假设这个方法支持分页
+
+			for _, model := range teacherModels {
+				allSuggestions = append(allSuggestions, &cmd.SearchSuggestionsVO{
+					Type: "老师",
+					Name: model.Name,
+				})
+			}
+		}
+
+	} else {
+		//请求的数据完全在老师列表内
+		teacherOffset := offset - courseTotal
+		teacherPageNum := teacherOffset/targetSize + 1
+
+		teacherReq := &cmd.GetSearchSuggestReq{
+			Keyword:  req.Keyword,
+			Page:     teacherPageNum,
+			PageSize: targetSize,
+		}
+		teacherModels, _ := s.TeacherMapper.GetTeacherSuggestions(ctx, teacherReq)
+
 		for _, model := range teacherModels {
-			suggestions = append(suggestions, &cmd.SearchSuggestionsVO{
-				Type: "教师",
+			allSuggestions = append(allSuggestions, &cmd.SearchSuggestionsVO{
+				Type: "老师",
 				Name: model.Name,
 			})
 		}
-		teacherSuggestions = suggestions
-	}()
+	}
 
-	// 等待上面所有 goroutine 执行完毕
-	wg.Wait()
-
-	// 聚合所有结果
-	allSuggestions := make([]*cmd.SearchSuggestionsVO, 0, len(courseSuggestions)+len(teacherSuggestions))
-	allSuggestions = append(allSuggestions, courseSuggestions...)
-	allSuggestions = append(allSuggestions, teacherSuggestions...)
-
+	// 组装并返回响应
 	response := &cmd.GetSearchSuggestResp{
-		Resp:        cmd.Success(),
-		Suggestions: allSuggestions,
+		Resp: cmd.Success(),
+		List: allSuggestions,
 	}
 
 	return response, nil

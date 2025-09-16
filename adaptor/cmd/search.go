@@ -27,10 +27,12 @@ type SearchSuggestionsVO struct {
 }
 
 type GetSearchSuggestReq struct {
-	Keyword string `form:"keyword" binding:"required"`
+	Keyword  string `form:"keyword" binding:"required"`
+	Page     int64  `form:"page,default=1" json:"page"`
+	PageSize int64  `form:"pageSize,default=10" json:"pageSize"`
 }
 
 type GetSearchSuggestResp struct {
 	*Resp
-	Suggestions []*SearchSuggestionsVO `json:"suggestions"`
+	List []*SearchSuggestionsVO `json:"list"`
 }
