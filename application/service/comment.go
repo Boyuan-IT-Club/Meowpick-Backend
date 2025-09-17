@@ -32,6 +32,7 @@ var CommentServiceSet = wire.NewSet(
 func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateCommentReq) (*cmd.CreateCommentResp, error) {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
+		log.Error("userID is empty or invalid")
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
@@ -87,7 +88,7 @@ func (s *CommentService) GetMyComments(ctx context.Context, req *cmd.GetMyCommen
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
-	comments, total, err := s.CommentMapper.FindManyByUserID(ctx, req, userID)
+	comments, total, err := s.CommentMapper.FindManyByUserID(ctx, req.Page, req.PageSize, userID)
 	if err != nil {
 		log.CtxError(ctx, "FindManyByUserID failed for userID=%s: %v", userID, err)
 		return nil, errorx.ErrFindFailed
@@ -140,7 +141,7 @@ func (s *CommentService) GetCourseComments(ctx context.Context, req *cmd.GetCour
 
 	courseID := req.CourseID // TODO 调用search接口 校验courseID是否有效
 
-	comments, total, err := s.CommentMapper.FindManyByCourseID(ctx, req, courseID)
+	comments, total, err := s.CommentMapper.FindManyByCourseID(ctx, req.Page, req.PageSize, courseID)
 	if err != nil {
 		log.CtxError(ctx, "FindManyByUserID failed for userID=%s: %v", courseID, err)
 		return nil, errorx.ErrFindFailed

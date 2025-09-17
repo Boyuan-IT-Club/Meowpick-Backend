@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CreateComment .
+// CreateComment 发布评论
 // @router /api/comment/add [POST]
 func CreateComment(c *gin.Context) {
 	var err error
@@ -27,11 +27,9 @@ func CreateComment(c *gin.Context) {
 	common.PostProcess(c, &req, resp, err)
 }
 
-// GetCourseComments .
+// ListCourseComments 分页获取课程评论
 // @router /api/comment/query [GET]
-func GetCourseComments(c *gin.Context) {
-	// TODO 修改前端代码的调用 原本是"controller.query"需要改为GetCourseComments
-	// TODO 注册router
+func ListCourseComments(c *gin.Context) {
 	var err error
 	var req cmd.GetCourseCommentsReq
 	var resp *cmd.GetCommentsResp
@@ -42,7 +40,7 @@ func GetCourseComments(c *gin.Context) {
 	}
 
 	if req.PageParam == nil {
-		req.PageParam = &cmd.PageParam{} // 这里仅是防止空指针造成panic.{}可以留空，由之后的UnWrap方法设置默认值
+		req.PageParam = &cmd.PageParam{} // 这里仅是防止空指针造成panic {}中留空，由之后的UnWrap方法设置默认值
 		log.CtxInfo(c, "获得课程评论请求时PageParam为空，已设为默认值！")
 	}
 
@@ -52,13 +50,13 @@ func GetCourseComments(c *gin.Context) {
 	common.PostProcess(c, &req, resp, err)
 }
 
-// GetTotalCommentsCount .
+// GetTotalCommentsCount 获得小程序收录吐槽总数
 // @router /api/search/total [GET]
 func GetTotalCommentsCount(c *gin.Context) {
-	var err error
 	var resp *cmd.GetTotalCommentsCountResp
+	var err error
 
-	resp, err = provider.Get().CommentService.GetTotalCommentsCount(c)
+	resp, err = provider.Get().CommentService.GetTotalCommentsCount(c.Request.Context())
 	common.PostProcess(c, nil, resp, err)
 }
 
