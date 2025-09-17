@@ -2,17 +2,16 @@ package course
 
 import (
 	"context"
-	"errors"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
@@ -20,7 +19,7 @@ const (
 )
 
 type IMongoMapper interface {
-	FindOneByID(ctx context.Context, ID string)
+	FindOneByID(ctx context.Context, ID string) (*Course, error)
 	FindMany(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Course, int64, error)
 	GetDepartments(ctx context.Context, keyword string) ([]int32, error)
 	GetCategories(ctx context.Context, keyword string) ([]int32, error)
@@ -40,19 +39,10 @@ func NewMongoMapper(cfg *config.Config) *MongoMapper {
 }
 
 func (m *MongoMapper) FindOneByID(ctx context.Context, ID string) (*Course, error) {
-	// 数据库直接用string存储 无需转换
-	//courseOID, err := primitive.ObjectIDFromHex(ID)
-	//if err != nil {
-	//	log.Error("ID is invalid")
-	//	return nil, errorx.ErrInvalidObjectID
-	//}
-
-	var course *Course
-	if err := m.conn.FindOneNoCache(ctx, course, bson.M{"_id": ID}); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			log.Error("No course found with ID：", ID)
-			return nil, errorx.ErrFindFailed
-		}
+	// 数据库直接用string存储 无需转换ObjectiveID
+	course := &Course{}
+	if err := m.conn.FindOneNoCache(ctx, course, bson.M{consts.ID: ID}); err != nil {
+		log.Error("No course found with ID：", ID)
 		return nil, err
 	}
 	return course, nil
@@ -171,6 +161,7 @@ func (m *MongoMapper) CountCourses(ctx context.Context, keyword string) (int64, 
 
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {
+		logx.Error("Count All Courses Failed:", err)
 		return 0, err
 	}
 	return total, nil
@@ -179,7 +170,7 @@ func (m *MongoMapper) CountCourses(ctx context.Context, keyword string) (int64, 
 // FindCoursesByTeacherID 根据教师ID查询其教授的所有课程
 func (m *MongoMapper) FindCoursesByTeacherID(ctx context.Context, teacherID string, param *cmd.PageParam) ([]*Course, int64, error) {
 	if teacherID == "" {
-		return nil, 0, errors.New("Teachers is required")
+		return nil, 0, errorx.ErrEmptyTeacherID
 	}
 
 	var courses []*Course

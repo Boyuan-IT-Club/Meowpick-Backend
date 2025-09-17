@@ -3,12 +3,14 @@ package service
 import (
 	"context"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
 	"github.com/google/wire"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type ICourseService interface {
@@ -23,6 +25,8 @@ type CourseService struct {
 	CourseMapper  *course.MongoMapper
 	CommentMapper *comment.MongoMapper
 	StaticData    *consts.StaticData
+	TeacherMapper *teacher.MongoMapper
+	CourseDTO     *dto.CourseDTO
 }
 
 var CourseServiceSet = wire.NewSet(
@@ -34,47 +38,14 @@ var CourseServiceSet = wire.NewSet(
 func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*cmd.GetOneCourseResp, error) {
 
 	dbCourse, err := s.CourseMapper.FindOneByID(ctx, courseID)
-	if err != nil || dbCourse == nil {
+	if err != nil || dbCourse == nil { // 使用id搜索不应出现找不到的情况
 		return nil, err
 	}
 
-	// Optimize 可以单独抽象出dto层处理数据转化，使用go routine改善性能
-	// 获得相关课程link并转化为VO
-	var linkVOs []*cmd.CourseInLinkVO
-	if dbCourse.LinkedCourses != nil {
-		linkVOs = make([]*cmd.CourseInLinkVO, len(dbCourse.LinkedCourses))
-		for i, c := range dbCourse.LinkedCourses {
-			linkVOs[i] = &cmd.CourseInLinkVO{
-				ID:   c.ID,
-				Name: c.Name,
-			}
-		}
-	}
-
-	// 获得课程前三多的tag
-	// TODO Optimize 起go routine进行处理，改善性能
-	tagCount, err := s.CommentMapper.CountCourseTag(ctx, dbCourse.ID)
+	courseVO, err := s.CourseDTO.ToCourseVO(ctx, dbCourse)
 	if err != nil {
-		log.Error("CountCourseTag Failed, courseID: ", courseID, err)
-		return nil, errorx.ErrCountCourseTagsFailed
-	}
-
-	// 获取校区列表
-	var campus []string
-	for _, c := range dbCourse.Campuses {
-		campus = append(campus, s.StaticData.GetCampusNameByID(c))
-	}
-	// 返回响应
-	courseVO := &cmd.CourseVO{
-		ID:         dbCourse.ID,
-		Name:       dbCourse.Name,
-		Code:       dbCourse.Code,
-		Category:   s.StaticData.GetCategoryNameByID(dbCourse.Category),
-		Campuses:   campus,
-		Department: s.StaticData.GetDepartmentNameByID(dbCourse.Department),
-		Link:       linkVOs,
-		Teachers:   dbCourse.TeacherIDs,
-		TagCount:   tagCount,
+		logx.Error(ctx, "CourseDB To CourseVO error: %v", err)
+		return nil, errorx.ErrCourseDB2VO
 	}
 
 	return &cmd.GetOneCourseResp{
@@ -84,46 +55,36 @@ func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*cmd
 }
 
 func (s *CourseService) ListCourses(ctx context.Context, req *cmd.ListCoursesReq) (*cmd.ListCoursesResp, error) {
+	// 获取符合条件的总课程数量
+	total, err := s.CourseMapper.CountCourses(ctx, req.Keyword)
+	if err != nil {
+		return nil, err
+	}
+	// 若搜不到任何课程，直接返回空响应
+	if total == 0 {
+		// TODO 正常搜也会搜索不到的场景是否需要log？
+		return &cmd.ListCoursesResp{
+			Resp: cmd.Success(), PaginatedCourses: &cmd.PaginatedCourses{},
+		}, errorx.ErrFindSuccessButNoResult
+	}
 
-	courseListFromDB, total, err := s.CourseMapper.FindMany(ctx, req.Keyword, req.PageParam)
-
+	// 使用模糊匹配搜索课程
+	dbCourses, err := s.CourseMapper.GetCourseSuggestions(ctx, req.Keyword, req.PageParam)
 	if err != nil {
 		return nil, err
 	}
 
-	// 将从数据库拿到的 course.Course 模型，转换为前端需要的 DTO 模型。
-	var courseDTOList []*cmd.CourseVO
-	for _, dbCourse := range courseListFromDB {
-		//先处理校区
-		campusNames := make([]string, 0, len(dbCourse.Campuses))
-		for _, dbCampus := range dbCourse.Campuses {
-			campusName := s.StaticData.GetCampusNameByID(dbCampus)
-			campusNames = append(campusNames, campusName)
-		}
-
-		apiCourse := &cmd.CourseVO{
-			ID:         dbCourse.ID,
-			Name:       dbCourse.Name,
-			Code:       dbCourse.Code,
-			Department: s.StaticData.GetDepartmentNameByID(dbCourse.Department),
-			Category:   s.StaticData.GetCategoryNameByID(dbCourse.Category),
-			Campuses:   campusNames,
-			Teachers:   dbCourse.TeacherIDs,
-			// ... 其他需要返回给前端的字段
-		}
-		courseDTOList = append(courseDTOList, apiCourse)
+	// 将数据库课程列表转换为分页结果
+	paginatedCourses, err := s.CourseDTO.ToPaginatedCourses(ctx, dbCourses, total, req.PageParam)
+	if err != nil {
+		logx.Error(ctx, "CourseDB To CourseVO error: %v", err)
+		return nil, errorx.ErrCourseDB2VO
 	}
 
+	// 返回响应
 	response := &cmd.ListCoursesResp{
-		Resp: cmd.Success(),
-		PaginatedCourses: &cmd.PaginatedCourses{
-			Courses: courseDTOList,
-			Total:   total,
-			PageParam: &cmd.PageParam{
-				Page:     req.Page,
-				PageSize: req.PageSize,
-			},
-		},
+		Resp:             cmd.Success(),
+		PaginatedCourses: paginatedCourses,
 	}
 
 	return response, nil

@@ -7,6 +7,7 @@
 package provider
 
 import (
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
@@ -27,9 +28,24 @@ func NewProvider() (*Provider, error) {
 	}
 	mongoMapper := comment.NewMongoMapper(configConfig)
 	likeMongoMapper := like.NewMongoMapper(configConfig)
+	courseMongoMapper := course.NewMongoMapper(configConfig)
+	staticData, err := consts.NewStaticData()
+	if err != nil {
+		return nil, err
+	}
+	teacherMongoMapper := teacher.NewMongoMapper(configConfig)
+	commentDTO := &dto.CommentDTO{
+		LikeMapper:    likeMongoMapper,
+		CourseMapper:  courseMongoMapper,
+		TeacherMapper: teacherMongoMapper,
+		StaticData:    staticData,
+	}
 	commentService := service.CommentService{
 		CommentMapper: mongoMapper,
 		LikeMapper:    likeMongoMapper,
+		CourseMapper:  courseMongoMapper,
+		StaticData:    staticData,
+		CommentDto:    commentDTO,
 	}
 	searchhistoryMongoMapper := searchhistory.NewMongoMapper(configConfig)
 	searchHistoryService := service.SearchHistoryService{
@@ -42,22 +58,27 @@ func NewProvider() (*Provider, error) {
 	likeService := service.LikeService{
 		LikeMapper: likeMongoMapper,
 	}
-	courseMongoMapper := course.NewMongoMapper(configConfig)
-	staticData, err := consts.NewStaticData()
-	if err != nil {
-		return nil, err
+	courseDTO := &dto.CourseDTO{
+		CommentMapper: mongoMapper,
+		TeacherMapper: teacherMongoMapper,
+		CourseMapper:  courseMongoMapper,
+		StaticData:    staticData,
 	}
 	courseService := service.CourseService{
 		CourseMapper:  courseMongoMapper,
 		CommentMapper: mongoMapper,
 		StaticData:    staticData,
+		TeacherMapper: teacherMongoMapper,
+		CourseDTO:     courseDTO,
 	}
 	teacherService := service.TeacherService{
 		CourseMapper:  courseMongoMapper,
 		StaticData:    staticData,
 		CommentMapper: mongoMapper,
+		UserMapper:    userMongoMapper,
+		TeacherMapper: teacherMongoMapper,
+		CourseDTO:     courseDTO,
 	}
-	teacherMongoMapper := teacher.NewMongoMapper(configConfig)
 	searchService := service.SearchService{
 		CourseMapper:  courseMongoMapper,
 		TeacherMapper: teacherMongoMapper,

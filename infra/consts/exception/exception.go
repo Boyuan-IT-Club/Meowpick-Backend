@@ -7,6 +7,7 @@ package errorx
 import (
 	"errors"
 	"fmt"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 )
 
@@ -70,6 +71,7 @@ var (
 	ErrGetUserIDFailed         = New(1008, "Get userID from token failed")
 	ErrEmptyOpenID             = New(1009, "Empty openID")
 	ErrNotAuthentication       = New(1010, "User Not Authenticated")
+	ErrUserNotAdmin            = New(1011, "User Not Admin")
 )
 
 // 数据库相关
@@ -101,7 +103,25 @@ var (
 
 // 业务相关
 var (
-	ErrInvalidParams         = New(5001, "Invalid Params")
-	ErrGetCourseIDFailed     = New(5002, "Get Course ID Failed")
-	ErrCountCourseTagsFailed = New(5003, "Count Course Tags Failed")
+	ErrInvalidParams          = New(5001, "Invalid Params")
+	ErrGetCourseIDFailed      = New(5002, "Get Course ID Failed")
+	ErrCountCourseTagsFailed  = New(5003, "Count Course Tags Failed")
+	ErrFindSuccessButNoResult = New(5004, "Find Success But No Result")
+)
+
+// 教师相关
+var (
+	ErrTeacherDuplicate = New(6001, "Teacher Duplicate")
+	ErrAddTeacherFailed = New(6002, "Add Teacher Failed")
+	ErrEmptyTeacherID   = New(6003, "Empty Teacher ID")
+)
+
+// dto相关
+var (
+	ErrCommentDB2VO = New(7001, "CommentDb to VO failed")
+	ErrCommentVO2DB = New(7002, "CommentVO to DB failed")
+	ErrCourseDB2VO  = New(7003, "CourseDB to VO failed")
+	ErrCourseVO2DB  = New(7004, "CourseVO to DB failed")
+	ErrTeacherDB2VO = New(7005, "Teacher DB to VO failed")
+	ErrTeacherVO2DB = New(7006, "Teacher DB to VO failed")
 )

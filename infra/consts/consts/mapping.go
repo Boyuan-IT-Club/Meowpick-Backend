@@ -1,6 +1,9 @@
 package consts
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // StaticData 存放所有静态映射数据
 type StaticData struct {
@@ -46,6 +49,42 @@ func (d *StaticData) GetCategoryNameByID(id int32) string {
 		return name
 	}
 	return "未知课程"
+}
+
+// GetCampusIDByName 根据校区名称获取ID
+func (d *StaticData) GetCampusIDByName(name string) int32 {
+	for idStr, campusName := range d.Campuses {
+		if campusName == name {
+			if id, err := strconv.ParseInt(idStr, 10, 32); err == nil {
+				return int32(id)
+			}
+		}
+	}
+	return 0 // 未找到返回0
+}
+
+// GetDepartmentIDByName 根据院系名称获取ID
+func (d *StaticData) GetDepartmentIDByName(name string) int32 {
+	for idStr, departmentName := range d.Departments {
+		if departmentName == name {
+			if id, err := strconv.ParseInt(idStr, 10, 32); err == nil {
+				return int32(id)
+			}
+		}
+	}
+	return 0 // 未找到返回0
+}
+
+// GetCategoryIDByName 根据类别名称获取ID
+func (d *StaticData) GetCategoryIDByName(name string) int32 {
+	for idStr, categoryName := range d.Category {
+		if categoryName == name {
+			if id, err := strconv.ParseInt(idStr, 10, 32); err == nil {
+				return int32(id)
+			}
+		}
+	}
+	return 0 // 未找到返回0
 }
 
 // --- 以下是硬编码的数据 ---

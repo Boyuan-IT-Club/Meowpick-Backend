@@ -68,4 +68,5 @@ func ListCourses(c *gin.Context) {
 // @router /api/search/teacher
 func ListTeachers(c *gin.Context) {
 	// TODO 实现接口
+
 }

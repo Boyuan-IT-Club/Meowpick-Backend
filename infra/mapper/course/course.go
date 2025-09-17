@@ -18,6 +18,7 @@ type Course struct {
 }
 
 // CourseInLink 具体课程卡片中，[相关课程]字段的链接
+// 未来预计不再存储相关课程信息，故此处容忍存储id+name
 type CourseInLink struct {
 	ID   string `json:"_id"`
 	Name string `json:"name"`

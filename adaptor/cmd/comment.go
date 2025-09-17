@@ -9,9 +9,16 @@ type CommentVO struct {
 	UserID   string   `json:"userId"`
 	Tags     []string `json:"tags"`
 	*LikeVO
-
+	ExtraInfo
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type ExtraInfo struct {
+	Name       string   `json:"Name"`
+	Category   string   `json:"Category"`
+	Department string   `json:"Department"`
+	Teachers   []string `json:"Teachers"` // 这里还是直接返回教师名字+职称组合后的字符串列表
 }
 
 // CreateCommentReq 对应 /api/comment/add 的请求体
@@ -44,8 +51,8 @@ type GetCourseCommentsReq struct {
 	*PageParam
 }
 
-// GetCommentsResp 是后端返回给前端的、分页的评论历史数据。
-type GetCommentsResp struct {
+// GetCourseCommentsResp 是后端返回给前端的、分页的评论历史数据。
+type GetCourseCommentsResp struct {
 	*Resp
 	Total    int64        `json:"total"`
 	Comments []*CommentVO `json:"comments"`
@@ -54,4 +61,6 @@ type GetCommentsResp struct {
 // GetMyCommentsResp “我的吐槽” 比一般的CommentVO多了一些课程的信息
 type GetMyCommentsResp struct {
 	*Resp
+	Total    int64        `json:"total"`
+	Comments []*CommentVO `json:"comments"`
 }
