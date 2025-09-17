@@ -15,7 +15,7 @@ func NewStaticData() (*StaticData, error) {
 	data := &StaticData{
 		Campuses:    campusesMap,
 		Departments: departmentsMap,
-		Category:    CategoryMap,
+		Category:    categoryMap,
 	}
 	// 返回nil error以匹配wire的构造函数签名
 	return data, nil
