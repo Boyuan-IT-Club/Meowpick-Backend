@@ -234,7 +234,7 @@ var departmentsMap = map[string]string{
 	"174": "经济与管理学院",
 }
 
-var CategoryMap = map[string]string{
+var categoryMap = map[string]string{
 	"1":   "通识教育课程",
 	"2":   "通识必修",
 	"3":   "英语类",
