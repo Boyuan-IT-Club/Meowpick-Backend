@@ -7,18 +7,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @router /api/course/query [GET]
-func GetCourses(ctx *gin.Context) {
-	var req *cmd.GetCoursesReq
-	var resp *cmd.GetCoursesResp
+// GetOneCourse 精确搜索一个课程，返回课程元信息
+// @router /api/course/query/:courseID [GET]
+func GetOneCourse(c *gin.Context) {
+	var resp *cmd.GetOneCourseResp
 	var err error
-	if err = ctx.ShouldBindQuery(&req); err != nil {
-		// 如果这里出错，err 就被赋值了。我们直接 return，
-		// defer 会自动捕获这个 err 并处理错误响应。
-		return
-	}
-	resp, err = provider.Get().CourseService.ListCourses(ctx, req)
-	common.PostProcess(ctx, req, resp, err)
+
+	resp, err = provider.Get().CourseService.GetOneCourse(c, c.Param("courseID"))
+	common.PostProcess(c, nil, resp, err)
 }
 
 // @router /api/course/departs [GET]

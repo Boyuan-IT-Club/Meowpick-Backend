@@ -6,7 +6,7 @@ import "fmt"
 type StaticData struct {
 	Campuses    map[string]string
 	Departments map[string]string
-	Courses     map[string]string
+	Category    map[string]string
 }
 
 // NewStaticData 是一个构造函数，直接返回硬编码在代码中的数据。
@@ -15,7 +15,7 @@ func NewStaticData() (*StaticData, error) {
 	data := &StaticData{
 		Campuses:    campusesMap,
 		Departments: departmentsMap,
-		Courses:     coursesMap,
+		Category:    CategoryMap,
 	}
 	// 返回nil error以匹配wire的构造函数签名
 	return data, nil
@@ -39,10 +39,10 @@ func (d *StaticData) GetDepartmentNameByID(id int32) string {
 	return "未知院系"
 }
 
-// GetCourseNameByID 是一个辅助函数，方便通过int类型的ID获取课程名称。
-func (d *StaticData) GetCourseNameByID(id int32) string {
+// GetCategoryNameByID 是一个辅助函数，方便通过int类型的ID获取课程名称。
+func (d *StaticData) GetCategoryNameByID(id int32) string {
 	key := fmt.Sprintf("%d", id)
-	if name, ok := d.Courses[key]; ok {
+	if name, ok := d.Category[key]; ok {
 		return name
 	}
 	return "未知课程"
@@ -234,7 +234,7 @@ var departmentsMap = map[string]string{
 	"174": "经济与管理学院",
 }
 
-var coursesMap = map[string]string{
+var categoryMap = map[string]string{
 	"1":   "通识教育课程",
 	"2":   "通识必修",
 	"3":   "英语类",

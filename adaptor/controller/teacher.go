@@ -8,7 +8,7 @@ import (
 )
 
 // @router /api/teacher/query [GET]
-func GetCoursesByTeacher(ctx *gin.Context) {
+func ListCoursesByTeacher(ctx *gin.Context) {
 	var req *cmd.GetTeachersReq
 	var resp *cmd.GetTeachersResp
 	var err error

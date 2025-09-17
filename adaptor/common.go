@@ -47,7 +47,7 @@ func makeResponse(resp any) map[string]any {
 	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
 		return nil
 	}
-
+	// 构建返回数据
 	v = v.Elem()
 
 	// 构建基础响应（假设 Code/Msg 存在并可取）

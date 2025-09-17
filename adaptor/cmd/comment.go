@@ -52,3 +52,8 @@ type GetCommentsResp struct {
 	Total int64        `json:"total"`
 	Rows  []*CommentVO `json:"rows"`
 }
+
+// GetMyCommentsResp “我的吐槽” 比一般的CommentVO多了一些课程的信息
+type GetMyCommentsResp struct {
+	*Resp
+}

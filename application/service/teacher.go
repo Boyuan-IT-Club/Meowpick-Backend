@@ -4,7 +4,10 @@ import (
 	"context"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
+	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/google/wire"
 )
 
@@ -13,8 +16,9 @@ type ITeacherService interface {
 }
 
 type TeacherService struct {
-	CourseMapper *course.MongoMapper
-	StaticData   *consts.StaticData
+	CourseMapper  *course.MongoMapper
+	StaticData    *consts.StaticData
+	CommentMapper *comment.MongoMapper
 }
 
 var TeacherServiceSet = wire.NewSet(
@@ -30,7 +34,8 @@ func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetT
 	}
 
 	// 将从数据库拿到的 course.Course 模型，转换为前端需要的 DTO 模型。
-	var courseDTOList []cmd.CourseInList
+	// Optimize: 抽象出dto层处理数据转换
+	var courseDTOList []*cmd.CourseVO
 	for _, dbCourse := range courseListFromDB {
 		//先处理校区
 		campusNames := make([]string, 0, len(dbCourse.Campuses))
@@ -38,16 +43,22 @@ func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetT
 			campusName := s.StaticData.GetCampusNameByID(dbCampus)
 			campusNames = append(campusNames, campusName)
 		}
+		// 处理tagCount
 
-		apiCourse := cmd.CourseInList{
-			ID:             dbCourse.ID,
-			Name:           dbCourse.Name,
-			Code:           dbCourse.Code,
-			DepartmentName: s.StaticData.GetDepartmentNameByID(dbCourse.Department),
-			CategoriesName: s.StaticData.GetCourseNameByID(dbCourse.Category),
-			CampusesName:   campusNames,
-			TeachersName:   dbCourse.TeacherIDs,
-			// ... 其他需要返回给前端的字段
+		tagCount, err := s.CommentMapper.CountCourseTag(ctx, dbCourse.ID)
+		if err != nil {
+			log.Error("CountCourseTag Failed, courseID: ", dbCourse, err)
+			return nil, errorx.ErrCountCourseTagsFailed
+		}
+		apiCourse := &cmd.CourseVO{
+			ID:         dbCourse.ID,
+			Name:       dbCourse.Name,
+			Code:       dbCourse.Code,
+			Department: s.StaticData.GetDepartmentNameByID(dbCourse.Department),
+			Category:   s.StaticData.GetCategoryNameByID(dbCourse.Category),
+			Campus:     campusNames,
+			Teachers:   dbCourse.TeacherIDs,
+			TagCount:   tagCount,
 		}
 		courseDTOList = append(courseDTOList, apiCourse)
 	}
