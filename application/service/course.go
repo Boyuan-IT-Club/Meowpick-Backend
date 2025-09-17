@@ -32,9 +32,9 @@ var CourseServiceSet = wire.NewSet(
 
 // GetOneCourse 精确搜索，返回课程的元信息CourseVO
 func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*cmd.GetOneCourseResp, error) {
-	var dbCourse *course.Course
-	var err error
-	if dbCourse, err = s.CourseMapper.FindOneByID(ctx, courseID); err != nil {
+
+	dbCourse, err := s.CourseMapper.FindOneByID(ctx, courseID)
+	if err != nil || dbCourse == nil {
 		return nil, err
 	}
 
