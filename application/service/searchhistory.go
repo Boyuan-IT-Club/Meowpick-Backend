@@ -12,7 +12,7 @@ import (
 
 type ISearchHistoryService interface {
 	GetSearchHistoryByUserId(ctx context.Context) (*cmd.GetSearchHistoryResp, error)
-	LogSearch(ctx context.Context, query string) (*cmd.Resp, error)
+	LogSearch(ctx context.Context, query string) error
 }
 
 type SearchHistoryService struct {
@@ -54,21 +54,21 @@ func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*c
 	return resp, nil
 }
 
-func (s *SearchHistoryService) LogSearch(ctx context.Context, query string) (*cmd.Resp, error) {
+func (s *SearchHistoryService) LogSearch(ctx context.Context, query string) error {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
-		return nil, errorx.ErrGetUserIDFailed
+		return errorx.ErrGetUserIDFailed
 	}
 
 	if err := s.SearchHistoryMapper.UpsertByUserIDAndQuery(ctx, userID, query); err != nil {
 		log.CtxError(ctx, "Upsert search history failed: %v", err)
-		return nil, errorx.ErrUpdateFailed
+		return errorx.ErrUpdateFailed
 	}
 
 	count, err := s.SearchHistoryMapper.CountByUserID(ctx, userID)
 	if err != nil {
 		log.CtxError(ctx, "Count search history failed: %v", err)
-		return nil, errorx.ErrCountFailed
+		return errorx.ErrCountFailed
 	}
 
 	if count > consts.SearchHistoryLimit {
@@ -77,5 +77,5 @@ func (s *SearchHistoryService) LogSearch(ctx context.Context, query string) (*cm
 		}
 	}
 
-	return cmd.Success(), nil
+	return nil
 }

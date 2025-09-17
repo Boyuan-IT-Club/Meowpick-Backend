@@ -53,9 +53,11 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSe
 			teachersNeeded := targetSize - int64(len(allSuggestions))
 			// 创建一个新的请求，只获取需要的老师数量，且从第一页开始
 			teacherReq := &cmd.GetSearchSuggestReq{
-				Keyword:  req.Keyword,
-				Page:     1,
-				PageSize: teachersNeeded,
+				Keyword: req.Keyword,
+				PageParam: &cmd.PageParam{
+					Page:     1,
+					PageSize: teachersNeeded,
+				},
 			}
 			teacherModels, _ := s.TeacherMapper.GetTeacherSuggestions(ctx, teacherReq) // 假设这个方法支持分页
 
@@ -73,9 +75,11 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSe
 		teacherPageNum := teacherOffset/targetSize + 1
 
 		teacherReq := &cmd.GetSearchSuggestReq{
-			Keyword:  req.Keyword,
-			Page:     teacherPageNum,
-			PageSize: targetSize,
+			Keyword: req.Keyword,
+			PageParam: &cmd.PageParam{
+				Page:     teacherPageNum,
+				PageSize: targetSize,
+			},
 		}
 		teacherModels, _ := s.TeacherMapper.GetTeacherSuggestions(ctx, teacherReq)
 
