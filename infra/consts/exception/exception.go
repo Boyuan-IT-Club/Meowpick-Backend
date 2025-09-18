@@ -125,3 +125,9 @@ var (
 	ErrTeacherDB2VO = New(7005, "Teacher DB to VO failed")
 	ErrTeacherVO2DB = New(7006, "Teacher DB to VO failed")
 )
+
+// 教师相关
+var (
+	ErrTeacherDuplicate = New(6001, "Teacher Duplicate")
+	ErrAddTeacherFailed = New(6002, "Add Teacher Failed")
+)

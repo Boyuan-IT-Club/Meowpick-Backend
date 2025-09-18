@@ -2,6 +2,7 @@ package teacher
 
 import (
 	"context"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
@@ -27,6 +28,21 @@ type IMongoMapper interface {
 
 type MongoMapper struct {
 	conn *monc.Model
+}
+
+func (m *MongoMapper) AddNewTeacher(ctx context.Context, teacherVO *cmd.TeacherVO) (ID string, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongoMapper) FindOneTeacherByID(ctx context.Context, ID string) (*Teacher, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongoMapper) FindOneTeacherByVO(ctx context.Context, vO *cmd.TeacherVO) (*Teacher, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewMongoMapper(cfg *config.Config) *MongoMapper {
