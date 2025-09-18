@@ -16,8 +16,8 @@ const (
 )
 
 type IMongoMapper interface {
-	GetTeacherSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) ([]*Teacher, int64, error)
-	CountTeachers(ctx context.Context, req *cmd.GetSearchSuggestReq) (int64, error)
+	GetTeacherSuggestions(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Teacher, int64, error)
+	CountTeachers(ctx context.Context, keyword string) (int64, error)
 }
 
 type MongoMapper struct {
@@ -29,24 +29,20 @@ func NewMongoMapper(cfg *config.Config) *MongoMapper {
 	return &MongoMapper{conn: conn}
 }
 
-func (m *MongoMapper) GetTeacherSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) ([]*Teacher, error) {
+func (m *MongoMapper) GetTeacherSuggestions(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Teacher, error) {
 	var teachers []*Teacher
-	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
-	pageParam := cmd.PageParam{
-		Page:     req.Page,
-		PageSize: req.PageSize,
-	}
-	findOption := util.FindPageOption(&pageParam)
+	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: keyword, Options: "i"}}}
+	ops := util.FindPageOption(param)
 
-	err := m.conn.Find(ctx, &teachers, filter, findOption)
+	err := m.conn.Find(ctx, &teachers, filter, ops)
 	if err != nil {
 		return nil, err
 	}
 	return teachers, nil
 }
 
-func (m *MongoMapper) CountTeachers(ctx context.Context, req *cmd.GetSearchSuggestReq) (int64, error) {
-	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
+func (m *MongoMapper) CountTeachers(ctx context.Context, keyword string) (int64, error) {
+	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: keyword, Options: "i"}}}
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return 0, err
