@@ -84,46 +84,75 @@ func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*cmd
 }
 
 func (s *CourseService) ListCourses(ctx context.Context, req *cmd.ListCoursesReq) (*cmd.ListCoursesResp, error) {
-
-	courseListFromDB, total, err := s.CourseMapper.FindMany(ctx, req.Keyword, req.PageParam)
-
+	// 使用模糊匹配搜索课程
+	dbCourses, err := s.CourseMapper.GetCourseSuggestions(ctx, req.Keyword, req.PageParam)
 	if err != nil {
 		return nil, err
 	}
 
-	// 将从数据库拿到的 course.Course 模型，转换为前端需要的 DTO 模型。
-	var courseDTOList []*cmd.CourseVO
-	for _, dbCourse := range courseListFromDB {
-		//先处理校区
-		campusNames := make([]string, 0, len(dbCourse.Campuses))
-		for _, dbCampus := range dbCourse.Campuses {
-			campusName := s.StaticData.GetCampusNameByID(dbCampus)
-			campusNames = append(campusNames, campusName)
+	// 获取符合条件的总课程数量
+	total, err := s.CourseMapper.CountCourses(ctx, req.Keyword)
+	if err != nil {
+		return nil, err
+	}
+
+	// 将数据库课程对象转换为 CourseVO
+	courseVOs := make([]*cmd.CourseVO, 0, len(dbCourses))
+
+	for _, dbCourse := range dbCourses {
+		// 获取相关课程链接
+		var linkVOs []*cmd.CourseInLinkVO
+		if dbCourse.LinkedCourses != nil {
+			linkVOs = make([]*cmd.CourseInLinkVO, len(dbCourse.LinkedCourses))
+			for i, c := range dbCourse.LinkedCourses {
+				linkVOs[i] = &cmd.CourseInLinkVO{
+					ID:   c.ID,
+					Name: c.Name,
+				}
+			}
 		}
 
-		apiCourse := &cmd.CourseVO{
+		// 获取课程标签统计
+		tagCount, err := s.CommentMapper.CountCourseTag(ctx, dbCourse.ID)
+		if err != nil {
+			log.Error("CountCourseTag Failed, courseID: ", dbCourse.ID, err)
+			// 如果获取标签统计失败，使用空的 map 而不是返回错误
+			tagCount = make(map[string]int)
+		}
+
+		// 获取校区列表
+		var campuses []string
+		for _, c := range dbCourse.Campuses {
+			campuses = append(campuses, s.StaticData.GetCampusNameByID(c))
+		}
+
+		// 构建 CourseVO
+		courseVO := &cmd.CourseVO{
 			ID:         dbCourse.ID,
 			Name:       dbCourse.Name,
 			Code:       dbCourse.Code,
-			Department: s.StaticData.GetDepartmentNameByID(dbCourse.Department),
 			Category:   s.StaticData.GetCategoryNameByID(dbCourse.Category),
-			Campuses:   campusNames,
+			Campuses:   campuses,
+			Department: s.StaticData.GetDepartmentNameByID(dbCourse.Department),
+			Link:       linkVOs,
 			Teachers:   dbCourse.TeacherIDs,
-			// ... 其他需要返回给前端的字段
+			TagCount:   tagCount,
 		}
-		courseDTOList = append(courseDTOList, apiCourse)
+
+		courseVOs = append(courseVOs, courseVO)
 	}
 
+	// 构建分页结果
+	paginatedCourses := &cmd.PaginatedCourses{
+		Courses:   courseVOs,
+		Total:     total,
+		PageParam: req.PageParam,
+	}
+
+	// 返回响应
 	response := &cmd.ListCoursesResp{
-		Resp: cmd.Success(),
-		PaginatedCourses: &cmd.PaginatedCourses{
-			Courses: courseDTOList,
-			Total:   total,
-			PageParam: &cmd.PageParam{
-				Page:     req.Page,
-				PageSize: req.PageSize,
-			},
-		},
+		Resp:             cmd.Success(),
+		PaginatedCourses: paginatedCourses,
 	}
 
 	return response, nil
