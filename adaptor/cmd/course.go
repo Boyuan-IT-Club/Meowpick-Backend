@@ -23,6 +23,11 @@ type ListCoursesReq struct {
 	*PageParam
 }
 
+type ListCoursesResp struct {
+	*Resp
+	*PaginatedCourses
+}
+
 type GetOneCourseResp struct {
 	*Resp
 	Course *CourseVO `json:"course"`
@@ -32,27 +37,22 @@ type GetCoursesDepartmentsReq struct {
 	Keyword string `form:"keyword"`
 }
 
-type GetCourseCategoriesReq struct {
-	Keyword string `form:"keyword"`
-}
-
-type GetCourseCampusesReq struct {
-	Keyword string `form:"keyword"`
-}
-
-type ListCoursesResp struct {
-	*Resp
-	*PaginatedCourses
-}
-
 type GetCoursesDepartmentsResp struct {
 	*Resp
 	Departments []string `json:"departments"`
 }
 
+type GetCourseCategoriesReq struct {
+	Keyword string `form:"keyword"`
+}
+
 type GetCourseCategoriesResp struct {
 	*Resp
 	Categories []string `json:"categories"`
+}
+
+type GetCourseCampusesReq struct {
+	Keyword string `form:"keyword"`
 }
 
 type GetCourseCampusesResp struct {
