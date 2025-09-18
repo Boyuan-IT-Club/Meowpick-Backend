@@ -13,7 +13,7 @@ func GetOneCourse(c *gin.Context) {
 	var resp *cmd.GetOneCourseResp
 	var err error
 
-	resp, err = provider.Get().CourseService.GetOneCourse(c, c.Param("courseID"))
+	resp, err = provider.Get().CourseService.GetOneCourse(c, c.Param("courseId"))
 	common.PostProcess(c, nil, resp, err)
 }
 

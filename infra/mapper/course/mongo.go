@@ -47,8 +47,8 @@ func (m *MongoMapper) FindOneByID(ctx context.Context, ID string) (*Course, erro
 	//	return nil, errorx.ErrInvalidObjectID
 	//}
 
-	var course *Course
-	if err := m.conn.FindOneNoCache(ctx, course, bson.M{"_id": ID}); err != nil {
+	course := &Course{}
+	if err := m.conn.FindOneNoCache(ctx, course, bson.M{consts.ID: ID}); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			log.Error("No course found with ID：", ID)
 			return nil, errorx.ErrFindFailed
