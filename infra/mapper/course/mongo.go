@@ -21,13 +21,13 @@ const (
 
 type IMongoMapper interface {
 	FindOneByID(ctx context.Context, ID string)
-	FindManyByKeywords(ctx context.Context, query *cmd.ListCoursesReq) ([]*Course, int64, error)
-	GetDeparts(ctx context.Context, req *cmd.GetCoursesDepartsReq) (*cmd.ListCoursesResp, error)
-	GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) ([]int32, error)
-	GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) ([]int32, error)
-	GetCourseSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) ([]*Course, error)
-	CountCourses(ctx context.Context, req *cmd.GetSearchSuggestReq) (int64, error)
-	FindCoursesByTeacherID(ctx context.Context, req *cmd.GetTeachersReq) ([]*Course, int64, error)
+	FindMany(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Course, int64, error)
+	GetDepartments(ctx context.Context, keyword string) ([]int32, error)
+	GetCategories(ctx context.Context, keyword string) ([]int32, error)
+	GetCampuses(ctx context.Context, keyword string) ([]int32, error)
+	GetCourseSuggestions(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Course, error)
+	CountCourses(ctx context.Context, keyword string) (int64, error)
+	FindCoursesByTeacherID(ctx context.Context, teacherID string, param *cmd.PageParam) ([]*Course, int64, error)
 }
 
 type MongoMapper struct {
@@ -43,7 +43,7 @@ func (m *MongoMapper) FindOneByID(ctx context.Context, ID string) (*Course, erro
 	// 数据库直接用string存储 无需转换
 	//courseOID, err := primitive.ObjectIDFromHex(ID)
 	//if err != nil {
-	//	log.Error("CourseID is invalid")
+	//	log.Error("ID is invalid")
 	//	return nil, errorx.ErrInvalidObjectID
 	//}
 
@@ -58,15 +58,15 @@ func (m *MongoMapper) FindOneByID(ctx context.Context, ID string) (*Course, erro
 	return course, nil
 }
 
-func (m *MongoMapper) FindMany(ctx context.Context, query *cmd.ListCoursesReq) ([]*Course, int64, error) {
+func (m *MongoMapper) FindMany(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Course, int64, error) {
 
-	if query.Keyword == "" {
+	if keyword == "" {
 		return []*Course{}, 0, nil
 	}
 
 	//构建查询过滤器 (Filter)
 	filter := bson.M{}
-	filter["$or"] = []bson.M{{consts.Name: query.Keyword}, {consts.Code: query.Keyword}}
+	filter["$or"] = []bson.M{{consts.Name: keyword}, {consts.Code: keyword}}
 
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {
@@ -78,10 +78,10 @@ func (m *MongoMapper) FindMany(ctx context.Context, query *cmd.ListCoursesReq) (
 	}
 
 	//构建分页和排序选项
-	findOptions := util.FindPageOption(query).SetSort(util.DSort(consts.CreatedAt, -1))
+	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
 
 	var courses []*Course //
-	err = m.conn.Find(ctx, &courses, filter, findOptions)
+	err = m.conn.Find(ctx, &courses, filter, ops)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -89,13 +89,13 @@ func (m *MongoMapper) FindMany(ctx context.Context, query *cmd.ListCoursesReq) (
 	return courses, total, nil
 }
 
-func (m *MongoMapper) GetDeparts(ctx context.Context, req *cmd.GetCoursesDepartsReq) ([]int32, error) {
+func (m *MongoMapper) GetDepartments(ctx context.Context, keyword string) ([]int32, error) {
 
-	if req.Keyword == "" {
+	if keyword == "" {
 		return nil, nil
 	}
 
-	filter := bson.M{"$or": []bson.M{{consts.Name: req.Keyword}, {consts.Code: req.Keyword}}}
+	filter := bson.M{"$or": []bson.M{{consts.Name: keyword}, {consts.Code: keyword}}}
 
 	results, err := m.conn.Distinct(ctx, consts.Department, filter)
 	if err != nil {
@@ -112,11 +112,11 @@ func (m *MongoMapper) GetDeparts(ctx context.Context, req *cmd.GetCoursesDeparts
 	return departmentIDs, nil
 }
 
-func (m *MongoMapper) GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) ([]int32, error) {
-	if req.Keyword == "" {
+func (m *MongoMapper) GetCategories(ctx context.Context, keyword string) ([]int32, error) {
+	if keyword == "" {
 		return nil, nil
 	}
-	filter := bson.M{"$or": []bson.M{{consts.Name: req.Keyword}, {consts.Code: req.Keyword}}}
+	filter := bson.M{"$or": []bson.M{{consts.Name: keyword}, {consts.Code: keyword}}}
 
 	results, err := m.conn.Distinct(ctx, consts.Categories, filter)
 	if err != nil {
@@ -131,11 +131,11 @@ func (m *MongoMapper) GetCategories(ctx context.Context, req *cmd.GetCourseCateg
 	return categories, nil
 }
 
-func (m *MongoMapper) GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) ([]int32, error) {
-	if req.Keyword == "" {
+func (m *MongoMapper) GetCampuses(ctx context.Context, keyword string) ([]int32, error) {
+	if keyword == "" {
 		return nil, nil
 	}
-	filter := bson.M{"$or": []bson.M{{consts.Name: req.Keyword}, {consts.Code: req.Keyword}}}
+	filter := bson.M{"$or": []bson.M{{consts.Name: keyword}, {consts.Code: keyword}}}
 	results, err := m.conn.Distinct(ctx, consts.Campuses, filter)
 	if err != nil {
 		return nil, err
@@ -150,19 +150,15 @@ func (m *MongoMapper) GetCampuses(ctx context.Context, req *cmd.GetCourseCampuse
 	return campuses, nil
 }
 
-func (m *MongoMapper) GetCourseSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) ([]*Course, error) {
-	if req.Keyword == "" {
+func (m *MongoMapper) GetCourseSuggestions(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Course, error) {
+	if keyword == "" {
 		return nil, nil
 	}
 	var courses []*Course
-	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
-	pageParam := cmd.PageParam{
-		Page:     req.Page,
-		PageSize: req.PageSize,
-	}
-	findOption := util.FindPageOption(&pageParam)
+	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: keyword, Options: "i"}}}
+	ops := util.FindPageOption(param)
 
-	err := m.conn.Find(ctx, &courses, filter, findOption)
+	err := m.conn.Find(ctx, &courses, filter, ops)
 	if err != nil {
 		return nil, err
 	}
@@ -170,8 +166,8 @@ func (m *MongoMapper) GetCourseSuggestions(ctx context.Context, req *cmd.GetSear
 	return courses, nil
 }
 
-func (m *MongoMapper) CountCourses(ctx context.Context, req *cmd.GetSearchSuggestReq) (int64, error) {
-	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: req.Keyword, Options: "i"}}}
+func (m *MongoMapper) CountCourses(ctx context.Context, keyword string) (int64, error) {
+	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: keyword, Options: "i"}}}
 
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {
@@ -181,15 +177,15 @@ func (m *MongoMapper) CountCourses(ctx context.Context, req *cmd.GetSearchSugges
 }
 
 // FindCoursesByTeacherID 根据教师ID查询其教授的所有课程
-func (m *MongoMapper) FindCoursesByTeacherID(ctx context.Context, req *cmd.GetTeachersReq) ([]*Course, int64, error) {
-	if req.TeacherID == "" {
+func (m *MongoMapper) FindCoursesByTeacherID(ctx context.Context, teacherID string, param *cmd.PageParam) ([]*Course, int64, error) {
+	if teacherID == "" {
 		return nil, 0, errors.New("Teachers is required")
 	}
 
 	var courses []*Course
 
 	// 在 MongoDB 中，对数组字段进行简单的相等查询，会自动查找数组中包含该元素的文档
-	filter := bson.M{consts.TeacherIds: req.TeacherID} //TODO
+	filter := bson.M{consts.TeacherIds: teacherID} //TODO
 
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {
@@ -199,9 +195,9 @@ func (m *MongoMapper) FindCoursesByTeacherID(ctx context.Context, req *cmd.GetTe
 		return []*Course{}, 0, nil
 	}
 
-	findOptions := util.FindPageOption(req).SetSort(util.DSort(consts.CreatedAt, -1))
+	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
 
-	err = m.conn.Find(ctx, &courses, filter, findOptions)
+	err = m.conn.Find(ctx, &courses, filter, ops)
 	if err != nil {
 		return nil, 0, err
 	}

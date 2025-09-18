@@ -8,7 +8,7 @@ import (
 )
 
 // GetOneCourse 精确搜索一个课程，返回课程元信息
-// @router /api/course/query/:courseID [GET]
+// @router /api/course/query/:courseId [GET]
 func GetOneCourse(c *gin.Context) {
 	var resp *cmd.GetOneCourseResp
 	var err error
@@ -17,15 +17,16 @@ func GetOneCourse(c *gin.Context) {
 	common.PostProcess(c, nil, resp, err)
 }
 
+// GetCourseDepartments xxx
 // @router /api/course/departs [GET]
 func GetCourseDepartments(ctx *gin.Context) {
-	var req *cmd.GetCoursesDepartsReq
-	var resp *cmd.GetCoursesDepartsResp
+	var req *cmd.GetCoursesDepartmentsReq
+	var resp *cmd.GetCoursesDepartmentsResp
 	var err error
 	if err = ctx.ShouldBindQuery(&req); err != nil {
 		return
 	}
-	resp, err = provider.Get().CourseService.GetDeparts(ctx, req)
+	resp, err = provider.Get().CourseService.GetDepartments(ctx, req)
 	common.PostProcess(ctx, req, resp, err)
 }
 

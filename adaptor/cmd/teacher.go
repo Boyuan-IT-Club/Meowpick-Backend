@@ -1,7 +1,7 @@
 package cmd
 
 type GetTeachersReq struct {
-	TeacherID string `form:"teacherID"`
+	TeacherID string `form:"teacherId"`
 	*PageParam
 }
 

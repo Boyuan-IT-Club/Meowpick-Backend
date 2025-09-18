@@ -3,24 +3,22 @@ package cmd
 import "time"
 
 type CommentVO struct {
-	ID       string   `json:"_id"`    // MongoDB _id
-	CourseID string   `json:"target"` // courseId
-	Content  string   `json:"text"`   // content
-	UserID   string   `json:"uid"`    // 将后端 UserID 映射为 uid
+	ID       string   `json:"id"`
+	CourseID string   `json:"courseId"`
+	Content  string   `json:"content"`
+	UserID   string   `json:"userId"`
 	Tags     []string `json:"tags"`
 	*LikeVO
 
-	CreatedAt time.Time `json:"crateAt"`   // 注意拼写，映射为 crateAt
-	UpdatedAt time.Time `json:"updatedAt"` // 注意拼写，映射为 updateAt
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // CreateCommentReq 对应 /api/comment/add 的请求体
 type CreateCommentReq struct {
-	// OpenAPI 文档里的 `target` 字段，这里我们明确其为 CourseID
-	CourseID string `json:"target" binding:"required"`
-	// OpenAPI 文档里的 `text` 字段，即评论内容
-	Content string   `json:"text" binding:"required"`
-	Tags    []string `json:"tags"`
+	CourseID string   `json:"courseId" binding:"required"`
+	Content  string   `json:"content" binding:"required"`
+	Tags     []string `json:"tags"`
 }
 
 // CreateCommentResp 对应 /api/comment/add 的响应体
@@ -42,15 +40,15 @@ type GetMyCommentsReq struct {
 
 // GetCourseCommentsReq 是前端分页请求某一课程下的评论时，需要传递的数据结构。
 type GetCourseCommentsReq struct {
-	CourseID string `form:"id" binding:"required"` // TODO确定前端传来_id还是id
+	ID string `form:"id" binding:"required"` // TODO确定前端传来_id还是id
 	*PageParam
 }
 
 // GetCommentsResp 是后端返回给前端的、分页的评论历史数据。
 type GetCommentsResp struct {
 	*Resp
-	Total int64        `json:"total"`
-	Rows  []*CommentVO `json:"rows"`
+	Total    int64        `json:"total"`
+	Comments []*CommentVO `json:"comments"`
 }
 
 // GetMyCommentsResp “我的吐槽” 比一般的CommentVO多了一些课程的信息

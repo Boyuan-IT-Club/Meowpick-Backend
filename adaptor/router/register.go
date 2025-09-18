@@ -37,7 +37,7 @@ func SetupRoutes() *gin.Engine {
 	// CourseApi
 	courseGroup := router.Group("/api/course")
 	{
-		courseGroup.GET("/:courseID", controller.GetOneCourse)         // 精确搜索某个课程
+		courseGroup.GET("/:courseId", controller.GetOneCourse)         // 精确搜索某个课程
 		courseGroup.GET("/departs", controller.GetCourseDepartments)   // 获得某课程的“所属部门”信息
 		courseGroup.GET("/categories", controller.GetCourseCategories) // 获得某课程的“课程类型”信息
 		courseGroup.GET("/campuses", controller.GetCourseCampuses)     // 获得某课程的“开设校区”信息

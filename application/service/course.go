@@ -14,7 +14,7 @@ import (
 type ICourseService interface {
 	GetOneCourse(ctx context.Context, courseID string) (*cmd.GetOneCourseResp, error)
 	ListCourses(ctx context.Context, req *cmd.ListCoursesReq) (*cmd.ListCoursesResp, error)
-	GetDeparts(ctx context.Context, req *cmd.GetCoursesDepartsReq) (*cmd.GetCoursesDepartsResp, error)
+	GetDepartments(ctx context.Context, req *cmd.GetCoursesDepartmentsReq) (*cmd.GetCoursesDepartmentsResp, error)
 	GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) (*cmd.GetCourseCategoriesResp, error)
 	GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) (*cmd.GetCourseCampusesResp, error)
 }
@@ -70,7 +70,7 @@ func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*cmd
 		Name:       dbCourse.Name,
 		Code:       dbCourse.Code,
 		Category:   s.StaticData.GetCategoryNameByID(dbCourse.Category),
-		Campus:     campus,
+		Campuses:   campus,
 		Department: s.StaticData.GetDepartmentNameByID(dbCourse.Department),
 		Link:       linkVOs,
 		Teachers:   dbCourse.TeacherIDs,
@@ -78,14 +78,14 @@ func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*cmd
 	}
 
 	return &cmd.GetOneCourseResp{
-		Resp: cmd.Success(),
-		Data: courseVO,
+		Resp:   cmd.Success(),
+		Course: courseVO,
 	}, nil
 }
 
 func (s *CourseService) ListCourses(ctx context.Context, req *cmd.ListCoursesReq) (*cmd.ListCoursesResp, error) {
 
-	courseListFromDB, total, err := s.CourseMapper.FindMany(ctx, req)
+	courseListFromDB, total, err := s.CourseMapper.FindMany(ctx, req.Keyword, req.PageParam)
 
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func (s *CourseService) ListCourses(ctx context.Context, req *cmd.ListCoursesReq
 			Code:       dbCourse.Code,
 			Department: s.StaticData.GetDepartmentNameByID(dbCourse.Department),
 			Category:   s.StaticData.GetCategoryNameByID(dbCourse.Category),
-			Campus:     campusNames,
+			Campuses:   campusNames,
 			Teachers:   dbCourse.TeacherIDs,
 			// ... 其他需要返回给前端的字段
 		}
@@ -117,8 +117,8 @@ func (s *CourseService) ListCourses(ctx context.Context, req *cmd.ListCoursesReq
 	response := &cmd.ListCoursesResp{
 		Resp: cmd.Success(),
 		PaginatedCourses: &cmd.PaginatedCourses{
-			List:  courseDTOList,
-			Total: total,
+			Courses: courseDTOList,
+			Total:   total,
 			PageParam: &cmd.PageParam{
 				Page:     req.Page,
 				PageSize: req.PageSize,
@@ -129,9 +129,9 @@ func (s *CourseService) ListCourses(ctx context.Context, req *cmd.ListCoursesReq
 	return response, nil
 }
 
-func (s *CourseService) GetDeparts(ctx context.Context, req *cmd.GetCoursesDepartsReq) (*cmd.GetCoursesDepartsResp, error) {
+func (s *CourseService) GetDepartments(ctx context.Context, req *cmd.GetCoursesDepartmentsReq) (*cmd.GetCoursesDepartmentsResp, error) {
 
-	departsIDs, err := s.CourseMapper.GetDeparts(ctx, req)
+	departsIDs, err := s.CourseMapper.GetDepartments(ctx, req.Keyword)
 	if err != nil {
 		return nil, err
 	}
@@ -141,9 +141,9 @@ func (s *CourseService) GetDeparts(ctx context.Context, req *cmd.GetCoursesDepar
 		departs = append(departs, s.StaticData.GetDepartmentNameByID(dbDepart))
 	}
 
-	response := &cmd.GetCoursesDepartsResp{
-		Resp:    cmd.Success(),
-		Departs: departs,
+	response := &cmd.GetCoursesDepartmentsResp{
+		Resp:        cmd.Success(),
+		Departments: departs,
 	}
 
 	return response, nil
@@ -151,7 +151,7 @@ func (s *CourseService) GetDeparts(ctx context.Context, req *cmd.GetCoursesDepar
 
 func (s *CourseService) GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) (*cmd.GetCourseCategoriesResp, error) {
 
-	categoriesIDs, err := s.CourseMapper.GetCategories(ctx, req)
+	categoriesIDs, err := s.CourseMapper.GetCategories(ctx, req.Keyword)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func (s *CourseService) GetCategories(ctx context.Context, req *cmd.GetCourseCat
 
 func (s *CourseService) GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) (*cmd.GetCourseCampusesResp, error) {
 
-	campusesIDs, err := s.CourseMapper.GetCampuses(ctx, req)
+	campusesIDs, err := s.CourseMapper.GetCampuses(ctx, req.Keyword)
 	if err != nil {
 		return nil, err
 	}

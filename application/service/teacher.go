@@ -27,7 +27,7 @@ var TeacherServiceSet = wire.NewSet(
 )
 
 func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetTeachersReq) (*cmd.GetTeachersResp, error) {
-	courseListFromDB, total, err := s.CourseMapper.FindCoursesByTeacherID(ctx, req)
+	courseListFromDB, total, err := s.CourseMapper.FindCoursesByTeacherID(ctx, req.TeacherID, req.PageParam)
 
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetT
 			Code:       dbCourse.Code,
 			Department: s.StaticData.GetDepartmentNameByID(dbCourse.Department),
 			Category:   s.StaticData.GetCategoryNameByID(dbCourse.Category),
-			Campus:     campusNames,
+			Campuses:   campusNames,
 			Teachers:   dbCourse.TeacherIDs,
 			TagCount:   tagCount,
 		}
@@ -66,8 +66,8 @@ func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetT
 	response := &cmd.GetTeachersResp{
 		Resp: cmd.Success(),
 		PaginatedCourses: &cmd.PaginatedCourses{
-			List:  courseDTOList,
-			Total: total,
+			Courses: courseDTOList,
+			Total:   total,
 			PageParam: &cmd.PageParam{
 				Page:     req.Page,
 				PageSize: req.PageSize,

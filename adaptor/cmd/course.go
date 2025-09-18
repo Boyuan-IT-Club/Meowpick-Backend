@@ -11,11 +11,11 @@ type CourseVO struct {
 	Name       string            `json:"name"`
 	Code       string            `json:"code"` // 暂未使用
 	Category   string            `json:"category"`
-	Campus     []string          `json:"campus"`
+	Campuses   []string          `json:"campuses"`
 	Department string            `json:"department"`
 	Link       []*CourseInLinkVO `json:"link"`
 	Teachers   []string          `json:"teachers"`
-	TagCount   map[string]int    `json:"tag_count"` // TODO 修改前端字段
+	TagCount   map[string]int    `json:"tagCount"` // TODO 修改前端字段
 }
 
 type ListCoursesReq struct {
@@ -25,10 +25,10 @@ type ListCoursesReq struct {
 
 type GetOneCourseResp struct {
 	*Resp
-	Data *CourseVO `json:"data"`
+	Course *CourseVO `json:"course"`
 }
 
-type GetCoursesDepartsReq struct {
+type GetCoursesDepartmentsReq struct {
 	Keyword string `form:"keyword"`
 }
 
@@ -45,9 +45,9 @@ type ListCoursesResp struct {
 	*PaginatedCourses
 }
 
-type GetCoursesDepartsResp struct {
+type GetCoursesDepartmentsResp struct {
 	*Resp
-	Departs []string `json:"departs"`
+	Departments []string `json:"departments"`
 }
 
 type GetCourseCategoriesResp struct {
@@ -61,7 +61,7 @@ type GetCourseCampusesResp struct {
 }
 
 type PaginatedCourses struct {
-	List  []*CourseVO `json:"list"`  // 当前页的课程列表
-	Total int64       `json:"total"` // 符合条件的总记录数
+	Courses []*CourseVO `json:"courses"` // 当前页的课程列表
+	Total   int64       `json:"total"`   // 符合条件的总记录数
 	*PageParam
 }
