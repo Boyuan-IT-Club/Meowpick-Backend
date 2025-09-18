@@ -20,7 +20,7 @@ func SetupRoutes() *gin.Engine {
 	searchGroup := router.Group("/api/search")
 	{
 		searchGroup.GET("/recent", controller.GetSearchHistory)      // 搜索历史
-		searchGroup.POST("/course", controller.ListCourses)          // 模糊搜索展示课程列表
+		searchGroup.POST("", controller.ListCourses)                 // 模糊搜索展示课程列表
 		searchGroup.POST("/teacher", controller.ListTeachers)        // 模糊搜索展示教师列表
 		searchGroup.GET("/total", controller.GetTotalCommentsCount)  // 小程序初始化界面的总吐槽数
 		searchGroup.GET("/suggest", controller.GetSearchSuggestions) // 用户输入搜索内容期间获得搜索建议
