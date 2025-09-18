@@ -14,7 +14,7 @@ import (
 // @router /api/search/recent [GET]
 func GetSearchHistory(c *gin.Context) {
 	var err error
-	var resp *cmd.GetSearchHistoryResp
+	var resp *cmd.GetSearchHistoriesResp
 
 	c.Set(consts.ContextUserID, token.GetUserId(c))
 	resp, err = provider.Get().SearchHistoryService.GetSearchHistoryByUserId(c)

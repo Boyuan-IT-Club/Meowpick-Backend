@@ -23,7 +23,7 @@ var SearchServiceSet = wire.NewSet(
 )
 
 func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) (*cmd.GetSearchSuggestResp, error) {
-	courseTotal, err := s.CourseMapper.CountCourses(ctx, req) // 你需要在 CourseMapper 中添加这个新方法
+	courseTotal, err := s.CourseMapper.CountCourses(ctx, req.Keyword)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSe
 
 	if offset < courseTotal { //请求之始为课程
 
-		courseModels, err2 := s.CourseMapper.GetCourseSuggestions(ctx, req)
+		courseModels, err2 := s.CourseMapper.GetCourseSuggestions(ctx, req.Keyword, req.PageParam)
 		if err2 != nil {
 			return nil, err2
 		}
@@ -51,15 +51,12 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSe
 
 		if int64(len(allSuggestions)) < targetSize {
 			teachersNeeded := targetSize - int64(len(allSuggestions))
-			// 创建一个新的请求，只获取需要的老师数量，且从第一页开始
-			teacherReq := &cmd.GetSearchSuggestReq{
-				Keyword: req.Keyword,
-				PageParam: &cmd.PageParam{
-					Page:     1,
-					PageSize: teachersNeeded,
-				},
+			param := &cmd.PageParam{
+				Page:     1,
+				PageSize: teachersNeeded,
 			}
-			teacherModels, _ := s.TeacherMapper.GetTeacherSuggestions(ctx, teacherReq) // 假设这个方法支持分页
+
+			teacherModels, _ := s.TeacherMapper.GetTeacherSuggestions(ctx, req.Keyword, param)
 
 			for _, model := range teacherModels {
 				allSuggestions = append(allSuggestions, &cmd.SearchSuggestionsVO{
@@ -73,15 +70,12 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSe
 		//请求的数据完全在老师列表内
 		teacherOffset := offset - courseTotal
 		teacherPageNum := teacherOffset/targetSize + 1
-
-		teacherReq := &cmd.GetSearchSuggestReq{
-			Keyword: req.Keyword,
-			PageParam: &cmd.PageParam{
-				Page:     teacherPageNum,
-				PageSize: targetSize,
-			},
+		param := &cmd.PageParam{
+			Page:     teacherPageNum,
+			PageSize: targetSize,
 		}
-		teacherModels, _ := s.TeacherMapper.GetTeacherSuggestions(ctx, teacherReq)
+
+		teacherModels, _ := s.TeacherMapper.GetTeacherSuggestions(ctx, req.Keyword, param)
 
 		for _, model := range teacherModels {
 			allSuggestions = append(allSuggestions, &cmd.SearchSuggestionsVO{
@@ -93,8 +87,8 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSe
 
 	// 组装并返回响应
 	response := &cmd.GetSearchSuggestResp{
-		Resp: cmd.Success(),
-		List: allSuggestions,
+		Resp:        cmd.Success(),
+		Suggestions: allSuggestions,
 	}
 
 	return response, nil

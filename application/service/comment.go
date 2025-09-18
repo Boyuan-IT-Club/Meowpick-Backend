@@ -88,7 +88,12 @@ func (s *CommentService) GetMyComments(ctx context.Context, req *cmd.GetMyCommen
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
-	comments, total, err := s.CommentMapper.FindManyByUserID(ctx, req.Page, req.PageSize, userID)
+	param := &cmd.PageParam{
+		Page:     req.Page,
+		PageSize: req.PageSize,
+	}
+
+	comments, total, err := s.CommentMapper.FindManyByUserID(ctx, param, userID)
 	if err != nil {
 		log.CtxError(ctx, "FindManyByUserID failed for userID=%s: %v", userID, err)
 		return nil, errorx.ErrFindFailed
@@ -125,9 +130,9 @@ func (s *CommentService) GetMyComments(ctx context.Context, req *cmd.GetMyCommen
 	}
 
 	resp := &cmd.GetCommentsResp{
-		Resp:  cmd.Success(),
-		Total: total,
-		Rows:  vos,
+		Resp:     cmd.Success(),
+		Total:    total,
+		Comments: vos,
 	}
 
 	return resp, nil
@@ -139,9 +144,14 @@ func (s *CommentService) GetCourseComments(ctx context.Context, req *cmd.GetCour
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
-	courseID := req.CourseID // TODO 调用search接口 校验courseID是否有效
+	courseID := req.ID // TODO 调用search接口 校验courseID是否有效
 
-	comments, total, err := s.CommentMapper.FindManyByCourseID(ctx, req.Page, req.PageSize, courseID)
+	param := &cmd.PageParam{
+		Page:     req.Page,
+		PageSize: req.PageSize,
+	}
+
+	comments, total, err := s.CommentMapper.FindManyByCourseID(ctx, param, courseID)
 	if err != nil {
 		log.CtxError(ctx, "FindManyByUserID failed for userID=%s: %v", courseID, err)
 		return nil, errorx.ErrFindFailed
@@ -178,9 +188,9 @@ func (s *CommentService) GetCourseComments(ctx context.Context, req *cmd.GetCour
 	}
 
 	resp := &cmd.GetCommentsResp{
-		Resp:  cmd.Success(),
-		Total: total,
-		Rows:  vos,
+		Resp:     cmd.Success(),
+		Total:    total,
+		Comments: vos,
 	}
 
 	return resp, nil

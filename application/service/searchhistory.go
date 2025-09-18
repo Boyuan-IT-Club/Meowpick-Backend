@@ -11,7 +11,7 @@ import (
 )
 
 type ISearchHistoryService interface {
-	GetSearchHistoryByUserId(ctx context.Context) (*cmd.GetSearchHistoryResp, error)
+	GetSearchHistoryByUserId(ctx context.Context) (*cmd.GetSearchHistoriesResp, error)
 	LogSearch(ctx context.Context, query string) error
 }
 
@@ -24,7 +24,7 @@ var SearchHistoryServiceSet = wire.NewSet(
 	wire.Bind(new(ISearchHistoryService), new(*SearchHistoryService)),
 )
 
-func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*cmd.GetSearchHistoryResp, error) {
+func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*cmd.GetSearchHistoriesResp, error) {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
 		return nil, errorx.ErrGetUserIDFailed
@@ -46,9 +46,9 @@ func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*c
 		vos = append(vos, vo)
 	}
 
-	resp := &cmd.GetSearchHistoryResp{
-		Resp:    cmd.Success(),
-		History: vos,
+	resp := &cmd.GetSearchHistoriesResp{
+		Resp:      cmd.Success(),
+		Histories: vos,
 	}
 
 	return resp, nil
