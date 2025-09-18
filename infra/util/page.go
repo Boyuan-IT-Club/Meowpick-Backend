@@ -8,11 +8,11 @@ import (
 
 func FindPageOption(param cmd.IPageParam) *options.FindOptions {
 	page, size := param.UnWrap()
-	findOptions := options.Find()
-	findOptions.SetSkip((page - 1) * size)
-	findOptions.SetLimit(size)
+	ops := options.Find()
+	ops.SetSkip((page - 1) * size)
+	ops.SetLimit(size)
 
-	return findOptions
+	return ops
 }
 
 func DSort(s string, i int) bson.D {

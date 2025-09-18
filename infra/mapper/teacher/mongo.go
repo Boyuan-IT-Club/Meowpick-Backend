@@ -32,9 +32,9 @@ func NewMongoMapper(cfg *config.Config) *MongoMapper {
 func (m *MongoMapper) GetTeacherSuggestions(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Teacher, error) {
 	var teachers []*Teacher
 	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: keyword, Options: "i"}}}
-	findOption := util.FindPageOption(param)
+	ops := util.FindPageOption(param)
 
-	err := m.conn.Find(ctx, &teachers, filter, findOption)
+	err := m.conn.Find(ctx, &teachers, filter, ops)
 	if err != nil {
 		return nil, err
 	}

@@ -66,8 +66,7 @@ func (m *MongoMapper) FindManyByUserID(ctx context.Context, param *cmd.PageParam
 		return nil, 0, err
 	}
 
-	pageParam := &cmd.PageParam{Page: param.Page, PageSize: param.PageSize}
-	ops := util.FindPageOption(pageParam).SetSort(util.DSort(consts.CreatedAt, -1))
+	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
 
 	if err = m.conn.Find(ctx, &comments, filter, ops); err != nil {
 		return nil, 0, err
@@ -85,8 +84,7 @@ func (m *MongoMapper) FindManyByCourseID(ctx context.Context, param *cmd.PagePar
 		return nil, 0, err
 	}
 
-	pageParam := &cmd.PageParam{Page: param.Page, PageSize: param.PageSize}
-	ops := util.FindPageOption(pageParam).SetSort(util.DSort(consts.CreatedAt, -1))
+	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
 
 	if err := m.conn.Find(ctx, &comments, filter, ops); err != nil {
 		return nil, 0, err

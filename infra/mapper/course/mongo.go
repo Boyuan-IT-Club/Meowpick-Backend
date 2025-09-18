@@ -78,10 +78,10 @@ func (m *MongoMapper) FindMany(ctx context.Context, keyword string, param *cmd.P
 	}
 
 	//构建分页和排序选项
-	findOptions := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
+	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
 
 	var courses []*Course //
-	err = m.conn.Find(ctx, &courses, filter, findOptions)
+	err = m.conn.Find(ctx, &courses, filter, ops)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -156,9 +156,9 @@ func (m *MongoMapper) GetCourseSuggestions(ctx context.Context, keyword string, 
 	}
 	var courses []*Course
 	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: keyword, Options: "i"}}}
-	findOption := util.FindPageOption(param)
+	ops := util.FindPageOption(param)
 
-	err := m.conn.Find(ctx, &courses, filter, findOption)
+	err := m.conn.Find(ctx, &courses, filter, ops)
 	if err != nil {
 		return nil, err
 	}
@@ -195,9 +195,9 @@ func (m *MongoMapper) FindCoursesByTeacherID(ctx context.Context, teacherID stri
 		return []*Course{}, 0, nil
 	}
 
-	findOptions := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
+	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
 
-	err = m.conn.Find(ctx, &courses, filter, findOptions)
+	err = m.conn.Find(ctx, &courses, filter, ops)
 	if err != nil {
 		return nil, 0, err
 	}
