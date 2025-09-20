@@ -8,7 +8,6 @@ import (
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -161,7 +160,7 @@ func (m *MongoMapper) CountCourses(ctx context.Context, keyword string) (int64, 
 
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {
-		logx.Error("Count All Courses Failed:", err)
+		log.Error("Count All Courses Failed:", err)
 		return 0, err
 	}
 	return total, nil

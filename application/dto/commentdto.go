@@ -2,14 +2,13 @@ package dto
 
 import (
 	"context"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/google/wire"
 )
 
@@ -46,13 +45,13 @@ func (d *CommentDTO) ToCommentVO(ctx context.Context, c *comment.Comment) (*cmd.
 	// 获取点赞信息
 	likeCnt, err := d.LikeMapper.GetLikeCount(ctx, c.ID, consts.CommentType)
 	if err != nil {
-		logx.Error(ctx, "GetLikeCount failed for commentID=%s: %v", c.ID, err)
+		log.CtxError(ctx, "GetLikeCount failed for commentID=%s: %v", c.ID, err)
 		return nil, err
 	}
 
 	active, err := d.LikeMapper.GetLikeStatus(ctx, userID, c.ID, consts.CommentType)
 	if err != nil {
-		logx.Error(ctx, "GetLikeStatus failed for userID=%s, commentID=%s: %v", userID, c.ID, err)
+		log.CtxError(ctx, "GetLikeStatus failed for userID=%s, commentID=%s: %v", userID, c.ID, err)
 		return nil, err
 	}
 
@@ -125,7 +124,7 @@ func (d *CommentDTO) TOMyCommentVO(ctx context.Context, c *comment.Comment) (*cm
 // Comment数组转CommentVO数组 (DB Array to VO Array)
 func (d *CommentDTO) ToCommentVOList(ctx context.Context, comments []*comment.Comment) ([]*cmd.CommentVO, error) {
 	if len(comments) == 0 {
-		logx.Error(ctx, "ToCommentVOList: comments is empty")
+		log.CtxError(ctx, "ToCommentVOList: comments is empty")
 		return []*cmd.CommentVO{}, nil
 	}
 
@@ -147,7 +146,7 @@ func (d *CommentDTO) ToCommentVOList(ctx context.Context, comments []*comment.Co
 // Comment数组转MyCommentVO数组(with 4 extra fields) (DB Array to VO Array)
 func (d *CommentDTO) ToMyCommentVOList(ctx context.Context, comments []*comment.Comment) ([]*cmd.CommentVO, error) {
 	if len(comments) == 0 {
-		logx.Error(ctx, "ToCommentVOList: comments is empty")
+		log.CtxError(ctx, "ToCommentVOList: comments is empty")
 		return []*cmd.CommentVO{}, nil
 	}
 	commentVOs := make([]*cmd.CommentVO, 0, len(comments))

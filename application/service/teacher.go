@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
@@ -12,7 +13,6 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
 	"github.com/google/wire"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type ITeacherService interface {
@@ -33,7 +33,7 @@ func (s *TeacherService) AddNewTeacher(ctx context.Context, req *cmd.AddNewTeach
 	// 鉴权
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
-		logx.Error("Get user Id failed")
+		log.Error("Get user Id failed")
 		return nil, errorx.ErrTokenInvalid
 	}
 	if admin, _ := s.UserMapper.IsAdmin(ctx, userID); !admin {
@@ -54,7 +54,7 @@ func (s *TeacherService) AddNewTeacher(ctx context.Context, req *cmd.AddNewTeach
 	// 增加教师
 	teacherId, err := s.TeacherMapper.AddNewTeacher(ctx, teacherVO)
 	if err != nil {
-		logx.Error("Add New Teacher failed", err)
+		log.Error("Add New Teacher failed", err)
 		return nil, err
 	}
 	teacherVO.ID = teacherId
@@ -70,7 +70,7 @@ var TeacherServiceSet = wire.NewSet(
 func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetTeachersReq) (*cmd.GetTeachersResp, error) {
 	courseListFromDB, total, err := s.CourseMapper.FindCoursesByTeacherID(ctx, req.TeacherID, req.PageParam)
 	if err != nil {
-		logx.Error("FindCoursesByTeacher failed for teacherID: ", req.TeacherID, err)
+		log.Error("FindCoursesByTeacher failed for teacherID: ", req.TeacherID, err)
 		return nil, err
 	}
 	if total == 0 {
@@ -79,7 +79,7 @@ func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetT
 
 	paginatedCourses, err := s.CourseDTO.ToPaginatedCourses(ctx, courseListFromDB, total, req.PageParam)
 	if err != nil {
-		logx.Error("ToPaginatedCourses failed", err)
+		log.Error("ToPaginatedCourses failed", err)
 		return nil, errorx.ErrCourseDB2VO
 	}
 

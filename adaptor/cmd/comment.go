@@ -15,10 +15,10 @@ type CommentVO struct {
 }
 
 type ExtraInfo struct {
-	Name       string   `json:"Name"`
-	Category   string   `json:"Category"`
-	Department string   `json:"Department"`
-	Teachers   []string `json:"Teachers"` // 这里还是直接返回教师名字+职称组合后的字符串列表
+	Name       string   `json:"name"`
+	Category   string   `json:"category"`
+	Department string   `json:"department"`
+	Teachers   []string `json:"teachers"` // 这里还是直接返回教师名字+职称组合后的字符串列表
 }
 
 // CreateCommentReq 对应 /api/comment/add 的请求体

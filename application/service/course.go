@@ -9,8 +9,8 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/google/wire"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type ICourseService interface {
@@ -44,7 +44,7 @@ func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*cmd
 
 	courseVO, err := s.CourseDTO.ToCourseVO(ctx, dbCourse)
 	if err != nil {
-		logx.Error(ctx, "CourseDB To CourseVO error: %v", err)
+		log.CtxError(ctx, "CourseDB To CourseVO error: %v", err)
 		return nil, errorx.ErrCourseDB2VO
 	}
 
@@ -77,7 +77,7 @@ func (s *CourseService) ListCourses(ctx context.Context, req *cmd.ListCoursesReq
 	// 将数据库课程列表转换为分页结果
 	paginatedCourses, err := s.CourseDTO.ToPaginatedCourses(ctx, dbCourses, total, req.PageParam)
 	if err != nil {
-		logx.Error(ctx, "CourseDB To CourseVO error: %v", err)
+		log.CtxError(ctx, "CourseDB To CourseVO error: %v", err)
 		return nil, errorx.ErrCourseDB2VO
 	}
 

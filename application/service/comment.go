@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
@@ -61,7 +60,7 @@ func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateComme
 	}
 	vo, err := s.CommentDto.ToCommentVO(ctx, newComment)
 	if err != nil {
-		logx.Error(ctx, "ToCommentVO failed for userID=%s: %v", userID, err)
+		log.CtxError(ctx, "ToCommentVO failed for userID=%s: %v", userID, err)
 		return nil, errorx.ErrCommentDB2VO
 	}
 	resp := &cmd.CreateCommentResp{
@@ -109,7 +108,7 @@ func (s *CommentService) GetMyComments(ctx context.Context, req *cmd.GetMyCommen
 	// 数据转化db2vo
 	myCommentVOs, err := s.CommentDto.ToMyCommentVOList(ctx, comments)
 	if err != nil {
-		logx.Error(ctx, "ToMyCommentVOList failed for userID=%s: %v", userID, err)
+		log.CtxError(ctx, "ToMyCommentVOList failed for userID=%s: %v", userID, err)
 		return nil, errorx.ErrCommentDB2VO
 	}
 	// 构建GetMyComments响应，包含评论信息&部分课程信息
@@ -141,7 +140,7 @@ func (s *CommentService) GetCourseComments(ctx context.Context, req *cmd.GetCour
 
 	vos, err := s.CommentDto.ToCommentVOList(ctx, comments)
 	if err != nil {
-		logx.Error(ctx, "ToCommentVOList failed for course: ", courseID, err)
+		log.CtxError(ctx, "ToCommentVOList failed for course: ", courseID, err)
 		return nil, errorx.ErrCommentDB2VO
 	}
 
