@@ -36,7 +36,7 @@ func GetSearchSuggestions(c *gin.Context) {
 }
 
 // ListCourses 用户点击🔍时模糊搜索课程，返回课程VO列表
-// @router /api/search/course
+// @router /api/search
 func ListCourses(c *gin.Context) {
 	var req cmd.ListCoursesReq
 	var resp *cmd.ListCoursesResp
