@@ -20,6 +20,7 @@ type CourseVO struct {
 
 type ListCoursesReq struct {
 	Keyword string `form:"keyword"`
+	Type    string `form:"type"` // teacher or course
 	*PageParam
 }
 

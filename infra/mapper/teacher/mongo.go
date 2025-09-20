@@ -5,6 +5,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
+	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,10 +22,16 @@ type IMongoMapper interface {
 	FindOneTeacherByVO(ctx context.Context, vO *cmd.TeacherVO) (*Teacher, error)
 	GetTeacherSuggestions(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Teacher, error)
 	CountTeachers(ctx context.Context, keyword string) (int64, error)
+	GetTeacherIDByName(ctx context.Context, name string) (string, error)
 }
 
 type MongoMapper struct {
 	conn *monc.Model
+}
+
+func NewMongoMapper(cfg *config.Config) *MongoMapper {
+	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, CollectionName, cfg.Cache)
+	return &MongoMapper{conn: conn}
 }
 
 func (m *MongoMapper) AddNewTeacher(ctx context.Context, teacherVO *cmd.TeacherVO) (ID string, err error) {
@@ -47,11 +54,6 @@ func (m *MongoMapper) FindOneTeacherByVO(ctx context.Context, vO *cmd.TeacherVO)
 	return nil, nil
 }
 
-func NewMongoMapper(cfg *config.Config) *MongoMapper {
-	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, CollectionName, cfg.Cache)
-	return &MongoMapper{conn: conn}
-}
-
 func (m *MongoMapper) GetTeacherSuggestions(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Teacher, error) {
 	var teachers []*Teacher
 	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: keyword, Options: "i"}}}
@@ -71,4 +73,16 @@ func (m *MongoMapper) CountTeachers(ctx context.Context, keyword string) (int64,
 		return 0, err
 	}
 	return total, nil
+}
+
+func (m *MongoMapper) GetTeacherIDByName(ctx context.Context, name string) (string, error) {
+	filter := bson.M{consts.Name: name}
+	var teacher Teacher
+	if err := m.conn.FindOne(ctx, consts.ID, &teacher, filter); err != nil {
+		return "", errorx.ErrFindFailed
+	}
+	if teacher.ID == "" {
+		return "", errorx.ErrFindSuccessButNoResult
+	}
+	return teacher.ID, nil
 }

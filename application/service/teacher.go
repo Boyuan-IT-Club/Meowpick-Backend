@@ -16,8 +16,8 @@ import (
 )
 
 type ITeacherService interface {
-	ListCoursesByTeacher(ctx context.Context, req *cmd.GetTeachersReq) (*cmd.GetTeachersResp, error)
 	AddNewTeacher(ctx context.Context, req *cmd.AddNewTeacherReq) (*cmd.AddNewTeacherResp, error)
+	ListCoursesByTeacher(ctx context.Context, req *cmd.ListCoursesReq) (*cmd.ListCoursesResp, error)
 }
 
 type TeacherService struct {
@@ -67,14 +67,20 @@ var TeacherServiceSet = wire.NewSet(
 	wire.Bind(new(ITeacherService), new(*TeacherService)),
 )
 
-func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetTeachersReq) (*cmd.GetTeachersResp, error) {
-	courseListFromDB, total, err := s.CourseMapper.FindCoursesByTeacherID(ctx, req.TeacherID, req.PageParam)
+func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.ListCoursesReq) (*cmd.ListCoursesResp, error) {
+	teacherID, err := s.TeacherMapper.GetTeacherIDByName(ctx, req.Keyword)
 	if err != nil {
-		log.Error("FindCoursesByTeacher failed for teacherID: ", req.TeacherID, err)
+		log.Error("GetTeacherIDByName failed for keyword: ", req.Keyword, err)
+		return nil, err
+	}
+
+	courseListFromDB, total, err := s.CourseMapper.FindCoursesByTeacherID(ctx, teacherID, req.PageParam)
+	if err != nil {
+		log.Error("FindCoursesByTeacher failed for teacherID: ", teacherID, err)
 		return nil, err
 	}
 	if total == 0 {
-		return &cmd.GetTeachersResp{}, errorx.ErrFindSuccessButNoResult
+		return &cmd.ListCoursesResp{}, errorx.ErrFindSuccessButNoResult
 	}
 
 	paginatedCourses, err := s.CourseDTO.ToPaginatedCourses(ctx, courseListFromDB, total, req.PageParam)
@@ -83,10 +89,8 @@ func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *cmd.GetT
 		return nil, errorx.ErrCourseDB2VO
 	}
 
-	response := &cmd.GetTeachersResp{
+	return &cmd.ListCoursesResp{
 		Resp:             cmd.Success(),
 		PaginatedCourses: paginatedCourses,
-	}
-
-	return response, nil
+	}, nil
 }
