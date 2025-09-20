@@ -32,7 +32,7 @@ func CreateComment(c *gin.Context) {
 func ListCourseComments(c *gin.Context) {
 	var err error
 	var req cmd.GetCourseCommentsReq
-	var resp *cmd.GetCommentsResp
+	var resp *cmd.GetCourseCommentsResp
 
 	if err = c.ShouldBindQuery(&req); err != nil {
 		common.PostProcess(c, &req, nil, err)
@@ -65,7 +65,7 @@ func GetTotalCommentsCount(c *gin.Context) {
 func GetMyComments(c *gin.Context) {
 	var err error
 	var req cmd.GetMyCommentsReq
-	var resp *cmd.GetCommentsResp
+	var resp *cmd.GetMyCommentsResp
 
 	if err = c.ShouldBindJSON(&req); err != nil {
 		common.PostProcess(c, &req, nil, err)

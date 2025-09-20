@@ -2,26 +2,32 @@ package service
 
 import (
 	"context"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"time"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/google/wire"
-	"time"
 )
 
 type ICommentService interface {
 	CreateComment(ctx context.Context, req *cmd.CreateCommentReq) (*cmd.CreateCommentResp, error)
-	GetMyComments(ctx context.Context, req *cmd.GetMyCommentsReq) (*cmd.GetCommentsResp, error)
-	GetCourseComments(ctx context.Context, req *cmd.GetCourseCommentsReq) (*cmd.GetCommentsResp, error)
+	GetMyComments(ctx context.Context, req *cmd.GetMyCommentsReq) (*cmd.GetMyCommentsResp, error)
+	GetCourseComments(ctx context.Context, req *cmd.GetCourseCommentsReq) (*cmd.GetCourseCommentsResp, error)
 	GetTotalCommentsCount(ctx context.Context) (*cmd.GetTotalCommentsCountResp, error)
 }
 
 type CommentService struct {
 	CommentMapper *comment.MongoMapper
 	LikeMapper    *like.MongoMapper
+	CourseMapper  *course.MongoMapper
+	StaticData    *consts.StaticData
+	CommentDto    *dto.CommentDTO
 }
 
 var CommentServiceSet = wire.NewSet(
@@ -52,17 +58,14 @@ func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateComme
 		log.CtxError(ctx, "Failed to insert comment for userID=%s: %v", userID, err)
 		return nil, err
 	}
-
+	vo, err := s.CommentDto.ToCommentVO(ctx, newComment)
+	if err != nil {
+		log.CtxError(ctx, "ToCommentVO failed for userID=%s: %v", userID, err)
+		return nil, errorx.ErrCommentDB2VO
+	}
 	resp := &cmd.CreateCommentResp{
-		Resp: cmd.Success(),
-		CommentVO: &cmd.CommentVO{
-			UserID:    newComment.UserID,
-			CourseID:  newComment.CourseID,
-			Content:   newComment.Content,
-			Tags:      newComment.Tags,
-			CreatedAt: newComment.CreatedAt,
-			UpdatedAt: newComment.UpdatedAt,
-		},
+		Resp:      cmd.Success(),
+		CommentVO: vo,
 	}
 
 	return resp, nil
@@ -82,70 +85,48 @@ func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*cmd.GetTot
 	return resp, nil
 }
 
-func (s *CommentService) GetMyComments(ctx context.Context, req *cmd.GetMyCommentsReq) (*cmd.GetCommentsResp, error) {
+func (s *CommentService) GetMyComments(ctx context.Context, req *cmd.GetMyCommentsReq) (*cmd.GetMyCommentsResp, error) {
+	// 获得用户id
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
 		return nil, errorx.ErrGetUserIDFailed
 	}
-
+	// 构建查询参数
 	param := &cmd.PageParam{
 		Page:     req.Page,
 		PageSize: req.PageSize,
 	}
-
+	// 查找数据库获得comments
 	comments, total, err := s.CommentMapper.FindManyByUserID(ctx, param, userID)
 	if err != nil {
 		log.CtxError(ctx, "FindManyByUserID failed for userID=%s: %v", userID, err)
 		return nil, errorx.ErrFindFailed
 	}
-
-	vos := make([]*cmd.CommentVO, 0, len(comments))
-	for _, c := range comments {
-		likeCnt, err := s.LikeMapper.GetLikeCount(ctx, c.ID, consts.CommentType)
-		if err != nil {
-			log.CtxError(ctx, "GetLikeCount failed for commentID=%s: %v", c.ID, err)
-			return nil, errorx.ErrGetCountFailed
-		}
-
-		active, err := s.LikeMapper.GetLikeStatus(ctx, userID, c.ID, consts.CommentType)
-		if err != nil {
-			log.CtxError(ctx, "GetLikeStatus failed for userID=%s, commentID=%s: %v", userID, c.ID, err)
-			return nil, errorx.ErrGetStatusFailed
-		}
-
-		vo := &cmd.CommentVO{
-			ID:       c.ID,
-			Content:  c.Content,
-			Tags:     c.Tags,
-			UserID:   c.UserID,
-			CourseID: c.CourseID,
-			LikeVO: &cmd.LikeVO{
-				Like:    active,
-				LikeCnt: likeCnt,
-			},
-			CreatedAt: c.CreatedAt,
-			UpdatedAt: c.UpdatedAt,
-		}
-		vos = append(vos, vo)
+	if total == 0 {
+		return nil, errorx.ErrFindSuccessButNoResult
 	}
-
-	resp := &cmd.GetCommentsResp{
+	// 数据转化db2vo
+	myCommentVOs, err := s.CommentDto.ToMyCommentVOList(ctx, comments)
+	if err != nil {
+		log.CtxError(ctx, "ToMyCommentVOList failed for userID=%s: %v", userID, err)
+		return nil, errorx.ErrCommentDB2VO
+	}
+	// 构建GetMyComments响应，包含评论信息&部分课程信息
+	resp := &cmd.GetMyCommentsResp{
 		Resp:     cmd.Success(),
 		Total:    total,
-		Comments: vos,
+		Comments: myCommentVOs,
 	}
-
 	return resp, nil
 }
 
-func (s *CommentService) GetCourseComments(ctx context.Context, req *cmd.GetCourseCommentsReq) (*cmd.GetCommentsResp, error) {
+func (s *CommentService) GetCourseComments(ctx context.Context, req *cmd.GetCourseCommentsReq) (*cmd.GetCourseCommentsResp, error) {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
-	courseID := req.ID // TODO 调用search接口 校验courseID是否有效
-
+	courseID := req.ID
 	param := &cmd.PageParam{
 		Page:     req.Page,
 		PageSize: req.PageSize,
@@ -157,37 +138,13 @@ func (s *CommentService) GetCourseComments(ctx context.Context, req *cmd.GetCour
 		return nil, errorx.ErrFindFailed
 	}
 
-	vos := make([]*cmd.CommentVO, 0, len(comments))
-	for _, c := range comments {
-		likeCnt, err := s.LikeMapper.GetLikeCount(ctx, c.ID, consts.CommentType)
-		if err != nil {
-			log.CtxError(ctx, "GetLikeCount failed for commentID=%s: %v", c.ID, err)
-			return nil, errorx.ErrGetCountFailed
-		}
-
-		active, err := s.LikeMapper.GetLikeStatus(ctx, userID, c.ID, consts.CommentType)
-		if err != nil {
-			log.CtxError(ctx, "GetLikeStatus failed for userID=%s, commentID=%s: %v", courseID, c.ID, err)
-			return nil, errorx.ErrGetStatusFailed
-		}
-
-		vo := &cmd.CommentVO{
-			ID:       c.ID,
-			Content:  c.Content,
-			Tags:     c.Tags,
-			UserID:   c.UserID,
-			CourseID: c.CourseID,
-			LikeVO: &cmd.LikeVO{
-				Like:    active,
-				LikeCnt: likeCnt,
-			},
-			CreatedAt: c.CreatedAt,
-			UpdatedAt: c.UpdatedAt,
-		}
-		vos = append(vos, vo)
+	vos, err := s.CommentDto.ToCommentVOList(ctx, comments)
+	if err != nil {
+		log.CtxError(ctx, "ToCommentVOList failed for course: ", courseID, err)
+		return nil, errorx.ErrCommentDB2VO
 	}
 
-	resp := &cmd.GetCommentsResp{
+	resp := &cmd.GetCourseCommentsResp{
 		Resp:     cmd.Success(),
 		Total:    total,
 		Comments: vos,

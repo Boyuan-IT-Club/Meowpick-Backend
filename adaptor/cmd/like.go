@@ -1,7 +1,7 @@
 package cmd
 
 type CreateLikeReq struct {
-	TargetID string `json:"targetID"`
+	TargetID string `json:"targetId"`
 }
 
 type LikeVO struct {

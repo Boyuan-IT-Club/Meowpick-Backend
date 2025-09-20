@@ -3,6 +3,7 @@
 package provider
 
 import (
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
@@ -62,7 +63,14 @@ var InfrastructureSet = wire.NewSet(
 	teacher.NewMongoMapper,
 )
 
+var DTOSet = wire.NewSet(
+	dto.CommentDTOSet,
+	dto.CourseDTOSet,
+	dto.TeacherDTOSet,
+)
+
 var AllProvider = wire.NewSet(
 	ApplicationSet,
 	InfrastructureSet,
+	DTOSet,
 )

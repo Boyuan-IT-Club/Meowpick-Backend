@@ -8,7 +8,7 @@ import (
 )
 
 // GetOneCourse 精确搜索一个课程，返回课程元信息
-// @router /api/course/query/:courseId [GET]
+// @router /api/course/:courseId [GET]
 func GetOneCourse(c *gin.Context) {
 	var resp *cmd.GetOneCourseResp
 	var err error

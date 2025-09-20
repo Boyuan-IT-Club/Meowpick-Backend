@@ -3,6 +3,8 @@ package user
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
@@ -10,7 +12,6 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 )
 
 const (
@@ -24,10 +25,19 @@ type IMongoMapper interface {
 	Update(ctx context.Context, user *User) (err error)
 	FindById(ctx context.Context, userId string) (user *User, err error)
 	FindByWXOpenId(ctx context.Context, wxOpenId string) (user *User, err error)
+	IsAdmin(ctx context.Context, userId string) (isAdmin bool, err error)
 }
 
 type MongoMapper struct {
 	conn *monc.Model
+}
+
+func (m *MongoMapper) IsAdmin(ctx context.Context, userId string) (bool, error) {
+	user, err := m.FindById(ctx, userId)
+	if user == nil {
+		return false, err
+	}
+	return user.Admin, nil
 }
 
 func NewMongoMapper(config *config.Config) *MongoMapper {
