@@ -35,7 +35,8 @@ func GetSearchSuggestions(c *gin.Context) {
 	common.PostProcess(c, &req, resp, err)
 }
 
-// ListCourses 用户点击🔍时模糊搜索课程，返回课程VO列表
+// ListCourses 用户点击🔍时，若req里type为"course"，模糊搜索课程，返回课程VO列表
+// 若req里type为"teacher"，精确搜索教师开设的课程VO列表
 // @router /api/search
 func ListCourses(c *gin.Context) {
 	var req cmd.ListCoursesReq
@@ -60,7 +61,12 @@ func ListCourses(c *gin.Context) {
 		}()
 	}
 
-	resp, err = provider.Get().CourseService.ListCourses(c, &req)
+	if req.Type == "course" {
+		resp, err = provider.Get().CourseService.ListCourses(c, &req)
+	} else if req.Type == "teacher" {
+		resp, err = provider.Get().TeacherService.ListCoursesByTeacher(c, &req)
+	}
+
 	common.PostProcess(c, &req, resp, err)
 }
 
@@ -68,4 +74,5 @@ func ListCourses(c *gin.Context) {
 // @router /api/search/teacher
 func ListTeachers(c *gin.Context) {
 	// TODO 实现接口
+
 }

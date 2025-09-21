@@ -5,6 +5,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
+	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,8 +17,12 @@ const (
 )
 
 type IMongoMapper interface {
-	GetTeacherSuggestions(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Teacher, int64, error)
+	AddNewTeacher(ctx context.Context, teacherVO *cmd.TeacherVO) (ID string, err error)
+	FindOneTeacherByID(ctx context.Context, ID string) (*Teacher, error)
+	FindOneTeacherByVO(ctx context.Context, vO *cmd.TeacherVO) (*Teacher, error)
+	GetTeacherSuggestions(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Teacher, error)
 	CountTeachers(ctx context.Context, keyword string) (int64, error)
+	GetTeacherIDByName(ctx context.Context, name string) (string, error)
 }
 
 type MongoMapper struct {
@@ -27,6 +32,26 @@ type MongoMapper struct {
 func NewMongoMapper(cfg *config.Config) *MongoMapper {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, CollectionName, cfg.Cache)
 	return &MongoMapper{conn: conn}
+}
+
+func (m *MongoMapper) AddNewTeacher(ctx context.Context, teacherVO *cmd.TeacherVO) (ID string, err error) {
+	//TODO implement me
+	return "", nil
+}
+
+func (m *MongoMapper) FindOneTeacherByID(ctx context.Context, ID string) (*Teacher, error) {
+	var teacher Teacher
+	err := m.conn.FindOneNoCache(ctx, &teacher, bson.M{consts.ID: ID})
+	if err != nil {
+		return nil, err
+	}
+
+	return &teacher, nil
+}
+
+func (m *MongoMapper) FindOneTeacherByVO(ctx context.Context, vO *cmd.TeacherVO) (*Teacher, error) {
+	//TODO implement me
+	return nil, nil
 }
 
 func (m *MongoMapper) GetTeacherSuggestions(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Teacher, error) {
@@ -48,4 +73,16 @@ func (m *MongoMapper) CountTeachers(ctx context.Context, keyword string) (int64,
 		return 0, err
 	}
 	return total, nil
+}
+
+func (m *MongoMapper) GetTeacherIDByName(ctx context.Context, name string) (string, error) {
+	filter := bson.M{consts.Name: name}
+	var teacher Teacher
+	if err := m.conn.FindOne(ctx, consts.ID, &teacher, filter); err != nil {
+		return "", errorx.ErrFindFailed
+	}
+	if teacher.ID == "" {
+		return "", errorx.ErrFindSuccessButNoResult
+	}
+	return teacher.ID, nil
 }

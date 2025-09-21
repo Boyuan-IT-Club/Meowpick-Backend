@@ -44,9 +44,8 @@ func SetupRoutes() *gin.Engine {
 	}
 
 	// TeacherApi
-	teacherGroup := router.Group("/api/teacher")
-	{
-		teacherGroup.GET("/query", controller.ListCoursesByTeacher) // 分页获取某教师开设的各个课程
-	}
+	//teacherGroup := router.Group("/api/teacher")
+	//{
+	//}
 	return router
 }

@@ -14,12 +14,13 @@ type CourseVO struct {
 	Campuses   []string          `json:"campuses"`
 	Department string            `json:"department"`
 	Link       []*CourseInLinkVO `json:"link"`
-	Teachers   []string          `json:"teachers"`
-	TagCount   map[string]int    `json:"tagCount"` // TODO 修改前端字段
+	Teachers   []*TeacherVO      `json:"teachers"`
+	TagCount   map[string]int    `json:"tagCount"`
 }
 
 type ListCoursesReq struct {
 	Keyword string `form:"keyword"`
+	Type    string `form:"type"` // teacher or course
 	*PageParam
 }
 
