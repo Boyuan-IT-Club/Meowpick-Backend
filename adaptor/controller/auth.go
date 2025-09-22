@@ -11,7 +11,7 @@ import (
 )
 
 // SignIn 用户登录接口
-// @router /sign_in [POST]
+// @router /api/sign_in [POST]
 func SignIn(c *gin.Context) {
 	var err error
 	var req cmd.SignInRequest
