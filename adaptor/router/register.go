@@ -27,7 +27,7 @@ func SetupRoutes() *gin.Engine {
 	}
 
 	// AuthApi
-	authGroup := router.Group("")
+	authGroup := router.Group("/api")
 	authGroup.POST("/sign_in", controller.SignIn) // 初始化时的登录、授权
 
 	// LikeApi
