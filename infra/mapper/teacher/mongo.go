@@ -78,7 +78,7 @@ func (m *MongoMapper) CountTeachers(ctx context.Context, keyword string) (int64,
 func (m *MongoMapper) GetTeacherIDByName(ctx context.Context, name string) (string, error) {
 	filter := bson.M{consts.Name: name}
 	var teacher Teacher
-	if err := m.conn.FindOne(ctx, consts.ID, &teacher, filter); err != nil {
+	if err := m.conn.FindOneNoCache(ctx, &teacher, filter); err != nil {
 		return "", errorx.ErrFindFailed
 	}
 	if teacher.ID == "" {
