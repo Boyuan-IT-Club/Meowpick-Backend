@@ -49,8 +49,10 @@ func (m *MongoMapper) Insert(ctx context.Context, c *Comment) error {
 }
 
 func (m *MongoMapper) CountAll(ctx context.Context) (int64, error) {
-	filter := bson.M{consts.Deleted: bson.M{"$ne": true}}
-	count, err := m.conn.CountDocuments(ctx, filter)
+	//filter := bson.M{consts.Deleted: bson.M{"$ne": true}}
+	//count, err := m.conn.CountDocuments(ctx, filter)
+
+	count, err := m.conn.EstimatedDocumentCount(ctx)
 	if err != nil {
 		return 0, err
 	}
