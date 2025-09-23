@@ -2,6 +2,11 @@ package service
 
 import (
 	"context"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
+	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
@@ -10,11 +15,14 @@ import (
 
 type ISearchService interface {
 	GetSearchSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) (*cmd.GetSearchSuggestResp, error)
+	ListCoursesByType(ctx context.Context, req *cmd.ListCoursesReq) (*cmd.ListCoursesResp, error)
 }
 
 type SearchService struct {
 	CourseMapper  *course.MongoMapper
 	TeacherMapper *teacher.MongoMapper
+	StaticData    *consts.StaticData
+	CourseDTO     *dto.CourseDTO
 }
 
 var SearchServiceSet = wire.NewSet(
@@ -92,4 +100,51 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSe
 	}
 
 	return response, nil
+}
+
+func (s *SearchService) ListCoursesByType(ctx context.Context, req *cmd.ListCoursesReq) (*cmd.ListCoursesResp, error) {
+	// 将关键词转化为最匹配的种类id
+	var typeId int32
+	if req.Type == consts.Category {
+		typeId = s.StaticData.GetBestCategoryIDByKeyword(req.Keyword)
+	} else if req.Type == consts.Department {
+		typeId = s.StaticData.GetBestDepartmentIDByKeyword(req.Keyword)
+	}
+
+	// 如果转化结果为0，说明关键词搜不到，直接返回
+	if typeId == 0 {
+		return &cmd.ListCoursesResp{
+			Resp:             cmd.Success(),
+			PaginatedCourses: nil,
+		}, errorx.ErrFindSuccessButNoResult
+	}
+
+	var dbCourses []*course.Course
+	var total int64
+	var err error
+	// 根据type决定查询数据库的方式
+	if req.Type == consts.Category {
+		dbCourses, total, err = s.CourseMapper.FindCoursesByCategoryID(ctx, typeId, req.PageParam)
+	} else if req.Type == consts.Department {
+		dbCourses, total, err = s.CourseMapper.FindCoursesByDepartmentID(ctx, typeId, req.PageParam)
+	}
+	// 检查结果
+	if err != nil {
+		log.Error("FindCoursesByCategory err", err)
+		return nil, errorx.ErrFindFailed
+	}
+	if total == 0 {
+		return nil, errorx.ErrFindSuccessButNoResult
+	}
+	// dto转化
+	paginatedCourses, err := s.CourseDTO.ToPaginatedCourses(ctx, dbCourses, total, req.PageParam)
+	if err != nil {
+		log.CtxError(ctx, "CourseDB To CourseVO error: %v", err)
+		return nil, errorx.ErrCourseDB2VO
+	}
+
+	return &cmd.ListCoursesResp{
+		Resp:             cmd.Success(),
+		PaginatedCourses: paginatedCourses,
+	}, nil
 }
