@@ -41,4 +41,9 @@ const (
 	SearchHistoryLimit = 15
 )
 
-// 标签相关 目前是前端写死const，但是建议后端增加一步标签过滤，防止前端给出非法标签。就要用到此处的const了
+// 类型相关
+const (
+	Category = "category"
+	Course   = "course"
+	Teacher  = "teacher"
+)

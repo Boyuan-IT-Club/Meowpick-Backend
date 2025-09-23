@@ -25,7 +25,7 @@ func PostProcess(c *gin.Context, req, resp any, err error) {
 		return
 	}
 
-	if err == errorx.ErrFindSuccessButNoResult {
+	if errors.Is(err, errorx.ErrFindSuccessButNoResult) {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 0,
 			"msg":  "success but no result",

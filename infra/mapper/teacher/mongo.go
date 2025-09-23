@@ -2,7 +2,6 @@ package teacher
 
 import (
 	"context"
-
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
@@ -28,21 +27,6 @@ type IMongoMapper interface {
 
 type MongoMapper struct {
 	conn *monc.Model
-}
-
-func (m *MongoMapper) AddNewTeacher(ctx context.Context, teacherVO *cmd.TeacherVO) (ID string, err error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (m *MongoMapper) FindOneTeacherByID(ctx context.Context, ID string) (*Teacher, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (m *MongoMapper) FindOneTeacherByVO(ctx context.Context, vO *cmd.TeacherVO) (*Teacher, error) {
-	//TODO implement me
-	panic("implement me")
 }
 
 func NewMongoMapper(cfg *config.Config) *MongoMapper {
@@ -94,7 +78,7 @@ func (m *MongoMapper) CountTeachers(ctx context.Context, keyword string) (int64,
 func (m *MongoMapper) GetTeacherIDByName(ctx context.Context, name string) (string, error) {
 	filter := bson.M{consts.Name: name}
 	var teacher Teacher
-	if err := m.conn.FindOneNoCache(ctx, &teacher, filter); err != nil {
+	if err := m.conn.FindOne(ctx, consts.ID, &teacher, filter); err != nil {
 		return "", errorx.ErrFindFailed
 	}
 	if teacher.ID == "" {
