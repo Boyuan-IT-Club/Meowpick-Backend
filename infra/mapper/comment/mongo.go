@@ -2,8 +2,9 @@ package comment
 
 import (
 	"context"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"time"
+
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
@@ -14,8 +15,8 @@ import (
 )
 
 const (
-	prefixKeyCacheKey = "cache:comment"
-	CollectionName    = "comment"
+	CacheKeyPrefix = "comment:courseID="
+	CollectionName = "comment"
 )
 
 type IMongoMapper interface {
@@ -43,7 +44,6 @@ func (m *MongoMapper) Insert(ctx context.Context, c *Comment) error {
 	if c.UpdatedAt.IsZero() {
 		c.UpdatedAt = now
 	}
-
 	_, err := m.conn.InsertOneNoCache(ctx, c)
 	return err
 }

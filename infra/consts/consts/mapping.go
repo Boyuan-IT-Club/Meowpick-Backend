@@ -3,6 +3,8 @@ package consts
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 )
 
 // StaticData 存放所有静态映射数据
@@ -10,6 +12,9 @@ type StaticData struct {
 	Campuses    map[string]string
 	Departments map[string]string
 	Category    map[string]string
+	// Trie树，用于快速模糊匹配
+	categoryTrie   *util.Trie
+	departmentTrie *util.Trie
 }
 
 // NewStaticData 是一个构造函数，直接返回硬编码在代码中的数据。
@@ -20,8 +25,21 @@ func NewStaticData() (*StaticData, error) {
 		Departments: departmentsMap,
 		Category:    categoryMap,
 	}
+	// 构建Trie树
+	data.buildTries()
 	// 返回nil error以匹配wire的构造函数签名
 	return data, nil
+}
+
+// buildTries 构建Trie树
+func (d *StaticData) buildTries() {
+	// 构建分类Trie树
+	d.categoryTrie = util.NewTrie()
+	d.categoryTrie.BuildFromMap(d.Category)
+
+	// 构建院系Trie树
+	d.departmentTrie = util.NewTrie()
+	d.departmentTrie.BuildFromMap(d.Departments)
 }
 
 // GetCampusNameByID 是一个辅助函数，方便通过int类型的ID获取校区名称。
@@ -85,6 +103,26 @@ func (d *StaticData) GetCategoryIDByName(name string) int32 {
 		}
 	}
 	return 0 // 未找到返回0
+}
+
+// GetBestCategoryIDByKeyword 根据关键词获取最匹配的单个分类ID
+func (d *StaticData) GetBestCategoryIDByKeyword(keyword string) int32 {
+	return d.categoryTrie.SearchBest(keyword)
+}
+
+// GetBestDepartmentIDByKeyword 根据关键词获取最匹配的单个部门ID
+func (d *StaticData) GetBestDepartmentIDByKeyword(keyword string) int32 {
+	return d.departmentTrie.SearchBest(keyword)
+}
+
+// GetCategoryIDsByKeyword 根据类别关键词快速查找匹配的分类ID
+func (d *StaticData) GetCategoryIDsByKeyword(keyword string) []int32 {
+	return d.categoryTrie.Search(keyword)
+}
+
+// GetDepartmentIDsByKeyword 根据部门关键词快速查找匹配的院系ID
+func (d *StaticData) GetDepartmentIDsByKeyword(keyword string) []int32 {
+	return d.departmentTrie.Search(keyword)
 }
 
 // --- 以下是硬编码的数据 ---

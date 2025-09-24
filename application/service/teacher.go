@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 
@@ -27,6 +28,7 @@ type TeacherService struct {
 	UserMapper    *user.MongoMapper
 	TeacherMapper *teacher.MongoMapper
 	CourseDTO     *dto.CourseDTO
+	TeacherDTO    *dto.TeacherDTO
 }
 
 func (s *TeacherService) AddNewTeacher(ctx context.Context, req *cmd.AddNewTeacherReq) (*cmd.AddNewTeacherResp, error) {
@@ -46,13 +48,18 @@ func (s *TeacherService) AddNewTeacher(ctx context.Context, req *cmd.AddNewTeach
 		Title:      req.Title,
 		Department: req.Department,
 	}
+	dbTeacher, err := s.TeacherDTO.ToTeacher(ctx, teacherVO)
+	if err != nil {
+		log.Error("TeacherVO To dbTeacher err:", teacherVO, err)
+	}
 	// 防重
-	existingTeacher, err := s.TeacherMapper.FindOneTeacherByVO(ctx, teacherVO)
+	existingTeacher, err := s.TeacherMapper.FindOneTeacherByID(ctx, dbTeacher.ID)
 	if err != nil && existingTeacher != nil {
 		return nil, errorx.ErrTeacherDuplicate
 	}
+
 	// 增加教师
-	teacherId, err := s.TeacherMapper.AddNewTeacher(ctx, teacherVO)
+	teacherId, err := s.TeacherMapper.AddNewTeacher(ctx, dbTeacher)
 	if err != nil {
 		log.Error("Add New Teacher failed", err)
 		return nil, err

@@ -2,16 +2,18 @@ package like
 
 import (
 	"context"
+	"time"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 const (
+	CacheKeyPrefix = "like:"
 	CollectionName = "like"
 )
 
@@ -40,7 +42,7 @@ func (m *MongoMapper) ToggleLike(ctx context.Context, userID, targetID string, t
 	filterActive := bson.M{
 		consts.UserId:   userID,
 		consts.TargetId: targetID,
-		consts.Active:   bson.M{"$ne": false}, // 非 false 都算
+		consts.Active:   bson.M{"$ne": false}, // 非false
 		//"targetType": targetType,
 	}
 
@@ -69,8 +71,8 @@ func (m *MongoMapper) ToggleLike(ctx context.Context, userID, targetID string, t
 		consts.UserId:   userID,
 		consts.TargetId: targetID,
 	}
-
-	if _, err := m.conn.UpdateOneNoCache(ctx, filter, update, updateOptions); err != nil {
+	cacheKey := CacheKeyPrefix + userID + "-" + targetID
+	if _, err := m.conn.UpdateOne(ctx, cacheKey, filter, update, updateOptions); err != nil {
 		return false, errorx.ErrUpdateFailed
 	}
 

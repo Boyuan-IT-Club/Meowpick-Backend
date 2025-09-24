@@ -3,6 +3,8 @@ package searchhistory
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
@@ -10,12 +12,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 const (
-	prefixKeyCacheKey = "cache:searchhistory"
-	CollectionName    = "searchhistory"
+	CacheKeyPrefix = "searchhistory:"
+	CollectionName = "searchhistory"
 )
 
 type ISearchHistory interface {
@@ -58,7 +59,8 @@ func (m *MongoMapper) DeleteOldestByUserID(ctx context.Context, userID string) e
 	ops := options.FindOneAndDelete()
 	ops.SetSort(util.DSort(consts.CreatedAt, 1))
 
-	if err := m.conn.FindOneAndDelete(ctx, "", &oldest, bson.M{consts.UserId: userID}, ops); err != nil && !errors.Is(err, monc.ErrNotFound) {
+	cacheKey := CacheKeyPrefix + userID
+	if err := m.conn.FindOneAndDelete(ctx, cacheKey, &oldest, bson.M{consts.UserId: userID}, ops); err != nil && !errors.Is(err, monc.ErrNotFound) {
 		return err
 	}
 	return nil
@@ -87,6 +89,7 @@ func (m *MongoMapper) UpsertByUserIDAndQuery(ctx context.Context, userID string,
 	// 如果没找到匹配的，就执行插入操作
 	updateOptions := options.Update().SetUpsert(true)
 
-	_, err := m.conn.UpdateOneNoCache(ctx, filter, update, updateOptions)
+	cacheKey := CacheKeyPrefix + userID
+	_, err := m.conn.UpdateOne(ctx, cacheKey, filter, update, updateOptions)
 	return err
 }

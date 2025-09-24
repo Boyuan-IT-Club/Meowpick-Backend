@@ -2,6 +2,7 @@ package course
 
 import (
 	"context"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
@@ -14,6 +15,7 @@ import (
 )
 
 const (
+	CacheKeyPrefix = "course:"
 	CollectionName = "course"
 )
 
@@ -26,6 +28,8 @@ type IMongoMapper interface {
 	GetCourseSuggestions(ctx context.Context, keyword string, param *cmd.PageParam) ([]*Course, error)
 	CountCourses(ctx context.Context, keyword string) (int64, error)
 	FindCoursesByTeacherID(ctx context.Context, teacherID string, param *cmd.PageParam) ([]*Course, int64, error)
+	FindCoursesByCategoryID(ctx context.Context, categoryID int32, param *cmd.PageParam) ([]*Course, int64, error)
+	FindCoursesByDepartmentID(ctx context.Context, departmentID int32, param *cmd.PageParam) ([]*Course, int64, error)
 }
 
 type MongoMapper struct {
@@ -40,7 +44,8 @@ func NewMongoMapper(cfg *config.Config) *MongoMapper {
 func (m *MongoMapper) FindOneByID(ctx context.Context, ID string) (*Course, error) {
 	// 数据库直接用string存储 无需转换ObjectiveID
 	course := &Course{}
-	if err := m.conn.FindOneNoCache(ctx, course, bson.M{consts.ID: ID}); err != nil {
+	cacheKey := CacheKeyPrefix + ID
+	if err := m.conn.FindOne(ctx, cacheKey, course, bson.M{consts.ID: ID}); err != nil {
 		log.Error("No course found with ID：", ID)
 		return nil, err
 	}
@@ -175,7 +180,52 @@ func (m *MongoMapper) FindCoursesByTeacherID(ctx context.Context, teacherID stri
 	var courses []*Course
 
 	// 在 MongoDB 中，对数组字段进行简单的相等查询，会自动查找数组中包含该元素的文档
-	filter := bson.M{consts.TeacherIds: teacherID} //TODO
+	filter := bson.M{consts.TeacherIds: teacherID}
+
+	total, err := m.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	if total == 0 {
+		return []*Course{}, 0, nil
+	}
+
+	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
+
+	err = m.conn.Find(ctx, &courses, filter, ops)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return courses, total, nil
+}
+
+// FindCoursesByCategoryID 根据课程分类/部门分页查询课程
+func (m *MongoMapper) FindCoursesByCategoryID(ctx context.Context, categoryID int32, param *cmd.PageParam) ([]*Course, int64, error) {
+	var courses []*Course
+	filter := bson.M{consts.Category: categoryID}
+
+	total, err := m.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	if total == 0 {
+		return []*Course{}, 0, nil
+	}
+
+	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
+
+	err = m.conn.Find(ctx, &courses, filter, ops)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return courses, total, nil
+}
+
+func (m *MongoMapper) FindCoursesByDepartmentID(ctx context.Context, departmentID int32, param *cmd.PageParam) ([]*Course, int64, error) {
+	var courses []*Course
+	filter := bson.M{consts.Department: departmentID}
 
 	total, err := m.conn.CountDocuments(ctx, filter)
 	if err != nil {

@@ -55,16 +55,18 @@ func ListCourses(c *gin.Context) {
 		// 使用 gin.Context 的副本，安全传入 goroutine
 		cCopy := c.Copy()
 		go func() {
-			if err := provider.Get().SearchHistoryService.LogSearch(cCopy, keyword); err != nil {
+			if err = provider.Get().SearchHistoryService.LogSearch(cCopy, keyword); err != nil {
 				log.CtxError(cCopy, "记录搜索历史失败: %v", err)
 			}
 		}()
 	}
 
-	if req.Type == "course" {
+	if req.Type == consts.Course {
 		resp, err = provider.Get().CourseService.ListCourses(c, &req)
-	} else if req.Type == "teacher" {
+	} else if req.Type == consts.Teacher {
 		resp, err = provider.Get().TeacherService.ListCoursesByTeacher(c, &req)
+	} else {
+		resp, err = provider.Get().SearchService.ListCoursesByType(c, &req) // 根据req中的Type字段，根据Category或department查询课程
 	}
 
 	common.PostProcess(c, &req, resp, err)
