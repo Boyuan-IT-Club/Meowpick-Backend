@@ -2,6 +2,7 @@ package course
 
 import (
 	"context"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
@@ -14,6 +15,7 @@ import (
 )
 
 const (
+	CacheKeyPrefix = "course:"
 	CollectionName = "course"
 )
 
@@ -42,7 +44,8 @@ func NewMongoMapper(cfg *config.Config) *MongoMapper {
 func (m *MongoMapper) FindOneByID(ctx context.Context, ID string) (*Course, error) {
 	// 数据库直接用string存储 无需转换ObjectiveID
 	course := &Course{}
-	if err := m.conn.FindOneNoCache(ctx, course, bson.M{consts.ID: ID}); err != nil {
+	cacheKey := CacheKeyPrefix + ID
+	if err := m.conn.FindOne(ctx, cacheKey, course, bson.M{consts.ID: ID}); err != nil {
 		log.Error("No course found with ID：", ID)
 		return nil, err
 	}
