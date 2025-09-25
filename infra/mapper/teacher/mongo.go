@@ -58,8 +58,8 @@ func (m *MongoMapper) AddNewTeacher(ctx context.Context, teacher *Teacher) (ID s
 
 func (m *MongoMapper) FindOneTeacherByID(ctx context.Context, ID string) (*Teacher, error) {
 	var teacher Teacher
-	cacheKey := CacheKeyPrefix + ID
-	err := m.conn.FindOne(ctx, cacheKey, &teacher, bson.M{consts.ID: ID})
+	//cacheKey := CacheKeyPrefix + ID
+	err := m.conn.FindOneNoCache(ctx, &teacher, bson.M{consts.ID: ID})
 	if err != nil {
 		return nil, err
 	}
