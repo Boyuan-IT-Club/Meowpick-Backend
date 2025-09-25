@@ -2,9 +2,10 @@ package consts
 
 import (
 	"fmt"
+	"regexp"
+	"sort"
 	"strconv"
-
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
+	"strings"
 )
 
 // StaticData 存放所有静态映射数据
@@ -12,37 +13,20 @@ type StaticData struct {
 	Campuses    map[string]string
 	Departments map[string]string
 	Category    map[string]string
-	// Trie树，用于快速模糊匹配
-	categoryTrie   *util.Trie
-	departmentTrie *util.Trie
 }
 
-// NewStaticData 是一个构造函数，直接返回硬编码在代码中的数据。
-// 这样可以确保数据被编译进二进制文件，无需外部文件依赖。
+// NewStaticData 构造函数
 func NewStaticData() (*StaticData, error) {
 	data := &StaticData{
 		Campuses:    campusesMap,
 		Departments: departmentsMap,
 		Category:    categoryMap,
 	}
-	// 构建Trie树
-	data.buildTries()
-	// 返回nil error以匹配wire的构造函数签名
 	return data, nil
 }
 
-// buildTries 构建Trie树
-func (d *StaticData) buildTries() {
-	// 构建分类Trie树
-	d.categoryTrie = util.NewTrie()
-	d.categoryTrie.BuildFromMap(d.Category)
+// --- 基础查询方法（保持不变）---
 
-	// 构建院系Trie树
-	d.departmentTrie = util.NewTrie()
-	d.departmentTrie.BuildFromMap(d.Departments)
-}
-
-// GetCampusNameByID 是一个辅助函数，方便通过int类型的ID获取校区名称。
 func (d *StaticData) GetCampusNameByID(id int32) string {
 	key := fmt.Sprintf("%d", id)
 	if name, ok := d.Campuses[key]; ok {
@@ -51,7 +35,6 @@ func (d *StaticData) GetCampusNameByID(id int32) string {
 	return "未知校区"
 }
 
-// GetDepartmentNameByID 是一个辅助函数，方便通过int类型的ID获取院系名称。
 func (d *StaticData) GetDepartmentNameByID(id int32) string {
 	key := fmt.Sprintf("%d", id)
 	if name, ok := d.Departments[key]; ok {
@@ -60,7 +43,6 @@ func (d *StaticData) GetDepartmentNameByID(id int32) string {
 	return "未知院系"
 }
 
-// GetCategoryNameByID 是一个辅助函数，方便通过int类型的ID获取课程名称。
 func (d *StaticData) GetCategoryNameByID(id int32) string {
 	key := fmt.Sprintf("%d", id)
 	if name, ok := d.Category[key]; ok {
@@ -69,7 +51,6 @@ func (d *StaticData) GetCategoryNameByID(id int32) string {
 	return "未知课程"
 }
 
-// GetCampusIDByName 根据校区名称获取ID
 func (d *StaticData) GetCampusIDByName(name string) int32 {
 	for idStr, campusName := range d.Campuses {
 		if campusName == name {
@@ -78,10 +59,9 @@ func (d *StaticData) GetCampusIDByName(name string) int32 {
 			}
 		}
 	}
-	return 0 // 未找到返回0
+	return 0
 }
 
-// GetDepartmentIDByName 根据院系名称获取ID
 func (d *StaticData) GetDepartmentIDByName(name string) int32 {
 	for idStr, departmentName := range d.Departments {
 		if departmentName == name {
@@ -90,10 +70,9 @@ func (d *StaticData) GetDepartmentIDByName(name string) int32 {
 			}
 		}
 	}
-	return 0 // 未找到返回0
+	return 0
 }
 
-// GetCategoryIDByName 根据类别名称获取ID
 func (d *StaticData) GetCategoryIDByName(name string) int32 {
 	for idStr, categoryName := range d.Category {
 		if categoryName == name {
@@ -102,27 +81,79 @@ func (d *StaticData) GetCategoryIDByName(name string) int32 {
 			}
 		}
 	}
-	return 0 // 未找到返回0
+	return 0
 }
+
+// --- 搜索方法（正则+包含匹配）---
 
 // GetBestCategoryIDByKeyword 根据关键词获取最匹配的单个分类ID
 func (d *StaticData) GetBestCategoryIDByKeyword(keyword string) int32 {
-	return d.categoryTrie.SearchBest(keyword)
+	ids := d.GetCategoryIDsByKeyword(keyword)
+	if len(ids) > 0 {
+		return ids[0]
+	}
+	return 0
 }
 
 // GetBestDepartmentIDByKeyword 根据关键词获取最匹配的单个部门ID
 func (d *StaticData) GetBestDepartmentIDByKeyword(keyword string) int32 {
-	return d.departmentTrie.SearchBest(keyword)
+	ids := d.GetDepartmentIDsByKeyword(keyword)
+	if len(ids) > 0 {
+		return ids[0]
+	}
+	return 0
 }
 
 // GetCategoryIDsByKeyword 根据类别关键词快速查找匹配的分类ID
 func (d *StaticData) GetCategoryIDsByKeyword(keyword string) []int32 {
-	return d.categoryTrie.Search(keyword)
+	return fuzzySearch(keyword, d.Category)
 }
 
 // GetDepartmentIDsByKeyword 根据部门关键词快速查找匹配的院系ID
 func (d *StaticData) GetDepartmentIDsByKeyword(keyword string) []int32 {
-	return d.departmentTrie.Search(keyword)
+	return fuzzySearch(keyword, d.Departments)
+}
+
+// 正则+包含模糊搜索，按匹配度排序
+func fuzzySearch(keyword string, dataMap map[string]string) []int32 {
+	keyword = strings.TrimSpace(keyword)
+	if keyword == "" {
+		return nil
+	}
+	re, err := regexp.Compile("(?i)" + regexp.QuoteMeta(keyword))
+	if err != nil {
+		return nil
+	}
+	type result struct {
+		id    int32
+		score int // 匹配度分数
+	}
+	var results []result
+	for idStr, name := range dataMap {
+		id, err := strconv.ParseInt(idStr, 10, 32)
+		if err != nil {
+			continue
+		}
+		nameLower := strings.ToLower(name)
+		keywordLower := strings.ToLower(keyword)
+		if strings.HasPrefix(nameLower, keywordLower) {
+			results = append(results, result{int32(id), 100})
+		} else if re.MatchString(name) {
+			// 匹配位置越靠前分数越高
+			idx := strings.Index(nameLower, keywordLower)
+			score := 80 - idx
+			results = append(results, result{int32(id), score})
+		}
+	}
+	// 按分数排序
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].score > results[j].score
+	})
+	ids := make([]int32, 0, len(results))
+	for _, r := range results {
+		ids = append(ids, r.id)
+	}
+	return ids
 }
 
 // --- 以下是硬编码的数据 ---
