@@ -2,15 +2,15 @@ package service
 
 import (
 	"context"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
-
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/google/wire"
+	"golang.org/x/sync/errgroup"
 )
 
 type ISearchService interface {
@@ -30,76 +30,109 @@ var SearchServiceSet = wire.NewSet(
 	wire.Bind(new(ISearchService), new(*SearchService)),
 )
 
-func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) (*cmd.GetSearchSuggestResp, error) {
-	courseTotal, err := s.CourseMapper.CountCourses(ctx, req.Keyword)
-	if err != nil {
-		return nil, err
-	}
-
-	targetPage := req.Page
-	targetSize := req.PageSize
-
-	offset := (targetPage - 1) * targetSize
-
-	allSuggestions := make([]*cmd.SearchSuggestionsVO, 0, targetSize)
-
-	if offset < courseTotal { //请求之始为课程
-
-		courseModels, err2 := s.CourseMapper.GetCourseSuggestions(ctx, req.Keyword, req.PageParam)
-		if err2 != nil {
-			return nil, err2
-		}
-
-		for _, model := range courseModels {
-			allSuggestions = append(allSuggestions, &cmd.SearchSuggestionsVO{
-				Type: "course",
-				Name: model.Name,
-			})
-		}
-
-		if int64(len(allSuggestions)) < targetSize {
-			teachersNeeded := targetSize - int64(len(allSuggestions))
-			param := &cmd.PageParam{
-				Page:     1,
-				PageSize: teachersNeeded,
+func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *cmd.GetSearchSuggestReq) (*cmd.GetSearchSuggestResp, error) { // 定义四个任务，每个任务返回其结果和可能的错误
+	tasks := []func(ctx context.Context) ([]*cmd.SearchSuggestionsVO, error){
+		// Courses
+		func(ctx context.Context) ([]*cmd.SearchSuggestionsVO, error) {
+			courseModels, err := s.CourseMapper.GetCourseSuggestions(ctx, req.Keyword, req.PageParam)
+			if err != nil {
+				// 返回错误，errgroup 会捕获它
+				return nil, err
 			}
-
-			teacherModels, _ := s.TeacherMapper.GetTeacherSuggestions(ctx, req.Keyword, param)
-
+			var out []*cmd.SearchSuggestionsVO
+			for _, model := range courseModels {
+				out = append(out, &cmd.SearchSuggestionsVO{
+					Type: "course",
+					Name: model.Name,
+				})
+			}
+			return out, nil
+		},
+		// Teachers
+		func(ctx context.Context) ([]*cmd.SearchSuggestionsVO, error) {
+			teacherModels, err := s.TeacherMapper.GetTeacherSuggestions(ctx, req.Keyword, req.PageParam)
+			if err != nil {
+				// 返回错误
+				return nil, err
+			}
+			var out []*cmd.SearchSuggestionsVO
 			for _, model := range teacherModels {
-				allSuggestions = append(allSuggestions, &cmd.SearchSuggestionsVO{
+				out = append(out, &cmd.SearchSuggestionsVO{
 					Type: "teacher",
 					Name: model.Name,
 				})
 			}
+			return out, nil
+		},
+		// Categories
+		func(ctx context.Context) ([]*cmd.SearchSuggestionsVO, error) {
+			ids := s.StaticData.GetCategoryIDsByKeyword(req.Keyword)
+			var out []*cmd.SearchSuggestionsVO
+			for _, id := range ids {
+				name := s.StaticData.GetCategoryNameByID(id)
+				out = append(out, &cmd.SearchSuggestionsVO{
+					Type: "category",
+					Name: name,
+				})
+			}
+			return out, nil
+		},
+		// Departments
+		func(ctx context.Context) ([]*cmd.SearchSuggestionsVO, error) {
+			ids := s.StaticData.GetDepartmentIDsByKeyword(req.Keyword)
+			var out []*cmd.SearchSuggestionsVO
+			for _, id := range ids {
+				name := s.StaticData.GetDepartmentNameByID(id)
+				out = append(out, &cmd.SearchSuggestionsVO{
+					Type: "department",
+					Name: name,
+				})
+			}
+			return out, nil
+		},
+	}
+
+	n := len(tasks)
+	results := make([][]*cmd.SearchSuggestionsVO, n)
+
+	// 创建一个 errgroup.Group
+	g, ctx := errgroup.WithContext(ctx)
+
+	// 启动 goroutine，使用 g.Go
+	for i, task := range tasks {
+		i, task := i, task
+		g.Go(func() error {
+			suggestions, err := task(ctx)
+			if err != nil {
+				return err
+			}
+			results[i] = suggestions
+			return nil
+		})
+	}
+
+	// 等待所有 goroutine 完成
+	// g.Wait() 会阻塞直到所有任务都完成。 如果任何一个任务返回了非 nil 的 error，g.Wait() 会返回这个 error， 并且自动取消其他正在运行的任务。
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	// 合并结果（保持顺序）
+	var suggestions []*cmd.SearchSuggestionsVO
+	for i := 0; i < n; i++ {
+		if results[i] != nil {
+			suggestions = append(suggestions, results[i]...)
 		}
-
-	} else {
-		//请求的数据完全在老师列表内
-		teacherOffset := offset - courseTotal
-		teacherPageNum := teacherOffset/targetSize + 1
-		param := &cmd.PageParam{
-			Page:     teacherPageNum,
-			PageSize: targetSize,
-		}
-
-		teacherModels, _ := s.TeacherMapper.GetTeacherSuggestions(ctx, req.Keyword, param)
-
-		for _, model := range teacherModels {
-			allSuggestions = append(allSuggestions, &cmd.SearchSuggestionsVO{
-				Type: "teacher",
-				Name: model.Name,
-			})
+		if int64(len(suggestions)) >= req.PageSize {
+			suggestions = suggestions[:req.PageSize]
+			break
 		}
 	}
 
-	// 组装并返回响应
-	response := &cmd.GetSearchSuggestResp{
+	return &cmd.GetSearchSuggestResp{
 		Resp:        cmd.Success(),
-		Suggestions: allSuggestions,
-	}
-
-	return response, nil
+		Suggestions: suggestions,
+	}, nil
 }
 
 func (s *SearchService) ListCoursesByType(ctx context.Context, req *cmd.ListCoursesReq) (*cmd.ListCoursesResp, error) {
