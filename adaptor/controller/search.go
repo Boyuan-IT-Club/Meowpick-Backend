@@ -55,8 +55,8 @@ func ListCourses(c *gin.Context) {
 		// 使用 gin.Context 的副本，安全传入 goroutine
 		cCopy := c.Copy()
 		go func() {
-			if err = provider.Get().SearchHistoryService.LogSearch(cCopy, keyword); err != nil {
-				log.CtxError(cCopy, "记录搜索历史失败: %v", err)
+			if e := provider.Get().SearchHistoryService.LogSearch(cCopy, keyword); e != nil {
+				log.CtxError(cCopy, "记录搜索历史失败: %v", e)
 			}
 		}()
 	}
