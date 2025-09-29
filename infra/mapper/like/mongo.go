@@ -4,9 +4,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -27,13 +29,15 @@ type IMongoMapper interface {
 }
 
 type MongoMapper struct {
-	conn *monc.Model
+	conn      *monc.Model
+	likeCache *cache.LikeCache
 }
 
 func NewMongoMapper(config *config.Config) *MongoMapper {
 	conn := monc.MustNewModel(config.Mongo.URL, config.Mongo.DB, CollectionName, config.Cache)
 	return &MongoMapper{
-		conn: conn,
+		conn:      conn,
+		likeCache: cache.NewLikeCache(config),
 	}
 }
 
@@ -76,10 +80,32 @@ func (m *MongoMapper) ToggleLike(ctx context.Context, userID, targetID string, t
 		return false, errorx.ErrUpdateFailed
 	}
 
+	// 更新点赞状态缓存
+	_ = m.likeCache.SetLikeStatus(ctx, userID, targetID, newActive, 10*time.Minute)
+
+	// 更新点赞数缓存（如果缓存中存在的话）
+	if newActive {
+		// 点赞：缓存+1，如果缓存不存在则不处理（等下次查询时回填）
+		if _, err = m.likeCache.IncrLikeCount(ctx, targetID, 1); err != nil {
+			log.Error("Increase like count cache error", err)
+		}
+	} else {
+		// 取消点赞：缓存-1
+		if _, err = m.likeCache.IncrLikeCount(ctx, targetID, -1); err != nil {
+			log.Error("Increase like count cache error", err)
+		}
+	}
+
 	return newActive, nil
 }
 
 func (m *MongoMapper) GetLikeStatus(ctx context.Context, userID, targetID string, targetType int32) (bool, error) {
+	// 缓存查询
+	if liked, found := m.likeCache.GetLikeStatus(ctx, userID, targetID); found {
+		return liked, nil
+	}
+
+	// 缓存未命中，走数据库查询
 	filter := bson.M{
 		consts.UserId:   userID,
 		consts.TargetId: targetID,
@@ -95,6 +121,12 @@ func (m *MongoMapper) GetLikeStatus(ctx context.Context, userID, targetID string
 }
 
 func (m *MongoMapper) GetLikeCount(ctx context.Context, targetID string, targetType int32) (int64, error) {
+	// 缓存查询
+	if count, found := m.likeCache.GetLikeCount(ctx, targetID); found {
+		return count, nil
+	}
+
+	// 缓存未命中，走数据库查询
 	filter := bson.M{
 		consts.TargetId: targetID,
 		consts.Active:   bson.M{"$ne": false}, // 排除 active==false，包含缺失字段

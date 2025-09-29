@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/router"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
-	"os"
-	"path/filepath"
 )
 
 func Init() {

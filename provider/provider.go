@@ -5,6 +5,7 @@ package provider
 import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
@@ -61,6 +62,8 @@ var InfrastructureSet = wire.NewSet(
 	like.NewMongoMapper,
 	course.NewMongoMapper,
 	teacher.NewMongoMapper,
+	// 缓存相关
+	cache.NewLikeCache,
 )
 
 var DTOSet = wire.NewSet(
