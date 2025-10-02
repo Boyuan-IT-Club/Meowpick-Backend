@@ -14,13 +14,13 @@ import (
 
 type ICommentDTO interface {
 	// ToCommentVO 单个Comment转CommentVO (DB to VO) 包含点赞信息查询
-	ToCommentVO(ctx context.Context, c *comment.Comment) (*cmd.CommentVO, error)
+	ToCommentVO(ctx context.Context, c *comment.Comment, userID string) (*cmd.CommentVO, error)
 	// ToComment 单个CommentVO转Comment (VO to DB)
 	ToComment(ctx context.Context, vo *cmd.CommentVO) (*comment.Comment, error)
 	// TOMyCommentVO 单个Comment转MyCommentVO(with 4 Extra fields) (DB to VO)
-	TOMyCommentVO(ctx context.Context, c *comment.Comment) (*cmd.CommentVO, error)
+	TOMyCommentVO(ctx context.Context, c *comment.Comment, userID string) (*cmd.CommentVO, error)
 	// ToMyCommentVOList Comment数组转MyCommentVO数组(with 4 extra fields) (DB Array to VO Array)
-	ToMyCommentVOList(ctx context.Context, comments []*comment.Comment) ([]*cmd.CommentVO, error)
+	ToMyCommentVOList(ctx context.Context, comments []*comment.Comment, userID string) ([]*cmd.CommentVO, error)
 	// ToCommentVOList Comment数组转CommentVO数组 (DB Array to VO Array)
 	ToCommentVOList(ctx context.Context, comments []*comment.Comment) ([]*cmd.CommentVO, error)
 	// ToCommentList CommentVO数组转Comment数组 (VO Array to DB Array)
@@ -40,8 +40,7 @@ var CommentDTOSet = wire.NewSet(
 )
 
 // 单个Comment转CommentVO (DB to VO) 包含点赞信息查询
-func (d *CommentDTO) ToCommentVO(ctx context.Context, c *comment.Comment) (*cmd.CommentVO, error) {
-	userID := c.UserID
+func (d *CommentDTO) ToCommentVO(ctx context.Context, c *comment.Comment, userID string) (*cmd.CommentVO, error) {
 	// 获取点赞信息
 	likeCnt, err := d.LikeMapper.GetLikeCount(ctx, c.ID, consts.CommentType)
 	if err != nil {
@@ -49,6 +48,7 @@ func (d *CommentDTO) ToCommentVO(ctx context.Context, c *comment.Comment) (*cmd.
 		return nil, err
 	}
 
+	// 这里的userID是查看评论的用户，而非评论作者
 	active, err := d.LikeMapper.GetLikeStatus(ctx, userID, c.ID, consts.CommentType)
 	if err != nil {
 		log.CtxError(ctx, "GetLikeStatus failed for userID=%s, commentID=%s: %v", userID, c.ID, err)
@@ -89,9 +89,9 @@ func (d *CommentDTO) ToComment(ctx context.Context, vo *cmd.CommentVO) (*comment
 }
 
 // 单个Comment转MyCommentVO(with 4 Extra fields) (DB to VO)
-func (d *CommentDTO) TOMyCommentVO(ctx context.Context, c *comment.Comment) (*cmd.CommentVO, error) {
+func (d *CommentDTO) TOMyCommentVO(ctx context.Context, c *comment.Comment, userID string) (*cmd.CommentVO, error) {
 	// 先获取除了Extra以外的字段
-	myCommentVO, err := d.ToCommentVO(ctx, c)
+	myCommentVO, err := d.ToCommentVO(ctx, c, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -121,38 +121,16 @@ func (d *CommentDTO) TOMyCommentVO(ctx context.Context, c *comment.Comment) (*cm
 	return myCommentVO, nil
 }
 
-// Comment数组转CommentVO数组 (DB Array to VO Array)
-func (d *CommentDTO) ToCommentVOList(ctx context.Context, comments []*comment.Comment) ([]*cmd.CommentVO, error) {
-	if len(comments) == 0 {
-		log.CtxError(ctx, "ToCommentVOList: comments is empty")
-		return []*cmd.CommentVO{}, nil
-	}
-
-	commentVOs := make([]*cmd.CommentVO, 0, len(comments))
-
-	for _, c := range comments {
-		commentVO, err := d.ToCommentVO(ctx, c)
-		if err != nil {
-			return nil, err
-		}
-		if commentVO != nil {
-			commentVOs = append(commentVOs, commentVO)
-		}
-	}
-
-	return commentVOs, nil
-}
-
 // Comment数组转MyCommentVO数组(with 4 extra fields) (DB Array to VO Array)
-func (d *CommentDTO) ToMyCommentVOList(ctx context.Context, comments []*comment.Comment) ([]*cmd.CommentVO, error) {
+func (d *CommentDTO) ToMyCommentVOList(ctx context.Context, comments []*comment.Comment, userID string) ([]*cmd.CommentVO, error) {
 	if len(comments) == 0 {
-		log.CtxError(ctx, "ToCommentVOList: comments is empty")
+		log.CtxError(ctx, "ToMyCommentVOList: comments is empty")
 		return []*cmd.CommentVO{}, nil
 	}
 	commentVOs := make([]*cmd.CommentVO, 0, len(comments))
 
 	for _, c := range comments {
-		commentVO, err := d.TOMyCommentVO(ctx, c)
+		commentVO, err := d.TOMyCommentVO(ctx, c, userID)
 		if err != nil {
 			return nil, err
 		}
@@ -183,4 +161,61 @@ func (d *CommentDTO) ToCommentList(ctx context.Context, vos []*cmd.CommentVO) ([
 	}
 
 	return comments, nil
+}
+
+// Comment数组转CommentVO数组 (DB Array to VO Array)
+func (d *CommentDTO) ToCommentVOList(ctx context.Context, comments []*comment.Comment) ([]*cmd.CommentVO, error) {
+	if len(comments) == 0 {
+		log.CtxInfo(ctx, "ToCommentVOList: comments is empty")
+		return []*cmd.CommentVO{}, nil
+	}
+
+	// 提取所有 commentID 和第一个comment的 userID
+	commentIDs := make([]string, len(comments))
+	var userID string
+	for i, c := range comments {
+		commentIDs[i] = c.ID
+		if i == 0 {
+			userID = c.UserID // 取第一个用户ID作为查询点赞状态的用户
+		}
+	}
+
+	// 批量获取点赞数
+	likeCountMap, err := d.LikeMapper.GetBatchLikeCount(ctx, userID, commentIDs, consts.CommentType)
+	if err != nil {
+		log.CtxError(ctx, "GetBatchLikeCount failed: %v", err)
+		return nil, err
+	}
+
+	// 批量获取点赞状态
+	likeStatusMap, err := d.LikeMapper.GetBatchLikeStatus(ctx, userID, commentIDs, consts.CommentType)
+	if err != nil {
+		log.CtxError(ctx, "GetBatchLikeStatus failed: %v", err)
+		return nil, err
+	}
+
+	// 构建结果
+	commentVOs := make([]*cmd.CommentVO, 0, len(comments))
+	for _, c := range comments {
+		// 从批量查询结果中获取点赞信息
+		likeCnt := likeCountMap[c.ID] // 如果不存在则为0
+		active := likeStatusMap[c.ID] // 如果不存在则为false
+
+		commentVO := &cmd.CommentVO{
+			ID:       c.ID,
+			Content:  c.Content,
+			Tags:     c.Tags,
+			UserID:   c.UserID,
+			CourseID: c.CourseID,
+			LikeVO: &cmd.LikeVO{
+				Like:    active,
+				LikeCnt: likeCnt,
+			},
+			CreatedAt: c.CreatedAt,
+			UpdatedAt: c.UpdatedAt,
+		}
+		commentVOs = append(commentVOs, commentVO)
+	}
+
+	return commentVOs, nil
 }
