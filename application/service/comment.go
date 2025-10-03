@@ -58,7 +58,7 @@ func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateComme
 		log.CtxError(ctx, "Failed to insert comment for userID=%s: %v", userID, err)
 		return nil, err
 	}
-	vo, err := s.CommentDto.ToCommentVO(ctx, newComment)
+	vo, err := s.CommentDto.ToCommentVO(ctx, newComment, userID)
 	if err != nil {
 		log.CtxError(ctx, "ToCommentVO failed for userID=%s: %v", userID, err)
 		return nil, errorx.ErrCommentDB2VO
@@ -106,7 +106,7 @@ func (s *CommentService) GetMyComments(ctx context.Context, req *cmd.GetMyCommen
 		return nil, errorx.ErrFindSuccessButNoResult
 	}
 	// 数据转化db2vo
-	myCommentVOs, err := s.CommentDto.ToMyCommentVOList(ctx, comments)
+	myCommentVOs, err := s.CommentDto.ToMyCommentVOList(ctx, comments, userID)
 	if err != nil {
 		log.CtxError(ctx, "ToMyCommentVOList failed for userID=%s: %v", userID, err)
 		return nil, errorx.ErrCommentDB2VO
