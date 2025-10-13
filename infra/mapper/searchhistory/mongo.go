@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	CacheKeyPrefix = "searchhistory:"
+	CacheKeyPrefix = "meowpick:searchhistory:"
 	CollectionName = "searchhistory"
 )
 

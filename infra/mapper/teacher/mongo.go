@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	CacheKeyPrefix  = "teacher:"
+	CacheKeyPrefix  = "meowpick:teacher:"
 	CollectionName  = "teacher"
-	Name2IDCacheKey = "teacher_name_to_id:" // 再建一套name->ID的缓存
+	Name2IDCacheKey = "meowpick:teacher_name_to_id:" // 再建一套name->ID的缓存
 )
 
 type IMongoMapper interface {

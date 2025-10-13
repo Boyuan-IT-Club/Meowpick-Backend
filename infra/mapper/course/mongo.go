@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	CacheKeyPrefix = "course:"
+	CacheKeyPrefix = "meowpick:course:"
 	CollectionName = "course"
 )
 

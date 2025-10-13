@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	CacheKeyPrefix = "comment:courseID="
+	CacheKeyPrefix = "meowpick:comment:courseID="
 	CollectionName = "comment"
 )
 

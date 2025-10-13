@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	CacheKeyPrefix = "like:"
+	CacheKeyPrefix = "meowpick:like:"
 	CollectionName = "like"
 )
 

@@ -16,8 +16,8 @@ import (
 
 const (
 	CollectionName = "user"
-	IDPrefix       = "user:"
-	OpenIDPrefix   = "user_openid:"
+	IDPrefix       = "meowpick:user:"
+	OpenIDPrefix   = "meowpick:user_openid:"
 )
 
 type IMongoMapper interface {
