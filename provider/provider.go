@@ -51,9 +51,13 @@ var ApplicationSet = wire.NewSet(
 	service.CourseServiceSet,
 	service.TeacherServiceSet,
 	service.SearchServiceSet,
+	// Assembler 相关
+	assembler.CommentDTOSet,
+	assembler.CourseDTOSet,
+	assembler.TeacherDTOSet,
 )
 
-var InfrastructureSet = wire.NewSet(
+var InfraSet = wire.NewSet(
 	config.NewConfig,
 	consts.NewStaticData,
 	comment.NewMongoRepo,
@@ -66,14 +70,7 @@ var InfrastructureSet = wire.NewSet(
 	cache.NewLikeCache,
 )
 
-var DTOSet = wire.NewSet(
-	assembler.CommentDTOSet,
-	assembler.CourseDTOSet,
-	assembler.TeacherDTOSet,
-)
-
 var AllProvider = wire.NewSet(
 	ApplicationSet,
-	InfrastructureSet,
-	DTOSet,
+	InfraSet,
 )
