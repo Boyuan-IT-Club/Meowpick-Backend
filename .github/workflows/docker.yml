@@ -19,7 +19,6 @@ env:
 
 jobs:
   build:
-    # 🎯 关键修改：添加 if 条件来跳过 CI
     # 逻辑：如果是手动触发 (workflow_dispatch) 则运行，或者如果是 push 触发且 commit message 不含 '[skip ci]' 则运行。
     if: |
       github.event_name == 'workflow_dispatch' ||

@@ -3,17 +3,17 @@
 package provider
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/like"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/searchhistory"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/user"
 	"github.com/google/wire"
 )
 
@@ -56,20 +56,20 @@ var ApplicationSet = wire.NewSet(
 var InfrastructureSet = wire.NewSet(
 	config.NewConfig,
 	consts.NewStaticData,
-	comment.NewMongoMapper,
-	searchhistory.NewMongoMapper,
-	user.NewMongoMapper,
-	like.NewMongoMapper,
-	course.NewMongoMapper,
-	teacher.NewMongoMapper,
+	comment.NewMongoRepo,
+	searchhistory.NewMongoRepo,
+	user.NewMongoRepo,
+	like.NewMongoRepo,
+	course.NewMongoRepo,
+	teacher.NewMongoRepo,
 	// 缓存相关
 	cache.NewLikeCache,
 )
 
 var DTOSet = wire.NewSet(
-	dto.CommentDTOSet,
-	dto.CourseDTOSet,
-	dto.TeacherDTOSet,
+	assembler.CommentDTOSet,
+	assembler.CourseDTOSet,
+	assembler.TeacherDTOSet,
 )
 
 var AllProvider = wire.NewSet(

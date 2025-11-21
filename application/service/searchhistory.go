@@ -2,21 +2,24 @@ package service
 
 import (
 	"context"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
+
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/searchhistory"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/google/wire"
 )
 
+var _ ISearchHistoryService = (*SearchHistoryService)(nil)
+
 type ISearchHistoryService interface {
-	GetSearchHistoryByUserId(ctx context.Context) (*cmd.GetSearchHistoriesResp, error)
+	GetSearchHistoryByUserId(ctx context.Context) (*dto.GetSearchHistoriesResp, error)
 	LogSearch(ctx context.Context, query string) error
 }
 
 type SearchHistoryService struct {
-	SearchHistoryMapper *searchhistory.MongoMapper
+	SearchHistoryMapper *searchhistory.MongoRepo
 }
 
 var SearchHistoryServiceSet = wire.NewSet(
@@ -24,7 +27,7 @@ var SearchHistoryServiceSet = wire.NewSet(
 	wire.Bind(new(ISearchHistoryService), new(*SearchHistoryService)),
 )
 
-func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*cmd.GetSearchHistoriesResp, error) {
+func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*dto.GetSearchHistoriesResp, error) {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
 		return nil, errorx.ErrGetUserIDFailed
@@ -36,9 +39,9 @@ func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*c
 		return nil, err
 	}
 
-	vos := make([]*cmd.SearchHistoryVO, 0, len(histories))
+	vos := make([]*dto.SearchHistoryVO, 0, len(histories))
 	for _, h := range histories {
-		vo := &cmd.SearchHistoryVO{
+		vo := &dto.SearchHistoryVO{
 			ID:        h.ID,
 			Query:     h.Query,
 			CreatedAt: h.CreatedAt,
@@ -46,8 +49,8 @@ func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*c
 		vos = append(vos, vo)
 	}
 
-	resp := &cmd.GetSearchHistoriesResp{
-		Resp:      cmd.Success(),
+	resp := &dto.GetSearchHistoriesResp{
+		Resp:      dto.Success(),
 		Histories: vos,
 	}
 

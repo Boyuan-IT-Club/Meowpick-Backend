@@ -4,15 +4,16 @@ package token
 
 import (
 	"fmt"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
-	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/user"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type Claims struct {

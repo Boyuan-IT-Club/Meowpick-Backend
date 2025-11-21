@@ -3,26 +3,29 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
+	"time"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/token"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/user"
 	"github.com/google/wire"
 )
 
+var _ IAuthService = (*AuthService)(nil)
+
 type IAuthService interface {
-	SignIn(ctx context.Context, req *cmd.SignInRequest) (resp *cmd.SignInResponse, err error)
+	SignIn(ctx context.Context, req *dto.SignInReq) (resp *dto.SignInResp, err error)
 }
 
 type AuthService struct {
-	UserMapper *user.MongoMapper
+	UserMapper *user.MongoRepo
 }
 
 var AuthServiceSet = wire.NewSet(
@@ -30,7 +33,7 @@ var AuthServiceSet = wire.NewSet(
 	wire.Bind(new(IAuthService), new(*AuthService)),
 )
 
-func (a *AuthService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp *cmd.SignInResponse, err error) {
+func (a *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto.SignInResp, err error) {
 	// 1. 查找或创建用户
 	var openID string
 
@@ -76,11 +79,11 @@ func (a *AuthService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp 
 		if claims, err := token.ParseAndValidate(existingToken); err == nil {
 			// 验证用户匹配且不需要续期
 			if claims.UserID == oldUser.ID && !token.ShouldRenew(claims) {
-				return &cmd.SignInResponse{
+				return &dto.SignInResp{
 					AccessToken: existingToken,
 					ExpiresIn:   int64(time.Until(claims.ExpiresAt.Time).Seconds()),
 					UserID:      oldUser.ID,
-					Resp:        cmd.Success(),
+					Resp:        dto.Success(),
 				}, nil
 			}
 		}
@@ -92,8 +95,8 @@ func (a *AuthService) SignIn(ctx context.Context, req *cmd.SignInRequest) (Resp 
 	}
 
 	// 5. 返回响应
-	return &cmd.SignInResponse{
-		Resp:        cmd.Success(),
+	return &dto.SignInResp{
+		Resp:        dto.Success(),
 		AccessToken: tokenStr,
 		ExpiresIn:   config.GetConfig().Auth.AccessExpire,
 		UserID:      oldUser.ID,

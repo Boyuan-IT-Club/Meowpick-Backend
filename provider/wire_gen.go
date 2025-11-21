@@ -7,16 +7,16 @@
 package provider
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/searchhistory"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/user"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/like"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/searchhistory"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/user"
 )
 
 // Injectors from wire.go:
@@ -26,15 +26,15 @@ func NewProvider() (*Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	mongoMapper := comment.NewMongoMapper(configConfig)
-	likeMongoMapper := like.NewMongoMapper(configConfig)
-	courseMongoMapper := course.NewMongoMapper(configConfig)
+	mongoMapper := comment.NewMongoRepo(configConfig)
+	likeMongoMapper := like.NewMongoRepo(configConfig)
+	courseMongoMapper := course.NewMongoRepo(configConfig)
 	staticData, err := consts.NewStaticData()
 	if err != nil {
 		return nil, err
 	}
-	teacherMongoMapper := teacher.NewMongoMapper(configConfig)
-	commentDTO := &dto.CommentDTO{
+	teacherMongoMapper := teacher.NewMongoRepo(configConfig)
+	commentDTO := &assembler.CommentDTO{
 		LikeMapper:    likeMongoMapper,
 		CourseMapper:  courseMongoMapper,
 		TeacherMapper: teacherMongoMapper,
@@ -47,18 +47,18 @@ func NewProvider() (*Provider, error) {
 		StaticData:    staticData,
 		CommentDto:    commentDTO,
 	}
-	searchhistoryMongoMapper := searchhistory.NewMongoMapper(configConfig)
+	searchhistoryMongoMapper := searchhistory.NewMongoRepo(configConfig)
 	searchHistoryService := service.SearchHistoryService{
 		SearchHistoryMapper: searchhistoryMongoMapper,
 	}
-	userMongoMapper := user.NewMongoMapper(configConfig)
+	userMongoMapper := user.NewMongoRepo(configConfig)
 	authService := service.AuthService{
 		UserMapper: userMongoMapper,
 	}
 	likeService := service.LikeService{
 		LikeMapper: likeMongoMapper,
 	}
-	courseDTO := &dto.CourseDTO{
+	courseDTO := &assembler.CourseDTO{
 		CommentMapper: mongoMapper,
 		TeacherMapper: teacherMongoMapper,
 		CourseMapper:  courseMongoMapper,
@@ -71,7 +71,7 @@ func NewProvider() (*Provider, error) {
 		TeacherMapper: teacherMongoMapper,
 		CourseDTO:     courseDTO,
 	}
-	teacherDTO := &dto.TeacherDTO{
+	teacherDTO := &assembler.TeacherDTO{
 		StaticData: staticData,
 	}
 	teacherService := service.TeacherService{

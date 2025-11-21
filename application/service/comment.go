@@ -2,32 +2,34 @@ package service
 
 import (
 	"context"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"time"
 
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/like"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/google/wire"
 )
 
+var _ ICommentService = (*CommentService)(nil)
+
 type ICommentService interface {
-	CreateComment(ctx context.Context, req *cmd.CreateCommentReq) (*cmd.CreateCommentResp, error)
-	GetMyComments(ctx context.Context, req *cmd.GetMyCommentsReq) (*cmd.GetMyCommentsResp, error)
-	GetCourseComments(ctx context.Context, req *cmd.GetCourseCommentsReq) (*cmd.GetCourseCommentsResp, error)
-	GetTotalCommentsCount(ctx context.Context) (*cmd.GetTotalCommentsCountResp, error)
+	CreateComment(ctx context.Context, req *dto.CreateCommentReq) (*dto.CreateCommentResp, error)
+	GetMyComments(ctx context.Context, req *dto.GetMyCommentsReq) (*dto.GetMyCommentsResp, error)
+	GetCourseComments(ctx context.Context, req *dto.GetCourseCommentsReq) (*dto.GetCourseCommentsResp, error)
+	GetTotalCommentsCount(ctx context.Context) (*dto.GetTotalCommentsCountResp, error)
 }
 
 type CommentService struct {
-	CommentMapper *comment.MongoMapper
-	LikeMapper    *like.MongoMapper
-	CourseMapper  *course.MongoMapper
+	CommentMapper *comment.MongoRepo
+	LikeMapper    *like.MongoRepo
+	CourseMapper  *course.MongoRepo
 	StaticData    *consts.StaticData
-	CommentDto    *dto.CommentDTO
+	CommentDto    *assembler.CommentDTO
 }
 
 var CommentServiceSet = wire.NewSet(
@@ -35,7 +37,7 @@ var CommentServiceSet = wire.NewSet(
 	wire.Bind(new(ICommentService), new(*CommentService)),
 )
 
-func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateCommentReq) (*cmd.CreateCommentResp, error) {
+func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateCommentReq) (*dto.CreateCommentResp, error) {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
 		log.Error("userID is empty or invalid")
@@ -63,36 +65,36 @@ func (s *CommentService) CreateComment(ctx context.Context, req *cmd.CreateComme
 		log.CtxError(ctx, "ToCommentVO failed for userID=%s: %v", userID, err)
 		return nil, errorx.ErrCommentDB2VO
 	}
-	resp := &cmd.CreateCommentResp{
-		Resp:      cmd.Success(),
+	resp := &dto.CreateCommentResp{
+		Resp:      dto.Success(),
 		CommentVO: vo,
 	}
 
 	return resp, nil
 }
 
-func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*cmd.GetTotalCommentsCountResp, error) {
+func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*dto.GetTotalCommentsCountResp, error) {
 	count, err := s.CommentMapper.CountAll(ctx)
 	if err != nil {
 		log.CtxError(ctx, "Service GetTotalCommentCount failed: %v", err)
 		return nil, errorx.ErrGetCountFailed
 	}
-	resp := &cmd.GetTotalCommentsCountResp{
-		Resp:  cmd.Success(),
+	resp := &dto.GetTotalCommentsCountResp{
+		Resp:  dto.Success(),
 		Count: count,
 	}
 
 	return resp, nil
 }
 
-func (s *CommentService) GetMyComments(ctx context.Context, req *cmd.GetMyCommentsReq) (*cmd.GetMyCommentsResp, error) {
+func (s *CommentService) GetMyComments(ctx context.Context, req *dto.GetMyCommentsReq) (*dto.GetMyCommentsResp, error) {
 	// 获得用户id
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
 		return nil, errorx.ErrGetUserIDFailed
 	}
 	// 构建查询参数
-	param := &cmd.PageParam{
+	param := &dto.PageParam{
 		Page:     req.Page,
 		PageSize: req.PageSize,
 	}
@@ -112,22 +114,22 @@ func (s *CommentService) GetMyComments(ctx context.Context, req *cmd.GetMyCommen
 		return nil, errorx.ErrCommentDB2VO
 	}
 	// 构建GetMyComments响应，包含评论信息&部分课程信息
-	resp := &cmd.GetMyCommentsResp{
-		Resp:     cmd.Success(),
+	resp := &dto.GetMyCommentsResp{
+		Resp:     dto.Success(),
 		Total:    total,
 		Comments: myCommentVOs,
 	}
 	return resp, nil
 }
 
-func (s *CommentService) GetCourseComments(ctx context.Context, req *cmd.GetCourseCommentsReq) (*cmd.GetCourseCommentsResp, error) {
+func (s *CommentService) GetCourseComments(ctx context.Context, req *dto.GetCourseCommentsReq) (*dto.GetCourseCommentsResp, error) {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
 	courseID := req.ID
-	param := &cmd.PageParam{
+	param := &dto.PageParam{
 		Page:     req.Page,
 		PageSize: req.PageSize,
 	}
@@ -138,17 +140,19 @@ func (s *CommentService) GetCourseComments(ctx context.Context, req *cmd.GetCour
 		return nil, errorx.ErrFindFailed
 	}
 
-	vos, err := s.CommentDto.ToCommentVOList(ctx, comments)
+	vos, err := s.CommentDto.ToCommentVOList(ctx, comments, userID)
 	if err != nil {
 		log.CtxError(ctx, "ToCommentVOList failed for course: ", courseID, err)
 		return nil, errorx.ErrCommentDB2VO
 	}
 
-	resp := &cmd.GetCourseCommentsResp{
-		Resp:     cmd.Success(),
+	resp := &dto.GetCourseCommentsResp{
+		Resp:     dto.Success(),
 		Total:    total,
 		Comments: vos,
 	}
 
 	return resp, nil
 }
+
+

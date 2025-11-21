@@ -2,31 +2,34 @@ package service
 
 import (
 	"context"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
+
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/comment"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/teacher"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/google/wire"
 )
 
+var _ ICourseService = (*CourseService)(nil)
+
 type ICourseService interface {
-	GetOneCourse(ctx context.Context, courseID string) (*cmd.GetOneCourseResp, error)
-	ListCourses(ctx context.Context, req *cmd.ListCoursesReq) (*cmd.ListCoursesResp, error)
-	GetDepartments(ctx context.Context, req *cmd.GetCoursesDepartmentsReq) (*cmd.GetCoursesDepartmentsResp, error)
-	GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) (*cmd.GetCourseCategoriesResp, error)
-	GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) (*cmd.GetCourseCampusesResp, error)
+	GetOneCourse(ctx context.Context, courseID string) (*dto.GetOneCourseResp, error)
+	ListCourses(ctx context.Context, req *dto.ListCoursesReq) (*dto.ListCoursesResp, error)
+	GetDepartments(ctx context.Context, req *dto.GetCoursesDepartmentsReq) (*dto.GetCoursesDepartmentsResp, error)
+	GetCategories(ctx context.Context, req *dto.GetCourseCategoriesReq) (*dto.GetCourseCategoriesResp, error)
+	GetCampuses(ctx context.Context, req *dto.GetCourseCampusesReq) (*dto.GetCourseCampusesResp, error)
 }
 
 type CourseService struct {
-	CourseMapper  *course.MongoMapper
-	CommentMapper *comment.MongoMapper
+	CourseMapper  *course.MongoRepo
+	CommentMapper *comment.MongoRepo
 	StaticData    *consts.StaticData
-	TeacherMapper *teacher.MongoMapper
-	CourseDTO     *dto.CourseDTO
+	TeacherMapper *teacher.MongoRepo
+	CourseDTO     *assembler.CourseDTO
 }
 
 var CourseServiceSet = wire.NewSet(
@@ -35,7 +38,7 @@ var CourseServiceSet = wire.NewSet(
 )
 
 // GetOneCourse 精确搜索，返回课程的元信息CourseVO
-func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*cmd.GetOneCourseResp, error) {
+func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*dto.GetOneCourseResp, error) {
 
 	dbCourse, err := s.CourseMapper.FindOneByID(ctx, courseID)
 	if err != nil || dbCourse == nil { // 使用id搜索不应出现找不到的情况
@@ -48,13 +51,13 @@ func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*cmd
 		return nil, errorx.ErrCourseDB2VO
 	}
 
-	return &cmd.GetOneCourseResp{
-		Resp:   cmd.Success(),
+	return &dto.GetOneCourseResp{
+		Resp:   dto.Success(),
 		Course: courseVO,
 	}, nil
 }
 
-func (s *CourseService) ListCourses(ctx context.Context, req *cmd.ListCoursesReq) (*cmd.ListCoursesResp, error) {
+func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq) (*dto.ListCoursesResp, error) {
 	// 获取符合条件的总课程数量
 	total, err := s.CourseMapper.CountCourses(ctx, req.Keyword)
 	if err != nil {
@@ -63,8 +66,8 @@ func (s *CourseService) ListCourses(ctx context.Context, req *cmd.ListCoursesReq
 	// 若搜不到任何课程，直接返回空响应
 	if total == 0 {
 		// TODO 正常搜也会搜索不到的场景是否需要log？
-		return &cmd.ListCoursesResp{
-			Resp: cmd.Success(), PaginatedCourses: &cmd.PaginatedCourses{},
+		return &dto.ListCoursesResp{
+			Resp: dto.Success(), PaginatedCourses: &dto.PaginatedCourses{},
 		}, errorx.ErrFindSuccessButNoResult
 	}
 
@@ -82,15 +85,15 @@ func (s *CourseService) ListCourses(ctx context.Context, req *cmd.ListCoursesReq
 	}
 
 	// 返回响应
-	response := &cmd.ListCoursesResp{
-		Resp:             cmd.Success(),
+	response := &dto.ListCoursesResp{
+		Resp:             dto.Success(),
 		PaginatedCourses: paginatedCourses,
 	}
 
 	return response, nil
 }
 
-func (s *CourseService) GetDepartments(ctx context.Context, req *cmd.GetCoursesDepartmentsReq) (*cmd.GetCoursesDepartmentsResp, error) {
+func (s *CourseService) GetDepartments(ctx context.Context, req *dto.GetCoursesDepartmentsReq) (*dto.GetCoursesDepartmentsResp, error) {
 
 	departsIDs, err := s.CourseMapper.GetDepartments(ctx, req.Keyword)
 	if err != nil {
@@ -102,15 +105,15 @@ func (s *CourseService) GetDepartments(ctx context.Context, req *cmd.GetCoursesD
 		departs = append(departs, s.StaticData.GetDepartmentNameByID(dbDepart))
 	}
 
-	response := &cmd.GetCoursesDepartmentsResp{
-		Resp:        cmd.Success(),
+	response := &dto.GetCoursesDepartmentsResp{
+		Resp:        dto.Success(),
 		Departments: departs,
 	}
 
 	return response, nil
 }
 
-func (s *CourseService) GetCategories(ctx context.Context, req *cmd.GetCourseCategoriesReq) (*cmd.GetCourseCategoriesResp, error) {
+func (s *CourseService) GetCategories(ctx context.Context, req *dto.GetCourseCategoriesReq) (*dto.GetCourseCategoriesResp, error) {
 
 	categoriesIDs, err := s.CourseMapper.GetCategories(ctx, req.Keyword)
 	if err != nil {
@@ -122,14 +125,14 @@ func (s *CourseService) GetCategories(ctx context.Context, req *cmd.GetCourseCat
 		categories = append(categories, s.StaticData.GetCategoryNameByID(dbCategory))
 	}
 
-	response := &cmd.GetCourseCategoriesResp{
-		Resp:       cmd.Success(),
+	response := &dto.GetCourseCategoriesResp{
+		Resp:       dto.Success(),
 		Categories: categories,
 	}
 	return response, nil
 }
 
-func (s *CourseService) GetCampuses(ctx context.Context, req *cmd.GetCourseCampusesReq) (*cmd.GetCourseCampusesResp, error) {
+func (s *CourseService) GetCampuses(ctx context.Context, req *dto.GetCourseCampusesReq) (*dto.GetCourseCampusesResp, error) {
 
 	campusesIDs, err := s.CourseMapper.GetCampuses(ctx, req.Keyword)
 	if err != nil {
@@ -141,8 +144,8 @@ func (s *CourseService) GetCampuses(ctx context.Context, req *cmd.GetCourseCampu
 		campuses = append(campuses, s.StaticData.GetCategoryNameByID(dbCampus))
 	}
 
-	response := &cmd.GetCourseCampusesResp{
-		Resp:     cmd.Success(),
+	response := &dto.GetCourseCampusesResp{
+		Resp:     dto.Success(),
 		Campuses: campuses,
 	}
 	return response, nil

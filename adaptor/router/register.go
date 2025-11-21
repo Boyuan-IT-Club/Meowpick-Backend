@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/controller"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/handler"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,36 +11,36 @@ func SetupRoutes() *gin.Engine {
 	// CommentApi
 	commentGroup := router.Group("/api/comment")
 	{
-		commentGroup.POST("/add", controller.CreateComment)       // 发布评论
-		commentGroup.GET("/query", controller.ListCourseComments) // 分页获取课程下的评论
-		commentGroup.POST("/history", controller.GetMyComments)   // 获得我的吐槽
+		commentGroup.POST("/add", handler.CreateComment)       // 发布评论
+		commentGroup.GET("/query", handler.ListCourseComments) // 分页获取课程下的评论
+		commentGroup.POST("/history", handler.GetMyComments)   // 获得我的吐槽
 	}
 
 	// SearchApi
 	searchGroup := router.Group("/api/search")
 	{
-		searchGroup.GET("/recent", controller.GetSearchHistory)      // 搜索历史
-		searchGroup.POST("", controller.ListCourses)                 // 模糊搜索展示课程列表
-		searchGroup.POST("/teacher", controller.ListTeachers)        // 模糊搜索展示教师列表
-		searchGroup.GET("/total", controller.GetTotalCommentsCount)  // 小程序初始化界面的总吐槽数
-		searchGroup.GET("/suggest", controller.GetSearchSuggestions) // 用户输入搜索内容期间获得搜索建议
+		searchGroup.GET("/recent", handler.GetSearchHistory)      // 搜索历史
+		searchGroup.POST("", handler.ListCourses)                 // 模糊搜索展示课程列表
+		searchGroup.POST("/teacher", handler.ListTeachers)        // 模糊搜索展示教师列表
+		searchGroup.GET("/total", handler.GetTotalCommentsCount)  // 小程序初始化界面的总吐槽数
+		searchGroup.GET("/suggest", handler.GetSearchSuggestions) // 用户输入搜索内容期间获得搜索建议
 	}
 
 	// AuthApi
 	authGroup := router.Group("/api")
-	authGroup.POST("/sign_in", controller.SignIn) // 初始化时的登录、授权
+	authGroup.POST("/sign_in", handler.SignIn) // 初始化时的登录、授权
 
 	// LikeApi
 	likeGroup := router.Group("/api/action")
-	likeGroup.POST("/like/:id", controller.Like) // 为评论点赞
+	likeGroup.POST("/like/:id", handler.Like) // 为评论点赞
 
 	// CourseApi
 	courseGroup := router.Group("/api/course")
 	{
-		courseGroup.GET("/:courseId", controller.GetOneCourse)         // 精确搜索某个课程
-		courseGroup.GET("/departs", controller.GetCourseDepartments)   // 获得某课程的“所属部门”信息
-		courseGroup.GET("/categories", controller.GetCourseCategories) // 获得某课程的“课程类型”信息
-		courseGroup.GET("/campuses", controller.GetCourseCampuses)     // 获得某课程的“开设校区”信息
+		courseGroup.GET("/:courseId", handler.GetOneCourse)         // 精确搜索某个课程
+		courseGroup.GET("/departs", handler.GetCourseDepartments)   // 获得某课程的“所属部门”信息
+		courseGroup.GET("/categories", handler.GetCourseCategories) // 获得某课程的“课程类型”信息
+		courseGroup.GET("/campuses", handler.GetCourseCampuses)     // 获得某课程的“开设校区”信息
 	}
 
 	// TeacherApi

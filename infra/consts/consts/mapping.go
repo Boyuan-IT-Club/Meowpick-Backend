@@ -25,7 +25,7 @@ func NewStaticData() (*StaticData, error) {
 	return data, nil
 }
 
-// --- 基础查询方法（保持不变）---
+// --- 基础查询方法 ---
 
 func (d *StaticData) GetCampusNameByID(id int32) string {
 	key := fmt.Sprintf("%d", id)

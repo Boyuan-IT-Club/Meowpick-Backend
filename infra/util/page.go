@@ -1,12 +1,12 @@
 package util
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func FindPageOption(param cmd.IPageParam) *options.FindOptions {
+func FindPageOption(param dto.IPageParam) *options.FindOptions {
 	page, size := param.UnWrap()
 	ops := options.Find()
 	ops.SetSkip(page * size)

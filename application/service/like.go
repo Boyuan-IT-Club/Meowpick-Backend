@@ -2,20 +2,23 @@ package service
 
 import (
 	"context"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/cmd"
+
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/mapper/like"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/like"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/google/wire"
 )
 
+var _ ILikeService = (*LikeService)(nil)
+
 type ILikeService interface {
-	Like(ctx context.Context, req *cmd.CreateLikeReq) (resp *cmd.LikeResp, err error)
+	Like(ctx context.Context, req *dto.CreateLikeReq) (resp *dto.LikeResp, err error)
 }
 
 type LikeService struct {
-	LikeMapper *like.MongoMapper
+	LikeMapper *like.MongoRepo
 }
 
 var LikeServiceSet = wire.NewSet(
@@ -23,7 +26,7 @@ var LikeServiceSet = wire.NewSet(
 	wire.Bind(new(ILikeService), new(*LikeService)),
 )
 
-func (s *LikeService) Like(ctx context.Context, req *cmd.CreateLikeReq) (resp *cmd.LikeResp, err error) {
+func (s *LikeService) Like(ctx context.Context, req *dto.CreateLikeReq) (resp *dto.LikeResp, err error) {
 	// 参数校验
 	var targetID string
 	var userID string
@@ -52,17 +55,17 @@ func (s *LikeService) Like(ctx context.Context, req *cmd.CreateLikeReq) (resp *c
 	}
 
 	// 步骤三：使用两个最新的数据创建响应
-	resp = &cmd.LikeResp{
-		Resp: cmd.Success(),
-		LikeVO: &cmd.LikeVO{
+	resp = &dto.LikeResp{
+		Resp: dto.Success(),
+		LikeVO: &dto.LikeVO{
 			Like:    newActive,
 			LikeCnt: likeCount, // <-- 现在 likeCount 是最新的准确数据了
 		},
 	}
 
-	resp = &cmd.LikeResp{
-		Resp: cmd.Success(),
-		LikeVO: &cmd.LikeVO{
+	resp = &dto.LikeResp{
+		Resp: dto.Success(),
+		LikeVO: &dto.LikeVO{
 			Like:    newActive,
 			LikeCnt: likeCount, // <-- 现在 likeCount 是最新的准确数据了
 		},
