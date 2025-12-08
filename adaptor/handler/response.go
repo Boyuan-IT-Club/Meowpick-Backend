@@ -1,4 +1,18 @@
-package adaptor
+// Copyright 2025 Boyuan-IT-Club
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package handler
 
 import (
 	"errors"
@@ -7,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/lib"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/gin-gonic/gin"
 )
@@ -17,7 +31,7 @@ import (
 // 最佳实践:
 // - 在controller中调用业务处理, 处理结束后调用PostProcess
 func PostProcess(c *gin.Context, req, resp any, err error) {
-	log.CtxInfo(c, "[%s] req=%s, resp=%s, err=%v", c.FullPath(), util.JSONF(req), util.JSONF(resp), err)
+	log.CtxInfo(c, "[%s] req=%s, response=%s, err=%v", c.FullPath(), lib.JSONF(req), lib.JSONF(resp), err)
 
 	// 无错, 正常响应
 	if err == nil {

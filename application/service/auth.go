@@ -1,3 +1,17 @@
+// Copyright 2025 Boyuan-IT-Club
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package service
 
 import (
@@ -8,10 +22,10 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/openid"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/user"
@@ -39,7 +53,7 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 	if req.Code == "test123" {
 		openID = "debug-openid-001" // 你随便写一个唯一标识
 	} else {
-		openID = util.GetWeChatOpenID(config.GetConfig().WeApp.AppID,
+		openID = openid.GetWeChatOpenID(config.GetConfig().WeApp.AppID,
 			config.GetConfig().WeApp.AppSecret, req.Code)
 	}
 	if openID == "" {

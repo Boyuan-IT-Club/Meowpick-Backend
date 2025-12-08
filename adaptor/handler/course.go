@@ -1,7 +1,20 @@
+// Copyright 2025 Boyuan-IT-Club
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package handler
 
 import (
-	common "github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/gin-gonic/gin"
@@ -14,7 +27,7 @@ func GetOneCourse(c *gin.Context) {
 	var err error
 
 	resp, err = provider.Get().CourseService.GetOneCourse(c, c.Param("courseId"))
-	common.PostProcess(c, nil, resp, err)
+	PostProcess(c, nil, resp, err)
 }
 
 // GetCourseDepartments xxx
@@ -27,7 +40,7 @@ func GetCourseDepartments(ctx *gin.Context) {
 		return
 	}
 	resp, err = provider.Get().CourseService.GetDepartments(ctx, req)
-	common.PostProcess(ctx, req, resp, err)
+	PostProcess(ctx, req, resp, err)
 }
 
 // GetCourseCategories xxx
@@ -40,7 +53,7 @@ func GetCourseCategories(ctx *gin.Context) {
 		return
 	}
 	resp, err = provider.Get().CourseService.GetCategories(ctx, req)
-	common.PostProcess(ctx, req, resp, err)
+	PostProcess(ctx, req, resp, err)
 }
 
 func GetCourseCampuses(ctx *gin.Context) {
@@ -51,5 +64,5 @@ func GetCourseCampuses(ctx *gin.Context) {
 		return
 	}
 	resp, err = provider.Get().CourseService.GetCampuses(ctx, req)
-	common.PostProcess(ctx, req, resp, err)
+	PostProcess(ctx, req, resp, err)
 }

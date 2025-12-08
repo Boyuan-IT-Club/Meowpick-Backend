@@ -1,3 +1,17 @@
+// Copyright 2025 Boyuan-IT-Club
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package searchhistory
 
 import (
@@ -6,8 +20,8 @@ import (
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -41,7 +55,7 @@ func (m *MongoRepo) FindByUserID(ctx context.Context, userID string) ([]*SearchH
 	var histories []*SearchHistory
 
 	ops := options.Find()
-	ops.SetSort(util.DSort(consts.CreatedAt, -1)) // 降序, 最新的在最前面
+	ops.SetSort(page.DSort(consts.CreatedAt, -1)) // 降序, 最新的在最前面
 	ops.SetLimit(consts.SearchHistoryLimit)
 
 	filter := bson.M{consts.UserId: userID}
@@ -59,7 +73,7 @@ func (m *MongoRepo) CountByUserID(ctx context.Context, userID string) (int64, er
 func (m *MongoRepo) DeleteOldestByUserID(ctx context.Context, userID string) error {
 	var oldest SearchHistory
 	ops := options.FindOneAndDelete()
-	ops.SetSort(util.DSort(consts.CreatedAt, 1))
+	ops.SetSort(page.DSort(consts.CreatedAt, 1))
 
 	cacheKey := CacheKeyPrefix + userID
 	if err := m.conn.FindOneAndDelete(ctx, cacheKey, &oldest, bson.M{consts.UserId: userID}, ops); err != nil && !errors.Is(err, monc.ErrNotFound) {

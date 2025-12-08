@@ -10,13 +10,13 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/like"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/searchhistory"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/user"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 )
 
 // Injectors from wire.go:
@@ -26,66 +26,65 @@ func NewProvider() (*Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	mongoMapper := comment.NewMongoRepo(configConfig)
-	likeMongoMapper := like.NewMongoRepo(configConfig)
-	courseMongoMapper := course.NewMongoRepo(configConfig)
-	staticData, err := consts.NewStaticData()
+	mongoRepo := comment.NewMongoRepo(configConfig)
+	likeMongoRepo := like.NewMongoRepo(configConfig)
+	courseMongoRepo := course.NewMongoRepo(configConfig)
+	staticData, err := mapping.NewStaticData()
 	if err != nil {
 		return nil, err
 	}
-	teacherMongoMapper := teacher.NewMongoRepo(configConfig)
+	teacherMongoRepo := teacher.NewMongoRepo(configConfig)
 	commentDTO := &assembler.CommentDTO{
-		LikeMapper:    likeMongoMapper,
-		CourseMapper:  courseMongoMapper,
-		TeacherMapper: teacherMongoMapper,
+		LikeMapper:    likeMongoRepo,
+		CourseMapper:  courseMongoRepo,
+		TeacherMapper: teacherMongoRepo,
 		StaticData:    staticData,
 	}
 	commentService := service.CommentService{
-		CommentMapper: mongoMapper,
-		LikeMapper:    likeMongoMapper,
-		CourseMapper:  courseMongoMapper,
-		StaticData:    staticData,
-		CommentDto:    commentDTO,
+		CommentRepo: mongoRepo,
+		LikeRepo:    likeMongoRepo,
+		CourseRepo:  courseMongoRepo,
+		StaticData:  staticData,
+		CommentDto:  commentDTO,
 	}
-	searchhistoryMongoMapper := searchhistory.NewMongoRepo(configConfig)
+	searchhistoryMongoRepo := searchhistory.NewMongoRepo(configConfig)
 	searchHistoryService := service.SearchHistoryService{
-		SearchHistoryMapper: searchhistoryMongoMapper,
+		SearchHistoryMapper: searchhistoryMongoRepo,
 	}
-	userMongoMapper := user.NewMongoRepo(configConfig)
+	userMongoRepo := user.NewMongoRepo(configConfig)
 	authService := service.AuthService{
-		UserRepo: userMongoMapper,
+		UserRepo: userMongoRepo,
 	}
 	likeService := service.LikeService{
-		LikeMapper: likeMongoMapper,
+		LikeMapper: likeMongoRepo,
 	}
 	courseDTO := &assembler.CourseDTO{
-		CommentMapper: mongoMapper,
-		TeacherMapper: teacherMongoMapper,
-		CourseMapper:  courseMongoMapper,
+		CommentMapper: mongoRepo,
+		TeacherMapper: teacherMongoRepo,
+		CourseMapper:  courseMongoRepo,
 		StaticData:    staticData,
 	}
 	courseService := service.CourseService{
-		CourseRepo:  courseMongoMapper,
-		CommentRepo: mongoMapper,
+		CourseRepo:  courseMongoRepo,
+		CommentRepo: mongoRepo,
+		TeacherRepo: teacherMongoRepo,
 		StaticData:  staticData,
-		TeacherRepo: teacherMongoMapper,
 		CourseDTO:   courseDTO,
 	}
 	teacherDTO := &assembler.TeacherDTO{
 		StaticData: staticData,
 	}
 	teacherService := service.TeacherService{
-		CourseMapper:  courseMongoMapper,
-		StaticData:    staticData,
-		CommentMapper: mongoMapper,
-		UserMapper:    userMongoMapper,
-		TeacherMapper: teacherMongoMapper,
+		CourseMapper:  courseMongoRepo,
+		CommentMapper: mongoRepo,
+		UserMapper:    userMongoRepo,
+		TeacherMapper: teacherMongoRepo,
 		CourseDTO:     courseDTO,
 		TeacherDTO:    teacherDTO,
 	}
 	searchService := service.SearchService{
-		CourseMapper:  courseMongoMapper,
-		TeacherMapper: teacherMongoMapper,
+		CourseMapper:  courseMongoRepo,
+		TeacherMapper: teacherMongoRepo,
 		StaticData:    staticData,
 		CourseDTO:     courseDTO,
 	}

@@ -2,11 +2,11 @@
 
 ![logo.png](https://s2.loli.net/2025/11/05/lBgG3iYP1MkhwnX.png)
 
-**花狮选课猫**是一个基于微信小程序的校园课程评价平台，学生可以在这里匿名分享对课程的真实评价和体验。
+**花狮选课猫**是一个基于微信小程序的课程评价平台，学生可以在这里匿名分享对课程的真实评价和体验。
 
 ## 项目概述
 
-Meowpick 后端采用 Go 语言开发，使用 Gin 框架构建 RESTful API，数据存储在 MongoDB 中。该项目主要为微信小程序提供后端服务支持，实现课程评价、搜索、点赞等核心功能。
+选课猫后端采用 Go 语言开发，使用 Gin 框架构建 RESTful API，数据存储在 MongoDB 中。该项目主要为微信小程序提供后端服务支持，实现课程评价、搜索、点赞等核心功能。
 
 ## 技术栈
 
@@ -101,12 +101,12 @@ Meowpick 后端采用 Go 语言开发，使用 Gin 框架构建 RESTful API，�
 ### 配置文件
 项目需要一个 `etc/config.yaml` 配置文件，包含以下内容：
 ```yaml
-# 示例配置
 Name: meowpick.backend
 Host: 0.0.0.0
 Port: 8080
-auth:
+Auth:
   SecretKey: "your-secret-key"
+  PublicKey: "your-public-key"
   AccessExpire: 86400
 Mongo:
   URL: "mongodb://localhost:27017"
@@ -143,17 +143,10 @@ go mod tidy
 go run main.go
 ```
 
-## 开发规范
-
-- 使用 Google Wire 进行依赖注入
-- 遵循 RESTful API 设计原则
-- 使用 DTO 进行数据传输对象转换
-- 统一的错误处理和响应格式
-
 ## 项目成员
 
-- Boyuan IT Club
+- [博远信息技术社](https://official.boyuan.club/)
 
 ## License
 
-[MIT License](LICENSE)
+[Apache License 2.0](LICENSE)

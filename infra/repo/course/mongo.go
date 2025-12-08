@@ -1,3 +1,17 @@
+// Copyright 2025 Boyuan-IT-Club
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package course
 
 import (
@@ -5,10 +19,10 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -73,7 +87,7 @@ func (m *MongoRepo) FindMany(ctx context.Context, keyword string, param *dto.Pag
 	}
 
 	//构建分页和排序选项
-	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
+	ops := page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))
 
 	var courses []*Course //
 	err = m.conn.Find(ctx, &courses, filter, ops)
@@ -151,7 +165,7 @@ func (m *MongoRepo) GetCourseSuggestions(ctx context.Context, keyword string, pa
 	}
 	var courses []*Course
 	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: keyword, Options: "i"}}}
-	ops := util.FindPageOption(param)
+	ops := page.FindPageOption(param)
 
 	err := m.conn.Find(ctx, &courses, filter, ops)
 	if err != nil {
@@ -191,7 +205,7 @@ func (m *MongoRepo) FindCoursesByTeacherID(ctx context.Context, teacherID string
 		return []*Course{}, 0, nil
 	}
 
-	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
+	ops := page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))
 
 	err = m.conn.Find(ctx, &courses, filter, ops)
 	if err != nil {
@@ -214,7 +228,7 @@ func (m *MongoRepo) FindCoursesByCategoryID(ctx context.Context, categoryID int3
 		return []*Course{}, 0, nil
 	}
 
-	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
+	ops := page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))
 
 	err = m.conn.Find(ctx, &courses, filter, ops)
 	if err != nil {
@@ -236,7 +250,7 @@ func (m *MongoRepo) FindCoursesByDepartmentID(ctx context.Context, departmentID 
 		return []*Course{}, 0, nil
 	}
 
-	ops := util.FindPageOption(param).SetSort(util.DSort(consts.CreatedAt, -1))
+	ops := page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))
 
 	err = m.conn.Find(ctx, &courses, filter, ops)
 	if err != nil {

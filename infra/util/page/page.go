@@ -12,29 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+package page
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
-	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// AddNewTeacher 新建教师
-// @router /api/teacher/add
-func AddNewTeacher(c *gin.Context) {
-	var req *dto.AddNewTeacherReq
-	var resp *dto.AddNewTeacherResp
-	var err error
+func FindPageOption(param dto.IPageParam) *options.FindOptions {
+	page, size := param.UnWrap()
+	ops := options.Find()
+	ops.SetSkip(page * size)
+	ops.SetLimit(size)
 
-	if err = c.ShouldBind(&req); err != nil {
-		PostProcess(c, req, resp, err)
-	}
+	return ops
+}
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
-
-	resp, err = provider.Get().TeacherService.AddNewTeacher(c, req)
-	PostProcess(c, req, resp, err)
+func DSort(s string, i int) bson.D {
+	return bson.D{{s, i}}
 }
