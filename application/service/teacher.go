@@ -25,7 +25,6 @@ type ITeacherService interface {
 
 type TeacherService struct {
 	CourseMapper  *course.MongoRepo
-	StaticData    *consts.StaticData
 	CommentMapper *comment.MongoRepo
 	UserMapper    *user.MongoRepo
 	TeacherMapper *teacher.MongoRepo

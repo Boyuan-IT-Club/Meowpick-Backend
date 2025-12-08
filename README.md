@@ -90,9 +90,6 @@ Meowpick 后端采用 Go 语言开发，使用 Gin 框架构建 RESTful API，�
 
 ### 课程接口
 - `GET /api/course/:courseId` - 获取特定课程详情
-- `GET /api/course/departs` - 获取课程所属部门信息
-- `GET /api/course/categories` - 获取课程类型信息
-- `GET /api/course/campuses` - 获取课程开设校区信息
 
 ## 部署说明
 
@@ -108,7 +105,7 @@ Meowpick 后端采用 Go 语言开发，使用 Gin 框架构建 RESTful API，�
 Name: meowpick.backend
 Host: 0.0.0.0
 Port: 8080
-Auth:
+auth:
   SecretKey: "your-secret-key"
   AccessExpire: 86400
 Mongo:
@@ -117,7 +114,7 @@ Mongo:
 Redis:
   Host: "localhost:6379"
   Type: "node"
-WeApp:
+weApp:
   AppID: "your-weapp-appid"
   AppSecret: "your-weapp-secret"
 ```

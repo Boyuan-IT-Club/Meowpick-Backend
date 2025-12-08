@@ -53,7 +53,7 @@ func NewProvider() (*Provider, error) {
 	}
 	userMongoMapper := user.NewMongoRepo(configConfig)
 	authService := service.AuthService{
-		UserMapper: userMongoMapper,
+		UserRepo: userMongoMapper,
 	}
 	likeService := service.LikeService{
 		LikeMapper: likeMongoMapper,
@@ -65,11 +65,11 @@ func NewProvider() (*Provider, error) {
 		StaticData:    staticData,
 	}
 	courseService := service.CourseService{
-		CourseMapper:  courseMongoMapper,
-		CommentMapper: mongoMapper,
-		StaticData:    staticData,
-		TeacherMapper: teacherMongoMapper,
-		CourseDTO:     courseDTO,
+		CourseRepo:  courseMongoMapper,
+		CommentRepo: mongoMapper,
+		StaticData:  staticData,
+		TeacherRepo: teacherMongoMapper,
+		CourseDTO:   courseDTO,
 	}
 	teacherDTO := &assembler.TeacherDTO{
 		StaticData: staticData,

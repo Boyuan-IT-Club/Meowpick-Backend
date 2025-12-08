@@ -3,23 +3,21 @@ package config
 import (
 	"os"
 
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/service"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-
-	"github.com/zeromicro/go-zero/core/service"
-
-	"github.com/zeromicro/go-zero/core/conf"
 )
 
 var config *Config
 
-type Auth struct {
+type auth struct {
 	SecretKey    string
 	PublicKey    string
 	AccessExpire int64
 }
 
-type WeApp struct {
+type weApp struct {
 	AppID     string
 	AppSecret string
 }
@@ -28,16 +26,14 @@ type Config struct {
 	service.ServiceConf
 	ListenOn string
 	State    string
-	Auth     Auth
+	Auth     auth
 	Mongo    struct {
 		URL string
 		DB  string
 	}
 	Cache cache.CacheConf
 	Redis *redis.RedisConf
-	WeApp WeApp
-	//SMTP        SMTPConf
-	//EmailVerify EmailVerifyConf
+	WeApp weApp
 }
 
 func NewConfig() (*Config, error) {

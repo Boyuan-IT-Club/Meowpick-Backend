@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
@@ -16,15 +16,10 @@ import (
 var _ ICourseDTO = (*CourseDTO)(nil)
 
 type ICourseDTO interface {
-	// ToCourseVO 单个Course转CourseVO (DB to VO) 包含优化过的tag查询
 	ToCourseVO(ctx context.Context, c *course.Course) (*dto.CourseVO, error)
-	// ToCourse 单个CourseVO转Course (VO to DB)
 	ToCourse(ctx context.Context, vo *dto.CourseVO) (*course.Course, error)
-	// ToCourseVOList Course数组转CourseVO数组 (DB Array to VO Array)
 	ToCourseVOList(ctx context.Context, courses []*course.Course) ([]*dto.CourseVO, error)
-	// ToCourseList CourseVO数组转Course数组 (VO Array to DB Array)
 	ToCourseList(ctx context.Context, vos []*dto.CourseVO) ([]*course.Course, error)
-	// ToPaginatedCourses Course数组转paginatedCourses
 	ToPaginatedCourses(cxt context.Context, courses []*course.Course, total int64, pageParam *dto.PageParam) (*dto.PaginatedCourses, error)
 }
 
@@ -32,7 +27,7 @@ type CourseDTO struct {
 	CommentMapper *comment.MongoRepo
 	TeacherMapper *teacher.MongoRepo
 	CourseMapper  *course.MongoRepo
-	StaticData    *consts.StaticData
+	StaticData    *mapping.StaticData
 }
 
 var CourseDTOSet = wire.NewSet(
@@ -40,7 +35,7 @@ var CourseDTOSet = wire.NewSet(
 	wire.Bind(new(ICourseDTO), new(*CourseDTO)),
 )
 
-// 单个Course转CourseVO (DB to VO) 包含优化过的tag查询
+// ToCourseVO 单个Course转CourseVO (DB to VO) 包含优化过的tag查询
 func (d *CourseDTO) ToCourseVO(ctx context.Context, c *course.Course) (*dto.CourseVO, error) {
 	// 获得相关课程link并转化为VO
 	var linkVOs []*dto.CourseInLinkVO
@@ -109,7 +104,7 @@ func (d *CourseDTO) ToCourseVO(ctx context.Context, c *course.Course) (*dto.Cour
 	}, nil
 }
 
-// 单个CourseVO转Course (VO to DB)
+// ToCourse 单个CourseVO转Course (VO to DB)
 func (d *CourseDTO) ToCourse(ctx context.Context, vo *dto.CourseVO) (*course.Course, error) {
 	if vo == nil {
 		return nil, nil
@@ -148,7 +143,7 @@ func (d *CourseDTO) ToCourse(ctx context.Context, vo *dto.CourseVO) (*course.Cou
 	}, nil
 }
 
-// Course数组转CourseVO数组 (DB Array to VO Array)
+// ToCourseVOList Course数组转CourseVO数组 (DB Array to VO Array)
 func (d *CourseDTO) ToCourseVOList(ctx context.Context, courses []*course.Course) ([]*dto.CourseVO, error) {
 	if len(courses) == 0 {
 		return []*dto.CourseVO{}, nil
@@ -191,7 +186,7 @@ func (d *CourseDTO) ToCourseVOList(ctx context.Context, courses []*course.Course
 	return courseVOs, nil
 }
 
-// CourseVO数组转Course数组 (VO Array to DB Array)
+// ToCourseList CourseVO数组转Course数组 (VO Array to DB Array)
 func (d *CourseDTO) ToCourseList(ctx context.Context, vos []*dto.CourseVO) ([]*course.Course, error) {
 	if len(vos) == 0 {
 		return []*course.Course{}, nil
@@ -212,6 +207,7 @@ func (d *CourseDTO) ToCourseList(ctx context.Context, vos []*dto.CourseVO) ([]*c
 	return courses, nil
 }
 
+// ToPaginatedCourses Course数组转paginatedCourses
 func (d *CourseDTO) ToPaginatedCourses(cxt context.Context, courses []*course.Course, total int64, pageParam *dto.PageParam) (*dto.PaginatedCourses, error) {
 	courseVOs, err := d.ToCourseVOList(cxt, courses)
 	if err != nil {

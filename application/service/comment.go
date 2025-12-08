@@ -8,6 +8,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/like"
@@ -25,11 +26,11 @@ type ICommentService interface {
 }
 
 type CommentService struct {
-	CommentMapper *comment.MongoRepo
-	LikeMapper    *like.MongoRepo
-	CourseMapper  *course.MongoRepo
-	StaticData    *consts.StaticData
-	CommentDto    *assembler.CommentDTO
+	CommentRepo *comment.MongoRepo
+	LikeRepo    *like.MongoRepo
+	CourseRepo  *course.MongoRepo
+	StaticData  *mapping.StaticData
+	CommentDto  *assembler.CommentDTO
 }
 
 var CommentServiceSet = wire.NewSet(
@@ -56,7 +57,7 @@ func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateComme
 		Deleted:   false,
 	}
 
-	if err := s.CommentMapper.Insert(ctx, newComment); err != nil {
+	if err := s.CommentRepo.Insert(ctx, newComment); err != nil {
 		log.CtxError(ctx, "Failed to insert comment for userID=%s: %v", userID, err)
 		return nil, err
 	}
@@ -74,7 +75,7 @@ func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateComme
 }
 
 func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*dto.GetTotalCommentsCountResp, error) {
-	count, err := s.CommentMapper.CountAll(ctx)
+	count, err := s.CommentRepo.CountAll(ctx)
 	if err != nil {
 		log.CtxError(ctx, "Service GetTotalCommentCount failed: %v", err)
 		return nil, errorx.ErrGetCountFailed
@@ -99,7 +100,7 @@ func (s *CommentService) GetMyComments(ctx context.Context, req *dto.GetMyCommen
 		PageSize: req.PageSize,
 	}
 	// 查找数据库获得comments
-	comments, total, err := s.CommentMapper.FindManyByUserID(ctx, param, userID)
+	comments, total, err := s.CommentRepo.FindManyByUserID(ctx, param, userID)
 	if err != nil {
 		log.CtxError(ctx, "FindManyByUserID failed for userID=%s: %v", userID, err)
 		return nil, errorx.ErrFindFailed
@@ -134,7 +135,7 @@ func (s *CommentService) GetCourseComments(ctx context.Context, req *dto.GetCour
 		PageSize: req.PageSize,
 	}
 
-	comments, total, err := s.CommentMapper.FindManyByCourseID(ctx, param, courseID)
+	comments, total, err := s.CommentRepo.FindManyByCourseID(ctx, param, courseID)
 	if err != nil {
 		log.CtxError(ctx, "FindManyByUserID failed for userID=%s: %v", courseID, err)
 		return nil, errorx.ErrFindFailed
@@ -154,5 +155,3 @@ func (s *CommentService) GetCourseComments(ctx context.Context, req *dto.GetCour
 
 	return resp, nil
 }
-
-

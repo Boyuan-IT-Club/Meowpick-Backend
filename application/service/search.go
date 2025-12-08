@@ -7,6 +7,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
@@ -24,7 +25,7 @@ type ISearchService interface {
 type SearchService struct {
 	CourseMapper  *course.MongoRepo
 	TeacherMapper *teacher.MongoRepo
-	StaticData    *consts.StaticData
+	StaticData    *mapping.StaticData
 	CourseDTO     *assembler.CourseDTO
 }
 

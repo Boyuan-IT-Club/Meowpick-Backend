@@ -2,13 +2,14 @@ package adaptor
 
 import (
 	"errors"
+	"net/http"
+	"reflect"
+	"strings"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/gin-gonic/gin"
-	"net/http"
-	"reflect"
-	"strings"
 )
 
 // PostProcess 处理http响应, resp要求指针或接口类型

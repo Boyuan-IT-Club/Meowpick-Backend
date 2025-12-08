@@ -5,6 +5,7 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/like"
@@ -34,7 +35,7 @@ type CommentDTO struct {
 	LikeMapper    *like.MongoRepo
 	CourseMapper  *course.MongoRepo
 	TeacherMapper *teacher.MongoRepo
-	StaticData    *consts.StaticData
+	StaticData    *mapping.StaticData
 }
 
 var CommentDTOSet = wire.NewSet(
@@ -218,7 +219,3 @@ func (d *CommentDTO) ToCommentVOList(ctx context.Context, comments []*comment.Co
 
 	return commentVOs, nil
 }
-
-
-
-

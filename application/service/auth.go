@@ -25,7 +25,7 @@ type IAuthService interface {
 }
 
 type AuthService struct {
-	UserMapper *user.MongoRepo
+	UserRepo *user.MongoRepo
 }
 
 var AuthServiceSet = wire.NewSet(
@@ -33,24 +33,21 @@ var AuthServiceSet = wire.NewSet(
 	wire.Bind(new(IAuthService), new(*AuthService)),
 )
 
-func (a *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto.SignInResp, err error) {
-	// 1. 查找或创建用户
+func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto.SignInResp, err error) {
+	// 查找或创建用户
 	var openID string
-
-	// TODO: 模拟登录逻辑（开发环境用）
 	if req.Code == "test123" {
 		openID = "debug-openid-001" // 你随便写一个唯一标识
 	} else {
 		openID = util.GetWeChatOpenID(config.GetConfig().WeApp.AppID,
 			config.GetConfig().WeApp.AppSecret, req.Code)
 	}
-
 	if openID == "" {
 		log.Error("openID为空")
 		return nil, errorx.ErrEmptyOpenID
 	}
 
-	oldUser, err := a.UserMapper.FindByWXOpenId(ctx, openID)
+	oldUser, err := s.UserRepo.FindByWXOpenId(ctx, openID)
 	if err != nil {
 		if errors.Is(err, errorx.ErrUserNotFound) {
 			// 创建用户并存入数据库
@@ -61,7 +58,7 @@ func (a *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 				UpdatedAt: time.Now(),
 			}
 
-			if err = a.UserMapper.Insert(ctx, &newUser); err != nil {
+			if err = s.UserRepo.Insert(ctx, &newUser); err != nil {
 				return nil, errorx.ErrInsertFailed
 			}
 
@@ -71,7 +68,7 @@ func (a *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 		}
 	}
 
-	// 3. 智能Token签发逻辑
+	// 智能Token签发逻辑
 	var tokenStr string
 	existingToken, ok := ctx.Value(consts.ContextUserID).(string)
 
@@ -89,12 +86,12 @@ func (a *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 		}
 	}
 
-	// 4. 签发新Token
+	// 签发新Token
 	if tokenStr, err = token.NewAuthorizedToken(oldUser); err != nil {
 		return nil, errorx.ErrTokenCreationFailed
 	}
 
-	// 5. 返回响应
+	// 返回响应
 	return &dto.SignInResp{
 		Resp:        dto.Success(),
 		AccessToken: tokenStr,

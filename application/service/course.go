@@ -5,8 +5,8 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
 	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
@@ -25,11 +25,11 @@ type ICourseService interface {
 }
 
 type CourseService struct {
-	CourseMapper  *course.MongoRepo
-	CommentMapper *comment.MongoRepo
-	StaticData    *consts.StaticData
-	TeacherMapper *teacher.MongoRepo
-	CourseDTO     *assembler.CourseDTO
+	CourseRepo  *course.MongoRepo
+	CommentRepo *comment.MongoRepo
+	TeacherRepo *teacher.MongoRepo
+	StaticData  *mapping.StaticData
+	CourseDTO   *assembler.CourseDTO
 }
 
 var CourseServiceSet = wire.NewSet(
@@ -40,7 +40,7 @@ var CourseServiceSet = wire.NewSet(
 // GetOneCourse 精确搜索，返回课程的元信息CourseVO
 func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*dto.GetOneCourseResp, error) {
 
-	dbCourse, err := s.CourseMapper.FindOneByID(ctx, courseID)
+	dbCourse, err := s.CourseRepo.FindOneByID(ctx, courseID)
 	if err != nil || dbCourse == nil { // 使用id搜索不应出现找不到的情况
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*dto
 
 func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq) (*dto.ListCoursesResp, error) {
 	// 获取符合条件的总课程数量
-	total, err := s.CourseMapper.CountCourses(ctx, req.Keyword)
+	total, err := s.CourseRepo.CountCourses(ctx, req.Keyword)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq
 	}
 
 	// 使用模糊匹配搜索课程
-	dbCourses, err := s.CourseMapper.GetCourseSuggestions(ctx, req.Keyword, req.PageParam)
+	dbCourses, err := s.CourseRepo.GetCourseSuggestions(ctx, req.Keyword, req.PageParam)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq
 
 func (s *CourseService) GetDepartments(ctx context.Context, req *dto.GetCoursesDepartmentsReq) (*dto.GetCoursesDepartmentsResp, error) {
 
-	departsIDs, err := s.CourseMapper.GetDepartments(ctx, req.Keyword)
+	departsIDs, err := s.CourseRepo.GetDepartments(ctx, req.Keyword)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (s *CourseService) GetDepartments(ctx context.Context, req *dto.GetCoursesD
 
 func (s *CourseService) GetCategories(ctx context.Context, req *dto.GetCourseCategoriesReq) (*dto.GetCourseCategoriesResp, error) {
 
-	categoriesIDs, err := s.CourseMapper.GetCategories(ctx, req.Keyword)
+	categoriesIDs, err := s.CourseRepo.GetCategories(ctx, req.Keyword)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (s *CourseService) GetCategories(ctx context.Context, req *dto.GetCourseCat
 
 func (s *CourseService) GetCampuses(ctx context.Context, req *dto.GetCourseCampusesReq) (*dto.GetCourseCampusesResp, error) {
 
-	campusesIDs, err := s.CourseMapper.GetCampuses(ctx, req.Keyword)
+	campusesIDs, err := s.CourseRepo.GetCampuses(ctx, req.Keyword)
 	if err != nil {
 		return nil, err
 	}

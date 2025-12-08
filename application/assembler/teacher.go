@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
 	"github.com/google/wire"
 )
@@ -12,18 +12,14 @@ import (
 var _ ITeacherDTO = (*TeacherDTO)(nil)
 
 type ITeacherDTO interface {
-	// ToTeacherVO 单个Teacher转TeacherVO (DB to VO)
 	ToTeacherVO(ctx context.Context, t *teacher.Teacher) (*dto.TeacherVO, error)
-	// ToTeacher 单个TeacherVO转Teacher (VO to DB)
 	ToTeacher(ctx context.Context, vo *dto.TeacherVO) (*teacher.Teacher, error)
-	// ToTeacherVOList Teacher数组转TeacherVO数组 (DB Array to VO Array)
 	ToTeacherVOList(ctx context.Context, teachers []*teacher.Teacher) ([]*dto.TeacherVO, error)
-	// ToTeacherList TeacherVO数组转Teacher数组 (VO Array to DB Array)
 	ToTeacherList(ctx context.Context, vos []*dto.TeacherVO) ([]*teacher.Teacher, error)
 }
 
 type TeacherDTO struct {
-	StaticData *consts.StaticData
+	StaticData *mapping.StaticData
 }
 
 var TeacherDTOSet = wire.NewSet(
@@ -31,7 +27,7 @@ var TeacherDTOSet = wire.NewSet(
 	wire.Bind(new(ITeacherDTO), new(*TeacherDTO)),
 )
 
-// 单个Teacher转TeacherVO (DB to VO)
+// ToTeacherVO 单个Teacher转TeacherVO (DB to VO)
 func (d *TeacherDTO) ToTeacherVO(ctx context.Context, t *teacher.Teacher) (*dto.TeacherVO, error) {
 	if t == nil {
 		return nil, nil
@@ -45,7 +41,7 @@ func (d *TeacherDTO) ToTeacherVO(ctx context.Context, t *teacher.Teacher) (*dto.
 	}, nil
 }
 
-// 单个TeacherVO转Teacher (VO to DB)
+// ToTeacher 单个TeacherVO转Teacher (VO to DB)
 func (d *TeacherDTO) ToTeacher(ctx context.Context, vo *dto.TeacherVO) (*teacher.Teacher, error) {
 	if vo == nil {
 		return nil, nil
@@ -59,7 +55,7 @@ func (d *TeacherDTO) ToTeacher(ctx context.Context, vo *dto.TeacherVO) (*teacher
 	}, nil
 }
 
-// Teacher数组转TeacherVO数组 (DB Array to VO Array)
+// ToTeacherVOList Teacher数组转TeacherVO数组 (DB Array to VO Array)
 func (d *TeacherDTO) ToTeacherVOList(ctx context.Context, teachers []*teacher.Teacher) ([]*dto.TeacherVO, error) {
 	if len(teachers) == 0 {
 		return []*dto.TeacherVO{}, nil
@@ -80,7 +76,7 @@ func (d *TeacherDTO) ToTeacherVOList(ctx context.Context, teachers []*teacher.Te
 	return teacherVOs, nil
 }
 
-// TeacherVO数组转Teacher数组 (VO Array to DB Array)
+// ToTeacherList TeacherVO数组转Teacher数组 (VO Array to DB Array)
 func (d *TeacherDTO) ToTeacherList(ctx context.Context, vos []*dto.TeacherVO) ([]*teacher.Teacher, error) {
 	if len(vos) == 0 {
 		return []*teacher.Teacher{}, nil
