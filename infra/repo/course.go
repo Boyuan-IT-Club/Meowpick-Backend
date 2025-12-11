@@ -72,13 +72,12 @@ func (r *CourseRepo) FindByID(ctx context.Context, id string) (*model.Course, er
 // FindManyByName 根据课程名称分页查询课程
 func (r *CourseRepo) FindManyByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	if err := r.conn.Find(ctx, &courses, bson.M{consts.Name: name}, page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))); err != nil {
-		if errors.Is(err, monc.ErrNotFound) {
-			return courses, 0, nil
-		}
+	filter := bson.M{consts.Name: name}
+	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))); err != nil {
 		return nil, 0, err
 	}
-	total, err := r.conn.CountDocuments(ctx, bson.M{consts.Name: name})
+
+	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -90,9 +89,6 @@ func (r *CourseRepo) FindManyByNameLike(ctx context.Context, name string, param 
 	courses := []*model.Course{}
 	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}
 	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param)); err != nil {
-		if errors.Is(err, monc.ErrNotFound) {
-			return courses, 0, nil
-		}
 		return nil, 0, err
 	}
 
@@ -108,9 +104,6 @@ func (r *CourseRepo) FindManyByTeacherID(ctx context.Context, teacherId string, 
 	courses := []*model.Course{}
 	filter := bson.M{consts.TeacherIDs: teacherId}
 	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))); err != nil {
-		if errors.Is(err, monc.ErrNotFound) {
-			return courses, 0, nil
-		}
 		return nil, 0, err
 	}
 
@@ -126,9 +119,6 @@ func (r *CourseRepo) FindManyByCategoryID(ctx context.Context, categoryId int32,
 	courses := []*model.Course{}
 	filter := bson.M{consts.Category: categoryId}
 	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))); err != nil {
-		if errors.Is(err, monc.ErrNotFound) {
-			return courses, 0, nil
-		}
 		return nil, 0, err
 	}
 
@@ -144,9 +134,6 @@ func (r *CourseRepo) FindManyByDepartmentID(ctx context.Context, departmentId in
 	courses := []*model.Course{}
 	filter := bson.M{consts.Department: departmentId}
 	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))); err != nil {
-		if errors.Is(err, monc.ErrNotFound) {
-			return courses, 0, nil
-		}
 		return nil, 0, err
 	}
 
