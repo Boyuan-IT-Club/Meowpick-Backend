@@ -20,6 +20,7 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 
 const (
 	ErrUserNotLogin = 100000001
+	ErrUserNotAdmin = 100000002
 )
 
 func init() {
