@@ -51,8 +51,7 @@ func GetSearchSuggestions(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
-// ListCourses 用户点击🔍时，若req里type为"course"，模糊搜索课程，返回课程VO列表
-// 若req里type为"teacher"，精确搜索教师开设的课程VO列表
+// ListCourses 用户点击“搜索”按钮或点击某一项后展示课程列表
 // @router /api/search
 func ListCourses(c *gin.Context) {
 	var req dto.ListCoursesReq
@@ -69,7 +68,7 @@ func ListCourses(c *gin.Context) {
 		go func() {
 			cCopy := c.Copy()
 			if errCopy := provider.Get().SearchHistoryService.LogSearch(cCopy, req.Keyword); errCopy != nil {
-				logs.CtxErrorf(cCopy, "记录搜索历史失败: %v", errCopy)
+				logs.CtxErrorf(cCopy, "log search history failed: %v", errCopy)
 			}
 		}()
 	}

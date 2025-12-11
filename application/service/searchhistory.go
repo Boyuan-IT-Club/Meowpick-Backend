@@ -20,6 +20,9 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
 )
 
@@ -40,17 +43,20 @@ var SearchHistoryServiceSet = wire.NewSet(
 )
 
 func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*dto.GetSearchHistoriesResp, error) {
+	// 鉴权
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
-		return nil, errorx.ErrGetUserIDFailed
+		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
+	// 查询获得15条历史记录
 	histories, err := s.SearchHistoryRepo.FindByUserID(ctx, userID)
 	if err != nil {
-		log.CtxError(ctx, "FindByUserID failed for userID=%s: %v", userID, err)
+		logs.CtxErrorf(ctx, "SearchHistoryRepo FindByUserID error: %v", err)
 		return nil, err
 	}
 
+	// 转换为VO
 	vos := make([]*dto.SearchHistoryVO, 0, len(histories))
 	for _, h := range histories {
 		vo := &dto.SearchHistoryVO{
@@ -61,12 +67,10 @@ func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*d
 		vos = append(vos, vo)
 	}
 
-	resp := &dto.GetSearchHistoriesResp{
+	return &dto.GetSearchHistoriesResp{
 		Resp:      dto.Success(),
 		Histories: vos,
-	}
-
-	return resp, nil
+	}, nil
 }
 
 func (s *SearchHistoryService) LogSearch(ctx context.Context, query string) error {

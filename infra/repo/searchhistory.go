@@ -52,17 +52,16 @@ func NewSearchHistoryRepo(cfg *config.Config) *SearchHistoryRepo {
 	return &SearchHistoryRepo{conn: conn}
 }
 
-func (r *SearchHistoryRepo) FindByUserID(ctx context.Context, userID string) ([]*model.SearchHistory, error) {
-	var histories []*model.SearchHistory
-
+// FindByUserID 根据用户ID查询最近15条的搜索历史
+func (r *SearchHistoryRepo) FindByUserID(ctx context.Context, userId string) ([]*model.SearchHistory, error) {
+	histories := []*model.SearchHistory{}
 	ops := options.Find()
 	ops.SetSort(page.DSort(consts.CreatedAt, -1)) // 降序, 最新的在最前面
 	ops.SetLimit(consts.SearchHistoryLimit)
-
-	filter := bson.M{consts.UserID: userID}
-
-	if err := r.conn.Find(ctx, &histories, filter, ops); err != nil {
-		return nil, err
+	if err := r.conn.Find(ctx, &histories, bson.M{consts.UserID: userId}, ops); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return histories, nil
+		}
 	}
 	return histories, nil
 }
