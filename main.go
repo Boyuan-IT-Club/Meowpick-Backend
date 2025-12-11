@@ -15,37 +15,43 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/router"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/router"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 )
 
-func Init() {
-	provider.Init()
-	// 打印配置文件绝对路径
-	configPath := "etc/config.yaml"
-	absPath, _ := filepath.Abs(configPath)
-	fmt.Println("配置文件绝对路径:", absPath)
-
-	// 验证文件是否存在
-	if _, err := os.Stat(configPath); err != nil {
-		panic("配置文件不存在，请检查: " + absPath)
-	}
-
-	log.Info("所有模块初始化完成...")
-}
-
 func main() {
-	Init()
-
+	provider.Init()
 	r := router.SetupRoutes()
+	setLogLevel()
 
 	err := r.Run(":8080")
 	if err != nil {
 		panic(err)
+	}
+}
+
+func setLogLevel() {
+	level := config.GetConfig().Log.Level
+
+	logs.Infof("log level: %s", level)
+	switch level {
+	case "trace":
+		logs.SetLevel(logs.LevelTrace)
+	case "debug":
+		logs.SetLevel(logs.LevelDebug)
+	case "info":
+		logs.SetLevel(logs.LevelInfo)
+	case "notice":
+		logs.SetLevel(logs.LevelNotice)
+	case "warn":
+		logs.SetLevel(logs.LevelWarn)
+	case "error":
+		logs.SetLevel(logs.LevelError)
+	case "fatal":
+		logs.SetLevel(logs.LevelFatal)
+	default:
+		logs.SetLevel(logs.LevelInfo)
 	}
 }

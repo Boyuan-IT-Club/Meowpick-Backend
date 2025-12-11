@@ -23,7 +23,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/cloudwego/hertz/pkg/common/json"
 	"github.com/google/uuid"
 )
@@ -32,7 +32,7 @@ import (
 func JSONF(v any) string {
 	data, err := json.Marshal(v)
 	if err != nil {
-		log.Error("JSONF fail, v=%v, err=%v", v, err)
+		logs.Error("JSONF fail, v=%v, err=%v", v, err)
 	}
 	return string(data)
 }

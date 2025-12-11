@@ -15,9 +15,8 @@
 package handler
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/token"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/gin-gonic/gin"
@@ -44,32 +43,27 @@ func CreateComment(c *gin.Context) {
 // @router /api/comment/query [GET]
 func ListCourseComments(c *gin.Context) {
 	var err error
-	var req dto.GetCourseCommentsReq
-	var resp *dto.GetCourseCommentsResp
+	var req dto.ListCourseCommentsReq
+	var resp *dto.ListCourseCommentsResp
 
 	if err = c.ShouldBindQuery(&req); err != nil {
 		PostProcess(c, &req, nil, err)
 		return
 	}
 
-	if req.PageParam == nil {
-		req.PageParam = &dto.PageParam{} // 这里仅是防止空指针造成panic {}中留空，由之后的UnWrap方法设置默认值
-		log.CtxInfo(c, "获得课程评论请求时PageParam为空，已设为默认值！")
-	}
-
 	c.Set(consts.ContextUserID, token.GetUserId(c))
-
 	resp, err = provider.Get().CommentService.GetCourseComments(c, &req)
 	PostProcess(c, &req, resp, err)
 }
 
-// GetTotalCommentsCount 获得小程序收录吐槽总数
+// GetTotalCourseCommentsCount 获得小程序收录吐槽总数
 // @router /api/search/total [GET]
-func GetTotalCommentsCount(c *gin.Context) {
-	var resp *dto.GetTotalCommentsCountResp
+func GetTotalCourseCommentsCount(c *gin.Context) {
+	var resp *dto.GetTotalCourseCommentsCountResp
 	var err error
 
-	resp, err = provider.Get().CommentService.GetTotalCommentsCount(c.Request.Context())
+	c.Set(consts.ContextUserID, token.GetUserId(c))
+	resp, err = provider.Get().CommentService.GetTotalCommentsCount(c)
 	PostProcess(c, nil, resp, err)
 }
 

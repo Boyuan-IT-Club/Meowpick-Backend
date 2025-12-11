@@ -15,7 +15,7 @@
 package router
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/handler"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/handler"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,11 +33,11 @@ func SetupRoutes() *gin.Engine {
 	// SearchApi
 	searchGroup := router.Group("/api/search")
 	{
-		searchGroup.GET("/recent", handler.GetSearchHistory)      // 搜索历史
-		searchGroup.POST("", handler.ListCourses)                 // 模糊搜索展示课程列表
-		searchGroup.POST("/teacher", handler.ListTeachers)        // 模糊搜索展示教师列表
-		searchGroup.GET("/total", handler.GetTotalCommentsCount)  // 小程序初始化界面的总吐槽数
-		searchGroup.GET("/suggest", handler.GetSearchSuggestions) // 用户输入搜索内容期间获得搜索建议
+		searchGroup.GET("/recent", handler.GetSearchHistories)         // 搜索历史
+		searchGroup.POST("", handler.ListCourses)                      // 模糊搜索展示课程列表
+		searchGroup.POST("/teacher", handler.ListTeachers)             // 模糊搜索展示教师列表
+		searchGroup.GET("/total", handler.GetTotalCourseCommentsCount) // 小程序初始化界面的总吐槽数
+		searchGroup.GET("/suggest", handler.GetSearchSuggestions)      // 用户输入搜索内容期间获得搜索建议
 	}
 
 	// AuthApi
@@ -46,12 +46,12 @@ func SetupRoutes() *gin.Engine {
 
 	// LikeApi
 	likeGroup := router.Group("/api/action")
-	likeGroup.POST("/like/:id", handler.Like) // 为评论点赞
+	likeGroup.POST("/like/:id", handler.ToggleLike) // 为评论点赞
 
 	// CourseApi
 	courseGroup := router.Group("/api/course")
 	{
-		courseGroup.GET("/:courseId", handler.GetOneCourse) // 精确搜索某个课程
+		courseGroup.GET("/:courseId", handler.GetCourse) // 精确搜索某个课程
 		//courseGroup.GET("/departs", handler.GetCourseDepartments)   // 获得某课程的“所属部门”信息
 		//courseGroup.GET("/categories", handler.GetCourseCategories) // 获得某课程的“课程类型”信息
 		//courseGroup.GET("/campuses", handler.GetCourseCampuses)     // 获得某课程的“开设校区”信息

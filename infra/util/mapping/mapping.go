@@ -28,20 +28,14 @@ import (
 type StaticData struct {
 	Campuses    map[string]string
 	Departments map[string]string
-	Category    map[string]string
+	Categories  map[string]string
 }
 
-// NewStaticData 构造函数
-func NewStaticData() (*StaticData, error) {
-	data := &StaticData{
-		Campuses:    mapping.CampusesMap,
-		Departments: mapping.DepartmentsMap,
-		Category:    mapping.CategoriesMap,
-	}
-	return data, nil
+var Data = &StaticData{
+	Campuses:    mapping.CampusesMap,
+	Departments: mapping.DepartmentsMap,
+	Categories:  mapping.CategoriesMap,
 }
-
-// --- 基础查询方法 ---
 
 func (d *StaticData) GetCampusNameByID(id int32) string {
 	key := fmt.Sprintf("%d", id)
@@ -61,7 +55,7 @@ func (d *StaticData) GetDepartmentNameByID(id int32) string {
 
 func (d *StaticData) GetCategoryNameByID(id int32) string {
 	key := fmt.Sprintf("%d", id)
-	if name, ok := d.Category[key]; ok {
+	if name, ok := d.Categories[key]; ok {
 		return name
 	}
 	return "未知课程"
@@ -90,7 +84,7 @@ func (d *StaticData) GetDepartmentIDByName(name string) int32 {
 }
 
 func (d *StaticData) GetCategoryIDByName(name string) int32 {
-	for idStr, categoryName := range d.Category {
+	for idStr, categoryName := range d.Categories {
 		if categoryName == name {
 			if id, err := strconv.ParseInt(idStr, 10, 32); err == nil {
 				return int32(id)
@@ -122,7 +116,7 @@ func (d *StaticData) GetBestDepartmentIDByKeyword(keyword string) int32 {
 
 // GetCategoryIDsByKeyword 根据类别关键词快速查找匹配的分类ID
 func (d *StaticData) GetCategoryIDsByKeyword(keyword string) []int32 {
-	return fuzzySearch(keyword, d.Category)
+	return fuzzySearch(keyword, d.Categories)
 }
 
 // GetDepartmentIDsByKeyword 根据部门关键词快速查找匹配的院系ID

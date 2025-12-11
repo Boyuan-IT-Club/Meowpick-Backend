@@ -23,9 +23,7 @@ import (
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
-	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/user"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -38,7 +36,7 @@ type Claims struct {
 }
 
 // NewAuthorizedToken 签发accessToken(jwt)
-func NewAuthorizedToken(user *user.User) (string, error) {
+func NewAuthorizedToken(user *model.User) (string, error) {
 	jwtConfig := config.GetConfig().Auth
 	claims := Claims{
 		UserID: user.ID,

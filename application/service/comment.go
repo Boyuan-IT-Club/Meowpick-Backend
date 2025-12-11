@@ -20,11 +20,8 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/like"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/google/wire"
@@ -35,16 +32,15 @@ var _ ICommentService = (*CommentService)(nil)
 type ICommentService interface {
 	CreateComment(ctx context.Context, req *dto.CreateCommentReq) (*dto.CreateCommentResp, error)
 	GetMyComments(ctx context.Context, req *dto.GetMyCommentsReq) (*dto.GetMyCommentsResp, error)
-	GetCourseComments(ctx context.Context, req *dto.GetCourseCommentsReq) (*dto.GetCourseCommentsResp, error)
-	GetTotalCommentsCount(ctx context.Context) (*dto.GetTotalCommentsCountResp, error)
+	GetCourseComments(ctx context.Context, req *dto.ListCourseCommentsReq) (*dto.ListCourseCommentsResp, error)
+	GetTotalCommentsCount(ctx context.Context) (*dto.GetTotalCourseCommentsCountResp, error)
 }
 
 type CommentService struct {
-	CommentRepo *comment.MongoRepo
-	LikeRepo    *like.MongoRepo
-	CourseRepo  *course.MongoRepo
-	StaticData  *mapping.StaticData
-	CommentDto  *assembler.CommentDTO
+	CommentRepo      *repo.CommentRepo
+	LikeRepo         *repo.LikeRepo
+	CourseRepo       *repo.CourseRepo
+	CommentAssembler *assembler.CommentAssembler
 }
 
 var CommentServiceSet = wire.NewSet(
@@ -61,7 +57,7 @@ func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateComme
 
 	now := time.Now()
 
-	newComment := &comment.Comment{
+	newComment := &model.Comment{
 		UserID:    userID,
 		CourseID:  req.CourseID,
 		Content:   req.Content,
@@ -75,7 +71,7 @@ func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateComme
 		log.CtxError(ctx, "Failed to insert comment for userID=%s: %v", userID, err)
 		return nil, err
 	}
-	vo, err := s.CommentDto.ToCommentVO(ctx, newComment, userID)
+	vo, err := s.CommentAssembler.ToCommentVO(ctx, newComment, userID)
 	if err != nil {
 		log.CtxError(ctx, "ToCommentVO failed for userID=%s: %v", userID, err)
 		return nil, errorx.ErrCommentDB2VO
@@ -88,13 +84,13 @@ func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateComme
 	return resp, nil
 }
 
-func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*dto.GetTotalCommentsCountResp, error) {
-	count, err := s.CommentRepo.CountAll(ctx)
+func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*dto.GetTotalCourseCommentsCountResp, error) {
+	count, err := s.CommentRepo.Count(ctx)
 	if err != nil {
 		log.CtxError(ctx, "Service GetTotalCommentCount failed: %v", err)
 		return nil, errorx.ErrGetCountFailed
 	}
-	resp := &dto.GetTotalCommentsCountResp{
+	resp := &dto.GetTotalCourseCommentsCountResp{
 		Resp:  dto.Success(),
 		Count: count,
 	}
@@ -123,7 +119,7 @@ func (s *CommentService) GetMyComments(ctx context.Context, req *dto.GetMyCommen
 		return nil, errorx.ErrFindSuccessButNoResult
 	}
 	// 数据转化db2vo
-	myCommentVOs, err := s.CommentDto.ToMyCommentVOList(ctx, comments, userID)
+	myCommentVOs, err := s.CommentAssembler.ToMyCommentVOList(ctx, comments, userID)
 	if err != nil {
 		log.CtxError(ctx, "ToMyCommentVOList failed for userID=%s: %v", userID, err)
 		return nil, errorx.ErrCommentDB2VO
@@ -137,7 +133,7 @@ func (s *CommentService) GetMyComments(ctx context.Context, req *dto.GetMyCommen
 	return resp, nil
 }
 
-func (s *CommentService) GetCourseComments(ctx context.Context, req *dto.GetCourseCommentsReq) (*dto.GetCourseCommentsResp, error) {
+func (s *CommentService) GetCourseComments(ctx context.Context, req *dto.ListCourseCommentsReq) (*dto.ListCourseCommentsResp, error) {
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
 		return nil, errorx.ErrGetUserIDFailed
@@ -155,13 +151,13 @@ func (s *CommentService) GetCourseComments(ctx context.Context, req *dto.GetCour
 		return nil, errorx.ErrFindFailed
 	}
 
-	vos, err := s.CommentDto.ToCommentVOList(ctx, comments, userID)
+	vos, err := s.CommentAssembler.ToCommentVOList(ctx, comments, userID)
 	if err != nil {
 		log.CtxError(ctx, "ToCommentVOList failed for course: ", courseID, err)
 		return nil, errorx.ErrCommentDB2VO
 	}
 
-	resp := &dto.GetCourseCommentsResp{
+	resp := &dto.ListCourseCommentsResp{
 		Resp:     dto.Success(),
 		Total:    total,
 		Comments: vos,

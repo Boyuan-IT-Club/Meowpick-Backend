@@ -19,12 +19,13 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
 	"github.com/google/wire"
 	"golang.org/x/sync/errgroup"
 )
@@ -32,15 +33,13 @@ import (
 var _ ISearchService = (*SearchService)(nil)
 
 type ISearchService interface {
-	GetSearchSuggestions(ctx context.Context, req *dto.GetSearchSuggestReq) (*dto.GetSearchSuggestResp, error)
-	ListCoursesByType(ctx context.Context, req *dto.ListCoursesReq) (*dto.ListCoursesResp, error)
+	GetSearchSuggestions(ctx context.Context, req *dto.GetSearchSuggestionsReq) (*dto.GetSearchSuggestionsResp, error)
 }
 
 type SearchService struct {
-	CourseMapper  *course.MongoRepo
-	TeacherMapper *teacher.MongoRepo
-	StaticData    *mapping.StaticData
-	CourseDTO     *assembler.CourseDTO
+	CourseRepo      *repo.CourseRepo
+	TeacherRepo     *repo.TeacherRepo
+	CourseAssembler *assembler.CourseAssembler
 }
 
 var SearchServiceSet = wire.NewSet(
@@ -48,11 +47,11 @@ var SearchServiceSet = wire.NewSet(
 	wire.Bind(new(ISearchService), new(*SearchService)),
 )
 
-func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSearchSuggestReq) (*dto.GetSearchSuggestResp, error) { // 定义四个任务，每个任务返回其结果和可能的错误
+func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSearchSuggestionsReq) (*dto.GetSearchSuggestionsResp, error) { // 定义四个任务，每个任务返回其结果和可能的错误
 	tasks := []func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error){
 		// Courses
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			courseModels, err := s.CourseMapper.GetCourseSuggestions(ctx, req.Keyword, req.PageParam)
+			courseModels, err := s.CourseRepo.GetSuggestions(ctx, req.Keyword, req.PageParam)
 			if err != nil {
 				// 返回错误，errgroup 会捕获它
 				return nil, err
@@ -68,7 +67,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		},
 		// Teachers
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			teacherModels, err := s.TeacherMapper.GetTeacherSuggestions(ctx, req.Keyword, req.PageParam)
+			teacherModels, err := s.TeacherRepo.GetSuggestions(ctx, req.Keyword, req.PageParam)
 			if err != nil {
 				// 返回错误
 				return nil, err
@@ -84,10 +83,10 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		},
 		// Categories
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			ids := s.StaticData.GetCategoryIDsByKeyword(req.Keyword)
+			ids := mapping.Data.GetCategoryIDsByKeyword(req.Keyword)
 			var out []*dto.SearchSuggestionsVO
 			for _, id := range ids {
-				name := s.StaticData.GetCategoryNameByID(id)
+				name := mapping.Data.GetCategoryNameByID(id)
 				out = append(out, &dto.SearchSuggestionsVO{
 					Type: "category",
 					Name: name,
@@ -97,10 +96,10 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		},
 		// Departments
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			ids := s.StaticData.GetDepartmentIDsByKeyword(req.Keyword)
+			ids := mapping.Data.GetDepartmentIDsByKeyword(req.Keyword)
 			var out []*dto.SearchSuggestionsVO
 			for _, id := range ids {
-				name := s.StaticData.GetDepartmentNameByID(id)
+				name := mapping.Data.GetDepartmentNameByID(id)
 				out = append(out, &dto.SearchSuggestionsVO{
 					Type: "department",
 					Name: name,
@@ -147,55 +146,8 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		}
 	}
 
-	return &dto.GetSearchSuggestResp{
+	return &dto.GetSearchSuggestionsResp{
 		Resp:        dto.Success(),
 		Suggestions: suggestions,
-	}, nil
-}
-
-func (s *SearchService) ListCoursesByType(ctx context.Context, req *dto.ListCoursesReq) (*dto.ListCoursesResp, error) {
-	// 将关键词转化为最匹配的种类id
-	var typeId int32
-	if req.Type == consts.Category {
-		typeId = s.StaticData.GetBestCategoryIDByKeyword(req.Keyword)
-	} else if req.Type == consts.Department {
-		typeId = s.StaticData.GetBestDepartmentIDByKeyword(req.Keyword)
-	}
-
-	// 如果转化结果为0，说明关键词搜不到，直接返回
-	if typeId == 0 {
-		return &dto.ListCoursesResp{
-			Resp:             dto.Success(),
-			PaginatedCourses: nil,
-		}, errorx.ErrFindSuccessButNoResult
-	}
-
-	var dbCourses []*course.Course
-	var total int64
-	var err error
-	// 根据type决定查询数据库的方式
-	if req.Type == consts.Category {
-		dbCourses, total, err = s.CourseMapper.FindCoursesByCategoryID(ctx, typeId, req.PageParam)
-	} else if req.Type == consts.Department {
-		dbCourses, total, err = s.CourseMapper.FindCoursesByDepartmentID(ctx, typeId, req.PageParam)
-	}
-	// 检查结果
-	if err != nil {
-		log.Error("FindCoursesByCategory err", err)
-		return nil, errorx.ErrFindFailed
-	}
-	if total == 0 {
-		return nil, errorx.ErrFindSuccessButNoResult
-	}
-	// dto转化
-	paginatedCourses, err := s.CourseDTO.ToPaginatedCourses(ctx, dbCourses, total, req.PageParam)
-	if err != nil {
-		log.CtxError(ctx, "CourseDB To CourseVO error: %v", err)
-		return nil, errorx.ErrCourseDB2VO
-	}
-
-	return &dto.ListCoursesResp{
-		Resp:             dto.Success(),
-		PaginatedCourses: paginatedCourses,
 	}, nil
 }

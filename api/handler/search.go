@@ -15,17 +15,17 @@
 package handler
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/token"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/gin-gonic/gin"
 )
 
-// GetSearchHistory 获得最近15条搜索历史
+// GetSearchHistories 获得最近15条搜索历史
 // @router /api/search/recent [GET]
-func GetSearchHistory(c *gin.Context) {
+func GetSearchHistories(c *gin.Context) {
 	var err error
 	var resp *dto.GetSearchHistoriesResp
 
@@ -34,16 +34,19 @@ func GetSearchHistory(c *gin.Context) {
 	PostProcess(c, nil, resp, err)
 }
 
-// GetSearchSuggestions 输入框有文本更新时 显示搜索建议
+// GetSearchSuggestions 输入框有文本更新时显示搜索建议
 // @router /api/search/suggest
 func GetSearchSuggestions(c *gin.Context) {
 	var err error
-	var req dto.GetSearchSuggestReq
-	var resp *dto.GetSearchSuggestResp
+	var req dto.GetSearchSuggestionsReq
+	var resp *dto.GetSearchSuggestionsResp
+
 	if err = c.ShouldBindQuery(&req); err != nil {
 		PostProcess(c, req, nil, err)
 		return
 	}
+
+	c.Set(consts.ContextUserID, token.GetUserId(c))
 	resp, err = provider.Get().SearchService.GetSearchSuggestions(c, &req)
 	PostProcess(c, &req, resp, err)
 }
@@ -56,32 +59,22 @@ func ListCourses(c *gin.Context) {
 	var resp *dto.ListCoursesResp
 	var err error
 	if err = c.ShouldBindJSON(&req); err != nil {
-		// 如果这里出错，err 就被赋值了。我们直接 return，
-		// defer 会自动捕获这个 err 并处理错误响应。
+		PostProcess(c, &req, nil, err)
 		return
 	}
 
 	c.Set(consts.ContextUserID, token.GetUserId(c))
 
 	if req.Keyword != "" {
-		keyword := req.Keyword
-		// 使用 gin.Context 的副本，安全传入 goroutine
-		cCopy := c.Copy()
 		go func() {
-			if err = provider.Get().SearchHistoryService.LogSearch(cCopy, keyword); err != nil {
-				log.CtxError(cCopy, "记录搜索历史失败: %v", err)
+			cCopy := c.Copy()
+			if errCopy := provider.Get().SearchHistoryService.LogSearch(cCopy, req.Keyword); errCopy != nil {
+				logs.CtxErrorf(cCopy, "记录搜索历史失败: %v", errCopy)
 			}
 		}()
 	}
 
-	if req.Type == consts.Course {
-		resp, err = provider.Get().CourseService.ListCourses(c, &req)
-	} else if req.Type == consts.Teacher {
-		resp, err = provider.Get().TeacherService.ListCoursesByTeacher(c, &req)
-	} else {
-		resp, err = provider.Get().SearchService.ListCoursesByType(c, &req) // 根据req中的Type字段，根据Category或department查询课程
-	}
-
+	resp, err = provider.Get().CourseService.ListCourses(c, &req)
 	PostProcess(c, &req, resp, err)
 }
 
@@ -89,5 +82,4 @@ func ListCourses(c *gin.Context) {
 // @router /api/search/teacher
 func ListTeachers(c *gin.Context) {
 	// TODO 实现接口
-
 }

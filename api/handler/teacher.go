@@ -15,29 +15,26 @@
 package handler
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/token"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/gin-gonic/gin"
 )
 
-// SignIn 用户登录接口
-// @router /api/sign_in [POST]
-func SignIn(c *gin.Context) {
+// CreateTeacher 新建教师
+// @router /api/teacher/add
+func CreateTeacher(c *gin.Context) {
+	var req *dto.CreateTeacherReq
+	var resp *dto.CreateTeacherResp
 	var err error
-	var req dto.SignInReq
-	var resp *dto.SignInResp
-	// 参数校验
-	if err = c.ShouldBindJSON(&req); err != nil {
-		PostProcess(c, &req, nil, errorx.ErrInvalidParams)
-		return
-	}
-	// 解析tokenString（可能为空）
-	tokenStr, _ := token.ExtractToken(c.Request.Header)
-	c.Set(consts.ContextUserID, tokenStr)
 
-	// 调用service
-	resp, err = provider.Get().AuthService.SignIn(c, &req)
-	PostProcess(c, &req, resp, err)
+	if err = c.ShouldBind(&req); err != nil {
+		PostProcess(c, req, resp, err)
+	}
+
+	c.Set(consts.ContextUserID, token.GetUserId(c))
+
+	resp, err = provider.Get().TeacherService.AddNewTeacher(c, req)
+	PostProcess(c, req, resp, err)
 }

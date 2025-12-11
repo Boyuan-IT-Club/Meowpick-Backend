@@ -21,13 +21,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/like"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/searchhistory"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/user"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/google/wire"
 )
 
@@ -66,23 +60,21 @@ var ApplicationSet = wire.NewSet(
 	service.TeacherServiceSet,
 	service.SearchServiceSet,
 	// Assembler 相关
-	assembler.CommentDTOSet,
-	assembler.CourseDTOSet,
-	assembler.TeacherDTOSet,
+	assembler.CommentAssemblerSet,
+	assembler.CourseAssemblerSet,
+	assembler.TeacherAssemblerSet,
 )
 
 var InfraSet = wire.NewSet(
 	config.NewConfig,
-	comment.NewMongoRepo,
-	searchhistory.NewMongoRepo,
-	user.NewMongoRepo,
-	like.NewMongoRepo,
-	course.NewMongoRepo,
-	teacher.NewMongoRepo,
+	repo.NewLikeRepo,
+	repo.NewUserRepo,
+	repo.NewCourseRepo,
+	repo.NewTeacherRepo,
+	repo.NewCommentRepo,
+	repo.NewSearchHistoryRepo,
 	// 缓存相关
 	cache.NewLikeCache,
-	// 映射相关
-	mapping.NewStaticData,
 )
 
 var AllProvider = wire.NewSet(

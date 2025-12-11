@@ -14,16 +14,16 @@
 
 package dto
 
-type CreateLikeReq struct {
+type ToggleLikeReq struct {
 	TargetID string `json:"targetId"`
+}
+
+type ToggleLikeResp struct {
+	*LikeVO
+	*Resp
 }
 
 type LikeVO struct {
 	Like    bool  `json:"like"`
 	LikeCnt int64 `json:"likeCnt"`
-}
-
-type LikeResp struct {
-	*LikeVO
-	*Resp
 }

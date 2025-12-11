@@ -19,38 +19,35 @@ import (
 	"sync"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/google/wire"
 )
 
-var _ ICourseDTO = (*CourseDTO)(nil)
+var _ ICourseAssembler = (*CourseAssembler)(nil)
 
-type ICourseDTO interface {
-	ToCourseVO(ctx context.Context, c *course.Course) (*dto.CourseVO, error)
-	ToCourse(ctx context.Context, vo *dto.CourseVO) (*course.Course, error)
-	ToCourseVOList(ctx context.Context, courses []*course.Course) ([]*dto.CourseVO, error)
-	ToCourseList(ctx context.Context, vos []*dto.CourseVO) ([]*course.Course, error)
-	ToPaginatedCourses(cxt context.Context, courses []*course.Course, total int64, pageParam *dto.PageParam) (*dto.PaginatedCourses, error)
+type ICourseAssembler interface {
+	ToCourseVO(ctx context.Context, c *model.Course) (*dto.CourseVO, error)
+	ToCourse(ctx context.Context, vo *dto.CourseVO) (*model.Course, error)
+	ToCourseVOList(ctx context.Context, courses []*model.Course) ([]*dto.CourseVO, error)
+	ToCourseList(ctx context.Context, vos []*dto.CourseVO) ([]*model.Course, error)
+	ToPaginatedCourses(cxt context.Context, courses []*model.Course, total int64, pageParam *dto.PageParam) (*dto.PaginatedCourses, error)
 }
 
-type CourseDTO struct {
-	CommentMapper *comment.MongoRepo
-	TeacherMapper *teacher.MongoRepo
-	CourseMapper  *course.MongoRepo
-	StaticData    *mapping.StaticData
+type CourseAssembler struct {
+	CommentRepo *repo.CommentRepo
+	TeacherRepo *repo.TeacherRepo
+	CourseRepo  *repo.CourseRepo
 }
 
-var CourseDTOSet = wire.NewSet(
-	wire.Struct(new(CourseDTO), "*"),
-	wire.Bind(new(ICourseDTO), new(*CourseDTO)),
+var CourseAssemblerSet = wire.NewSet(
+	wire.Struct(new(CourseAssembler), "*"),
+	wire.Bind(new(ICourseAssembler), new(*CourseAssembler)),
 )
 
 // ToCourseVO 单个Course转CourseVO (DB to VO) 包含优化过的tag查询
-func (d *CourseDTO) ToCourseVO(ctx context.Context, c *course.Course) (*dto.CourseVO, error) {
+func (a *CourseAssembler) ToCourseVO(ctx context.Context, c *model.Course) (*dto.CourseVO, error) {
 	// 获得相关课程link并转化为VO
 	var linkVOs []*dto.CourseInLinkVO
 	if c.LinkedCourses != nil {
@@ -66,9 +63,9 @@ func (d *CourseDTO) ToCourseVO(ctx context.Context, c *course.Course) (*dto.Cour
 	// 获得课程前三多的tag (使用goroutine异步获取提高性能)
 	tagCountChan := make(chan map[string]int, 1)
 	go func() {
-		tagCount, err := d.CommentMapper.CountCourseTag(ctx, c.ID)
+		tagCount, err := a.CommentRepo.CountTagsByCourseID(ctx, c.ID)
 		if err != nil {
-			log.CtxError(ctx, "CountCourseTag failed for courseID=%s: %v", c.ID, err)
+			log.CtxError(ctx, "CountTagsByCourseID failed for courseID=%s: %v", c.ID, err)
 			tagCountChan <- make(map[string]int)
 		} else {
 			tagCountChan <- tagCount
@@ -77,8 +74,8 @@ func (d *CourseDTO) ToCourseVO(ctx context.Context, c *course.Course) (*dto.Cour
 
 	// 获取校区列表
 	var campuses []string
-	for _, campusID := range c.Campuses {
-		campusName := d.StaticData.GetCampusNameByID(campusID)
+	for _, campusId := range c.Campuses {
+		campusName := mapping.Data.GetCampusNameByID(campusId)
 		if campusName != "" {
 			campuses = append(campuses, campusName)
 		}
@@ -87,7 +84,7 @@ func (d *CourseDTO) ToCourseVO(ctx context.Context, c *course.Course) (*dto.Cour
 	// 获得教师VO
 	var teachers []*dto.TeacherVO
 	for _, tid := range c.TeacherIDs {
-		dbTeacher, err := d.TeacherMapper.FindOneTeacherByID(ctx, tid)
+		dbTeacher, err := a.TeacherRepo.FindByID(ctx, tid)
 		if err != nil {
 			log.CtxError(ctx, "Find Teacher Failed, teacherID: %s, error: %v", tid, err)
 			continue
@@ -97,7 +94,7 @@ func (d *CourseDTO) ToCourseVO(ctx context.Context, c *course.Course) (*dto.Cour
 				ID:         dbTeacher.ID,
 				Name:       dbTeacher.Name,
 				Title:      dbTeacher.Title,
-				Department: d.StaticData.GetDepartmentNameByID(dbTeacher.Department),
+				Department: mapping.Data.GetDepartmentNameByID(dbTeacher.Department),
 			})
 		}
 	}
@@ -109,9 +106,9 @@ func (d *CourseDTO) ToCourseVO(ctx context.Context, c *course.Course) (*dto.Cour
 		ID:         c.ID,
 		Name:       c.Name,
 		Code:       c.Code,
-		Category:   d.StaticData.GetCategoryNameByID(c.Category),
+		Category:   mapping.Data.GetCategoryNameByID(c.Category),
 		Campuses:   campuses,
-		Department: d.StaticData.GetDepartmentNameByID(c.Department),
+		Department: mapping.Data.GetDepartmentNameByID(c.Department),
 		Link:       linkVOs,
 		Teachers:   teachers,
 		TagCount:   tagCount,
@@ -119,7 +116,7 @@ func (d *CourseDTO) ToCourseVO(ctx context.Context, c *course.Course) (*dto.Cour
 }
 
 // ToCourse 单个CourseVO转Course (VO to DB)
-func (d *CourseDTO) ToCourse(ctx context.Context, vo *dto.CourseVO) (*course.Course, error) {
+func (a *CourseAssembler) ToCourse(ctx context.Context, vo *dto.CourseVO) (*model.Course, error) {
 	if vo == nil {
 		return nil, nil
 	}
@@ -127,17 +124,17 @@ func (d *CourseDTO) ToCourse(ctx context.Context, vo *dto.CourseVO) (*course.Cou
 	// 将校区名称转换为ID，使用StaticData的反向映射方法
 	var campusIDs []int32
 	for _, campusName := range vo.Campuses {
-		campusID := d.StaticData.GetCampusIDByName(campusName)
+		campusID := mapping.Data.GetCampusIDByName(campusName)
 		if campusID != 0 {
 			campusIDs = append(campusIDs, campusID)
 		}
 	}
 
 	// 获取分类ID，使用StaticData的反向映射方法
-	categoryID := d.StaticData.GetCategoryIDByName(vo.Category)
+	categoryID := mapping.Data.GetCategoryIDByName(vo.Category)
 
 	// 获取部门ID，使用StaticData的反向映射方法
-	departmentID := d.StaticData.GetDepartmentIDByName(vo.Department)
+	departmentID := mapping.Data.GetDepartmentIDByName(vo.Department)
 
 	// 获取教师ID
 	var teacherIDs []string
@@ -145,7 +142,7 @@ func (d *CourseDTO) ToCourse(ctx context.Context, vo *dto.CourseVO) (*course.Cou
 		teacherIDs = append(teacherIDs, teacher.ID)
 	}
 
-	return &course.Course{
+	return &model.Course{
 		ID:            vo.ID,
 		Name:          vo.Name,
 		Code:          vo.Code,
@@ -158,7 +155,7 @@ func (d *CourseDTO) ToCourse(ctx context.Context, vo *dto.CourseVO) (*course.Cou
 }
 
 // ToCourseVOList Course数组转CourseVO数组 (DB Array to VO Array)
-func (d *CourseDTO) ToCourseVOList(ctx context.Context, courses []*course.Course) ([]*dto.CourseVO, error) {
+func (a *CourseAssembler) ToCourseVOList(ctx context.Context, courses []*model.Course) ([]*dto.CourseVO, error) {
 	if len(courses) == 0 {
 		return []*dto.CourseVO{}, nil
 	}
@@ -177,9 +174,9 @@ func (d *CourseDTO) ToCourseVOList(ctx context.Context, courses []*course.Course
 
 	for i, c := range courses {
 		wg.Add(1)
-		go func(index int, dbCourse *course.Course) {
+		go func(index int, dbCourse *model.Course) {
 			defer wg.Done()
-			vo, err := d.ToCourseVO(ctx, dbCourse)
+			vo, err := a.ToCourseVO(ctx, dbCourse)
 			resultChan <- result{index: index, vo: vo, err: err}
 		}(i, c)
 	}
@@ -201,15 +198,15 @@ func (d *CourseDTO) ToCourseVOList(ctx context.Context, courses []*course.Course
 }
 
 // ToCourseList CourseVO数组转Course数组 (VO Array to DB Array)
-func (d *CourseDTO) ToCourseList(ctx context.Context, vos []*dto.CourseVO) ([]*course.Course, error) {
+func (a *CourseAssembler) ToCourseList(ctx context.Context, vos []*dto.CourseVO) ([]*model.Course, error) {
 	if len(vos) == 0 {
-		return []*course.Course{}, nil
+		return []*model.Course{}, nil
 	}
 
-	courses := make([]*course.Course, 0, len(vos))
+	courses := make([]*model.Course, 0, len(vos))
 
 	for _, vo := range vos {
-		dbCourse, err := d.ToCourse(ctx, vo)
+		dbCourse, err := a.ToCourse(ctx, vo)
 		if err != nil {
 			return nil, err
 		}
@@ -222,8 +219,8 @@ func (d *CourseDTO) ToCourseList(ctx context.Context, vos []*dto.CourseVO) ([]*c
 }
 
 // ToPaginatedCourses Course数组转paginatedCourses
-func (d *CourseDTO) ToPaginatedCourses(cxt context.Context, courses []*course.Course, total int64, pageParam *dto.PageParam) (*dto.PaginatedCourses, error) {
-	courseVOs, err := d.ToCourseVOList(cxt, courses)
+func (a *CourseAssembler) ToPaginatedCourses(cxt context.Context, courses []*model.Course, total int64, pageParam *dto.PageParam) (*dto.PaginatedCourses, error) {
+	courseVOs, err := a.ToCourseVOList(cxt, courses)
 	if err != nil {
 		return &dto.PaginatedCourses{}, err
 	}

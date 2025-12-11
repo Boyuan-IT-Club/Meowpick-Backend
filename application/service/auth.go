@@ -19,16 +19,15 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/token"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
-	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/openid"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/user"
 	"github.com/google/wire"
 )
 
@@ -39,7 +38,7 @@ type IAuthService interface {
 }
 
 type AuthService struct {
-	UserRepo *user.MongoRepo
+	UserRepo *repo.UserRepo
 }
 
 var AuthServiceSet = wire.NewSet(
@@ -65,11 +64,17 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 	if err != nil {
 		if errors.Is(err, errorx.ErrUserNotFound) {
 			// 创建用户并存入数据库
-			newUser := user.User{
-				ID:        primitive.NewObjectID().Hex(),
-				OpenId:    openID,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
+			newUser := model.User{
+				ID:            primitive.NewObjectID().Hex(),
+				OpenId:        openID,
+				Admin:         false,
+				Email:         "",
+				EmailVerified: false,
+				Ban:           false,
+				Avatar:        "",
+				Username:      "",
+				CreatedAt:     time.Now(),
+				UpdatedAt:     time.Now(),
 			}
 
 			if err = s.UserRepo.Insert(ctx, &newUser); err != nil {

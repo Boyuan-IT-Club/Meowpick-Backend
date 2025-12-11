@@ -25,29 +25,34 @@ import (
 
 var config *Config
 
-type auth struct {
+type Log struct {
+	Level string
+}
+
+type Auth struct {
 	SecretKey    string
 	PublicKey    string
 	AccessExpire int64
 }
 
-type weApp struct {
+type WeApp struct {
 	AppID     string
 	AppSecret string
 }
 
 type Config struct {
 	service.ServiceConf
+	Log      Log
 	ListenOn string
 	State    string
-	Auth     auth
+	Auth     Auth
 	Mongo    struct {
 		URL string
 		DB  string
 	}
 	Cache cache.CacheConf
 	Redis *redis.RedisConf
-	WeApp weApp
+	WeApp WeApp
 }
 
 func NewConfig() (*Config, error) {

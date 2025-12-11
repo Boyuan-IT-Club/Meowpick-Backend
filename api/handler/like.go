@@ -15,26 +15,22 @@
 package handler
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/token"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/gin-gonic/gin"
 )
 
-// AddNewTeacher 新建教师
-// @router /api/teacher/add
-func AddNewTeacher(c *gin.Context) {
-	var req *dto.AddNewTeacherReq
-	var resp *dto.AddNewTeacherResp
+// ToggleLike 点赞或取消点赞某个目标（课程、评论等）
+// @router /api/action/like/{id} [POST]
+func ToggleLike(c *gin.Context) {
+	var req dto.ToggleLikeReq
+	var resp *dto.ToggleLikeResp
 	var err error
 
-	if err = c.ShouldBind(&req); err != nil {
-		PostProcess(c, req, resp, err)
-	}
-
+	req.TargetID = c.Param("id")
 	c.Set(consts.ContextUserID, token.GetUserId(c))
-
-	resp, err = provider.Get().TeacherService.AddNewTeacher(c, req)
-	PostProcess(c, req, resp, err)
+	resp, err = provider.Get().LikeService.Like(c, &req)
+	PostProcess(c, nil, resp, err)
 }

@@ -18,9 +18,7 @@ import (
 	"context"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/searchhistory"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/google/wire"
 )
@@ -33,7 +31,7 @@ type ISearchHistoryService interface {
 }
 
 type SearchHistoryService struct {
-	SearchHistoryMapper *searchhistory.MongoRepo
+	SearchHistoryRepo *repo.SearchHistoryRepo
 }
 
 var SearchHistoryServiceSet = wire.NewSet(
@@ -47,7 +45,7 @@ func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*d
 		return nil, errorx.ErrGetUserIDFailed
 	}
 
-	histories, err := s.SearchHistoryMapper.FindByUserID(ctx, userID)
+	histories, err := s.SearchHistoryRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		log.CtxError(ctx, "FindByUserID failed for userID=%s: %v", userID, err)
 		return nil, err
@@ -77,19 +75,19 @@ func (s *SearchHistoryService) LogSearch(ctx context.Context, query string) erro
 		return errorx.ErrGetUserIDFailed
 	}
 
-	if err := s.SearchHistoryMapper.UpsertByUserIDAndQuery(ctx, userID, query); err != nil {
+	if err := s.SearchHistoryRepo.UpsertByUserIDAndQuery(ctx, userID, query); err != nil {
 		log.CtxError(ctx, "Upsert search history failed: %v", err)
 		return errorx.ErrUpdateFailed
 	}
 
-	count, err := s.SearchHistoryMapper.CountByUserID(ctx, userID)
+	count, err := s.SearchHistoryRepo.CountByUserID(ctx, userID)
 	if err != nil {
 		log.CtxError(ctx, "Count search history failed: %v", err)
 		return errorx.ErrCountFailed
 	}
 
 	if count > consts.SearchHistoryLimit {
-		if err := s.SearchHistoryMapper.DeleteOldestByUserID(ctx, userID); err != nil {
+		if err := s.SearchHistoryRepo.DeleteOldestByUserID(ctx, userID); err != nil {
 			log.CtxError(ctx, "Failed to delete oldest search history: %v", err)
 		}
 	}

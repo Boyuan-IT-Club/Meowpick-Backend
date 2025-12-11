@@ -1,3 +1,49 @@
+// Copyright 2025 Boyuan-IT-Club
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package errno
 
-// like: 101 000 000 ~ 101 999 999
+import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
+
+// course: 101 000 000 ~ 101 999 999
+
+const (
+	ErrCourseInvalidParam = 101000001
+	ErrCourseNotFound     = 101000002
+	ErrCourseFindFailed   = 101000003
+	ErrCourseCvtFailed    = 101000004
+)
+
+func init() {
+	code.Register(
+		ErrCourseInvalidParam,
+		"invalid parameter {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCourseNotFound,
+		"course not found",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCourseFindFailed,
+		"course find failed",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCourseCvtFailed,
+		"course convert failed",
+		code.WithAffectStability(false),
+	)
+}

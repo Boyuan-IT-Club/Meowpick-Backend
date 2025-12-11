@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package searchhistory
+package repo
 
 import (
 	"context"
@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
@@ -28,67 +29,67 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var _ IMongoRepo = (*MongoRepo)(nil)
+var _ ISearchHistoryRepo = (*SearchHistoryRepo)(nil)
 
 const (
-	CacheKeyPrefix = "meowpick:searchhistory:"
-	CollectionName = "searchhistory"
+	SearchHistoryCacheKeyPrefix = "meowpick:searchhistory:"
+	SearchHistoryCollectionName = "searchhistory"
 )
 
-type IMongoRepo interface {
-	FindByUserID(ctx context.Context, userID string) ([]*SearchHistory, error)
+type ISearchHistoryRepo interface {
+	FindByUserID(ctx context.Context, userID string) ([]*model.SearchHistory, error)
 	CountByUserID(ctx context.Context, userID string) (int64, error)
 	DeleteOldestByUserID(ctx context.Context, userID string) error
 	UpsertByUserIDAndQuery(ctx context.Context, userID string, query string) error
 }
 
-type MongoRepo struct {
+type SearchHistoryRepo struct {
 	conn *monc.Model
 }
 
-func NewMongoRepo(cfg *config.Config) *MongoRepo {
-	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, CollectionName, cfg.Cache)
-	return &MongoRepo{conn: conn}
+func NewSearchHistoryRepo(cfg *config.Config) *SearchHistoryRepo {
+	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, SearchHistoryCollectionName, cfg.Cache)
+	return &SearchHistoryRepo{conn: conn}
 }
 
-func (m *MongoRepo) FindByUserID(ctx context.Context, userID string) ([]*SearchHistory, error) {
-	var histories []*SearchHistory
+func (r *SearchHistoryRepo) FindByUserID(ctx context.Context, userID string) ([]*model.SearchHistory, error) {
+	var histories []*model.SearchHistory
 
 	ops := options.Find()
 	ops.SetSort(page.DSort(consts.CreatedAt, -1)) // 降序, 最新的在最前面
 	ops.SetLimit(consts.SearchHistoryLimit)
 
-	filter := bson.M{consts.UserId: userID}
+	filter := bson.M{consts.UserID: userID}
 
-	if err := m.conn.Find(ctx, &histories, filter, ops); err != nil {
+	if err := r.conn.Find(ctx, &histories, filter, ops); err != nil {
 		return nil, err
 	}
 	return histories, nil
 }
 
-func (m *MongoRepo) CountByUserID(ctx context.Context, userID string) (int64, error) {
-	return m.conn.CountDocuments(ctx, bson.M{consts.UserId: userID})
+func (r *SearchHistoryRepo) CountByUserID(ctx context.Context, userID string) (int64, error) {
+	return r.conn.CountDocuments(ctx, bson.M{consts.UserID: userID})
 }
 
-func (m *MongoRepo) DeleteOldestByUserID(ctx context.Context, userID string) error {
-	var oldest SearchHistory
+func (r *SearchHistoryRepo) DeleteOldestByUserID(ctx context.Context, userID string) error {
+	var oldest model.SearchHistory
 	ops := options.FindOneAndDelete()
 	ops.SetSort(page.DSort(consts.CreatedAt, 1))
 
-	cacheKey := CacheKeyPrefix + userID
-	if err := m.conn.FindOneAndDelete(ctx, cacheKey, &oldest, bson.M{consts.UserId: userID}, ops); err != nil && !errors.Is(err, monc.ErrNotFound) {
+	cacheKey := SearchHistoryCacheKeyPrefix + userID
+	if err := r.conn.FindOneAndDelete(ctx, cacheKey, &oldest, bson.M{consts.UserID: userID}, ops); err != nil && !errors.Is(err, monc.ErrNotFound) {
 		return err
 	}
 	return nil
 }
 
-func (m *MongoRepo) UpsertByUserIDAndQuery(ctx context.Context, userID string, query string) error {
+func (r *SearchHistoryRepo) UpsertByUserIDAndQuery(ctx context.Context, userID string, query string) error {
 	filter := bson.M{
-		consts.UserId: userID,
+		consts.UserID: userID,
 		consts.Query:  query,
 	}
 
-	// 2. 定义“更新操作”
+	// 定义“更新操作”
 	update := bson.M{
 		// "$set"：无论找到还是没找到，都把 updatedAt 字段设置为现在的时间
 		"$set": bson.M{
@@ -97,7 +98,7 @@ func (m *MongoRepo) UpsertByUserIDAndQuery(ctx context.Context, userID string, q
 		// 只有在没找到，需要插入新纪录的情况下，才设置这些字段
 		"$setOnInsert": bson.M{
 			consts.ID:     primitive.NewObjectID().Hex(),
-			consts.UserId: userID,
+			consts.UserID: userID,
 			consts.Query:  query,
 		},
 	}
@@ -105,7 +106,7 @@ func (m *MongoRepo) UpsertByUserIDAndQuery(ctx context.Context, userID string, q
 	// 如果没找到匹配的，就执行插入操作
 	updateOptions := options.Update().SetUpsert(true)
 
-	cacheKey := CacheKeyPrefix + userID
-	_, err := m.conn.UpdateOne(ctx, cacheKey, filter, update, updateOptions)
+	cacheKey := SearchHistoryCacheKeyPrefix + userID
+	_, err := r.conn.UpdateOne(ctx, cacheKey, filter, update, updateOptions)
 	return err
 }

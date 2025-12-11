@@ -14,27 +14,26 @@
 
 package consts
 
-var PageSize int64 = 10
-
 // 数据库相关
 const (
 	ID         = "_id"
 	Status     = "status"
 	CreatedAt  = "createdAt"
 	UpdatedAt  = "updatedAt"
-	UserId     = "userId"
+	UserID     = "userId"
 	Query      = "query"
 	Deleted    = "deleted"
-	TargetId   = "targetId"
+	TargetID   = "targetId"
 	Active     = "active"
-	CourseId   = "courseId"
-	OpenId     = "openId"
-	TeacherIds = "teacherIds"
+	CourseID   = "courseId"
+	OpenID     = "openId"
+	TeacherIDs = "teacherIds"
 	Categories = "categories"
 	Department = "department"
 	Campuses   = "campuses"
 	Code       = "code"
 	Name       = "name"
+	Tags       = "tags"
 )
 
 // 元素类别相关（如课程、评论、老师）
@@ -43,11 +42,17 @@ const (
 	CommentType
 )
 
-// 业务相关
+// 上下文相关
 const (
 	ContextUserID = "userID"
-	ContextTarget = "targetID"
-	ContextToken  = "token"
+)
+
+// Request 相关
+const (
+	ReqCourse     = "course"
+	ReqTeacher    = "teacher"
+	ReqDepartment = "department"
+	ReqCategory   = "category"
 )
 
 // 限制相关
@@ -55,7 +60,7 @@ const (
 	SearchHistoryLimit = 15
 )
 
-// 类型相关
+// DTO 相关
 const (
 	Category = "category"
 	Course   = "course"

@@ -19,31 +19,24 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
-
-	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/user"
 	"github.com/google/wire"
 )
 
 var _ ITeacherService = (*TeacherService)(nil)
 
 type ITeacherService interface {
-	AddNewTeacher(ctx context.Context, req *dto.AddNewTeacherReq) (*dto.AddNewTeacherResp, error)
-	ListCoursesByTeacher(ctx context.Context, req *dto.ListCoursesReq) (*dto.ListCoursesResp, error)
+	AddNewTeacher(ctx context.Context, req *dto.CreateTeacherReq) (*dto.CreateTeacherResp, error)
 }
 
 type TeacherService struct {
-	CourseMapper  *course.MongoRepo
-	CommentMapper *comment.MongoRepo
-	UserMapper    *user.MongoRepo
-	TeacherMapper *teacher.MongoRepo
-	CourseDTO     *assembler.CourseDTO
-	TeacherDTO    *assembler.TeacherDTO
+	CourseRepo       *repo.CourseRepo
+	CommentRepo      *repo.CommentRepo
+	UserRepo         *repo.UserRepo
+	TeacherRepo      *repo.TeacherRepo
+	CourseAssembler  *assembler.CourseAssembler
+	TeacherAssembler *assembler.TeacherAssembler
 }
 
 var TeacherServiceSet = wire.NewSet(
@@ -51,14 +44,14 @@ var TeacherServiceSet = wire.NewSet(
 	wire.Bind(new(ITeacherService), new(*TeacherService)),
 )
 
-func (s *TeacherService) AddNewTeacher(ctx context.Context, req *dto.AddNewTeacherReq) (*dto.AddNewTeacherResp, error) {
+func (s *TeacherService) AddNewTeacher(ctx context.Context, req *dto.CreateTeacherReq) (*dto.CreateTeacherResp, error) {
 	// 鉴权
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {
 		log.Error("Get user Id failed")
 		return nil, errorx.ErrTokenInvalid
 	}
-	if admin, _ := s.UserMapper.IsAdmin(ctx, userID); !admin {
+	if admin, _ := s.UserRepo.IsAdmin(ctx, userID); !admin {
 		return nil, errorx.ErrUserNotAdmin
 	}
 
@@ -68,51 +61,23 @@ func (s *TeacherService) AddNewTeacher(ctx context.Context, req *dto.AddNewTeach
 		Title:      req.Title,
 		Department: req.Department,
 	}
-	dbTeacher, err := s.TeacherDTO.ToTeacher(ctx, teacherVO)
+	dbTeacher, err := s.TeacherAssembler.ToTeacher(ctx, teacherVO)
 	if err != nil {
 		log.Error("TeacherVO To dbTeacher err:", teacherVO, err)
 	}
 	// 防重
-	existingTeacher, err := s.TeacherMapper.FindOneTeacherByID(ctx, dbTeacher.ID)
+	existingTeacher, err := s.TeacherRepo.FindByID(ctx, dbTeacher.ID)
 	if err != nil && existingTeacher != nil {
 		return nil, errorx.ErrTeacherDuplicate
 	}
 
 	// 增加教师
-	teacherId, err := s.TeacherMapper.AddNewTeacher(ctx, dbTeacher)
+	teacherId, err := s.TeacherRepo.Insert(ctx, dbTeacher)
 	if err != nil {
 		log.Error("Add New Teacher failed", err)
 		return nil, err
 	}
 	teacherVO.ID = teacherId
 
-	return &dto.AddNewTeacherResp{Resp: dto.Success(), TeacherVO: teacherVO}, nil
-}
-
-func (s *TeacherService) ListCoursesByTeacher(ctx context.Context, req *dto.ListCoursesReq) (*dto.ListCoursesResp, error) {
-	teacherID, err := s.TeacherMapper.GetTeacherIDByName(ctx, req.Keyword)
-	if err != nil {
-		log.Error("GetTeacherIDByName failed for keyword: ", req.Keyword, err)
-		return nil, err
-	}
-
-	courseListFromDB, total, err := s.CourseMapper.FindCoursesByTeacherID(ctx, teacherID, req.PageParam)
-	if err != nil {
-		log.Error("FindCoursesByTeacher failed for teacherID: ", teacherID, err)
-		return nil, err
-	}
-	if total == 0 {
-		return &dto.ListCoursesResp{}, errorx.ErrFindSuccessButNoResult
-	}
-
-	paginatedCourses, err := s.CourseDTO.ToPaginatedCourses(ctx, courseListFromDB, total, req.PageParam)
-	if err != nil {
-		log.Error("ToPaginatedCourses failed", err)
-		return nil, errorx.ErrCourseDB2VO
-	}
-
-	return &dto.ListCoursesResp{
-		Resp:             dto.Success(),
-		PaginatedCourses: paginatedCourses,
-	}, nil
+	return &dto.CreateTeacherResp{Resp: dto.Success(), TeacherVO: teacherVO}, nil
 }

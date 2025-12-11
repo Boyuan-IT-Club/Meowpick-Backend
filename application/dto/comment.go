@@ -48,8 +48,8 @@ type CreateCommentResp struct {
 	*CommentVO
 }
 
-// GetTotalCommentsCountResp 对应 /api/search/total 的响应体
-type GetTotalCommentsCountResp struct {
+// GetTotalCourseCommentsCountResp 对应 /api/search/total 的响应体
+type GetTotalCourseCommentsCountResp struct {
 	*Resp
 	Count int64 `json:"count"`
 }
@@ -59,14 +59,14 @@ type GetMyCommentsReq struct {
 	*PageParam
 }
 
-// GetCourseCommentsReq 是前端分页请求某一课程下的评论时，需要传递的数据结构。
-type GetCourseCommentsReq struct {
-	ID string `form:"id" binding:"required"` // TODO确定前端传来_id还是id
+// ListCourseCommentsReq 是前端分页请求某一课程下的评论时，需要传递的数据结构。
+type ListCourseCommentsReq struct {
+	ID string `form:"id" binding:"required"`
 	*PageParam
 }
 
-// GetCourseCommentsResp 是后端返回给前端的、分页的评论历史数据。
-type GetCourseCommentsResp struct {
+// ListCourseCommentsResp 是后端返回给前端的、分页的评论历史数据。
+type ListCourseCommentsResp struct {
 	*Resp
 	Total    int64        `json:"total"`
 	Comments []*CommentVO `json:"comments"`

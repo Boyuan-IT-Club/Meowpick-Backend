@@ -62,7 +62,7 @@
 │   └── service      # 业务逻辑服务
 ├── infra            # 基础设施层
 │   ├── cache        # 缓存实现
-│   ├── config       # 配置管理
+│   ├── c       # 配置管理
 │   ├── consts       # 常量定义
 │   ├── mapper       # 数据访问层
 │   └── util         # 工具类
@@ -99,7 +99,7 @@
 - Redis
 
 ### 配置文件
-项目需要一个 `etc/config.yaml` 配置文件，包含以下内容：
+项目需要一个 `etc/c.yaml` 配置文件，包含以下内容：
 ```yaml
 Name: meowpick.backend
 Host: 0.0.0.0
@@ -114,7 +114,7 @@ Mongo:
 Redis:
   Host: "localhost:6379"
   Type: "node"
-weApp:
+WeApp:
   AppID: "your-weapp-appid"
   AppSecret: "your-weapp-secret"
 ```

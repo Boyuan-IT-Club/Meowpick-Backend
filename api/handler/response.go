@@ -20,9 +20,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/lib"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/gin-gonic/gin"
 )
 
@@ -31,7 +31,7 @@ import (
 // 最佳实践:
 // - 在controller中调用业务处理, 处理结束后调用PostProcess
 func PostProcess(c *gin.Context, req, resp any, err error) {
-	log.CtxInfo(c, "[%s] req=%s, response=%s, err=%v", c.FullPath(), lib.JSONF(req), lib.JSONF(resp), err)
+	logs.CtxInfof(c, "[%s] req=%s, resp=%s, err=%v", c.FullPath(), lib.JSONF(req), lib.JSONF(resp), err)
 
 	// 无错, 正常响应
 	if err == nil {
@@ -40,32 +40,27 @@ func PostProcess(c *gin.Context, req, resp any, err error) {
 		return
 	}
 
-	if errors.Is(err, errorx.ErrFindSuccessButNoResult) {
+	var se errorx.StatusError
+	if errors.As(err, &se) {
 		c.JSON(http.StatusOK, gin.H{
-			"code": 0,
-			"msg":  "success but no result",
+			"code": se.Code(),
+			"msg":  se.Msg(),
+			"data": nil, // 错误返回时可以统一 data 为 nil
+		})
+	} else {
+		// 其他非 errorx 错误，500
+		logs.CtxErrorf(c, "internal error, err=%s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": http.StatusInternalServerError,
+			"msg":  err.Error(),
 			"data": nil,
 		})
-		return
-	}
-
-	var ex errorx.Errorx
-	if errors.As(err, &ex) { // errorx错误
-		StatusCode := http.StatusOK
-		c.JSON(StatusCode, &errorx.Errorx{
-			Code: ex.Code,
-			Msg:  ex.Msg,
-		})
-	} else { // 常规错误, 状态码500
-		log.CtxError(c, "internal error, err=%s", err.Error())
-		code := http.StatusInternalServerError
-		c.String(code, err.Error())
 	}
 }
 
 // makeResponse 通过反射构造嵌套格式的响应体
-// 注意：此版本会展示零值（包括 false/0/"")，并会展开顶层的 struct 或 *struct 字段到 data 下。
-// 同时会跳过 Code/Msg 的重复展开，且不会覆盖已存在的 data key。
+// 会展示零值（包括 false/0/"")，并会展开顶层的 struct 或 *struct 字段到 data 下。
+// 不会覆盖已存在的 data key。
 func makeResponse(resp any) map[string]any {
 	v := reflect.ValueOf(resp)
 	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {

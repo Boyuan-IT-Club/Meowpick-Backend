@@ -12,17 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package teacher
+package model
 
 import (
 	"time"
 )
 
-type Teacher struct {
-	ID         string    `bson:"_id,omitempty"  json:"id"`
-	Name       string    `bson:"name"           json:"name"`
-	Title      string    `bson:"title"          json:"title"`
-	Department int32     `bson:"department"     json:"department"`
-	CreatedAt  time.Time `bson:"createdAt"      json:"createdAt"`
-	UpdatedAt  time.Time `bson:"updatedAt"      json:"updatedAt"`
+type ChangeLog struct {
+	ID           string    `bson:"_id,omitempty"         json:"-"`
+	TargetID     string    `bson:"targetId"              json:"-"`
+	TargetType   int32     `bson:"targetType"            json:"-"`
+	Like         int32     `bson:"action"                json:"-"`
+	Content      string    `bson:"content"               json:"-"`
+	UpdateSource int32     `bson:"updateSource"          json:"-"`
+	ProposalID   string    `bson:"proposalId,omitempty"  json:"-"`
+	UpdatedAt    time.Time `bson:"updatedAt"             json:"-"`
 }

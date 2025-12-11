@@ -10,12 +10,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/like"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/searchhistory"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/user"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 )
 
@@ -26,67 +21,67 @@ func NewProvider() (*Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	mongoRepo := comment.NewMongoRepo(configConfig)
-	likeMongoRepo := like.NewMongoRepo(configConfig)
-	courseMongoRepo := course.NewMongoRepo(configConfig)
+	mongoRepo := repo.NewLikeRepo(configConfig)
+	likeMongoRepo := repo.NewLikeRepo(configConfig)
+	courseMongoRepo := repo.NewLikeRepo(configConfig)
 	staticData, err := mapping.NewStaticData()
 	if err != nil {
 		return nil, err
 	}
-	teacherMongoRepo := teacher.NewMongoRepo(configConfig)
-	commentDTO := &assembler.CommentDTO{
-		LikeMapper:    likeMongoRepo,
-		CourseMapper:  courseMongoRepo,
-		TeacherMapper: teacherMongoRepo,
-		StaticData:    staticData,
-	}
-	commentService := service.CommentService{
-		CommentRepo: mongoRepo,
+	teacherMongoRepo := repo.NewLikeRepo(configConfig)
+	commentDTO := &assembler.CommentAssembler{
 		LikeRepo:    likeMongoRepo,
 		CourseRepo:  courseMongoRepo,
+		TeacherRepo: teacherMongoRepo,
 		StaticData:  staticData,
-		CommentDto:  commentDTO,
 	}
-	searchhistoryMongoRepo := searchhistory.NewMongoRepo(configConfig)
+	commentService := service.CommentService{
+		CommentRepo:      mongoRepo,
+		LikeRepo:         likeMongoRepo,
+		CourseRepo:       courseMongoRepo,
+		StaticData:       staticData,
+		CommentAssembler: commentDTO,
+	}
+	searchhistoryMongoRepo := repo.NewLikeRepo(configConfig)
 	searchHistoryService := service.SearchHistoryService{
-		SearchHistoryMapper: searchhistoryMongoRepo,
+		SearchHistoryRepo: searchhistoryMongoRepo,
 	}
-	userMongoRepo := user.NewMongoRepo(configConfig)
+	userMongoRepo := repo.NewLikeRepo(configConfig)
 	authService := service.AuthService{
 		UserRepo: userMongoRepo,
 	}
 	likeService := service.LikeService{
-		LikeMapper: likeMongoRepo,
+		LikeRepo: likeMongoRepo,
 	}
-	courseDTO := &assembler.CourseDTO{
-		CommentMapper: mongoRepo,
-		TeacherMapper: teacherMongoRepo,
-		CourseMapper:  courseMongoRepo,
-		StaticData:    staticData,
-	}
-	courseService := service.CourseService{
-		CourseRepo:  courseMongoRepo,
+	courseDTO := &assembler.CourseAssembler{
 		CommentRepo: mongoRepo,
 		TeacherRepo: teacherMongoRepo,
+		CourseRepo:  courseMongoRepo,
 		StaticData:  staticData,
-		CourseDTO:   courseDTO,
 	}
-	teacherDTO := &assembler.TeacherDTO{
+	courseService := service.CourseService{
+		CourseRepo:      courseMongoRepo,
+		CommentRepo:     mongoRepo,
+		TeacherRepo:     teacherMongoRepo,
+		StaticData:      staticData,
+		CourseAssembler: courseDTO,
+	}
+	teacherDTO := &assembler.TeacherAssembler{
 		StaticData: staticData,
 	}
 	teacherService := service.TeacherService{
-		CourseMapper:  courseMongoRepo,
-		CommentMapper: mongoRepo,
-		UserMapper:    userMongoRepo,
-		TeacherMapper: teacherMongoRepo,
-		CourseDTO:     courseDTO,
-		TeacherDTO:    teacherDTO,
+		CourseRepo:       courseMongoRepo,
+		CommentRepo:      mongoRepo,
+		UserRepo:         userMongoRepo,
+		TeacherRepo:      teacherMongoRepo,
+		CourseAssembler:  courseDTO,
+		TeacherAssembler: teacherDTO,
 	}
 	searchService := service.SearchService{
-		CourseMapper:  courseMongoRepo,
-		TeacherMapper: teacherMongoRepo,
-		StaticData:    staticData,
-		CourseDTO:     courseDTO,
+		CourseRepo:      courseMongoRepo,
+		TeacherRepo:     teacherMongoRepo,
+		StaticData:      staticData,
+		CourseAssembler: courseDTO,
 	}
 	providerProvider := &Provider{
 		Config:               configConfig,

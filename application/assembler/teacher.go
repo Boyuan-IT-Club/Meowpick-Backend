@@ -18,31 +18,30 @@ import (
 	"context"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/google/wire"
 )
 
-var _ ITeacherDTO = (*TeacherDTO)(nil)
+var _ ITeacherAssembler = (*TeacherAssembler)(nil)
 
-type ITeacherDTO interface {
-	ToTeacherVO(ctx context.Context, t *teacher.Teacher) (*dto.TeacherVO, error)
-	ToTeacher(ctx context.Context, vo *dto.TeacherVO) (*teacher.Teacher, error)
-	ToTeacherVOList(ctx context.Context, teachers []*teacher.Teacher) ([]*dto.TeacherVO, error)
-	ToTeacherList(ctx context.Context, vos []*dto.TeacherVO) ([]*teacher.Teacher, error)
+type ITeacherAssembler interface {
+	ToTeacherVO(ctx context.Context, t *model.Teacher) (*dto.TeacherVO, error)
+	ToTeacher(ctx context.Context, vo *dto.TeacherVO) (*model.Teacher, error)
+	ToTeacherVOList(ctx context.Context, teachers []*model.Teacher) ([]*dto.TeacherVO, error)
+	ToTeacherList(ctx context.Context, vos []*dto.TeacherVO) ([]*model.Teacher, error)
 }
 
-type TeacherDTO struct {
-	StaticData *mapping.StaticData
+type TeacherAssembler struct {
 }
 
-var TeacherDTOSet = wire.NewSet(
-	wire.Struct(new(TeacherDTO), "*"),
-	wire.Bind(new(ITeacherDTO), new(*TeacherDTO)),
+var TeacherAssemblerSet = wire.NewSet(
+	wire.Struct(new(TeacherAssembler), "*"),
+	wire.Bind(new(ITeacherAssembler), new(*TeacherAssembler)),
 )
 
 // ToTeacherVO 单个Teacher转TeacherVO (DB to VO)
-func (d *TeacherDTO) ToTeacherVO(ctx context.Context, t *teacher.Teacher) (*dto.TeacherVO, error) {
+func (a *TeacherAssembler) ToTeacherVO(ctx context.Context, t *model.Teacher) (*dto.TeacherVO, error) {
 	if t == nil {
 		return nil, nil
 	}
@@ -51,26 +50,26 @@ func (d *TeacherDTO) ToTeacherVO(ctx context.Context, t *teacher.Teacher) (*dto.
 		ID:         t.ID,
 		Name:       t.Name,
 		Title:      t.Title,
-		Department: d.StaticData.GetDepartmentNameByID(t.Department),
+		Department: mapping.Data.GetDepartmentNameByID(t.Department),
 	}, nil
 }
 
 // ToTeacher 单个TeacherVO转Teacher (VO to DB)
-func (d *TeacherDTO) ToTeacher(ctx context.Context, vo *dto.TeacherVO) (*teacher.Teacher, error) {
+func (a *TeacherAssembler) ToTeacher(ctx context.Context, vo *dto.TeacherVO) (*model.Teacher, error) {
 	if vo == nil {
 		return nil, nil
 	}
 
-	return &teacher.Teacher{
+	return &model.Teacher{
 		ID:         vo.ID,
 		Name:       vo.Name,
 		Title:      vo.Title,
-		Department: d.StaticData.GetDepartmentIDByName(vo.Department),
+		Department: mapping.Data.GetDepartmentIDByName(vo.Department),
 	}, nil
 }
 
 // ToTeacherVOList Teacher数组转TeacherVO数组 (DB Array to VO Array)
-func (d *TeacherDTO) ToTeacherVOList(ctx context.Context, teachers []*teacher.Teacher) ([]*dto.TeacherVO, error) {
+func (a *TeacherAssembler) ToTeacherVOList(ctx context.Context, teachers []*model.Teacher) ([]*dto.TeacherVO, error) {
 	if len(teachers) == 0 {
 		return []*dto.TeacherVO{}, nil
 	}
@@ -78,7 +77,7 @@ func (d *TeacherDTO) ToTeacherVOList(ctx context.Context, teachers []*teacher.Te
 	teacherVOs := make([]*dto.TeacherVO, 0, len(teachers))
 
 	for _, t := range teachers {
-		teacherVO, err := d.ToTeacherVO(ctx, t)
+		teacherVO, err := a.ToTeacherVO(ctx, t)
 		if err != nil {
 			return nil, err
 		}
@@ -91,15 +90,15 @@ func (d *TeacherDTO) ToTeacherVOList(ctx context.Context, teachers []*teacher.Te
 }
 
 // ToTeacherList TeacherVO数组转Teacher数组 (VO Array to DB Array)
-func (d *TeacherDTO) ToTeacherList(ctx context.Context, vos []*dto.TeacherVO) ([]*teacher.Teacher, error) {
+func (a *TeacherAssembler) ToTeacherList(ctx context.Context, vos []*dto.TeacherVO) ([]*model.Teacher, error) {
 	if len(vos) == 0 {
-		return []*teacher.Teacher{}, nil
+		return []*model.Teacher{}, nil
 	}
 
-	teachers := make([]*teacher.Teacher, 0, len(vos))
+	teachers := make([]*model.Teacher, 0, len(vos))
 
 	for _, vo := range vos {
-		dbTeacher, err := d.ToTeacher(ctx, vo)
+		dbTeacher, err := a.ToTeacher(ctx, vo)
 		if err != nil {
 			return nil, err
 		}

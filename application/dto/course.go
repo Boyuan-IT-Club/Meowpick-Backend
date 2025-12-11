@@ -43,16 +43,16 @@ type ListCoursesResp struct {
 	*PaginatedCourses
 }
 
-type GetOneCourseResp struct {
+type GetCourse struct {
 	*Resp
 	Course *CourseVO `json:"course"`
 }
 
-type GetCoursesDepartmentsReq struct {
+type GetCourseDepartmentsReq struct {
 	Keyword string `form:"keyword"`
 }
 
-type GetCoursesDepartmentsResp struct {
+type GetCourseDepartmentsResp struct {
 	*Resp
 	Departments []string `json:"departments"`
 }

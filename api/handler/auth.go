@@ -15,25 +15,27 @@
 package handler
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/adaptor/token"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/gin-gonic/gin"
 )
 
-// Like .
-// @router /api/action/like/{id} [POST]
-func Like(c *gin.Context) {
-	var req dto.CreateLikeReq
-	var resp *dto.LikeResp
+// SignIn 用户登录接口
+// @router /api/sign_in [POST]
+func SignIn(c *gin.Context) {
 	var err error
+	var req dto.SignInReq
+	var resp *dto.SignInResp
 
-	// 解析目标id和用户id
-	req.TargetID = c.Param("id") // 前端采用路由匹配传参，直接解析即可
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
-	// 未来可能需要添加targetType解析
-	resp, err = provider.Get().LikeService.Like(c, &req)
-	PostProcess(c, nil, resp, err)
+	tokenStr, _ := token.ExtractToken(c.Request.Header)
+	c.Set(consts.ContextUserID, tokenStr)
+	resp, err = provider.Get().AuthService.SignIn(c, &req)
+	PostProcess(c, &req, resp, err)
 }

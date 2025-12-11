@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package like
+package repo
 
 import (
 	"context"
@@ -20,59 +20,54 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
-	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var _ IMongoRepo = (*MongoRepo)(nil)
+var _ ILikeRepo = (*LikeRepo)(nil)
 
 const (
-	CacheKeyPrefix = "meowpick:like:"
-	CollectionName = "like"
+	LikeCacheKeyPrefix = "meowpick:like:"
+	LikeCollectionName = "like"
 )
 
-type IMongoRepo interface {
-	// ToggleLike 翻转点赞状态，返回完成后目标的点赞状态
-	ToggleLike(ctx context.Context, userID, targetID string, targetType int32) (bool, error)
-	// GetLikeStatus 获取一个用户对一个目标的当前点赞状态（是/否点赞）
-	GetLikeStatus(ctx context.Context, userID, targetID string, targetType int32) (bool, error)
-	// GetLikeCount 获得目标的总点赞数
-	GetLikeCount(ctx context.Context, targetID string, targetType int32) (int64, error)
-	// GetBatchLikeStatus 批量获取一个用户对多个目标的点赞状态，返回目标id->bool映射
-	GetBatchLikeStatus(ctx context.Context, userID string, targetID []string, targetType int32) (map[string]bool, error)
-	// GetBatchLikeCount 批量获取多个目标的点赞数
-	GetBatchLikeCount(ctx context.Context, userID string, targetID []string, targetType int32) (map[string]int64, error)
+type ILikeRepo interface {
+	ToggleLike(ctx context.Context, userID, targetId string, targetType int32) (bool, error)
+	GetLikeStatus(ctx context.Context, userID, targetId string, targetType int32) (bool, error)
+	GetLikeCount(ctx context.Context, targetId string, targetType int32) (int64, error)
+	GetBatchLikeStatus(ctx context.Context, userID string, targetIds []string, targetType int32) (map[string]bool, error)
+	GetBatchLikeCount(ctx context.Context, userID string, targetIds []string, targetType int32) (map[string]int64, error)
 }
 
-type MongoRepo struct {
-	conn      *monc.Model
-	likeCache *cache.LikeCache
+type LikeRepo struct {
+	conn  *monc.Model
+	cache *cache.LikeCache
 }
 
-func NewMongoRepo(config *config.Config) *MongoRepo {
-	conn := monc.MustNewModel(config.Mongo.URL, config.Mongo.DB, CollectionName, config.Cache)
-	return &MongoRepo{
-		conn:      conn,
-		likeCache: cache.NewLikeCache(config),
+func NewLikeRepo(config *config.Config) *LikeRepo {
+	conn := monc.MustNewModel(config.Mongo.URL, config.Mongo.DB, LikeCollectionName, config.Cache)
+	return &LikeRepo{
+		conn:  conn,
+		cache: cache.NewLikeCache(config),
 	}
 }
 
-func (m *MongoRepo) ToggleLike(ctx context.Context, userID, targetID string, targetType int32) (bool, error) {
+// ToggleLike 翻转点赞状态，返回完成后目标的点赞状态
+func (r *LikeRepo) ToggleLike(ctx context.Context, userID, targetId string, targetType int32) (bool, error) {
 	// 把存在且 active != false 的文档视为当前已点赞（包括 active 字段缺失的历史记录）
 	filterActive := bson.M{
-		consts.UserId:   userID,
-		consts.TargetId: targetID,
+		consts.UserID:   userID,
+		consts.TargetID: targetId,
 		consts.Active:   bson.M{"$ne": false}, // 非false
 		//"targetType": targetType,
 	}
 
-	cnt, err := m.conn.CountDocuments(ctx, filterActive)
+	cnt, err := r.conn.CountDocuments(ctx, filterActive)
 	if err != nil {
-		return false, errorx.ErrFindFailed
+		return false, err
 	}
 
 	// 如果已有记录（包含缺失 active 字段的历史记录），则本次操作为取消（newActive=false）
@@ -89,86 +84,89 @@ func (m *MongoRepo) ToggleLike(ctx context.Context, userID, targetID string, tar
 			//"targetType": targetType,
 		},
 	}
-	updateOptions := options.Update().SetUpsert(true)
+	ops := options.Update().SetUpsert(true)
 
 	filter := bson.M{
-		consts.UserId:   userID,
-		consts.TargetId: targetID,
+		consts.UserID:   userID,
+		consts.TargetID: targetId,
 	}
-	cacheKey := CacheKeyPrefix + userID + "-" + targetID
-	if _, err := m.conn.UpdateOne(ctx, cacheKey, filter, update, updateOptions); err != nil {
-		return false, errorx.ErrUpdateFailed
+	cacheKey := LikeCacheKeyPrefix + userID + "-" + targetId
+	if _, err = r.conn.UpdateOne(ctx, cacheKey, filter, update, ops); err != nil {
+		return false, err
 	}
 
 	// 更新点赞状态缓存
-	_ = m.likeCache.SetLikeStatus(ctx, userID, targetID, newActive, 10*time.Minute)
+	_ = r.cache.SetLikeStatus(ctx, userID, targetId, newActive, 10*time.Minute)
 
 	// 更新点赞数缓存（如果缓存中存在的话）
 	if newActive {
 		// 点赞：缓存+1，如果缓存不存在则不处理（等下次查询时回填）
-		if _, err = m.likeCache.IncrLikeCount(ctx, targetID, 1); err != nil {
-			log.Error("Increase like count cache error", err)
+		if _, err = r.cache.IncrLikeCount(ctx, targetId, 1); err != nil {
+			logs.Errorf("Increase like count cache error: %v", err)
 		}
 	} else {
 		// 取消点赞：缓存-1
-		if _, err = m.likeCache.IncrLikeCount(ctx, targetID, -1); err != nil {
-			log.Error("Increase like count cache error", err)
+		if _, err = r.cache.IncrLikeCount(ctx, targetId, -1); err != nil {
+			logs.Errorf("Increase like count cache error: %v", err)
 		}
 	}
 
 	return newActive, nil
 }
 
-func (m *MongoRepo) GetLikeStatus(ctx context.Context, userID, targetID string, targetType int32) (bool, error) {
+// GetLikeStatus 获取一个用户对一个目标的当前点赞状态（是/否点赞）
+func (r *LikeRepo) GetLikeStatus(ctx context.Context, userID, targetId string, targetType int32) (bool, error) {
 	// 缓存查询
-	if liked, found := m.likeCache.GetLikeStatus(ctx, userID, targetID); found {
+	if liked, found := r.cache.GetLikeStatus(ctx, userID, targetId); found {
 		return liked, nil
 	}
 
 	// 缓存未命中，走数据库查询
 	filter := bson.M{
-		consts.UserId:   userID,
-		consts.TargetId: targetID,
+		consts.UserID:   userID,
+		consts.TargetID: targetId,
 		consts.Active:   bson.M{"$ne": false}, // 非 false 视为点赞（包含缺失字段）
 		//"targetType": targetType,
 	}
 
-	cnt, err := m.conn.CountDocuments(ctx, filter)
+	cnt, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
-		return false, errorx.ErrFindFailed
+		return false, err
 	}
 	return cnt > 0, nil
 }
 
-func (m *MongoRepo) GetLikeCount(ctx context.Context, targetID string, targetType int32) (int64, error) {
+// GetLikeCount 获得目标的总点赞数
+func (r *LikeRepo) GetLikeCount(ctx context.Context, targetId string, targetType int32) (int64, error) {
 	// 缓存查询
-	if count, found := m.likeCache.GetLikeCount(ctx, targetID); found {
+	if count, found := r.cache.GetLikeCount(ctx, targetId); found {
 		return count, nil
 	}
 
 	// 缓存未命中，走数据库查询
 	filter := bson.M{
-		consts.TargetId: targetID,
+		consts.TargetID: targetId,
 		consts.Active:   bson.M{"$ne": false}, // 排除 active==false，包含缺失字段
 		//"targetType": targetType,
 	}
 
-	count, err := m.conn.CountDocuments(ctx, filter)
+	count, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
-		return 0, errorx.ErrCountFailed
+		return 0, err
 	}
 	return count, nil
 }
 
-func (m *MongoRepo) GetBatchLikeStatus(ctx context.Context, userID string, targetIDs []string, targetType int32) (map[string]bool, error) {
-	if len(targetIDs) == 0 {
+// GetBatchLikeStatus 批量获取一个用户对多个目标的点赞状态，返回目标id->bool映射
+func (r *LikeRepo) GetBatchLikeStatus(ctx context.Context, userID string, targetIds []string, targetType int32) (map[string]bool, error) {
+	if len(targetIds) == 0 {
 		return make(map[string]bool), nil
 	}
 
 	// 先查缓存
-	cachedResults, missingIDs, err := m.likeCache.GetBatchLikeStatus(ctx, userID, targetIDs, targetType)
+	cachedResults, missingIDs, err := r.cache.GetBatchLikeStatus(ctx, userID, targetIds, targetType)
 	if err != nil {
-		log.Error("Batch get like status from cache error", err)
+		logs.Errorf("Batch get like status from cache error: %v", err)
 		// 缓存失败，直接查数据库
 	}
 	// 提前创建待返回的结果
@@ -183,14 +181,14 @@ func (m *MongoRepo) GetBatchLikeStatus(ctx context.Context, userID string, targe
 		pipeline := []bson.M{
 			{
 				"$match": bson.M{
-					consts.UserId:   userID,
-					consts.TargetId: bson.M{"$in": missingIDs},
+					consts.UserID:   userID,
+					consts.TargetID: bson.M{"$in": missingIDs},
 					consts.Active:   bson.M{"$ne": false},
 				},
 			},
 			{
 				"$group": bson.M{
-					"_id": "$" + consts.TargetId,
+					"_id": "$" + consts.TargetID,
 				},
 			},
 		}
@@ -202,10 +200,10 @@ func (m *MongoRepo) GetBatchLikeStatus(ctx context.Context, userID string, targe
 		var results []aggResult
 
 		// 执行聚合查询，结果填充到 results
-		err = m.conn.Aggregate(ctx, &results, pipeline)
+		err = r.conn.Aggregate(ctx, &results, pipeline)
 		if err != nil {
-			log.CtxError(ctx, "Aggregate like status error", err)
-			return nil, errorx.ErrFindFailed
+			logs.Errorf("Aggregate like status error: %v", err)
+			return nil, err
 		}
 
 		// 收集已点赞的targetID
@@ -221,7 +219,7 @@ func (m *MongoRepo) GetBatchLikeStatus(ctx context.Context, userID string, targe
 
 			// 异步设置缓存，避免阻塞
 			go func(tID string, status bool) {
-				_ = m.likeCache.SetLikeStatus(ctx, userID, tID, status, 10*time.Minute)
+				_ = r.cache.SetLikeStatus(ctx, userID, tID, status, 10*time.Minute)
 			}(targetID, liked)
 		}
 	}
@@ -229,17 +227,18 @@ func (m *MongoRepo) GetBatchLikeStatus(ctx context.Context, userID string, targe
 	return result, nil
 }
 
-func (m *MongoRepo) GetBatchLikeCount(ctx context.Context, userID string, targetIDs []string, targetType int32) (map[string]int64, error) {
-	if len(targetIDs) == 0 {
+// GetBatchLikeCount 批量获取多个目标的点赞数
+func (r *LikeRepo) GetBatchLikeCount(ctx context.Context, userID string, targetIds []string, targetType int32) (map[string]int64, error) {
+	if len(targetIds) == 0 {
 		return make(map[string]int64), nil
 	}
 
 	// 先查缓存
-	cachedResults, missingIDs, err := m.likeCache.GetBatchLikeCount(ctx, targetIDs, targetType)
+	cachedResults, missingIDs, err := r.cache.GetBatchLikeCount(ctx, targetIds, targetType)
 	if err != nil {
-		log.Error("Batch get like count from cache error", err)
+		logs.Errorf("Batch get like count from cache error: %v", err)
 		// 缓存失败，直接查数据库
-		missingIDs = targetIDs
+		missingIDs = targetIds
 		cachedResults = make(map[string]int64)
 	}
 
@@ -254,13 +253,13 @@ func (m *MongoRepo) GetBatchLikeCount(ctx context.Context, userID string, target
 		pipeline := []bson.M{
 			{
 				"$match": bson.M{
-					consts.TargetId: bson.M{"$in": missingIDs},
+					consts.TargetID: bson.M{"$in": missingIDs},
 					consts.Active:   bson.M{"$ne": false},
 				},
 			},
 			{
 				"$group": bson.M{
-					"_id":   "$" + consts.TargetId,
+					"_id":   "$" + consts.TargetID,
 					"count": bson.M{"$sum": 1},
 				},
 			},
@@ -274,10 +273,10 @@ func (m *MongoRepo) GetBatchLikeCount(ctx context.Context, userID string, target
 		var results []aggResult
 
 		// 执行聚合查询，结果填充到 results
-		err = m.conn.Aggregate(ctx, &results, pipeline)
+		err = r.conn.Aggregate(ctx, &results, pipeline)
 		if err != nil {
-			log.CtxError(ctx, "Aggregate like count error", err)
-			return nil, errorx.ErrCountFailed
+			logs.Errorf("Aggregate like count error: %v", err)
+			return nil, err
 		}
 
 		// 收集点赞数结果
@@ -297,7 +296,7 @@ func (m *MongoRepo) GetBatchLikeCount(ctx context.Context, userID string, target
 			count := result[targetID]
 			// 异步设置缓存，避免阻塞
 			go func(tID string, cnt int64) {
-				_ = m.likeCache.SetLikeCount(ctx, tID, cnt, 10*time.Minute)
+				_ = r.cache.SetLikeCount(ctx, tID, cnt, 10*time.Minute)
 			}(targetID, count)
 		}
 	}

@@ -18,9 +18,7 @@ import (
 	"context"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/like"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/google/wire"
 )
@@ -28,11 +26,11 @@ import (
 var _ ILikeService = (*LikeService)(nil)
 
 type ILikeService interface {
-	Like(ctx context.Context, req *dto.CreateLikeReq) (resp *dto.LikeResp, err error)
+	Like(ctx context.Context, req *dto.ToggleLikeReq) (resp *dto.ToggleLikeResp, err error)
 }
 
 type LikeService struct {
-	LikeMapper *like.MongoRepo
+	LikeRepo *repo.LikeRepo
 }
 
 var LikeServiceSet = wire.NewSet(
@@ -40,7 +38,7 @@ var LikeServiceSet = wire.NewSet(
 	wire.Bind(new(ILikeService), new(*LikeService)),
 )
 
-func (s *LikeService) Like(ctx context.Context, req *dto.CreateLikeReq) (resp *dto.LikeResp, err error) {
+func (s *LikeService) Like(ctx context.Context, req *dto.ToggleLikeReq) (resp *dto.ToggleLikeResp, err error) {
 	// 参数校验
 	var targetID string
 	var userID string
@@ -57,19 +55,19 @@ func (s *LikeService) Like(ctx context.Context, req *dto.CreateLikeReq) (resp *d
 	}
 
 	// 步骤一：先执行点赞或取消点赞的操作
-	newActive, err := s.LikeMapper.ToggleLike(ctx, userID, targetID, consts.CommentType)
+	newActive, err := s.LikeRepo.ToggleLike(ctx, userID, targetID, consts.CommentType)
 	if err != nil {
 		return nil, errorx.ErrLikeFailed
 	}
 
 	// 步骤二：操作完成后，再去获取最新的总点赞数
-	likeCount, err := s.LikeMapper.GetLikeCount(ctx, targetID, consts.CommentType)
+	likeCount, err := s.LikeRepo.GetLikeCount(ctx, targetID, consts.CommentType)
 	if err != nil {
 		return nil, errorx.ErrGetCountFailed
 	}
 
 	// 步骤三：使用两个最新的数据创建响应
-	resp = &dto.LikeResp{
+	resp = &dto.ToggleLikeResp{
 		Resp: dto.Success(),
 		LikeVO: &dto.LikeVO{
 			Like:    newActive,
@@ -77,7 +75,7 @@ func (s *LikeService) Like(ctx context.Context, req *dto.CreateLikeReq) (resp *d
 		},
 	}
 
-	resp = &dto.LikeResp{
+	resp = &dto.ToggleLikeResp{
 		Resp: dto.Success(),
 		LikeVO: &dto.LikeVO{
 			Like:    newActive,

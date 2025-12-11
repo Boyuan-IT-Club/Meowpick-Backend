@@ -19,31 +19,31 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	errorx "github.com/Boyuan-IT-Club/Meowpick-Backend/infra/consts/exception"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/comment"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/course"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo/teacher"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/log"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
 )
 
 var _ ICourseService = (*CourseService)(nil)
 
 type ICourseService interface {
-	GetOneCourse(ctx context.Context, courseID string) (*dto.GetOneCourseResp, error)
+	GetOneCourse(ctx context.Context, courseID string) (*dto.GetCourse, error)
 	ListCourses(ctx context.Context, req *dto.ListCoursesReq) (*dto.ListCoursesResp, error)
-	GetDepartments(ctx context.Context, req *dto.GetCoursesDepartmentsReq) (*dto.GetCoursesDepartmentsResp, error)
+	GetDepartments(ctx context.Context, req *dto.GetCourseDepartmentsReq) (*dto.GetCourseDepartmentsResp, error)
 	GetCategories(ctx context.Context, req *dto.GetCourseCategoriesReq) (*dto.GetCourseCategoriesResp, error)
 	GetCampuses(ctx context.Context, req *dto.GetCourseCampusesReq) (*dto.GetCourseCampusesResp, error)
 }
 
 type CourseService struct {
-	CourseRepo  *course.MongoRepo
-	CommentRepo *comment.MongoRepo
-	TeacherRepo *teacher.MongoRepo
-	StaticData  *mapping.StaticData
-	CourseDTO   *assembler.CourseDTO
+	CourseRepo      *repo.CourseRepo
+	CommentRepo     *repo.CommentRepo
+	TeacherRepo     *repo.TeacherRepo
+	CourseAssembler *assembler.CourseAssembler
 }
 
 var CourseServiceSet = wire.NewSet(
@@ -52,74 +52,98 @@ var CourseServiceSet = wire.NewSet(
 )
 
 // GetOneCourse 精确搜索，返回课程的元信息CourseVO
-func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*dto.GetOneCourseResp, error) {
-
-	dbCourse, err := s.CourseRepo.FindOneByID(ctx, courseID)
+func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*dto.GetCourse, error) {
+	dbCourse, err := s.CourseRepo.FindByID(ctx, courseID)
 	if err != nil || dbCourse == nil { // 使用id搜索不应出现找不到的情况
 		return nil, err
 	}
 
-	courseVO, err := s.CourseDTO.ToCourseVO(ctx, dbCourse)
+	courseVO, err := s.CourseAssembler.ToCourseVO(ctx, dbCourse)
 	if err != nil {
 		log.CtxError(ctx, "CourseDB To CourseVO error: %v", err)
 		return nil, errorx.ErrCourseDB2VO
 	}
 
-	return &dto.GetOneCourseResp{
+	return &dto.GetCourse{
 		Resp:   dto.Success(),
 		Course: courseVO,
 	}, nil
 }
 
+// ListCourses 返回课程的分页结果
+// 当req.Type为"course"时，模糊分页搜索课程
+// 当req.Type为"teacher"时，精确分页搜索教师开设的课程
+// 当req.Type为"category"时，精确分页搜索该类别下的课程
+// 当req.Type为"department"时，精确分页搜索该开课院系下的课程
 func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq) (*dto.ListCoursesResp, error) {
-	// 获取符合条件的总课程数量
-	total, err := s.CourseRepo.CountCourses(ctx, req.Keyword)
-	if err != nil {
-		return nil, err
-	}
-	// 若搜不到任何课程，直接返回空响应
-	if total == 0 {
-		// TODO 正常搜也会搜索不到的场景是否需要log？
-		return &dto.ListCoursesResp{
-			Resp: dto.Success(), PaginatedCourses: &dto.PaginatedCourses{},
-		}, errorx.ErrFindSuccessButNoResult
+	// 鉴权
+	userId, ok := ctx.Value(consts.ContextUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	// 使用模糊匹配搜索课程
-	dbCourses, err := s.CourseRepo.GetCourseSuggestions(ctx, req.Keyword, req.PageParam)
-	if err != nil {
-		return nil, err
+	// 区分不同的搜索方式
+	var err error
+	var total int64
+	var dbCourses []*model.Course
+	switch req.Type {
+	case consts.ReqCourse:
+		dbCourses, total, err = s.CourseRepo.FindManyByNameLike(ctx, req.Keyword, req.PageParam)
+		if err != nil {
+			logs.CtxErrorf(ctx, "CourseRepo FindManyByNameLike error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed)
+		}
+	case consts.ReqTeacher:
+		tid, err := s.TeacherRepo.FindIDByName(ctx, req.Keyword)
+		if err != nil {
+			logs.CtxErrorf(ctx, "CourseRepo FindIDByName error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrTeacherIDNotFound, errorx.KV("name", req.Keyword))
+		}
+		dbCourses, total, err = s.CourseRepo.FindManyByTeacherID(ctx, tid, req.PageParam)
+	case consts.ReqCategory:
+		cid := mapping.Data.GetCategoryIDByName(req.Keyword)
+		dbCourses, total, err = s.CourseRepo.FindManyByCategoryID(ctx, cid, req.PageParam)
+		if err != nil {
+			logs.CtxErrorf(ctx, "CourseRepo FindManyByCategoryID error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed)
+		}
+	case consts.ReqDepartment:
+		did := mapping.Data.GetDepartmentIDByName(req.Keyword)
+		dbCourses, total, err = s.CourseRepo.FindManyByDepartmentID(ctx, did, req.PageParam)
+		if err != nil {
+			logs.CtxErrorf(ctx, "CourseRepo FindManyByDepartmentID error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed)
+		}
+	default:
+		logs.CtxErrorf(ctx, "CourseService ListCourses error: invalid type %s", req.Type)
+		return nil, errorx.New(errno.ErrCourseInvalidParam, errorx.KV("key", "type"), errorx.KV("value", req.Type))
 	}
 
-	// 将数据库课程列表转换为分页结果
-	paginatedCourses, err := s.CourseDTO.ToPaginatedCourses(ctx, dbCourses, total, req.PageParam)
+	// 转换为分页结果
+	paginatedCourses, err := s.CourseAssembler.ToPaginatedCourses(ctx, dbCourses, total, req.PageParam)
 	if err != nil {
-		log.CtxError(ctx, "CourseDB To CourseVO error: %v", err)
-		return nil, errorx.ErrCourseDB2VO
+		logs.CtxErrorf(ctx, "CourseAssembler ToPaginatedCourses error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
 	}
 
-	// 返回响应
-	response := &dto.ListCoursesResp{
+	return &dto.ListCoursesResp{
 		Resp:             dto.Success(),
 		PaginatedCourses: paginatedCourses,
-	}
-
-	return response, nil
+	}, nil
 }
 
-func (s *CourseService) GetDepartments(ctx context.Context, req *dto.GetCoursesDepartmentsReq) (*dto.GetCoursesDepartmentsResp, error) {
-
-	departsIDs, err := s.CourseRepo.GetDepartments(ctx, req.Keyword)
+func (s *CourseService) GetDepartments(ctx context.Context, req *dto.GetCourseDepartmentsReq) (*dto.GetCourseDepartmentsResp, error) {
+	departsIDs, err := s.CourseRepo.GetDepartmentsByName(ctx, req.Keyword)
 	if err != nil {
 		return nil, err
 	}
 
 	departs := make([]string, 0, len(departsIDs))
 	for _, dbDepart := range departsIDs {
-		departs = append(departs, s.StaticData.GetDepartmentNameByID(dbDepart))
+		departs = append(departs, mapping.Data.GetDepartmentNameByID(dbDepart))
 	}
 
-	response := &dto.GetCoursesDepartmentsResp{
+	response := &dto.GetCourseDepartmentsResp{
 		Resp:        dto.Success(),
 		Departments: departs,
 	}
@@ -136,7 +160,7 @@ func (s *CourseService) GetCategories(ctx context.Context, req *dto.GetCourseCat
 
 	categories := make([]string, 0, len(categoriesIDs))
 	for _, dbCategory := range categoriesIDs {
-		categories = append(categories, s.StaticData.GetCategoryNameByID(dbCategory))
+		categories = append(categories, mapping.Data.GetCategoryNameByID(dbCategory))
 	}
 
 	response := &dto.GetCourseCategoriesResp{
@@ -148,14 +172,14 @@ func (s *CourseService) GetCategories(ctx context.Context, req *dto.GetCourseCat
 
 func (s *CourseService) GetCampuses(ctx context.Context, req *dto.GetCourseCampusesReq) (*dto.GetCourseCampusesResp, error) {
 
-	campusesIDs, err := s.CourseRepo.GetCampuses(ctx, req.Keyword)
+	campusesIDs, err := s.CourseRepo.GetCampusesByName(ctx, req.Keyword)
 	if err != nil {
 		return nil, err
 	}
 
 	campuses := make([]string, 0, len(campusesIDs))
 	for _, dbCampus := range campusesIDs {
-		campuses = append(campuses, s.StaticData.GetCategoryNameByID(dbCampus))
+		campuses = append(campuses, mapping.Data.GetCategoryNameByID(dbCampus))
 	}
 
 	response := &dto.GetCourseCampusesResp{
