@@ -37,8 +37,10 @@ const (
 type IUserRepo interface {
 	Insert(ctx context.Context, user *model.User) (err error)
 	Update(ctx context.Context, user *model.User) (err error)
+
 	FindByID(ctx context.Context, userId string) (user *model.User, err error)
 	FindByOpenID(ctx context.Context, openId string) (user *model.User, err error)
+
 	IsAdmin(ctx context.Context, userId string) (isAdmin bool, err error)
 }
 
@@ -51,14 +53,7 @@ func NewUserRepo(config *config.Config) *UserRepo {
 	return &UserRepo{conn: conn}
 }
 
-func (r *UserRepo) IsAdmin(ctx context.Context, userId string) (bool, error) {
-	user, err := r.FindByID(ctx, userId)
-	if user == nil {
-		return false, err
-	}
-	return user.Admin, nil
-}
-
+// Insert 插入用户
 func (r *UserRepo) Insert(ctx context.Context, user *model.User) error {
 	if _, err := r.conn.InsertOne(ctx, UserIDPrefix+user.ID, user); err != nil {
 		return err
@@ -74,6 +69,7 @@ func (r *UserRepo) Insert(ctx context.Context, user *model.User) error {
 	return nil
 }
 
+// Update 更新用户信息
 func (r *UserRepo) Update(ctx context.Context, user *model.User) error {
 	if _, err := r.conn.Collection.UpdateByID(ctx, user.ID, bson.M{"$set": user}); err != nil {
 		return err
@@ -81,17 +77,19 @@ func (r *UserRepo) Update(ctx context.Context, user *model.User) error {
 	return nil
 }
 
+// FindByID 通过ID查询用户
 func (r *UserRepo) FindByID(ctx context.Context, userId string) (*model.User, error) {
-	var user model.User
-	if err := r.conn.FindOne(ctx, UserIDPrefix+userId, &user, bson.M{consts.ID: userId}); err != nil {
+	user := &model.User{}
+	if err := r.conn.FindOne(ctx, UserIDPrefix+userId, user, bson.M{consts.ID: userId}); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	return &user, nil
+	return user, nil
 }
 
+// FindByOpenID 通过OpenID查询用户
 func (r *UserRepo) FindByOpenID(ctx context.Context, openId string) (*model.User, error) {
 	var userID string
 	// 缓存命中 通过_id查完整用户数据
@@ -107,4 +105,16 @@ func (r *UserRepo) FindByOpenID(ctx context.Context, openId string) (*model.User
 		return nil, err
 	}
 	return &user, nil
+}
+
+// IsAdmin 判断用户是否是管理员
+func (r *UserRepo) IsAdmin(ctx context.Context, userId string) (bool, error) {
+	user, err := r.FindByID(ctx, userId)
+	if err != nil {
+		return false, err
+	}
+	if user == nil {
+		return false, monc.ErrNotFound
+	}
+	return user.Admin, nil
 }

@@ -16,7 +16,7 @@ package errno
 
 import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 
-// search: 103 000 000 ~ 103 999 999
+// search history: 103 000 000 ~ 103 999 999
 
 const (
 	ErrSearchHistoryFindFailed   = 103000001

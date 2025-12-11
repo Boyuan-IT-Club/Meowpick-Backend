@@ -19,14 +19,31 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 // auth: 100 000 000 ~ 100 999 999
 
 const (
-	ErrUserNotLogin = 100000001
-	ErrUserNotAdmin = 100000002
+	ErrUserNotLogin   = 100000001
+	ErrUserNotAdmin   = 100000002
+	ErrUserFindFailed = 100000003
+	ErrUserNotFound   = 100000004
 )
 
 func init() {
 	code.Register(
 		ErrUserNotLogin,
 		"user not login",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrUserNotAdmin,
+		"user is not admin",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrUserFindFailed,
+		"failed to find user",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrUserNotFound,
+		"user not found",
 		code.WithAffectStability(false),
 	)
 }

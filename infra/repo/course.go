@@ -46,7 +46,7 @@ type ICourseRepo interface {
 	GetDepartmentsByName(ctx context.Context, name string) ([]int32, error)
 	GetCategoriesByName(ctx context.Context, name string) ([]int32, error)
 	GetCampusesByName(ctx context.Context, name string) ([]int32, error)
-	GetSuggestions(ctx context.Context, name string, param *dto.PageParam)
+	GetSuggestions(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, error)
 }
 
 type CourseRepo struct {

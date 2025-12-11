@@ -59,7 +59,11 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
 			courses, err := s.CourseRepo.GetSuggestions(ctx, req.Keyword, req.PageParam)
 			if err != nil {
-				return nil, err // 返回错误，errgroup 会捕获它
+				return nil, errorx.WrapByCode(
+					err,
+					errno.ErrCourseGetSuggestionsFailed,
+					errorx.KV("keyword", req.Keyword),
+				) // 返回错误，errgroup 会捕获它
 			}
 			var vo []*dto.SearchSuggestionsVO
 			for _, course := range courses {
@@ -74,7 +78,11 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
 			teachers, err := s.TeacherRepo.GetSuggestions(ctx, req.Keyword, req.PageParam)
 			if err != nil {
-				return nil, err
+				return nil, errorx.WrapByCode(
+					err,
+					errno.ErrTeacherGetSuggestionsFailed,
+					errorx.KV("keyword", req.Keyword),
+				)
 			}
 			var vo []*dto.SearchSuggestionsVO
 			for _, teacher := range teachers {

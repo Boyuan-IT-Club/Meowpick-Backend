@@ -45,13 +45,13 @@ var SearchHistoryServiceSet = wire.NewSet(
 // GetSearchHistory 获得用户15条搜索历史
 func (s *SearchHistoryService) GetSearchHistory(ctx context.Context) (*dto.GetSearchHistoriesResp, error) {
 	// 鉴权
-	userID, ok := ctx.Value(consts.ContextUserID).(string)
-	if !ok || userID == "" {
+	userId, ok := ctx.Value(consts.ContextUserID).(string)
+	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
 	// 查询获得15条历史记录
-	histories, err := s.SearchHistoryRepo.FindManyByUserID(ctx, userID)
+	histories, err := s.SearchHistoryRepo.FindManyByUserID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "SearchHistoryRepo FindManyByUserID error: %v", err)
 		return nil, err
@@ -77,19 +77,19 @@ func (s *SearchHistoryService) GetSearchHistory(ctx context.Context) (*dto.GetSe
 // LogSearch 记录搜索记录
 func (s *SearchHistoryService) LogSearch(ctx context.Context, query string) error {
 	// 鉴权
-	userID, ok := ctx.Value(consts.ContextUserID).(string)
-	if !ok || userID == "" {
+	userId, ok := ctx.Value(consts.ContextUserID).(string)
+	if !ok || userId == "" {
 		return errorx.New(errno.ErrUserNotLogin)
 	}
 
 	// 插入或更新搜索记录
-	if err := s.SearchHistoryRepo.UpsertByUserIDAndQuery(ctx, userID, query); err != nil {
+	if err := s.SearchHistoryRepo.UpsertByUserIDAndQuery(ctx, userId, query); err != nil {
 		logs.CtxErrorf(ctx, "SearchHistoryRepo UpsertByUserIDAndQuery error: %v", err)
 		return errorx.WrapByCode(err, errno.ErrSearchHistoryUpsertFailed)
 	}
 
 	// 计算搜索记录数量
-	count, err := s.SearchHistoryRepo.CountByUserID(ctx, userID)
+	count, err := s.SearchHistoryRepo.CountByUserID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "SearchHistoryRepo CountByUserID error: %v", err)
 		return errorx.WrapByCode(err, errno.ErrSearchHistoryCountFailed)
@@ -97,7 +97,7 @@ func (s *SearchHistoryService) LogSearch(ctx context.Context, query string) erro
 
 	// 如果超过限制，则删除最旧的搜索记录
 	if count > consts.SearchHistoryLimit {
-		if err = s.SearchHistoryRepo.DeleteOldestByUserID(ctx, userID); err != nil {
+		if err = s.SearchHistoryRepo.DeleteOldestByUserID(ctx, userId); err != nil {
 			logs.CtxErrorf(ctx, "SearchHistoryRepo DeleteOldestByUserID error: %v", err)
 			return errorx.WrapByCode(err, errno.ErrSearchHistoryDeleteFailed)
 		}

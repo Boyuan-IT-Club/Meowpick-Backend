@@ -32,16 +32,17 @@ import (
 var _ ITeacherRepo = (*TeacherRepo)(nil)
 
 const (
-	TeacherCacheKeyPrefix  = "meowpick:teacher:"
 	TeacherCollectionName  = "teacher"
-	TeacherName2IDCacheKey = "meowpick:teacher_name_to_id:" // 再建一套name->ID的缓存
+	TeacherCacheKeyPrefix  = "meowpick:teacher:"
+	TeacherName2IDCacheKey = "meowpick:teacher_name_to_id:" // name->ID缓存
 )
 
 type ITeacherRepo interface {
-	Insert(ctx context.Context, teacher *model.Teacher) (ID string, err error)
-	FindByID(ctx context.Context, ID string) (*model.Teacher, error)
+	Insert(ctx context.Context, teacher *model.Teacher) error
 	GetSuggestions(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, error)
-	Count(ctx context.Context, keyword string) (int64, error)
+	IsExistByID(ctx context.Context, name string) (bool, error)
+
+	FindByID(ctx context.Context, id string) (*model.Teacher, error)
 	FindIDByName(ctx context.Context, name string) (string, error)
 }
 
@@ -54,29 +55,17 @@ func NewTeacherRepo(cfg *config.Config) *TeacherRepo {
 	return &TeacherRepo{conn: conn}
 }
 
-func (r *TeacherRepo) Insert(ctx context.Context, teacher *model.Teacher) (string, error) {
+// Insert 插入教师
+func (r *TeacherRepo) Insert(ctx context.Context, teacher *model.Teacher) error {
 	cacheKey := TeacherCacheKeyPrefix + teacher.ID
 	if _, err := r.conn.InsertOne(ctx, cacheKey, teacher); err != nil {
-		return "", err
+		return err
 	}
-	// 设置name->id映射缓存
-	nameCacheKey := TeacherName2IDCacheKey + teacher.Name
-	if err := r.conn.SetCache(nameCacheKey, cacheKey); err != nil {
-		logs.Warnf("Failed to set name-to-id mapping cache: %v", err)
+	// 设置name->ID映射缓存
+	if err := r.conn.SetCache(TeacherName2IDCacheKey+teacher.Name, cacheKey); err != nil {
+		logs.CtxWarnf(ctx, "TeacherRepo SetCache name to id mapping failed: %v", err)
 	}
-	return teacher.ID, nil
-}
-
-func (r *TeacherRepo) FindByID(ctx context.Context, ID string) (*model.Teacher, error) {
-	var teacher model.Teacher
-	//cacheKey := CourseCacheKeyPrefix + ID
-	if err := r.conn.FindOneNoCache(ctx, &teacher, bson.M{consts.ID: ID}) err != nil {
-		if errors.Is(err, monc.ErrNotFound) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &teacher, nil
+	return nil
 }
 
 // GetSuggestions 根据教师名称模糊分页查询教师
@@ -88,37 +77,43 @@ func (r *TeacherRepo) GetSuggestions(ctx context.Context, name string, param *dt
 	return teachers, nil
 }
 
-func (r *TeacherRepo) Count(ctx context.Context, keyword string) (int64, error) {
-	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: keyword, Options: "i"}}}
-	total, err := r.conn.CountDocuments(ctx, filter)
-	if err != nil {
-		return 0, err
-	}
-	return total, nil
+// IsExistByID 根据教师ID判断教师是否存在
+func (r *TeacherRepo) IsExistByID(ctx context.Context, id string) (bool, error) {
+	count, err := r.conn.CountDocuments(ctx, bson.M{consts.ID: id})
+	return count > 0, err
 }
 
-func (r *TeacherRepo) FindIDByName(ctx context.Context, name string) (string, error) {
-	nameCacheKey := TeacherName2IDCacheKey + name
-	var teacherID string
-	// 先查name-id缓存
-	if err := r.conn.GetCache(nameCacheKey, &teacherID); err != nil && teacherID != "" {
-		return teacherID, nil
+// FindByID 根据教师ID查询教师
+func (r *TeacherRepo) FindByID(ctx context.Context, id string) (*model.Teacher, error) {
+	teacher := &model.Teacher{}
+	if err := r.conn.FindOneNoCache(ctx, teacher, bson.M{consts.ID: id}); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil, nil
+		}
+		return nil, err
 	}
-	filter := bson.M{consts.Name: name}
-	var teacher model.Teacher
+	return teacher, nil
+}
 
+// FindIDByName 根据教师名称查询教师ID
+func (r *TeacherRepo) FindIDByName(ctx context.Context, name string) (string, error) {
+	var teacherId string
+	teacher := &model.Teacher{}
+	nameCacheKey := TeacherName2IDCacheKey + name
+	// 先查name-id缓存
+	if err := r.conn.GetCache(nameCacheKey, &teacherId); err != nil && teacherId != "" {
+		return teacherId, nil
+	}
 	// 使用NoCache版本，避免使用错误的缓存键
-	if err := r.conn.FindOneNoCache(ctx, &teacher, filter); err != nil {
+	if err := r.conn.FindOneNoCache(ctx, teacher, bson.M{consts.Name: name}); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return "", nil
 		}
 		return "", err
 	}
 	// 设置缓存键
-	cacheKey := TeacherCacheKeyPrefix + teacher.ID
-	if err := r.conn.SetCache(nameCacheKey, cacheKey); err != nil {
-		logs.Errorf("Failed to set name-to-id mapping cache %s for teacher: %v", nameCacheKey, err)
+	if err := r.conn.SetCache(nameCacheKey, TeacherCacheKeyPrefix+teacher.ID); err != nil {
+		logs.CtxWarnf(ctx, "TeacherRepo SetCache name to id mapping failed: %v", err)
 	}
-
 	return teacher.ID, nil
 }

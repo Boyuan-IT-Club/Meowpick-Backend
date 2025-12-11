@@ -16,18 +16,24 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
+	"github.com/zeromicro/go-zero/core/stores/monc"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var _ ITeacherService = (*TeacherService)(nil)
 
 type ITeacherService interface {
-	AddNewTeacher(ctx context.Context, req *dto.CreateTeacherReq) (*dto.CreateTeacherResp, error)
+	CreateTeacher(ctx context.Context, req *dto.CreateTeacherReq) (*dto.CreateTeacherResp, error)
 }
 
 type TeacherService struct {
@@ -44,40 +50,45 @@ var TeacherServiceSet = wire.NewSet(
 	wire.Bind(new(ITeacherService), new(*TeacherService)),
 )
 
-func (s *TeacherService) AddNewTeacher(ctx context.Context, req *dto.CreateTeacherReq) (*dto.CreateTeacherResp, error) {
+func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeacherReq) (*dto.CreateTeacherResp, error) {
 	// 鉴权
-	userID, ok := ctx.Value(consts.ContextUserID).(string)
-	if !ok || userID == "" {
-		log.Error("Get user Id failed")
-		return nil, errorx.ErrTokenInvalid
+	userId, ok := ctx.Value(consts.ContextUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
-	if admin, _ := s.UserRepo.IsAdmin(ctx, userID); !admin {
-		return nil, errorx.ErrUserNotAdmin
+	if admin, err := s.UserRepo.IsAdmin(ctx, userId); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil, errorx.New(errno.ErrUserNotFound)
+		}
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed)
+	} else if !admin {
+		return nil, errorx.New(errno.ErrUserNotAdmin)
 	}
 
-	// 如果拥有管理员权限，继续向下执行添加教师的逻辑
-	teacherVO := &dto.TeacherVO{
+	// 构造教师实体
+	vo := &dto.TeacherVO{
+		ID:         primitive.NewObjectID().Hex(),
 		Name:       req.Name,
 		Title:      req.Title,
 		Department: req.Department,
 	}
-	dbTeacher, err := s.TeacherAssembler.ToTeacher(ctx, teacherVO)
-	if err != nil {
-		log.Error("TeacherVO To dbTeacher err:", teacherVO, err)
-	}
+
+	// VO转DB实体
+	db := s.TeacherAssembler.ToTeacherDB(vo)
+
 	// 防重
-	existingTeacher, err := s.TeacherRepo.FindByID(ctx, dbTeacher.ID)
-	if err != nil && existingTeacher != nil {
-		return nil, errorx.ErrTeacherDuplicate
+	if exist, err := s.TeacherRepo.IsExistByID(ctx, db.ID); err != nil {
+		logs.CtxErrorf(ctx, "TeacherRepo IsExistByID error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrTeacherExistsFailed, errorx.KV("name", db.Name))
+	} else if exist {
+		return nil, errorx.New(errno.ErrTeacherExist, errorx.KV("name", db.Name))
 	}
 
 	// 增加教师
-	teacherId, err := s.TeacherRepo.Insert(ctx, dbTeacher)
-	if err != nil {
-		log.Error("Add New Teacher failed", err)
-		return nil, err
+	if err := s.TeacherRepo.Insert(ctx, db); err != nil {
+		logs.CtxErrorf(ctx, "TeacherRepo Insert error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrTeacherInsertFailed, errorx.KV("name", db.Name))
 	}
-	teacherVO.ID = teacherId
 
-	return &dto.CreateTeacherResp{Resp: dto.Success(), TeacherVO: teacherVO}, nil
+	return &dto.CreateTeacherResp{Resp: dto.Success(), TeacherVO: vo}, nil
 }

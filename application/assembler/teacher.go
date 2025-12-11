@@ -15,8 +15,6 @@
 package assembler
 
 import (
-	"context"
-
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
@@ -26,10 +24,10 @@ import (
 var _ ITeacherAssembler = (*TeacherAssembler)(nil)
 
 type ITeacherAssembler interface {
-	ToTeacherVO(ctx context.Context, t *model.Teacher) (*dto.TeacherVO, error)
-	ToTeacher(ctx context.Context, vo *dto.TeacherVO) (*model.Teacher, error)
-	ToTeacherVOList(ctx context.Context, teachers []*model.Teacher) ([]*dto.TeacherVO, error)
-	ToTeacherList(ctx context.Context, vos []*dto.TeacherVO) ([]*model.Teacher, error)
+	ToTeacherVO(db *model.Teacher) *dto.TeacherVO
+	ToTeacherDB(vo *dto.TeacherVO) *model.Teacher
+	ToTeacherVOArray(dbs []*model.Teacher) []*dto.TeacherVO
+	ToTeacherDBArray(vos []*dto.TeacherVO) []*model.Teacher
 }
 
 type TeacherAssembler struct {
@@ -40,72 +38,45 @@ var TeacherAssemblerSet = wire.NewSet(
 	wire.Bind(new(ITeacherAssembler), new(*TeacherAssembler)),
 )
 
-// ToTeacherVO 单个Teacher转TeacherVO (DB to VO)
-func (a *TeacherAssembler) ToTeacherVO(ctx context.Context, t *model.Teacher) (*dto.TeacherVO, error) {
-	if t == nil {
-		return nil, nil
-	}
-
+// ToTeacherVO 单个TeacherDB转TeacherVO (DB to VO)
+func (a *TeacherAssembler) ToTeacherVO(db *model.Teacher) *dto.TeacherVO {
 	return &dto.TeacherVO{
-		ID:         t.ID,
-		Name:       t.Name,
-		Title:      t.Title,
-		Department: mapping.Data.GetDepartmentNameByID(t.Department),
-	}, nil
+		ID:         db.ID,
+		Name:       db.Name,
+		Title:      db.Title,
+		Department: mapping.Data.GetDepartmentNameByID(db.Department),
+	}
 }
 
-// ToTeacher 单个TeacherVO转Teacher (VO to DB)
-func (a *TeacherAssembler) ToTeacher(ctx context.Context, vo *dto.TeacherVO) (*model.Teacher, error) {
-	if vo == nil {
-		return nil, nil
-	}
-
+// ToTeacherDB 单个TeacherVO转TeacherDB (VO to DB)
+func (a *TeacherAssembler) ToTeacherDB(vo *dto.TeacherVO) *model.Teacher {
 	return &model.Teacher{
 		ID:         vo.ID,
 		Name:       vo.Name,
 		Title:      vo.Title,
 		Department: mapping.Data.GetDepartmentIDByName(vo.Department),
-	}, nil
+	}
 }
 
-// ToTeacherVOList Teacher数组转TeacherVO数组 (DB Array to VO Array)
-func (a *TeacherAssembler) ToTeacherVOList(ctx context.Context, teachers []*model.Teacher) ([]*dto.TeacherVO, error) {
-	if len(teachers) == 0 {
-		return []*dto.TeacherVO{}, nil
-	}
-
-	teacherVOs := make([]*dto.TeacherVO, 0, len(teachers))
-
-	for _, t := range teachers {
-		teacherVO, err := a.ToTeacherVO(ctx, t)
-		if err != nil {
-			return nil, err
-		}
-		if teacherVO != nil {
-			teacherVOs = append(teacherVOs, teacherVO)
+// ToTeacherVOArray TeacherDB数组转TeacherVO数组 (DB Array to VO Array)
+func (a *TeacherAssembler) ToTeacherVOArray(dbs []*model.Teacher) []*dto.TeacherVO {
+	vos := []*dto.TeacherVO{}
+	for _, db := range dbs {
+		if vo := a.ToTeacherVO(db); vo != nil {
+			vos = append(vos, vo)
 		}
 	}
-
-	return teacherVOs, nil
+	return vos
 }
 
-// ToTeacherList TeacherVO数组转Teacher数组 (VO Array to DB Array)
-func (a *TeacherAssembler) ToTeacherList(ctx context.Context, vos []*dto.TeacherVO) ([]*model.Teacher, error) {
-	if len(vos) == 0 {
-		return []*model.Teacher{}, nil
-	}
-
-	teachers := make([]*model.Teacher, 0, len(vos))
-
+// ToTeacherDBArray TeacherVO数组转TeacherDB数组 (VO Array to DB Array)
+func (a *TeacherAssembler) ToTeacherDBArray(vos []*dto.TeacherVO) []*model.Teacher {
+	dbs := []*model.Teacher{}
 	for _, vo := range vos {
-		dbTeacher, err := a.ToTeacher(ctx, vo)
-		if err != nil {
-			return nil, err
-		}
-		if dbTeacher != nil {
-			teachers = append(teachers, dbTeacher)
+
+		if db := a.ToTeacherDB(vo); db != nil {
+			dbs = append(dbs, db)
 		}
 	}
-
-	return teachers, nil
+	return dbs
 }

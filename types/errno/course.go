@@ -19,10 +19,11 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 // course: 101 000 000 ~ 101 999 999
 
 const (
-	ErrCourseInvalidParam = 101000001
-	ErrCourseNotFound     = 101000002
-	ErrCourseFindFailed   = 101000003
-	ErrCourseCvtFailed    = 101000004
+	ErrCourseInvalidParam         = 101000001
+	ErrCourseNotFound             = 101000002
+	ErrCourseFindFailed           = 101000003
+	ErrCourseCvtFailed            = 101000004
+	ErrCourseGetSuggestionsFailed = 101000005
 )
 
 func init() {
@@ -44,6 +45,11 @@ func init() {
 	code.Register(
 		ErrCourseCvtFailed,
 		"failed to convert course from {src} to {dst}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCourseGetSuggestionsFailed,
+		"failed to get course suggestions: {keyword}",
 		code.WithAffectStability(false),
 	)
 }

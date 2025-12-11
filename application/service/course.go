@@ -85,10 +85,10 @@ func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq
 	// 区分不同的搜索方式
 	var err error
 	var total int64
-	var dbCourses []*model.Course
+	var dbs []*model.Course
 	switch req.Type {
 	case consts.ReqCourse:
-		dbCourses, total, err = s.CourseRepo.FindManyByNameLike(ctx, req.Keyword, req.PageParam)
+		dbs, total, err = s.CourseRepo.FindManyByNameLike(ctx, req.Keyword, req.PageParam)
 		if err != nil {
 			logs.CtxErrorf(ctx, "CourseRepo FindManyByNameLike error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed)
@@ -99,17 +99,17 @@ func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq
 			logs.CtxErrorf(ctx, "CourseRepo FindIDByName error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrTeacherIDNotFound, errorx.KV("name", req.Keyword))
 		}
-		dbCourses, total, err = s.CourseRepo.FindManyByTeacherID(ctx, tid, req.PageParam)
+		dbs, total, err = s.CourseRepo.FindManyByTeacherID(ctx, tid, req.PageParam)
 	case consts.ReqCategory:
 		cid := mapping.Data.GetCategoryIDByName(req.Keyword)
-		dbCourses, total, err = s.CourseRepo.FindManyByCategoryID(ctx, cid, req.PageParam)
+		dbs, total, err = s.CourseRepo.FindManyByCategoryID(ctx, cid, req.PageParam)
 		if err != nil {
 			logs.CtxErrorf(ctx, "CourseRepo FindManyByCategoryID error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed)
 		}
 	case consts.ReqDepartment:
 		did := mapping.Data.GetDepartmentIDByName(req.Keyword)
-		dbCourses, total, err = s.CourseRepo.FindManyByDepartmentID(ctx, did, req.PageParam)
+		dbs, total, err = s.CourseRepo.FindManyByDepartmentID(ctx, did, req.PageParam)
 		if err != nil {
 			logs.CtxErrorf(ctx, "CourseRepo FindManyByDepartmentID error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed)
@@ -124,19 +124,19 @@ func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq
 	}
 
 	// 转换为分页结果
-	paginatedCourses, err := s.CourseAssembler.ToPaginatedCourses(ctx, dbCourses, total, req.PageParam)
+	pcs, err := s.CourseAssembler.ToPaginatedCourses(ctx, dbs, total, req.PageParam)
 	if err != nil {
 		logs.CtxErrorf(ctx, "CourseAssembler ToPaginatedCourses error: %v", err)
 		return nil, errorx.WrapByCode(
 			err,
 			errno.ErrCourseCvtFailed,
-			errorx.KV("src", "dbCourses"), errorx.KV("dst", "paginatedCourses"),
+			errorx.KV("src", "dbs"), errorx.KV("dst", "pcs"),
 		)
 	}
 
 	return &dto.ListCoursesResp{
 		Resp:             dto.Success(),
-		PaginatedCourses: paginatedCourses,
+		PaginatedCourses: pcs,
 	}, nil
 }
 
