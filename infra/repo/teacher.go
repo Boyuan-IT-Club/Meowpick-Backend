@@ -40,7 +40,7 @@ const (
 type ITeacherRepo interface {
 	Insert(ctx context.Context, teacher *model.Teacher) (ID string, err error)
 	FindByID(ctx context.Context, ID string) (*model.Teacher, error)
-	GetSuggestions(ctx context.Context, keyword string, param *dto.PageParam) ([]*model.Teacher, error)
+	GetSuggestions(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, error)
 	Count(ctx context.Context, keyword string) (int64, error)
 	FindIDByName(ctx context.Context, name string) (string, error)
 }
@@ -79,13 +79,10 @@ func (r *TeacherRepo) FindByID(ctx context.Context, ID string) (*model.Teacher, 
 	return &teacher, nil
 }
 
-func (r *TeacherRepo) GetSuggestions(ctx context.Context, keyword string, param *dto.PageParam) ([]*model.Teacher, error) {
-	var teachers []*model.Teacher
-	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: keyword, Options: "i"}}}
-	ops := page.FindPageOption(param)
-
-	err := r.conn.Find(ctx, &teachers, filter, ops)
-	if err != nil {
+// GetSuggestions 根据教师名称模糊分页查询教师
+func (r *TeacherRepo) GetSuggestions(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, error) {
+	teachers := []*model.Teacher{}
+	if err := r.conn.Find(ctx, &teachers, bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}, page.FindPageOption(param)); err != nil {
 		return nil, err
 	}
 	return teachers, nil

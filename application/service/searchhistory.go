@@ -29,7 +29,7 @@ import (
 var _ ISearchHistoryService = (*SearchHistoryService)(nil)
 
 type ISearchHistoryService interface {
-	GetSearchHistoryByUserId(ctx context.Context) (*dto.GetSearchHistoriesResp, error)
+	GetSearchHistory(ctx context.Context) (*dto.GetSearchHistoriesResp, error)
 	LogSearch(ctx context.Context, query string) error
 }
 
@@ -42,8 +42,8 @@ var SearchHistoryServiceSet = wire.NewSet(
 	wire.Bind(new(ISearchHistoryService), new(*SearchHistoryService)),
 )
 
-// GetSearchHistoryByUserId 获得用户15条搜索历史
-func (s *SearchHistoryService) GetSearchHistoryByUserId(ctx context.Context) (*dto.GetSearchHistoriesResp, error) {
+// GetSearchHistory 获得用户15条搜索历史
+func (s *SearchHistoryService) GetSearchHistory(ctx context.Context) (*dto.GetSearchHistoriesResp, error) {
 	// 鉴权
 	userID, ok := ctx.Value(consts.ContextUserID).(string)
 	if !ok || userID == "" {

@@ -21,6 +21,9 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
 	"github.com/google/wire"
 	"golang.org/x/sync/errgroup"
 )
@@ -42,68 +45,73 @@ var SearchServiceSet = wire.NewSet(
 	wire.Bind(new(ISearchService), new(*SearchService)),
 )
 
-func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSearchSuggestionsReq) (*dto.GetSearchSuggestionsResp, error) { // 定义四个任务，每个任务返回其结果和可能的错误
+// GetSearchSuggestions 并行获取搜索建议
+func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSearchSuggestionsReq) (*dto.GetSearchSuggestionsResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.ContextUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 创建任务列表
 	tasks := []func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error){
 		// Courses
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			courseModels, err := s.CourseRepo.GetSuggestions(ctx, req.Keyword, req.PageParam)
+			courses, err := s.CourseRepo.GetSuggestions(ctx, req.Keyword, req.PageParam)
 			if err != nil {
-				// 返回错误，errgroup 会捕获它
-				return nil, err
+				return nil, err // 返回错误，errgroup 会捕获它
 			}
-			var out []*dto.SearchSuggestionsVO
-			for _, model := range courseModels {
-				out = append(out, &dto.SearchSuggestionsVO{
-					Type: "course",
-					Name: model.Name,
+			var vo []*dto.SearchSuggestionsVO
+			for _, course := range courses {
+				vo = append(vo, &dto.SearchSuggestionsVO{
+					Type: consts.ReqCourse,
+					Name: course.Name,
 				})
 			}
-			return out, nil
+			return vo, nil
 		},
 		// Teachers
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			teacherModels, err := s.TeacherRepo.GetSuggestions(ctx, req.Keyword, req.PageParam)
+			teachers, err := s.TeacherRepo.GetSuggestions(ctx, req.Keyword, req.PageParam)
 			if err != nil {
-				// 返回错误
 				return nil, err
 			}
-			var out []*dto.SearchSuggestionsVO
-			for _, model := range teacherModels {
-				out = append(out, &dto.SearchSuggestionsVO{
-					Type: "teacher",
-					Name: model.Name,
+			var vo []*dto.SearchSuggestionsVO
+			for _, teacher := range teachers {
+				vo = append(vo, &dto.SearchSuggestionsVO{
+					Type: consts.ReqTeacher,
+					Name: teacher.Name,
 				})
 			}
-			return out, nil
+			return vo, nil
 		},
 		// Categories
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
 			ids := mapping.Data.GetCategoryIDsByKeyword(req.Keyword)
-			var out []*dto.SearchSuggestionsVO
+			var vo []*dto.SearchSuggestionsVO
 			for _, id := range ids {
 				name := mapping.Data.GetCategoryNameByID(id)
-				out = append(out, &dto.SearchSuggestionsVO{
-					Type: "category",
+				vo = append(vo, &dto.SearchSuggestionsVO{
+					Type: consts.ReqCategory,
 					Name: name,
 				})
 			}
-			return out, nil
+			return vo, nil
 		},
 		// Departments
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
 			ids := mapping.Data.GetDepartmentIDsByKeyword(req.Keyword)
-			var out []*dto.SearchSuggestionsVO
+			var vo []*dto.SearchSuggestionsVO
 			for _, id := range ids {
 				name := mapping.Data.GetDepartmentNameByID(id)
-				out = append(out, &dto.SearchSuggestionsVO{
-					Type: "department",
+				vo = append(vo, &dto.SearchSuggestionsVO{
+					Type: consts.ReqDepartment,
 					Name: name,
 				})
 			}
-			return out, nil
+			return vo, nil
 		},
 	}
-
 	n := len(tasks)
 	results := make([][]*dto.SearchSuggestionsVO, n)
 

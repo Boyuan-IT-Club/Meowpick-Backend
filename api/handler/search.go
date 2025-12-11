@@ -30,7 +30,7 @@ func GetSearchHistories(c *gin.Context) {
 	var resp *dto.GetSearchHistoriesResp
 
 	c.Set(consts.ContextUserID, token.GetUserId(c))
-	resp, err = provider.Get().SearchHistoryService.GetSearchHistoryByUserId(c)
+	resp, err = provider.Get().SearchHistoryService.GetSearchHistory(c)
 	PostProcess(c, nil, resp, err)
 }
 
