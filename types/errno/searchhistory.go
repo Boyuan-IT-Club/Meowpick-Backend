@@ -16,34 +16,34 @@ package errno
 
 import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 
-// course: 101 000 000 ~ 101 999 999
+// search: 103 000 000 ~ 103 999 999
 
 const (
-	ErrCourseInvalidParam = 101000001
-	ErrCourseNotFound     = 101000002
-	ErrCourseFindFailed   = 101000003
-	ErrCourseCvtFailed    = 101000004
+	ErrSearchHistoryFindFailed   = 103000001
+	ErrSearchHistoryUpsertFailed = 103000002
+	ErrSearchHistoryDeleteFailed = 103000003
+	ErrSearchHistoryCountFailed  = 103000004
 )
 
 func init() {
 	code.Register(
-		ErrCourseInvalidParam,
-		"invalid parameter {key}: {value}",
+		ErrSearchHistoryFindFailed,
+		"failed to find search history",
 		code.WithAffectStability(false),
 	)
 	code.Register(
-		ErrCourseNotFound,
-		"course not found",
+		ErrSearchHistoryUpsertFailed,
+		"failed to upsert search history",
 		code.WithAffectStability(false),
 	)
 	code.Register(
-		ErrCourseFindFailed,
-		"failed to find course",
+		ErrSearchHistoryDeleteFailed,
+		"failed to delete search history",
 		code.WithAffectStability(false),
 	)
 	code.Register(
-		ErrCourseCvtFailed,
-		"failed to convert course from {src} to {dst}",
+		ErrSearchHistoryCountFailed,
+		"failed to count search history",
 		code.WithAffectStability(false),
 	)
 }

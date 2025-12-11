@@ -19,13 +19,8 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
-	"github.com/Boyuan-IT-Club/go-kit/errorx"
 	"github.com/google/wire"
 	"golang.org/x/sync/errgroup"
 )

@@ -116,14 +116,22 @@ func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq
 		}
 	default:
 		logs.CtxErrorf(ctx, "CourseService ListCourses error: invalid type %s", req.Type)
-		return nil, errorx.New(errno.ErrCourseInvalidParam, errorx.KV("key", "type"), errorx.KV("value", req.Type))
+		return nil, errorx.New(
+			errno.ErrCourseInvalidParam,
+			errorx.KV("key", "type"),
+			errorx.KV("value", req.Type),
+		)
 	}
 
 	// 转换为分页结果
 	paginatedCourses, err := s.CourseAssembler.ToPaginatedCourses(ctx, dbCourses, total, req.PageParam)
 	if err != nil {
 		logs.CtxErrorf(ctx, "CourseAssembler ToPaginatedCourses error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
+		return nil, errorx.WrapByCode(
+			err,
+			errno.ErrCourseCvtFailed,
+			errorx.KV("src", "dbCourses"), errorx.KV("dst", "paginatedCourses"),
+		)
 	}
 
 	return &dto.ListCoursesResp{

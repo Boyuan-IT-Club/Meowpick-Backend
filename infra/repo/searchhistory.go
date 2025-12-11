@@ -37,10 +37,10 @@ const (
 )
 
 type ISearchHistoryRepo interface {
-	FindByUserID(ctx context.Context, userID string) ([]*model.SearchHistory, error)
-	CountByUserID(ctx context.Context, userID string) (int64, error)
-	DeleteOldestByUserID(ctx context.Context, userID string) error
-	UpsertByUserIDAndQuery(ctx context.Context, userID string, query string) error
+	FindManyByUserID(ctx context.Context, userId string) ([]*model.SearchHistory, error)
+	CountByUserID(ctx context.Context, userId string) (int64, error)
+	DeleteOldestByUserID(ctx context.Context, userId string) error
+	UpsertByUserIDAndQuery(ctx context.Context, userId string, query string) error
 }
 
 type SearchHistoryRepo struct {
@@ -52,60 +52,59 @@ func NewSearchHistoryRepo(cfg *config.Config) *SearchHistoryRepo {
 	return &SearchHistoryRepo{conn: conn}
 }
 
-// FindByUserID 根据用户ID查询最近15条的搜索历史
-func (r *SearchHistoryRepo) FindByUserID(ctx context.Context, userId string) ([]*model.SearchHistory, error) {
+// FindManyByUserID 查询用户最近15条搜索历史
+func (r *SearchHistoryRepo) FindManyByUserID(ctx context.Context, userId string) ([]*model.SearchHistory, error) {
 	histories := []*model.SearchHistory{}
 	if err := r.conn.Find(
 		ctx,
 		&histories,
 		bson.M{consts.UserID: userId},
-		options.Find().SetSort(page.DSort(consts.CreatedAt, 1)).SetLimit(consts.SearchHistoryLimit), // 倒序
+		options.Find().SetSort(page.DSort(consts.CreatedAt, -1)).SetLimit(consts.SearchHistoryLimit), // 倒序，最新的在前面
 	); err != nil {
 		return nil, err
 	}
 	return histories, nil
 }
 
-func (r *SearchHistoryRepo) CountByUserID(ctx context.Context, userID string) (int64, error) {
-	return r.conn.CountDocuments(ctx, bson.M{consts.UserID: userID})
+// CountByUserID 查询用户的搜索历史数量
+func (r *SearchHistoryRepo) CountByUserID(ctx context.Context, userId string) (int64, error) {
+	return r.conn.CountDocuments(ctx, bson.M{consts.UserID: userId})
 }
 
-func (r *SearchHistoryRepo) DeleteOldestByUserID(ctx context.Context, userID string) error {
-	var oldest model.SearchHistory
-	ops := options.FindOneAndDelete()
-	ops.SetSort(page.DSort(consts.CreatedAt, 1))
-
-	cacheKey := SearchHistoryCacheKeyPrefix + userID
-	if err := r.conn.FindOneAndDelete(ctx, cacheKey, &oldest, bson.M{consts.UserID: userID}, ops); err != nil && !errors.Is(err, monc.ErrNotFound) {
+// DeleteOldestByUserID 删除用户最旧的一条搜索历史
+func (r *SearchHistoryRepo) DeleteOldestByUserID(ctx context.Context, userId string) error {
+	oldest := &model.SearchHistory{}
+	if err := r.conn.FindOneAndDelete(
+		ctx,
+		SearchHistoryCacheKeyPrefix+userId,
+		oldest,
+		bson.M{consts.UserID: userId},
+		options.FindOneAndDelete().SetSort(page.DSort(consts.CreatedAt, 1)), // 升序，最旧的在前面
+	); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil
+		}
 		return err
 	}
 	return nil
 }
 
-func (r *SearchHistoryRepo) UpsertByUserIDAndQuery(ctx context.Context, userID string, query string) error {
-	filter := bson.M{
-		consts.UserID: userID,
-		consts.Query:  query,
-	}
-
-	// 定义“更新操作”
-	update := bson.M{
-		// "$set"：无论找到还是没找到，都把 updatedAt 字段设置为现在的时间
-		"$set": bson.M{
-			consts.CreatedAt: time.Now(),
+// UpsertByUserIDAndQuery 插入或更新用户搜索历史
+func (r *SearchHistoryRepo) UpsertByUserIDAndQuery(ctx context.Context, userId string, query string) error {
+	if _, err := r.conn.UpdateOne(ctx,
+		SearchHistoryCacheKeyPrefix+userId,
+		bson.M{consts.UserID: userId, consts.Query: query},
+		bson.M{
+			"$set": bson.M{consts.CreatedAt: time.Now()}, // 无论找到还是没找到，都把 createdAt 字段设置为现在的时间
+			"$setOnInsert": bson.M{ // 只有在没找到，需要插入新纪录的情况下，才设置这些字段
+				consts.ID:     primitive.NewObjectID().Hex(),
+				consts.UserID: userId,
+				consts.Query:  query,
+			},
 		},
-		// 只有在没找到，需要插入新纪录的情况下，才设置这些字段
-		"$setOnInsert": bson.M{
-			consts.ID:     primitive.NewObjectID().Hex(),
-			consts.UserID: userID,
-			consts.Query:  query,
-		},
+		options.Update().SetUpsert(true), // 如果没找到匹配的，就执行插入操作
+	); err != nil {
+		return err
 	}
-
-	// 如果没找到匹配的，就执行插入操作
-	updateOptions := options.Update().SetUpsert(true)
-
-	cacheKey := SearchHistoryCacheKeyPrefix + userID
-	_, err := r.conn.UpdateOne(ctx, cacheKey, filter, update, updateOptions)
-	return err
+	return nil
 }
