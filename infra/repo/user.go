@@ -41,7 +41,7 @@ type IUserRepo interface {
 	FindByID(ctx context.Context, userId string) (user *model.User, err error)
 	FindByOpenID(ctx context.Context, openId string) (user *model.User, err error)
 
-	IsAdmin(ctx context.Context, userId string) (isAdmin bool, err error)
+	IsAdminByID(ctx context.Context, userId string) (isAdmin bool, err error)
 }
 
 type UserRepo struct {
@@ -107,8 +107,8 @@ func (r *UserRepo) FindByOpenID(ctx context.Context, openId string) (*model.User
 	return &user, nil
 }
 
-// IsAdmin 判断用户是否是管理员
-func (r *UserRepo) IsAdmin(ctx context.Context, userId string) (bool, error) {
+// IsAdminByID 判断用户是否是管理员
+func (r *UserRepo) IsAdminByID(ctx context.Context, userId string) (bool, error) {
 	user, err := r.FindByID(ctx, userId)
 	if err != nil {
 		return false, err

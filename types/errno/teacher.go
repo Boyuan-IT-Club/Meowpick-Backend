@@ -19,17 +19,18 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 // teacher: 104 000 000 ~ 104 999 999
 
 const (
-	ErrTeacherIDNotFound           = 104000001
+	ErrTeacherNotFound             = 104000001
 	ErrTeacherGetSuggestionsFailed = 104000002
 	ErrTeacherExist                = 104000003
 	ErrTeacherExistsFailed         = 104000004
 	ErrTeacherInsertFailed         = 104000005
+	ErrTeacherFindFailed           = 104000006
 )
 
 func init() {
 	code.Register(
-		ErrTeacherIDNotFound,
-		"can not find teacher id by {key}: {value}",
+		ErrTeacherNotFound,
+		"teacher not found: {name}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
@@ -50,6 +51,11 @@ func init() {
 	code.Register(
 		ErrTeacherInsertFailed,
 		"failed to insert teacher: {name}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrTeacherFindFailed,
+		"failed to find teacher: {name}",
 		code.WithAffectStability(false),
 	)
 }

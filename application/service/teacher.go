@@ -52,17 +52,19 @@ var TeacherServiceSet = wire.NewSet(
 
 func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeacherReq) (*dto.CreateTeacherResp, error) {
 	// 鉴权
-	userId, ok := ctx.Value(consts.ContextUserID).(string)
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
-	if admin, err := s.UserRepo.IsAdmin(ctx, userId); err != nil {
+	if admin, err := s.UserRepo.IsAdminByID(ctx, userId); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
-			return nil, errorx.New(errno.ErrUserNotFound)
+			return nil, errorx.New(errno.ErrUserNotFound,
+				errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 		}
-		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 	} else if !admin {
-		return nil, errorx.New(errno.ErrUserNotAdmin)
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 
 	// 构造教师实体
@@ -78,7 +80,7 @@ func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeach
 
 	// 防重
 	if exist, err := s.TeacherRepo.IsExistByID(ctx, db.ID); err != nil {
-		logs.CtxErrorf(ctx, "TeacherRepo IsExistByID error: %v", err)
+		logs.CtxErrorf(ctx, "[TeacherRepo] [IsExistByID] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrTeacherExistsFailed, errorx.KV("name", db.Name))
 	} else if exist {
 		return nil, errorx.New(errno.ErrTeacherExist, errorx.KV("name", db.Name))
@@ -86,7 +88,7 @@ func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeach
 
 	// 增加教师
 	if err := s.TeacherRepo.Insert(ctx, db); err != nil {
-		logs.CtxErrorf(ctx, "TeacherRepo Insert error: %v", err)
+		logs.CtxErrorf(ctx, "[TeacherRepo] [Insert] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrTeacherInsertFailed, errorx.KV("name", db.Name))
 	}
 

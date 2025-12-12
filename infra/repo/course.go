@@ -46,7 +46,7 @@ type ICourseRepo interface {
 	GetDepartmentsByName(ctx context.Context, name string) ([]int32, error)
 	GetCategoriesByName(ctx context.Context, name string) ([]int32, error)
 	GetCampusesByName(ctx context.Context, name string) ([]int32, error)
-	GetSuggestions(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, error)
+	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, error)
 }
 
 type CourseRepo struct {
@@ -190,8 +190,8 @@ func (r *CourseRepo) GetCampusesByName(ctx context.Context, name string) ([]int3
 	return ids, nil
 }
 
-// GetSuggestions 根据课程名称模糊分页查询课程
-func (r *CourseRepo) GetSuggestions(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, error) {
+// GetSuggestionsByName 根据课程名称模糊分页查询课程
+func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, error) {
 	courses := []*model.Course{}
 	if err := r.conn.Find(ctx, &courses, bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}, page.FindPageOption(param)); err != nil {
 		return nil, err

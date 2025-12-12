@@ -49,7 +49,7 @@ var CommentServiceSet = wire.NewSet(
 )
 
 func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateCommentReq) (*dto.CreateCommentResp, error) {
-	userID, ok := ctx.Value(consts.ContextUserID).(string)
+	userID, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userID == "" {
 		log.Error("userID is empty or invalid")
 		return nil, errorx.ErrGetUserIDFailed
@@ -100,7 +100,7 @@ func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*dto.GetTot
 
 func (s *CommentService) GetMyComments(ctx context.Context, req *dto.GetMyCommentsReq) (*dto.GetMyCommentsResp, error) {
 	// 获得用户id
-	userID, ok := ctx.Value(consts.ContextUserID).(string)
+	userID, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userID == "" {
 		return nil, errorx.ErrGetUserIDFailed
 	}
@@ -134,7 +134,7 @@ func (s *CommentService) GetMyComments(ctx context.Context, req *dto.GetMyCommen
 }
 
 func (s *CommentService) GetCourseComments(ctx context.Context, req *dto.ListCourseCommentsReq) (*dto.ListCourseCommentsResp, error) {
-	userID, ok := ctx.Value(consts.ContextUserID).(string)
+	userID, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userID == "" {
 		return nil, errorx.ErrGetUserIDFailed
 	}

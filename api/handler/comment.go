@@ -34,7 +34,7 @@ func CreateComment(c *gin.Context) {
 		return
 	}
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 	resp, err = provider.Get().CommentService.CreateComment(c, &req)
 	PostProcess(c, &req, resp, err)
 }
@@ -51,7 +51,7 @@ func ListCourseComments(c *gin.Context) {
 		return
 	}
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 	resp, err = provider.Get().CommentService.GetCourseComments(c, &req)
 	PostProcess(c, &req, resp, err)
 }
@@ -62,7 +62,7 @@ func GetTotalCourseCommentsCount(c *gin.Context) {
 	var resp *dto.GetTotalCourseCommentsCountResp
 	var err error
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 	resp, err = provider.Get().CommentService.GetTotalCommentsCount(c)
 	PostProcess(c, nil, resp, err)
 }
@@ -79,7 +79,7 @@ func GetMyComments(c *gin.Context) {
 		return
 	}
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 	resp, err = provider.Get().CommentService.GetMyComments(c, &req)
 	PostProcess(c, &req, resp, err)
 }

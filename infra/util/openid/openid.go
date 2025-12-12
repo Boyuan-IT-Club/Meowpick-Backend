@@ -23,7 +23,7 @@ import (
 
 const wechatAPI = "https://api.weixin.qq.com/sns/jscode2session"
 
-type WeChatSessionResponse struct {
+type WeChatSessionResp struct {
 	OpenID     string `json:"openid"`
 	SessionKey string `json:"session_key"`
 	ErrCode    int    `json:"errcode"`
@@ -45,7 +45,7 @@ func GetWeChatOpenID(appID, appSecret, code string) string {
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
-	var sessionResp WeChatSessionResponse
+	var sessionResp WeChatSessionResp
 	if err := json.Unmarshal(body, &sessionResp); err != nil {
 		return ""
 	}

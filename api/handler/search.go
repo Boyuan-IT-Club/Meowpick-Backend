@@ -29,7 +29,7 @@ func GetSearchHistories(c *gin.Context) {
 	var err error
 	var resp *dto.GetSearchHistoriesResp
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 	resp, err = provider.Get().SearchHistoryService.GetSearchHistory(c)
 	PostProcess(c, nil, resp, err)
 }
@@ -46,7 +46,7 @@ func GetSearchSuggestions(c *gin.Context) {
 		return
 	}
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 	resp, err = provider.Get().SearchService.GetSearchSuggestions(c, &req)
 	PostProcess(c, &req, resp, err)
 }
@@ -62,13 +62,13 @@ func ListCourses(c *gin.Context) {
 		return
 	}
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	if req.Keyword != "" {
 		go func() {
 			cCopy := c.Copy()
 			if errCopy := provider.Get().SearchHistoryService.LogSearch(cCopy, req.Keyword); errCopy != nil {
-				logs.CtxErrorf(cCopy, "log search history failed: %v", errCopy)
+				logs.CtxErrorf(cCopy, "[SearchHistoryService] [LogSearch] error: %v", errCopy)
 			}
 		}()
 	}

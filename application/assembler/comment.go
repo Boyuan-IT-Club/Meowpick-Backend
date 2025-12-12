@@ -51,16 +51,16 @@ var CommentAssemblerSet = wire.NewSet(
 // ToCommentVO 单个Comment转CommentVO (DB to VO) 包含点赞信息查询
 func (a *CommentAssembler) ToCommentVO(ctx context.Context, c *model.Comment, userID string) (*dto.CommentVO, error) {
 	// 获取点赞信息
-	likeCnt, err := a.LikeRepo.GetLikeCount(ctx, c.ID, consts.CommentType)
+	likeCnt, err := a.LikeRepo.CountByTarget(ctx, c.ID, consts.CommentType)
 	if err != nil {
-		logs.CtxErrorf(ctx, "GetLikeCount failed for commentID=%s: %v", c.ID, err)
+		logs.CtxErrorf(ctx, "CountByTarget failed for commentID=%s: %v", c.ID, err)
 		return nil, err
 	}
 
 	// 这里的userID是查看评论的用户，而非评论作者
-	active, err := a.LikeRepo.GetLikeStatus(ctx, userID, c.ID, consts.CommentType)
+	active, err := a.LikeRepo.IsLike(ctx, userID, c.ID, consts.CommentType)
 	if err != nil {
-		logs.CtxErrorf(ctx, "GetLikeStatus failed for userID=%s, commentID=%s: %v", userID, c.ID, err)
+		logs.CtxErrorf(ctx, "IsLike failed for userID=%s, commentID=%s: %v", userID, c.ID, err)
 		return nil, err
 	}
 

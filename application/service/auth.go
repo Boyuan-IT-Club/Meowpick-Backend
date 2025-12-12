@@ -16,7 +16,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
@@ -26,6 +25,9 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/openid"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/google/wire"
@@ -48,25 +50,29 @@ var AuthServiceSet = wire.NewSet(
 
 func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto.SignInResp, err error) {
 	// 查找或创建用户
-	var openID string
+	var openId string
 	if req.Code == "test123" {
-		openID = "debug-openid-001" // 你随便写一个唯一标识
+		openId = "debug-openid-001" // 测试环境固定openid
 	} else {
-		openID = openid.GetWeChatOpenID(config.GetConfig().WeApp.AppID,
-			config.GetConfig().WeApp.AppSecret, req.Code)
+		openId = openid.GetWeChatOpenID(
+			config.GetConfig().WeApp.AppID,
+			config.GetConfig().WeApp.AppSecret,
+			req.Code,
+		)
 	}
-	if openID == "" {
-		log.Error("openID为空")
-		return nil, errorx.ErrEmptyOpenID
+	if openId == "" {
+		logs.CtxErrorf(ctx, "[AuthService] [SignIn] openid is empty")
+		return nil, errorx.New(errno.ErrAuthOpenIDEmpty)
 	}
 
-	oldUser, err := s.UserRepo.FindByWXOpenId(ctx, openID)
+	// 查找用户
+	oldUser, err := s.UserRepo.FindByOpenID(ctx, openId)
 	if err != nil {
-		if errors.Is(err, errorx.ErrUserNotFound) {
-			// 创建用户并存入数据库
-			newUser := model.User{
+		// 用户不存在则创建新用户
+		if oldUser == nil {
+			newUser := model.User{ // 创建用户并存入数据库
 				ID:            primitive.NewObjectID().Hex(),
-				OpenId:        openID,
+				OpenId:        openId,
 				Admin:         false,
 				Email:         "",
 				EmailVerified: false,
@@ -76,22 +82,22 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 				CreatedAt:     time.Now(),
 				UpdatedAt:     time.Now(),
 			}
-
 			if err = s.UserRepo.Insert(ctx, &newUser); err != nil {
-				return nil, errorx.ErrInsertFailed
+				logs.CtxErrorf(ctx, "[AuthRepo] [Insert] error: %v", err)
+				return nil, errorx.WrapByCode(err, errno.ErrUserInsertFailed, errorx.KV("id", newUser.ID))
 			}
-
 			oldUser = &newUser
 		} else {
-			return nil, err
+			logs.CtxErrorf(ctx, "[AuthRepo] [FindByOpenID] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+				errorx.KV("key", consts.ReqOpenID), errorx.KV("value", openId))
 		}
 	}
 
 	// 智能Token签发逻辑
 	var tokenStr string
-	existingToken, ok := ctx.Value(consts.ContextUserID).(string)
-
-	if existingToken != "" || !ok {
+	existingToken, ok := ctx.Value(consts.CtxToken).(string)
+	if ok && existingToken != "" {
 		if claims, err := token.ParseAndValidate(existingToken); err == nil {
 			// 验证用户匹配且不需要续期
 			if claims.UserID == oldUser.ID && !token.ShouldRenew(claims) {
@@ -102,15 +108,17 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 					Resp:        dto.Success(),
 				}, nil
 			}
+		} else {
+			logs.CtxInfof(ctx, "[Token] [ParseAndValidate] error: %v", err)
 		}
 	}
 
 	// 签发新Token
 	if tokenStr, err = token.NewAuthorizedToken(oldUser); err != nil {
-		return nil, errorx.ErrTokenCreationFailed
+		logs.CtxErrorf(ctx, "[Token] [NewAuthorizedToken] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrAuthTokenGenerateFailed)
 	}
 
-	// 返回响应
 	return &dto.SignInResp{
 		Resp:        dto.Success(),
 		AccessToken: tokenStr,

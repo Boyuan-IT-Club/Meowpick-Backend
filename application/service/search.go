@@ -24,6 +24,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
 	"golang.org/x/sync/errgroup"
 )
@@ -48,7 +49,7 @@ var SearchServiceSet = wire.NewSet(
 // GetSearchSuggestions 并行获取搜索建议
 func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSearchSuggestionsReq) (*dto.GetSearchSuggestionsResp, error) {
 	// 鉴权
-	userId, ok := ctx.Value(consts.ContextUserID).(string)
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
@@ -57,8 +58,9 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 	tasks := []func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error){
 		// Courses
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			courses, err := s.CourseRepo.GetSuggestions(ctx, req.Keyword, req.PageParam)
+			courses, err := s.CourseRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
 			if err != nil {
+				logs.CtxErrorf(ctx, "[CourseRepo] [GetSuggestionsByName] error: %v", err)
 				return nil, errorx.WrapByCode(
 					err,
 					errno.ErrCourseGetSuggestionsFailed,
@@ -76,13 +78,11 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		},
 		// Teachers
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			teachers, err := s.TeacherRepo.GetSuggestions(ctx, req.Keyword, req.PageParam)
+			teachers, err := s.TeacherRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
 			if err != nil {
-				return nil, errorx.WrapByCode(
-					err,
-					errno.ErrTeacherGetSuggestionsFailed,
-					errorx.KV("keyword", req.Keyword),
-				)
+				logs.CtxErrorf(ctx, "[TeacherRepo] [GetSuggestionsByName] error: %v", err)
+				return nil, errorx.WrapByCode(err, errno.ErrTeacherGetSuggestionsFailed,
+					errorx.KV("keyword", req.Keyword))
 			}
 			var vo []*dto.SearchSuggestionsVO
 			for _, teacher := range teachers {

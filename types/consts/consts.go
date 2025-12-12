@@ -44,7 +44,8 @@ const (
 
 // 上下文相关
 const (
-	ContextUserID = "userID"
+	CtxUserID = "userID"
+	CtxToken  = "token"
 )
 
 // Request 相关
@@ -53,6 +54,7 @@ const (
 	ReqTeacher    = "teacher"
 	ReqDepartment = "department"
 	ReqCategory   = "category"
+	ReqOpenID     = "openId"
 )
 
 // 限制相关

@@ -77,7 +77,7 @@ func (s *CourseService) GetOneCourse(ctx context.Context, courseID string) (*dto
 // 当req.Type为"department"时，精确分页搜索该开课院系下的课程
 func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq) (*dto.ListCoursesResp, error) {
 	// 鉴权
-	userId, ok := ctx.Value(consts.ContextUserID).(string)
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
@@ -90,35 +90,37 @@ func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq
 	case consts.ReqCourse:
 		dbs, total, err = s.CourseRepo.FindManyByNameLike(ctx, req.Keyword, req.PageParam)
 		if err != nil {
-			logs.CtxErrorf(ctx, "CourseRepo FindManyByNameLike error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed)
+			logs.CtxErrorf(ctx, "[CourseRepo] [FindManyByNameLike] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed, errorx.KV("name", req.Keyword))
 		}
 	case consts.ReqTeacher:
-		tid, err := s.TeacherRepo.FindIDByName(ctx, req.Keyword)
+		tid, err := s.TeacherRepo.GetIDByName(ctx, req.Keyword)
 		if err != nil {
-			logs.CtxErrorf(ctx, "CourseRepo FindIDByName error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrTeacherIDNotFound, errorx.KV("name", req.Keyword))
+			logs.CtxErrorf(ctx, "[CourseRepo] [GetIDByName] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrTeacherFindFailed, errorx.KV("name", req.Keyword))
 		}
 		dbs, total, err = s.CourseRepo.FindManyByTeacherID(ctx, tid, req.PageParam)
 	case consts.ReqCategory:
 		cid := mapping.Data.GetCategoryIDByName(req.Keyword)
 		dbs, total, err = s.CourseRepo.FindManyByCategoryID(ctx, cid, req.PageParam)
 		if err != nil {
-			logs.CtxErrorf(ctx, "CourseRepo FindManyByCategoryID error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed)
+			logs.CtxErrorf(ctx, "[CourseRepo] [FindManyByCategoryID] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed,
+				errorx.KV("key", consts.ReqCategory), errorx.KV("value", req.Keyword))
 		}
 	case consts.ReqDepartment:
 		did := mapping.Data.GetDepartmentIDByName(req.Keyword)
 		dbs, total, err = s.CourseRepo.FindManyByDepartmentID(ctx, did, req.PageParam)
 		if err != nil {
-			logs.CtxErrorf(ctx, "CourseRepo FindManyByDepartmentID error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed)
+			logs.CtxErrorf(ctx, "[CourseRepo] [FindManyByDepartmentID] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed,
+				errorx.KV("key", consts.ReqDepartment), errorx.KV("value", req.Keyword))
 		}
 	default:
-		logs.CtxErrorf(ctx, "CourseService ListCourses error: invalid type %s", req.Type)
+		logs.CtxErrorf(ctx, "[CourseService] [ListCourses] invalid type: %s", req.Type)
 		return nil, errorx.New(
 			errno.ErrCourseInvalidParam,
-			errorx.KV("key", "type"),
+			errorx.KV("key", consts.ReqType),
 			errorx.KV("value", req.Type),
 		)
 	}
@@ -126,7 +128,7 @@ func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq
 	// 转换为分页结果
 	pcs, err := s.CourseAssembler.ToPaginatedCourses(ctx, dbs, total, req.PageParam)
 	if err != nil {
-		logs.CtxErrorf(ctx, "CourseAssembler ToPaginatedCourses error: %v", err)
+		logs.CtxErrorf(ctx, "[CourseAssembler] [ToPaginatedCourses] error: %v", err)
 		return nil, errorx.WrapByCode(
 			err,
 			errno.ErrCourseCvtFailed,

@@ -28,7 +28,7 @@ func GetCourse(c *gin.Context) {
 	var resp *dto.GetCourse
 	var err error
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 	resp, err = provider.Get().CourseService.GetOneCourse(c, c.Param("courseId"))
 	PostProcess(c, nil, resp, err)
 }
@@ -45,7 +45,7 @@ func GetCourseDepartments(c *gin.Context) {
 		return
 	}
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 	resp, err = provider.Get().CourseService.GetDepartments(c, &req)
 	PostProcess(c, &req, resp, err)
 }
@@ -62,7 +62,7 @@ func GetCourseCategories(c *gin.Context) {
 		return
 	}
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 	resp, err = provider.Get().CourseService.GetCategories(c, &req)
 	PostProcess(c, &req, resp, err)
 }
@@ -79,7 +79,7 @@ func GetCourseCampuses(c *gin.Context) {
 		return
 	}
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 	resp, err = provider.Get().CourseService.GetCampuses(c, &req)
 	PostProcess(c, req, resp, err)
 }

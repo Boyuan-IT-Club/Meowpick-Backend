@@ -30,7 +30,7 @@ func ToggleLike(c *gin.Context) {
 	var err error
 
 	req.TargetID = c.Param("id")
-	c.Set(consts.ContextUserID, token.GetUserId(c))
-	resp, err = provider.Get().LikeService.Like(c, &req)
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+	resp, err = provider.Get().LikeService.ToggleLike(c, &req)
 	PostProcess(c, nil, resp, err)
 }

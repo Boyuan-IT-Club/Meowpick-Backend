@@ -33,7 +33,7 @@ func CreateTeacher(c *gin.Context) {
 		PostProcess(c, req, resp, err)
 	}
 
-	c.Set(consts.ContextUserID, token.GetUserId(c))
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().TeacherService.CreateTeacher(c, req)
 	PostProcess(c, req, resp, err)

@@ -19,25 +19,25 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 // search history: 103 000 000 ~ 103 999 999
 
 const (
-	ErrSearchHistoryFindFailed   = 103000001
-	ErrSearchHistoryUpsertFailed = 103000002
-	ErrSearchHistoryDeleteFailed = 103000003
-	ErrSearchHistoryCountFailed  = 103000004
+	ErrSearchHistoryFindFailed         = 103000001
+	ErrSearchHistoryUpsertFailed       = 103000002
+	ErrSearchHistoryDeleteOldestFailed = 103000003
+	ErrSearchHistoryCountFailed        = 103000004
 )
 
 func init() {
 	code.Register(
 		ErrSearchHistoryFindFailed,
-		"failed to find search history",
+		"failed to find search history by {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrSearchHistoryUpsertFailed,
-		"failed to upsert search history",
+		"failed to upsert search history: {query}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
-		ErrSearchHistoryDeleteFailed,
+		ErrSearchHistoryDeleteOldestFailed,
 		"failed to delete search history",
 		code.WithAffectStability(false),
 	)

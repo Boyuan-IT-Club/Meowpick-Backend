@@ -17,22 +17,23 @@
 package token
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type Claims struct {
-	UserID string `json:"userId"` // 业务系统用户ID
-
+	UserID               string `json:"userId"` // 业务系统用户ID
+	jwt.RegisteredClaims        // 标准字段（exp, iat, iss等）
 	//DeviceID             string `json:"deviceId"` // 设备标识（可选）
-	jwt.RegisteredClaims // 标准字段（exp, iat, iss等）
 }
 
 // NewAuthorizedToken 签发accessToken(jwt)
@@ -46,27 +47,23 @@ func NewAuthorizedToken(user *model.User) (string, error) {
 			Issuer:    "meowpick-auth",
 		},
 	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(jwtConfig.SecretKey))
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(jwtConfig.SecretKey))
 }
 
-// GetUserId 给controller层的接口 用于从jwt提取userId
-func GetUserId(ctx *gin.Context) string {
+// GetUserID 给Handler的接口，用于从jwt提取userId
+func GetUserID(ctx *gin.Context) string {
 	var token string
 	var err error
-
 	if token, err = ExtractToken(ctx.Request.Header); err != nil {
-		log.Error("ExtractToken Failed,err:", err)
+		logs.CtxErrorf(ctx, "[Token] [ExtractToken] error: %v", err)
 		return ""
 	}
-
 	var claims *Claims
 	if claims, err = Parse(token); err != nil {
 		ctx.Set("tokenError", err)
+		logs.CtxErrorf(ctx, "[Token] [Parse] error: %v", err)
 		return ""
 	}
-
 	return claims.UserID
 }
 
@@ -74,19 +71,19 @@ func GetUserId(ctx *gin.Context) string {
 func ExtractToken(header http.Header) (string, error) {
 	authHeader := header.Get("Authorization")
 	if authHeader == "" {
-		log.Error("no Authorization header found")
-		return "", errorx.ErrReqNoToken
+		logs.Error("[Token] [ExtractToken] error: no authorization header found")
+		return "", errorx.New(errno.ErrAuthHeaderNotFound)
 	}
 
-	// 支持 Bearer token 或直接token
+	// 支持 Bearer token 或直接 token
 	parts := strings.Split(authHeader, " ")
 	if len(parts) == 2 && parts[0] == "Bearer" {
 		return parts[1], nil
 	} else if len(parts) == 1 {
 		return parts[0], nil
 	}
-	log.Error("no Bearer token found!Please check the Authorization field in the header")
-	return "", errorx.ErrWrongTokenFmt
+	logs.Errorf("[Token] [ExtractToken] error: wrong token format: %s", authHeader)
+	return "", errorx.New(errno.ErrAuthTokenFormatInvalid)
 }
 
 // ParseAndValidate 解析Token并验证有效性
@@ -95,27 +92,24 @@ func ParseAndValidate(tokenStr string) (*Claims, error) {
 		return []byte(config.GetConfig().Auth.SecretKey), nil
 	})
 	if err != nil {
+		logs.Errorf("[JWT] [ParseWithClaims] error: %v", err)
 		return nil, err
 	}
-
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
-
-	return nil, errorx.ErrTokenInvalid
+	logs.Errorf("[Token] [ParseAndValidate] invalid token: %s", tokenStr)
+	return nil, errorx.New(errno.ErrAuthTokenInvalid)
 }
 
 // ShouldRenew 检查Token是否需要续期
 func ShouldRenew(claims *Claims) bool {
-	remaining := time.Until(claims.ExpiresAt.Time)
-	total := claims.ExpiresAt.Sub(claims.IssuedAt.Time)
-	return remaining <= total/2 // 剩余时间不足一半时续期
+	return time.Until(claims.ExpiresAt.Time) <= claims.ExpiresAt.Sub(claims.IssuedAt.Time)/2 // 剩余时间不足一半时续期
 }
 
-// Parse 基础Token解析 返回一个Claim指针
+// Parse 基础Token解析，返回一个Claim指针
 func Parse(tokenStr string) (*Claims, error) {
 	secretKey := config.GetConfig().Auth.SecretKey
-
 	token, err := jwt.ParseWithClaims(
 		tokenStr,
 		&Claims{},
@@ -123,24 +117,14 @@ func Parse(tokenStr string) (*Claims, error) {
 			return []byte(secretKey), nil
 		},
 	)
-
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse JWT: %w", err)
+		logs.Errorf("[JWT] [ParseWithClaims] error: %v", err)
+		return nil, err
 	}
-
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		return nil, errorx.ErrTokenInvalid
+		logs.Errorf("[Token] [Parse] invalid token: %s", tokenStr)
+		return nil, errorx.New(errno.ErrAuthTokenInvalid)
 	}
-
 	return claims, nil
-}
-
-// ParseUserID 解析jwt中的user.ID 返回string类型
-func ParseUserID(tokenStr *string) (UserID string, err error) {
-	claims, err := Parse(*tokenStr)
-	if err != nil {
-		return UserID, err
-	}
-	return claims.UserID, nil
 }

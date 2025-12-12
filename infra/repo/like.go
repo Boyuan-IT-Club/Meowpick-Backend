@@ -35,11 +35,12 @@ const (
 )
 
 type ILikeRepo interface {
-	ToggleLike(ctx context.Context, userID, targetId string, targetType int32) (bool, error)
-	GetLikeStatus(ctx context.Context, userID, targetId string, targetType int32) (bool, error)
-	GetLikeCount(ctx context.Context, targetId string, targetType int32) (int64, error)
-	GetBatchLikeStatus(ctx context.Context, userID string, targetIds []string, targetType int32) (map[string]bool, error)
-	GetBatchLikeCount(ctx context.Context, userID string, targetIds []string, targetType int32) (map[string]int64, error)
+	Toggle(ctx context.Context, userId, targetId string, targetType int32) (bool, error)
+	IsLike(ctx context.Context, userId, targetId string, targetType int32) (bool, error)
+	CountByTarget(ctx context.Context, targetId string, targetType int32) (int64, error)
+
+	GetBatchLikeStatus(ctx context.Context, userId string, targetIds []string, targetType int32) (map[string]bool, error)
+	GetBatchLikeCount(ctx context.Context, userId string, targetIds []string, targetType int32) (map[string]int64, error)
 }
 
 type LikeRepo struct {
@@ -55,17 +56,14 @@ func NewLikeRepo(config *config.Config) *LikeRepo {
 	}
 }
 
-// ToggleLike 翻转点赞状态，返回完成后目标的点赞状态
-func (r *LikeRepo) ToggleLike(ctx context.Context, userID, targetId string, targetType int32) (bool, error) {
-	// 把存在且 active != false 的文档视为当前已点赞（包括 active 字段缺失的历史记录）
-	filterActive := bson.M{
-		consts.UserID:   userID,
+// Toggle 翻转点赞状态，返回完成后目标的点赞状态
+func (r *LikeRepo) Toggle(ctx context.Context, userId, targetId string, targetType int32) (bool, error) {
+	cnt, err := r.conn.CountDocuments(ctx, bson.M{
+		consts.UserID:   userId,
 		consts.TargetID: targetId,
 		consts.Active:   bson.M{"$ne": false}, // 非false
-		//"targetType": targetType,
-	}
-
-	cnt, err := r.conn.CountDocuments(ctx, filterActive)
+		//consts.TargetType: targetType,
+	})
 	if err != nil {
 		return false, err
 	}
@@ -87,16 +85,16 @@ func (r *LikeRepo) ToggleLike(ctx context.Context, userID, targetId string, targ
 	ops := options.Update().SetUpsert(true)
 
 	filter := bson.M{
-		consts.UserID:   userID,
+		consts.UserID:   userId,
 		consts.TargetID: targetId,
 	}
-	cacheKey := LikeCacheKeyPrefix + userID + "-" + targetId
+	cacheKey := LikeCacheKeyPrefix + userId + "-" + targetId
 	if _, err = r.conn.UpdateOne(ctx, cacheKey, filter, update, ops); err != nil {
 		return false, err
 	}
 
 	// 更新点赞状态缓存
-	_ = r.cache.SetLikeStatus(ctx, userID, targetId, newActive, 10*time.Minute)
+	_ = r.cache.SetLikeStatus(ctx, userId, targetId, newActive, 10*time.Minute)
 
 	// 更新点赞数缓存（如果缓存中存在的话）
 	if newActive {
@@ -114,16 +112,16 @@ func (r *LikeRepo) ToggleLike(ctx context.Context, userID, targetId string, targ
 	return newActive, nil
 }
 
-// GetLikeStatus 获取一个用户对一个目标的当前点赞状态（是/否点赞）
-func (r *LikeRepo) GetLikeStatus(ctx context.Context, userID, targetId string, targetType int32) (bool, error) {
+// IsLike 获取一个用户对一个目标的当前点赞状态（是/否点赞）
+func (r *LikeRepo) IsLike(ctx context.Context, userId, targetId string, targetType int32) (bool, error) {
 	// 缓存查询
-	if liked, found := r.cache.GetLikeStatus(ctx, userID, targetId); found {
+	if liked, found := r.cache.GetLikeStatus(ctx, userId, targetId); found {
 		return liked, nil
 	}
 
 	// 缓存未命中，走数据库查询
 	filter := bson.M{
-		consts.UserID:   userID,
+		consts.UserID:   userId,
 		consts.TargetID: targetId,
 		consts.Active:   bson.M{"$ne": false}, // 非 false 视为点赞（包含缺失字段）
 		//"targetType": targetType,
@@ -136,8 +134,8 @@ func (r *LikeRepo) GetLikeStatus(ctx context.Context, userID, targetId string, t
 	return cnt > 0, nil
 }
 
-// GetLikeCount 获得目标的总点赞数
-func (r *LikeRepo) GetLikeCount(ctx context.Context, targetId string, targetType int32) (int64, error) {
+// CountByTarget 获得目标的总点赞数
+func (r *LikeRepo) CountByTarget(ctx context.Context, targetId string, targetType int32) (int64, error) {
 	// 缓存查询
 	if count, found := r.cache.GetLikeCount(ctx, targetId); found {
 		return count, nil
@@ -158,13 +156,13 @@ func (r *LikeRepo) GetLikeCount(ctx context.Context, targetId string, targetType
 }
 
 // GetBatchLikeStatus 批量获取一个用户对多个目标的点赞状态，返回目标id->bool映射
-func (r *LikeRepo) GetBatchLikeStatus(ctx context.Context, userID string, targetIds []string, targetType int32) (map[string]bool, error) {
+func (r *LikeRepo) GetBatchLikeStatus(ctx context.Context, userId string, targetIds []string, targetType int32) (map[string]bool, error) {
 	if len(targetIds) == 0 {
 		return make(map[string]bool), nil
 	}
 
 	// 先查缓存
-	cachedResults, missingIDs, err := r.cache.GetBatchLikeStatus(ctx, userID, targetIds, targetType)
+	cachedResults, missingIDs, err := r.cache.GetBatchLikeStatus(ctx, userId, targetIds, targetType)
 	if err != nil {
 		logs.Errorf("Batch get like status from cache error: %v", err)
 		// 缓存失败，直接查数据库
@@ -181,7 +179,7 @@ func (r *LikeRepo) GetBatchLikeStatus(ctx context.Context, userID string, target
 		pipeline := []bson.M{
 			{
 				"$match": bson.M{
-					consts.UserID:   userID,
+					consts.UserID:   userId,
 					consts.TargetID: bson.M{"$in": missingIDs},
 					consts.Active:   bson.M{"$ne": false},
 				},
@@ -219,7 +217,7 @@ func (r *LikeRepo) GetBatchLikeStatus(ctx context.Context, userID string, target
 
 			// 异步设置缓存，避免阻塞
 			go func(tID string, status bool) {
-				_ = r.cache.SetLikeStatus(ctx, userID, tID, status, 10*time.Minute)
+				_ = r.cache.SetLikeStatus(ctx, userId, tID, status, 10*time.Minute)
 			}(targetID, liked)
 		}
 	}

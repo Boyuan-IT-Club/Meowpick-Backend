@@ -34,12 +34,12 @@ func init() {
 	)
 	code.Register(
 		ErrCourseNotFound,
-		"course not found",
+		"course not found by {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrCourseFindFailed,
-		"failed to find course",
+		"failed to find course by {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(

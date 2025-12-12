@@ -20,13 +20,16 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
 )
 
 var _ ILikeService = (*LikeService)(nil)
 
 type ILikeService interface {
-	Like(ctx context.Context, req *dto.ToggleLikeReq) (resp *dto.ToggleLikeResp, err error)
+	ToggleLike(ctx context.Context, req *dto.ToggleLikeReq) (resp *dto.ToggleLikeResp, err error)
 }
 
 type LikeService struct {
@@ -38,30 +41,21 @@ var LikeServiceSet = wire.NewSet(
 	wire.Bind(new(ILikeService), new(*LikeService)),
 )
 
-func (s *LikeService) Like(ctx context.Context, req *dto.ToggleLikeReq) (resp *dto.ToggleLikeResp, err error) {
-	// 参数校验
-	var targetID string
-	var userID string
-	var ok bool
-	if targetID = req.TargetID; targetID == "" {
-		log.Error("targetID is empty or invalid")
-		return nil, errorx.ErrEmptyTargetID
+func (s *LikeService) ToggleLike(ctx context.Context, req *dto.ToggleLikeReq) (resp *dto.ToggleLikeResp, err error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	userID, ok = ctx.Value(consts.ContextUserID).(string)
-	if !ok || userID == "" {
-		log.Error("userID is empty or invalid")
-		return nil, errorx.ErrGetUserIDFailed
-	}
-
-	// 步骤一：先执行点赞或取消点赞的操作
-	newActive, err := s.LikeRepo.ToggleLike(ctx, userID, targetID, consts.CommentType)
+	// 点赞或取消点赞
+	newActive, err := s.LikeRepo.Toggle(ctx, userID, targetID, consts.CommentType)
 	if err != nil {
 		return nil, errorx.ErrLikeFailed
 	}
 
 	// 步骤二：操作完成后，再去获取最新的总点赞数
-	likeCount, err := s.LikeRepo.GetLikeCount(ctx, targetID, consts.CommentType)
+	likeCount, err := s.LikeRepo.CountByTarget(ctx, targetID, consts.CommentType)
 	if err != nil {
 		return nil, errorx.ErrGetCountFailed
 	}

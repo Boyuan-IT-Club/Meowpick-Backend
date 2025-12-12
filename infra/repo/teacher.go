@@ -39,11 +39,11 @@ const (
 
 type ITeacherRepo interface {
 	Insert(ctx context.Context, teacher *model.Teacher) error
-	GetSuggestions(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, error)
 	IsExistByID(ctx context.Context, name string) (bool, error)
-
 	FindByID(ctx context.Context, id string) (*model.Teacher, error)
-	FindIDByName(ctx context.Context, name string) (string, error)
+
+	GetIDByName(ctx context.Context, name string) (string, error)
+	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, error)
 }
 
 type TeacherRepo struct {
@@ -63,18 +63,9 @@ func (r *TeacherRepo) Insert(ctx context.Context, teacher *model.Teacher) error 
 	}
 	// 设置name->ID映射缓存
 	if err := r.conn.SetCache(TeacherName2IDCacheKey+teacher.Name, cacheKey); err != nil {
-		logs.CtxWarnf(ctx, "TeacherRepo SetCache name to id mapping failed: %v", err)
+		logs.CtxWarnf(ctx, "[monc] [SetCache] name to id mapping error: %v", err)
 	}
 	return nil
-}
-
-// GetSuggestions 根据教师名称模糊分页查询教师
-func (r *TeacherRepo) GetSuggestions(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, error) {
-	teachers := []*model.Teacher{}
-	if err := r.conn.Find(ctx, &teachers, bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}, page.FindPageOption(param)); err != nil {
-		return nil, err
-	}
-	return teachers, nil
 }
 
 // IsExistByID 根据教师ID判断教师是否存在
@@ -95,8 +86,8 @@ func (r *TeacherRepo) FindByID(ctx context.Context, id string) (*model.Teacher, 
 	return teacher, nil
 }
 
-// FindIDByName 根据教师名称查询教师ID
-func (r *TeacherRepo) FindIDByName(ctx context.Context, name string) (string, error) {
+// GetIDByName 根据教师名称查询教师ID
+func (r *TeacherRepo) GetIDByName(ctx context.Context, name string) (string, error) {
 	var teacherId string
 	teacher := &model.Teacher{}
 	nameCacheKey := TeacherName2IDCacheKey + name
@@ -113,7 +104,16 @@ func (r *TeacherRepo) FindIDByName(ctx context.Context, name string) (string, er
 	}
 	// 设置缓存键
 	if err := r.conn.SetCache(nameCacheKey, TeacherCacheKeyPrefix+teacher.ID); err != nil {
-		logs.CtxWarnf(ctx, "TeacherRepo SetCache name to id mapping failed: %v", err)
+		logs.CtxWarnf(ctx, "[monc] [SetCache] name to id mapping error: %v", err)
 	}
 	return teacher.ID, nil
+}
+
+// GetSuggestionsByName 根据教师名称模糊分页查询教师
+func (r *TeacherRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, error) {
+	teachers := []*model.Teacher{}
+	if err := r.conn.Find(ctx, &teachers, bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}, page.FindPageOption(param)); err != nil {
+		return nil, err
+	}
+	return teachers, nil
 }
