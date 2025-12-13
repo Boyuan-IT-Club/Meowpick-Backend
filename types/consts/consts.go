@@ -34,6 +34,7 @@ const (
 	Code       = "code"
 	Name       = "name"
 	Tags       = "tags"
+	Count      = "count"
 )
 
 // 元素类别相关（如课程、评论、老师）
@@ -44,8 +45,10 @@ const (
 
 // 上下文相关
 const (
-	CtxUserID = "userID"
-	CtxToken  = "token"
+	CtxUserID   = "userID"
+	CtxToken    = "token"
+	CtxLikeID   = "id"
+	CtxCourseID = "courseId"
 )
 
 // Request 相关
@@ -55,6 +58,8 @@ const (
 	ReqDepartment = "department"
 	ReqCategory   = "category"
 	ReqOpenID     = "openId"
+	ReqType       = "type"
+	ReqCourseID   = "courseId"
 )
 
 // 限制相关

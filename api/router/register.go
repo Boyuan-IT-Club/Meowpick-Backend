@@ -35,7 +35,6 @@ func SetupRoutes() *gin.Engine {
 	{
 		searchGroup.GET("/recent", handler.GetSearchHistories)         // 搜索历史
 		searchGroup.POST("", handler.ListCourses)                      // 模糊搜索展示课程列表
-		searchGroup.POST("/teacher", handler.ListTeachers)             // 模糊搜索展示教师列表
 		searchGroup.GET("/total", handler.GetTotalCourseCommentsCount) // 小程序初始化界面的总吐槽数
 		searchGroup.GET("/suggest", handler.GetSearchSuggestions)      // 用户输入搜索内容期间获得搜索建议
 	}

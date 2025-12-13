@@ -16,14 +16,12 @@ package repo
 
 import (
 	"context"
-	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
-	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -38,9 +36,10 @@ const (
 type ICommentRepo interface {
 	Insert(ctx context.Context, c *model.Comment) error
 	Count(ctx context.Context) (int64, error)
-	FindManyByUserID(ctx context.Context, param *dto.PageParam, userID string) ([]*model.Comment, int64, error)
-	FindManyByCourseID(ctx context.Context, param *dto.PageParam, courseID string) ([]*model.Comment, int64, error)
-	CountTagsByCourseID(ctx context.Context, courseID string) (map[string]int, error)
+	GetTagsByCourseID(ctx context.Context, courseId string) (map[string]int, error)
+
+	FindManyByUserID(ctx context.Context, param *dto.PageParam, userId string) ([]*model.Comment, int64, error)
+	FindManyByCourseID(ctx context.Context, param *dto.PageParam, courseId string) ([]*model.Comment, int64, error)
 }
 
 type CommentRepo struct {
@@ -52,116 +51,88 @@ func NewCommentRepo(cfg *config.Config) *CommentRepo {
 	return &CommentRepo{conn: conn}
 }
 
+// Insert 插入评论
 func (r *CommentRepo) Insert(ctx context.Context, c *model.Comment) error {
-	now := time.Now()
-	if c.CreatedAt.IsZero() {
-		c.CreatedAt = now
-	}
-	if c.UpdatedAt.IsZero() {
-		c.UpdatedAt = now
-	}
 	_, err := r.conn.InsertOneNoCache(ctx, c)
 	return err
 }
 
+// Count 统计评论总数
 func (r *CommentRepo) Count(ctx context.Context) (int64, error) {
 	// 考虑到性能，暂使用EstimatedDocumentCount
-	//filter := bson.M{consts.Deleted: bson.M{"$ne": true}}
-	//count, err := m.conn.CountDocuments(ctx, filter)
-
-	count, err := r.conn.EstimatedDocumentCount(ctx)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
+	//return m.conn.CountDocuments(ctx, bson.M{consts.Deleted: bson.M{"$ne": true}})
+	return r.conn.EstimatedDocumentCount(ctx)
 }
 
-func (r *CommentRepo) FindManyByUserID(ctx context.Context, param *dto.PageParam, userID string) ([]*model.Comment, int64, error) {
-	var comments []*model.Comment
-	filter := bson.M{consts.UserID: userID, consts.Deleted: bson.M{"$ne": true}}
-
-	total, err := r.conn.CountDocuments(ctx, filter)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	ops := page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))
-
-	if err = r.conn.Find(ctx, &comments, filter, ops); err != nil {
-		return nil, 0, err
-	}
-
-	return comments, total, nil
-}
-
-func (r *CommentRepo) FindManyByCourseID(ctx context.Context, param *dto.PageParam, courseID string) ([]*model.Comment, int64, error) {
-	var comments []*model.Comment
-	filter := bson.M{consts.CourseID: courseID, consts.Deleted: bson.M{"$ne": true}}
-
-	total, err := r.conn.CountDocuments(ctx, filter)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	ops := page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))
-
-	if err = r.conn.Find(ctx, &comments, filter, ops); err != nil {
-		return nil, 0, err
-	}
-
-	return comments, total, nil
-}
-
-func (r *CommentRepo) CountTagsByCourseID(ctx context.Context, courseID string) (map[string]int, error) {
-	// 数据库聚合实现标签count 建议在/api/search接口封装CourseVO时起go routine获得CourseVO的tagCount字段
-	// 构建管道
+// GetTagsByCourseID 根据课程ID统计课程所有标签
+func (r *CommentRepo) GetTagsByCourseID(ctx context.Context, courseId string) (map[string]int, error) {
 	pipeline := bson.A{
-		// 阶段1：筛选符合条件的文档
 		bson.M{"$match": bson.M{
-			consts.CourseID: courseID,
+			consts.CourseID: courseId,
 			consts.Deleted:  bson.M{"$ne": true},
-			"tags":          bson.M{"$exists": true, "$ne": nil},
+			consts.Tags:     bson.M{"$ne": nil},
 		}},
-
-		// 阶段2：展开tags数组
+		// 展开tags数组
 		bson.M{"$unwind": bson.M{
 			"path":                       "$tags",
 			"preserveNullAndEmptyArrays": false,
 		}},
-
-		// 阶段3：过滤掉空字符串的tag
+		// 过滤掉空字符串的tag
 		bson.M{"$match": bson.M{
-			"tags": bson.M{"$ne": "", "$exists": true},
+			consts.Tags: bson.M{"$ne": ""},
 		}},
-
-		// 阶段4：按tag分组并计数
+		// 按tag分组并计数
 		bson.M{"$group": bson.M{
-			consts.ID: "$tags",
-			"count":   bson.M{"$sum": 1}, // 这里sum使用的是int64还是int result map[string]xxx需要和sum的类型保持一致
+			consts.ID:    "$tags",
+			consts.Count: bson.M{"$sum": 1},
 		}},
-
-		// 阶段5：按计数降序排序
-		bson.M{"$sort": bson.M{"count": -1}},
-
-		// 阶段6：限制返回结果数量
+		// 按计数降序排序
+		bson.M{"$sort": bson.M{consts.Count: -1}},
+		// 限制返回结果数量
 		bson.M{"$limit": 3},
 	}
-
-	// 使用monc的Aggregate方法执行聚合查询
-	var results []struct {
+	var tags []struct {
 		Tag   string `bson:"_id"`
-		Count int    `bson:"count"` // 暂显式指定int类型，以Aggregate求sum时使用的类型为准(也可能为int32/int64)
+		Count int64  `bson:"count"`
 	}
-
-	if err := r.conn.Aggregate(ctx, &results, pipeline); err != nil {
-		logs.Errorf("Aggregate failed for courseID=%s: %v", courseID, err)
+	if err := r.conn.Aggregate(ctx, &tags, pipeline); err != nil {
 		return nil, err
 	}
-
-	// 转换为 map
-	result := make(map[string]int)
-	for _, item := range results {
-		result[item.Tag] = item.Count
+	results := make(map[string]int)
+	for _, result := range tags {
+		results[result.Tag] = int(result.Count)
 	}
-	return result, nil
+	return results, nil
+}
+
+// FindManyByUserID 根据用户ID分页查询用户所有评论
+func (r *CommentRepo) FindManyByUserID(ctx context.Context, param *dto.PageParam, userId string) ([]*model.Comment, int64, error) {
+	comments := []*model.Comment{}
+	filter := bson.M{consts.UserID: userId, consts.Deleted: bson.M{"$ne": true}}
+	total, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	if err = r.conn.Find(ctx, &comments, filter,
+		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+	); err != nil {
+		return nil, 0, err
+	}
+	return comments, total, nil
+}
+
+// FindManyByCourseID 根据课程ID分页查询课程所有评论
+func (r *CommentRepo) FindManyByCourseID(ctx context.Context, param *dto.PageParam, courseId string) ([]*model.Comment, int64, error) {
+	comments := []*model.Comment{}
+	filter := bson.M{consts.CourseID: courseId, consts.Deleted: bson.M{"$ne": true}}
+	total, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	if err = r.conn.Find(ctx, &comments, filter,
+		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+	); err != nil {
+		return nil, 0, err
+	}
+	return comments, total, nil
 }

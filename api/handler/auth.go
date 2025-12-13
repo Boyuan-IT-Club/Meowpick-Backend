@@ -33,14 +33,13 @@ func SignIn(c *gin.Context) {
 		PostProcess(c, &req, nil, err)
 		return
 	}
-
 	tokenStr, err := token.ExtractToken(c.Request.Header)
 	if err != nil {
 		PostProcess(c, &req, nil, err)
 		return
 	}
-
 	c.Set(consts.CtxToken, tokenStr)
+
 	resp, err = provider.Get().AuthService.SignIn(c, &req)
 	PostProcess(c, &req, resp, err)
 }

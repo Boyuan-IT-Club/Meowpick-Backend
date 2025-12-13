@@ -24,6 +24,9 @@ const (
 	ErrCourseFindFailed           = 101000003
 	ErrCourseCvtFailed            = 101000004
 	ErrCourseGetSuggestionsFailed = 101000005
+	ErrCourseGetDepartmentsFailed = 101000006
+	ErrCourseGetCategoriesFailed  = 101000007
+	ErrCourseGetCampusesFailed    = 101000008
 )
 
 func init() {
@@ -50,6 +53,21 @@ func init() {
 	code.Register(
 		ErrCourseGetSuggestionsFailed,
 		"failed to get course suggestions: {keyword}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCourseGetDepartmentsFailed,
+		"failed to get course departments: {name}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCourseGetCategoriesFailed,
+		"failed to get course categories: {name}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCourseGetCampusesFailed,
+		"failed to get course campuses: {name}",
 		code.WithAffectStability(false),
 	)
 }

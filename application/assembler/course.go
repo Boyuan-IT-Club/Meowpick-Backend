@@ -63,9 +63,9 @@ func (a *CourseAssembler) ToCourseVO(ctx context.Context, c *model.Course) (*dto
 	// 获得课程前三多的tag (使用goroutine异步获取提高性能)
 	tagCountChan := make(chan map[string]int, 1)
 	go func() {
-		tagCount, err := a.CommentRepo.CountTagsByCourseID(ctx, c.ID)
+		tagCount, err := a.CommentRepo.GetTagsByCourseID(ctx, c.ID)
 		if err != nil {
-			log.CtxError(ctx, "CountTagsByCourseID failed for courseID=%s: %v", c.ID, err)
+			log.CtxError(ctx, "GetTagsByCourseID failed for courseID=%s: %v", c.ID, err)
 			tagCountChan <- make(map[string]int)
 		} else {
 			tagCountChan <- tagCount

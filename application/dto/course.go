@@ -43,7 +43,11 @@ type ListCoursesResp struct {
 	*PaginatedCourses
 }
 
-type GetCourse struct {
+type GetCourseReq struct {
+	CourseID string `form:"courseId" binding:"required"`
+}
+
+type GetCourseResp struct {
 	*Resp
 	Course *CourseVO `json:"course"`
 }

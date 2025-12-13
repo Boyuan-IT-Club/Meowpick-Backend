@@ -57,11 +57,11 @@ func ListCourses(c *gin.Context) {
 	var req dto.ListCoursesReq
 	var resp *dto.ListCoursesResp
 	var err error
+
 	if err = c.ShouldBindJSON(&req); err != nil {
 		PostProcess(c, &req, nil, err)
 		return
 	}
-
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	if req.Keyword != "" {
@@ -75,10 +75,4 @@ func ListCourses(c *gin.Context) {
 
 	resp, err = provider.Get().CourseService.ListCourses(c, &req)
 	PostProcess(c, &req, resp, err)
-}
-
-// ListTeachers 用户点击🔍时模糊搜索，返回教师VO列表
-// @router /api/search/teacher
-func ListTeachers(c *gin.Context) {
-	// TODO 实现接口
 }

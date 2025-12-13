@@ -25,15 +25,18 @@ import (
 // GetCourse 精确搜索一个课程，返回课程元信息
 // @router /api/course/:courseId [GET]
 func GetCourse(c *gin.Context) {
-	var resp *dto.GetCourse
+	var req dto.GetCourseReq
+	var resp *dto.GetCourseResp
 	var err error
 
+	req.CourseID = c.Param(consts.CtxCourseID)
 	c.Set(consts.CtxUserID, token.GetUserID(c))
-	resp, err = provider.Get().CourseService.GetOneCourse(c, c.Param("courseId"))
-	PostProcess(c, nil, resp, err)
+
+	resp, err = provider.Get().CourseService.GetCourse(c, &req)
+	PostProcess(c, req, resp, err)
 }
 
-// GetCourseDepartments .
+// GetCourseDepartments 根据课程名字获得开课院系
 // @router /api/course/departs [GET]
 func GetCourseDepartments(c *gin.Context) {
 	var req dto.GetCourseDepartmentsReq
@@ -44,13 +47,13 @@ func GetCourseDepartments(c *gin.Context) {
 		PostProcess(c, &req, nil, err)
 		return
 	}
-
 	c.Set(consts.CtxUserID, token.GetUserID(c))
+
 	resp, err = provider.Get().CourseService.GetDepartments(c, &req)
 	PostProcess(c, &req, resp, err)
 }
 
-// GetCourseCategories .
+// GetCourseCategories 根据课程名字获得课程分类
 // @router /api/course/categories [GET]
 func GetCourseCategories(c *gin.Context) {
 	var req dto.GetCourseCategoriesReq
@@ -61,13 +64,13 @@ func GetCourseCategories(c *gin.Context) {
 		PostProcess(c, &req, nil, err)
 		return
 	}
-
 	c.Set(consts.CtxUserID, token.GetUserID(c))
+
 	resp, err = provider.Get().CourseService.GetCategories(c, &req)
 	PostProcess(c, &req, resp, err)
 }
 
-// GetCourseCampuses .
+// GetCourseCampuses 根据课程名字获得开课校区
 // @router /api/course/campuses [GET]
 func GetCourseCampuses(c *gin.Context) {
 	var req dto.GetCourseCampusesReq
@@ -78,8 +81,8 @@ func GetCourseCampuses(c *gin.Context) {
 		PostProcess(c, &req, nil, err)
 		return
 	}
-
 	c.Set(consts.CtxUserID, token.GetUserID(c))
+
 	resp, err = provider.Get().CourseService.GetCampuses(c, &req)
 	PostProcess(c, req, resp, err)
 }

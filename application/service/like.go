@@ -41,6 +41,7 @@ var LikeServiceSet = wire.NewSet(
 	wire.Bind(new(ILikeService), new(*LikeService)),
 )
 
+// ToggleLike 点赞或取消点赞评论
 func (s *LikeService) ToggleLike(ctx context.Context, req *dto.ToggleLikeReq) (resp *dto.ToggleLikeResp, err error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
@@ -65,17 +66,15 @@ func (s *LikeService) ToggleLike(ctx context.Context, req *dto.ToggleLikeReq) (r
 		Resp: dto.Success(),
 		LikeVO: &dto.LikeVO{
 			Like:    newActive,
-			LikeCnt: likeCount, // <-- 现在 likeCount 是最新的准确数据了
+			LikeCnt: likeCount,
 		},
 	}
 
-	resp = &dto.ToggleLikeResp{
+	return &dto.ToggleLikeResp{
 		Resp: dto.Success(),
 		LikeVO: &dto.LikeVO{
 			Like:    newActive,
-			LikeCnt: likeCount, // <-- 现在 likeCount 是最新的准确数据了
+			LikeCnt: likeCount,
 		},
-	}
-
-	return resp, nil
+	}, nil
 }

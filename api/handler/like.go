@@ -29,8 +29,9 @@ func ToggleLike(c *gin.Context) {
 	var resp *dto.ToggleLikeResp
 	var err error
 
-	req.TargetID = c.Param("id")
+	req.TargetID = c.Param(consts.CtxLikeID)
+
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 	resp, err = provider.Get().LikeService.ToggleLike(c, &req)
-	PostProcess(c, nil, resp, err)
+	PostProcess(c, req, resp, err)
 }

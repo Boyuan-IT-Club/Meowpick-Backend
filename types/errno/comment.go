@@ -14,4 +14,36 @@
 
 package errno
 
+import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
+
 // comment: 105 000 000 ~ 105 999 999
+
+const (
+	ErrCommentInsertFailed = 105000001
+	ErrCommentCvtFailed    = 105000002
+	ErrCommentCountFailed  = 105000003
+	ErrCommentFindFailed   = 105000004
+)
+
+func init() {
+	code.Register(
+		ErrCommentInsertFailed,
+		"failed to insert comment: {content}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCommentCvtFailed,
+		"failed to convert comment from {src} to {dst}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCommentCountFailed,
+		"failed to count comments",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCommentFindFailed,
+		"failed to find comments by {key}: {value}",
+		code.WithAffectStability(false),
+	)
+}

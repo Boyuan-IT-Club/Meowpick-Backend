@@ -28,10 +28,9 @@ import (
 
 // PostProcess 处理http响应, resp要求指针或接口类型
 // 在日志中记录本次调用详情, 同时向响应头中注入符合b3规范的链路信息, 主要是trace_id
-// 最佳实践:
-// - 在controller中调用业务处理, 处理结束后调用PostProcess
+// 最佳实践: 在Handler中调用业务处理, 处理结束后调用PostProcess
 func PostProcess(c *gin.Context, req, resp any, err error) {
-	logs.CtxInfof(c, "[%s] req=%s, resp=%s, err=%v", c.FullPath(), lib.JSONF(req), lib.JSONF(resp), err)
+	logs.CtxInfof(c, "[PostProcess] [%s] req=%s, resp=%s, err=%v", c.FullPath(), lib.JSONF(req), lib.JSONF(resp), err)
 
 	// 无错, 正常响应
 	if err == nil {
@@ -45,11 +44,11 @@ func PostProcess(c *gin.Context, req, resp any, err error) {
 		c.JSON(http.StatusOK, gin.H{
 			"code": se.Code(),
 			"msg":  se.Msg(),
-			"data": nil, // 错误返回时可以统一 data 为 nil
+			"data": nil,
 		})
 	} else {
 		// 其他非 errorx 错误，500
-		logs.CtxErrorf(c, "internal error, err=%s", err.Error())
+		logs.CtxErrorf(c, "[PostProcess] internal error, err=%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": http.StatusInternalServerError,
 			"msg":  err.Error(),
@@ -84,11 +83,11 @@ func makeResponse(resp any) map[string]any {
 			continue
 		}
 
-		fv := v.Field(i)    // reflect.Value
-		ftype := field.Type // reflect.Type
+		fv := v.Field(i) // reflect.Value
+		ft := field.Type // reflect.Type
 		// 先处理 struct 或 *struct（展开内层字段到 data）
-		if (fv.Kind() == reflect.Ptr && ftype.Elem().Kind() == reflect.Struct) ||
-			(fv.Kind() == reflect.Struct && ftype.Kind() == reflect.Struct) {
+		if (fv.Kind() == reflect.Ptr && ft.Elem().Kind() == reflect.Struct) ||
+			(fv.Kind() == reflect.Struct && ft.Kind() == reflect.Struct) {
 
 			var inner reflect.Value
 			var innerType reflect.Type
@@ -96,7 +95,7 @@ func makeResponse(resp any) map[string]any {
 			if fv.Kind() == reflect.Ptr {
 				// 指针指向 struct：若为 nil 则使用零值 struct，以便也能展开零值字段
 				if fv.IsNil() {
-					innerType = ftype.Elem()
+					innerType = ft.Elem()
 					inner = reflect.Zero(innerType)
 				} else {
 					inner = fv.Elem()

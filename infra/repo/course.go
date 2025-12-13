@@ -74,7 +74,9 @@ func (r *CourseRepo) FindByID(ctx context.Context, id string) (*model.Course, er
 func (r *CourseRepo) FindManyByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
 	filter := bson.M{consts.Name: name}
-	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))); err != nil {
+	if err := r.conn.Find(ctx, &courses, filter,
+		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+	); err != nil {
 		return nil, 0, err
 	}
 
@@ -104,7 +106,9 @@ func (r *CourseRepo) FindManyByNameLike(ctx context.Context, name string, param 
 func (r *CourseRepo) FindManyByTeacherID(ctx context.Context, teacherId string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
 	filter := bson.M{consts.TeacherIDs: teacherId}
-	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))); err != nil {
+	if err := r.conn.Find(ctx, &courses, filter,
+		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+	); err != nil {
 		return nil, 0, err
 	}
 
@@ -119,7 +123,9 @@ func (r *CourseRepo) FindManyByTeacherID(ctx context.Context, teacherId string, 
 func (r *CourseRepo) FindManyByCategoryID(ctx context.Context, categoryId int32, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
 	filter := bson.M{consts.Category: categoryId}
-	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))); err != nil {
+	if err := r.conn.Find(ctx, &courses, filter,
+		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+	); err != nil {
 		return nil, 0, err
 	}
 
@@ -134,7 +140,9 @@ func (r *CourseRepo) FindManyByCategoryID(ctx context.Context, categoryId int32,
 func (r *CourseRepo) FindManyByDepartmentID(ctx context.Context, departmentId int32, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
 	filter := bson.M{consts.Department: departmentId}
-	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1))); err != nil {
+	if err := r.conn.Find(ctx, &courses, filter,
+		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+	); err != nil {
 		return nil, 0, err
 	}
 
@@ -193,7 +201,10 @@ func (r *CourseRepo) GetCampusesByName(ctx context.Context, name string) ([]int3
 // GetSuggestionsByName 根据课程名称模糊分页查询课程
 func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, error) {
 	courses := []*model.Course{}
-	if err := r.conn.Find(ctx, &courses, bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}, page.FindPageOption(param)); err != nil {
+	if err := r.conn.Find(ctx, &courses,
+		bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}},
+		page.FindPageOption(param),
+	); err != nil {
 		return nil, err
 	}
 	return courses, nil

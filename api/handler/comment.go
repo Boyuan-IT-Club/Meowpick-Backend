@@ -22,7 +22,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CreateComment 发布评论
+// CreateComment 发布对课程的评论
 // @router /api/comment/add [POST]
 func CreateComment(c *gin.Context) {
 	var err error
@@ -33,8 +33,8 @@ func CreateComment(c *gin.Context) {
 		PostProcess(c, &req, nil, err)
 		return
 	}
-
 	c.Set(consts.CtxUserID, token.GetUserID(c))
+
 	resp, err = provider.Get().CommentService.CreateComment(c, &req)
 	PostProcess(c, &req, resp, err)
 }
@@ -50,24 +50,25 @@ func ListCourseComments(c *gin.Context) {
 		PostProcess(c, &req, nil, err)
 		return
 	}
-
 	c.Set(consts.CtxUserID, token.GetUserID(c))
+
 	resp, err = provider.Get().CommentService.GetCourseComments(c, &req)
 	PostProcess(c, &req, resp, err)
 }
 
-// GetTotalCourseCommentsCount 获得小程序收录吐槽总数
+// GetTotalCourseCommentsCount 分页获得小程序收录吐槽总数
 // @router /api/search/total [GET]
 func GetTotalCourseCommentsCount(c *gin.Context) {
 	var resp *dto.GetTotalCourseCommentsCountResp
 	var err error
 
 	c.Set(consts.CtxUserID, token.GetUserID(c))
+
 	resp, err = provider.Get().CommentService.GetTotalCommentsCount(c)
 	PostProcess(c, nil, resp, err)
 }
 
-// GetMyComments .
+// GetMyComments 分页获取我的评论历史
 // @router /api/comment/history [POST]
 func GetMyComments(c *gin.Context) {
 	var err error
@@ -78,8 +79,8 @@ func GetMyComments(c *gin.Context) {
 		PostProcess(c, &req, nil, err)
 		return
 	}
-
 	c.Set(consts.CtxUserID, token.GetUserID(c))
+
 	resp, err = provider.Get().CommentService.GetMyComments(c, &req)
 	PostProcess(c, &req, resp, err)
 }

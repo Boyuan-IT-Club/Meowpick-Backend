@@ -17,7 +17,6 @@ package service
 import (
 	"context"
 
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
@@ -36,9 +35,8 @@ type ISearchService interface {
 }
 
 type SearchService struct {
-	CourseRepo      *repo.CourseRepo
-	TeacherRepo     *repo.TeacherRepo
-	CourseAssembler *assembler.CourseAssembler
+	CourseRepo  *repo.CourseRepo
+	TeacherRepo *repo.TeacherRepo
 }
 
 var SearchServiceSet = wire.NewSet(
@@ -61,11 +59,8 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 			courses, err := s.CourseRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
 			if err != nil {
 				logs.CtxErrorf(ctx, "[CourseRepo] [GetSuggestionsByName] error: %v", err)
-				return nil, errorx.WrapByCode(
-					err,
-					errno.ErrCourseGetSuggestionsFailed,
-					errorx.KV("keyword", req.Keyword),
-				) // 返回错误，errgroup 会捕获它
+				return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
+					errorx.KV("keyword", req.Keyword)) // 返回错误，errgroup 会捕获它
 			}
 			var vo []*dto.SearchSuggestionsVO
 			for _, course := range courses {
@@ -146,19 +141,19 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 	}
 
 	// 合并结果（保持顺序）
-	var suggestions []*dto.SearchSuggestionsVO
+	var vos []*dto.SearchSuggestionsVO
 	for i := 0; i < n; i++ {
 		if results[i] != nil {
-			suggestions = append(suggestions, results[i]...)
+			vos = append(vos, results[i]...)
 		}
-		if int64(len(suggestions)) >= req.PageSize {
-			suggestions = suggestions[:req.PageSize]
+		if int64(len(vos)) >= req.PageSize {
+			vos = vos[:req.PageSize]
 			break
 		}
 	}
 
 	return &dto.GetSearchSuggestionsResp{
 		Resp:        dto.Success(),
-		Suggestions: suggestions,
+		Suggestions: vos,
 	}, nil
 }

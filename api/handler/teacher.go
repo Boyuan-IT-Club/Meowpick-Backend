@@ -31,8 +31,8 @@ func CreateTeacher(c *gin.Context) {
 
 	if err = c.ShouldBind(&req); err != nil {
 		PostProcess(c, req, resp, err)
+		return
 	}
-
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().TeacherService.CreateTeacher(c, req)

@@ -22,8 +22,10 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
 )
 
@@ -31,15 +33,14 @@ var _ ICommentService = (*CommentService)(nil)
 
 type ICommentService interface {
 	CreateComment(ctx context.Context, req *dto.CreateCommentReq) (*dto.CreateCommentResp, error)
+
+	GetTotalCommentsCount(ctx context.Context) (*dto.GetTotalCourseCommentsCountResp, error)
 	GetMyComments(ctx context.Context, req *dto.GetMyCommentsReq) (*dto.GetMyCommentsResp, error)
 	GetCourseComments(ctx context.Context, req *dto.ListCourseCommentsReq) (*dto.ListCourseCommentsResp, error)
-	GetTotalCommentsCount(ctx context.Context) (*dto.GetTotalCourseCommentsCountResp, error)
 }
 
 type CommentService struct {
 	CommentRepo      *repo.CommentRepo
-	LikeRepo         *repo.LikeRepo
-	CourseRepo       *repo.CourseRepo
 	CommentAssembler *assembler.CommentAssembler
 }
 
@@ -48,17 +49,18 @@ var CommentServiceSet = wire.NewSet(
 	wire.Bind(new(ICommentService), new(*CommentService)),
 )
 
+// CreateComment 创建评论
 func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateCommentReq) (*dto.CreateCommentResp, error) {
-	userID, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userID == "" {
-		log.Error("userID is empty or invalid")
-		return nil, errorx.ErrGetUserIDFailed
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
+	// 构建Comment模型
 	now := time.Now()
-
-	newComment := &model.Comment{
-		UserID:    userID,
+	comment := &model.Comment{
+		UserID:    userId,
 		CourseID:  req.CourseID,
 		Content:   req.Content,
 		Tags:      req.Tags,
@@ -67,101 +69,105 @@ func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateComme
 		Deleted:   false,
 	}
 
-	if err := s.CommentRepo.Insert(ctx, newComment); err != nil {
-		log.CtxError(ctx, "Failed to insert comment for userID=%s: %v", userID, err)
-		return nil, err
+	// 插入数据库
+	if err := s.CommentRepo.Insert(ctx, comment); err != nil {
+		logs.CtxErrorf(ctx, "[CommentRepo] [Insert] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrCommentInsertFailed, errorx.KV("content", req.Content))
 	}
-	vo, err := s.CommentAssembler.ToCommentVO(ctx, newComment, userID)
+
+	// 转换为VO
+	vo, err := s.CommentAssembler.ToCommentVO(ctx, comment, userId)
 	if err != nil {
-		log.CtxError(ctx, "ToCommentVO failed for userID=%s: %v", userID, err)
-		return nil, errorx.ErrCommentDB2VO
+		logs.CtxErrorf(ctx, "[CommentAssembler] [ToCommentVO] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrCommentCvtFailed,
+			errorx.KV("src", "database comment"), errorx.KV("dst", "comment vo"))
 	}
-	resp := &dto.CreateCommentResp{
+
+	return &dto.CreateCommentResp{
 		Resp:      dto.Success(),
 		CommentVO: vo,
-	}
-
-	return resp, nil
+	}, nil
 }
 
+// GetTotalCommentsCount 获得课程总评论数
 func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*dto.GetTotalCourseCommentsCountResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 查询总评论数
 	count, err := s.CommentRepo.Count(ctx)
 	if err != nil {
-		log.CtxError(ctx, "Service GetTotalCommentCount failed: %v", err)
-		return nil, errorx.ErrGetCountFailed
+		logs.CtxErrorf(ctx, "[CommentRepo] [Count] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrCommentCountFailed)
 	}
-	resp := &dto.GetTotalCourseCommentsCountResp{
-		Resp:  dto.Success(),
+
+	return &dto.GetTotalCourseCommentsCountResp{
 		Count: count,
-	}
-
-	return resp, nil
+		Resp:  dto.Success(),
+	}, nil
 }
 
+// GetMyComments 分页获取用户所有评论
 func (s *CommentService) GetMyComments(ctx context.Context, req *dto.GetMyCommentsReq) (*dto.GetMyCommentsResp, error) {
-	// 获得用户id
-	userID, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userID == "" {
-		return nil, errorx.ErrGetUserIDFailed
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
-	// 构建查询参数
-	param := &dto.PageParam{
-		Page:     req.Page,
-		PageSize: req.PageSize,
-	}
-	// 查找数据库获得comments
-	comments, total, err := s.CommentRepo.FindManyByUserID(ctx, param, userID)
+
+	// 查询评论列表
+	comments, total, err := s.CommentRepo.FindManyByUserID(ctx, req.PageParam, userId)
 	if err != nil {
-		log.CtxError(ctx, "FindManyByUserID failed for userID=%s: %v", userID, err)
-		return nil, errorx.ErrFindFailed
+		logs.CtxErrorf(ctx, "[CommentRepo] [FindManyByUserID] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrCommentFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 	}
-	if total == 0 {
-		return nil, errorx.ErrFindSuccessButNoResult
-	}
-	// 数据转化db2vo
-	myCommentVOs, err := s.CommentAssembler.ToMyCommentVOList(ctx, comments, userID)
+
+	// 转换为VO
+	vos, err := s.CommentAssembler.ToMyCommentVOList(ctx, comments, userId)
 	if err != nil {
-		log.CtxError(ctx, "ToMyCommentVOList failed for userID=%s: %v", userID, err)
-		return nil, errorx.ErrCommentDB2VO
-	}
-	// 构建GetMyComments响应，包含评论信息&部分课程信息
-	resp := &dto.GetMyCommentsResp{
-		Resp:     dto.Success(),
-		Total:    total,
-		Comments: myCommentVOs,
-	}
-	return resp, nil
-}
-
-func (s *CommentService) GetCourseComments(ctx context.Context, req *dto.ListCourseCommentsReq) (*dto.ListCourseCommentsResp, error) {
-	userID, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userID == "" {
-		return nil, errorx.ErrGetUserIDFailed
+		logs.CtxErrorf(ctx, "[CommentAssembler] [ToMyCommentVOList] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrCommentCvtFailed,
+			errorx.KV("src", "database comments"), errorx.KV("dst", "comment vos"))
 	}
 
-	courseID := req.ID
-	param := &dto.PageParam{
-		Page:     req.Page,
-		PageSize: req.PageSize,
-	}
-
-	comments, total, err := s.CommentRepo.FindManyByCourseID(ctx, param, courseID)
-	if err != nil {
-		log.CtxError(ctx, "FindManyByUserID failed for userID=%s: %v", courseID, err)
-		return nil, errorx.ErrFindFailed
-	}
-
-	vos, err := s.CommentAssembler.ToCommentVOList(ctx, comments, userID)
-	if err != nil {
-		log.CtxError(ctx, "ToCommentVOList failed for course: ", courseID, err)
-		return nil, errorx.ErrCommentDB2VO
-	}
-
-	resp := &dto.ListCourseCommentsResp{
+	return &dto.GetMyCommentsResp{
 		Resp:     dto.Success(),
 		Total:    total,
 		Comments: vos,
+	}, nil
+}
+
+// GetCourseComments 分页获取课程所有评论
+func (s *CommentService) GetCourseComments(ctx context.Context, req *dto.ListCourseCommentsReq) (*dto.ListCourseCommentsResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	return resp, nil
+	// 查询评论列表
+	comments, total, err := s.CommentRepo.FindManyByCourseID(ctx, req.PageParam, req.ID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CommentRepo] [FindManyByCourseID] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrCommentFindFailed,
+			errorx.KV("key", consts.ReqCourseID), errorx.KV("value", req.ID))
+	}
+
+	// 转换为VO
+	vos, err := s.CommentAssembler.ToCommentVOList(ctx, comments, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CommentAssembler] [ToCommentVOList] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrCommentCvtFailed,
+			errorx.KV("src", "database comments"), errorx.KV("dst", "comment vos"))
+	}
+
+	return &dto.ListCourseCommentsResp{
+		Resp:     dto.Success(),
+		Total:    total,
+		Comments: vos,
+	}, nil
 }

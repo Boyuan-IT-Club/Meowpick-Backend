@@ -37,11 +37,8 @@ type ITeacherService interface {
 }
 
 type TeacherService struct {
-	CourseRepo       *repo.CourseRepo
-	CommentRepo      *repo.CommentRepo
 	UserRepo         *repo.UserRepo
 	TeacherRepo      *repo.TeacherRepo
-	CourseAssembler  *assembler.CourseAssembler
 	TeacherAssembler *assembler.TeacherAssembler
 }
 
@@ -50,6 +47,7 @@ var TeacherServiceSet = wire.NewSet(
 	wire.Bind(new(ITeacherService), new(*TeacherService)),
 )
 
+// CreateTeacher 创建教师
 func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeacherReq) (*dto.CreateTeacherResp, error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
@@ -58,7 +56,7 @@ func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeach
 	}
 	if admin, err := s.UserRepo.IsAdminByID(ctx, userId); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
-			return nil, errorx.New(errno.ErrUserNotFound,
+			return nil, errorx.WrapByCode(err, errno.ErrUserNotFound,
 				errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 		}
 		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
@@ -76,20 +74,20 @@ func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeach
 	}
 
 	// VO转DB实体
-	db := s.TeacherAssembler.ToTeacherDB(vo)
+	teacher := s.TeacherAssembler.ToTeacherDB(vo)
 
 	// 防重
-	if exist, err := s.TeacherRepo.IsExistByID(ctx, db.ID); err != nil {
+	if exist, err := s.TeacherRepo.IsExistByID(ctx, teacher.ID); err != nil {
 		logs.CtxErrorf(ctx, "[TeacherRepo] [IsExistByID] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrTeacherExistsFailed, errorx.KV("name", db.Name))
+		return nil, errorx.WrapByCode(err, errno.ErrTeacherExistsFailed, errorx.KV("name", teacher.Name))
 	} else if exist {
-		return nil, errorx.New(errno.ErrTeacherExist, errorx.KV("name", db.Name))
+		return nil, errorx.New(errno.ErrTeacherExist, errorx.KV("name", teacher.Name))
 	}
 
 	// 增加教师
-	if err := s.TeacherRepo.Insert(ctx, db); err != nil {
+	if err := s.TeacherRepo.Insert(ctx, teacher); err != nil {
 		logs.CtxErrorf(ctx, "[TeacherRepo] [Insert] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrTeacherInsertFailed, errorx.KV("name", db.Name))
+		return nil, errorx.WrapByCode(err, errno.ErrTeacherInsertFailed, errorx.KV("name", teacher.Name))
 	}
 
 	return &dto.CreateTeacherResp{Resp: dto.Success(), TeacherVO: vo}, nil
