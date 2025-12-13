@@ -25,6 +25,10 @@ import (
 
 var _ ILikeCache = (*LikeCache)(nil)
 
+const (
+	LikeCacheKeyPrefix = "meowpick:like:"
+)
+
 type ILikeCache interface {
 	// 点赞数相关
 	GetLikeCount(ctx context.Context, targetID string) (int64, bool)
@@ -41,20 +45,18 @@ type ILikeCache interface {
 }
 
 type LikeCache struct {
-	client *redis.Redis
+	cache *redis.Redis
 }
 
 func NewLikeCache(config *config.Config) *LikeCache {
-	rds := redis.MustNewRedis(*config.Redis)
-	return &LikeCache{
-		client: rds,
-	}
+	cache := redis.MustNewRedis(*config.Redis)
+	return &LikeCache{cache: cache}
 }
 
 // GetLikeCount 点赞数缓存操作
 func (r *LikeCache) GetLikeCount(ctx context.Context, targetID string) (int64, bool) {
 	key := "like:count:" + targetID
-	val, err := r.client.Get(key)
+	val, err := r.cache.Get(key)
 	if err != nil {
 		return 0, false
 	}
@@ -67,23 +69,23 @@ func (r *LikeCache) GetLikeCount(ctx context.Context, targetID string) (int64, b
 
 func (r *LikeCache) SetLikeCount(ctx context.Context, targetID string, count int64, expiration time.Duration) error {
 	key := "like:count:" + targetID
-	return r.client.Setex(key, strconv.FormatInt(count, 10), int(expiration.Seconds()))
+	return r.cache.Setex(key, strconv.FormatInt(count, 10), int(expiration.Seconds()))
 }
 
 func (r *LikeCache) IncrLikeCount(ctx context.Context, targetID string, delta int64) (int64, error) {
 	key := "like:count:" + targetID
 	if delta == 1 {
-		return r.client.Incr(key)
+		return r.cache.Incr(key)
 	} else if delta == -1 {
-		return r.client.Decr(key)
+		return r.cache.Decr(key)
 	} else {
-		return r.client.Incrby(key, delta)
+		return r.cache.Incrby(key, delta)
 	}
 }
 
 func (r *LikeCache) DelLikeCount(ctx context.Context, targetID string) error {
 	key := "like:count:" + targetID
-	_, err := r.client.Del(key)
+	_, err := r.cache.Del(key)
 	return err
 }
 
@@ -101,7 +103,7 @@ func (r *LikeCache) GetBatchLikeCount(ctx context.Context, targetIDs []string, t
 	}
 
 	// 使用 MGET 批量获取
-	values, err := r.client.Mget(keys...)
+	values, err := r.cache.Mget(keys...)
 	if err != nil {
 		return nil, targetIDs, err // 缓存失败，返回所有ID作为未命中
 	}
@@ -133,7 +135,7 @@ func (r *LikeCache) GetBatchLikeCount(ctx context.Context, targetIDs []string, t
 // 点赞状态缓存操作
 func (r *LikeCache) GetLikeStatus(ctx context.Context, userID, targetID string) (bool, bool) {
 	key := "like:status:" + userID + ":" + targetID
-	val, err := r.client.Get(key)
+	val, err := r.cache.Get(key)
 	if err != nil {
 		return false, false
 	}
@@ -146,12 +148,12 @@ func (r *LikeCache) GetLikeStatus(ctx context.Context, userID, targetID string) 
 
 func (r *LikeCache) SetLikeStatus(ctx context.Context, userID, targetID string, liked bool, expiration time.Duration) error {
 	key := "like:status:" + userID + ":" + targetID
-	return r.client.Setex(key, strconv.FormatBool(liked), int(expiration.Seconds()))
+	return r.cache.Setex(key, strconv.FormatBool(liked), int(expiration.Seconds()))
 }
 
 func (r *LikeCache) DelLikeStatus(ctx context.Context, userID, targetID string) error {
 	key := "like:status:" + userID + ":" + targetID
-	_, err := r.client.Del(key)
+	_, err := r.cache.Del(key)
 	return err
 }
 
@@ -167,7 +169,7 @@ func (r *LikeCache) GetBatchLikeStatus(ctx context.Context, userID string, targe
 	}
 
 	// 使用 MGET 批量获取
-	values, err := r.client.Mget(keys...)
+	values, err := r.cache.Mget(keys...)
 	if err != nil {
 		return nil, targetIDs, err // MGET失败，返回所有ID作为未命中
 	}

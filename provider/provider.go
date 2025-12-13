@@ -75,6 +75,7 @@ var InfraSet = wire.NewSet(
 	repo.NewSearchHistoryRepo,
 	// 缓存相关
 	cache.NewLikeCache,
+	cache.NewCommentCache,
 )
 
 var AllProvider = wire.NewSet(

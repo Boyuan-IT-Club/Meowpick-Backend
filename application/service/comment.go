@@ -20,6 +20,7 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
@@ -41,6 +42,7 @@ type ICommentService interface {
 
 type CommentService struct {
 	CommentRepo      *repo.CommentRepo
+	CommentCache     *cache.CommentCache
 	CommentAssembler *assembler.CommentAssembler
 }
 
@@ -97,11 +99,28 @@ func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*dto.GetTot
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
+	// 查询缓存
+	count, ok, err := s.CommentCache.GetCount(ctx)
+	if err == nil && ok {
+		return &dto.GetTotalCourseCommentsCountResp{
+			Count: count,
+			Resp:  dto.Success(),
+		}, nil
+	}
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CommentCache] [GetCount] error: %v", err)
+	}
+
 	// 查询总评论数
-	count, err := s.CommentRepo.Count(ctx)
+	count, err = s.CommentRepo.Count(ctx)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[CommentRepo] [Count] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrCommentCountFailed)
+	}
+
+	// 设置缓存
+	if err = s.CommentCache.SetCount(ctx, count, consts.CacheCommentCountTTL); err != nil {
+		logs.CtxErrorf(ctx, "[CommentCache] [SetCount] error: %v", err)
 	}
 
 	return &dto.GetTotalCourseCommentsCountResp{

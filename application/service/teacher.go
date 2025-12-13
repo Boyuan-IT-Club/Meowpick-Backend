@@ -73,7 +73,7 @@ func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeach
 		Department: req.Department,
 	}
 
-	// VO转DB实体
+	// 转换为DB
 	teacher := s.TeacherAssembler.ToTeacherDB(vo)
 
 	// 防重

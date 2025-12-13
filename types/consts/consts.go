@@ -14,6 +14,8 @@
 
 package consts
 
+import "time"
+
 // 数据库相关
 const (
 	ID         = "_id"
@@ -35,6 +37,12 @@ const (
 	Name       = "name"
 	Tags       = "tags"
 	Count      = "count"
+)
+
+// 缓存相关
+const (
+	CacheCommentCount    = "count"
+	CacheCommentCountTTL = 12 * time.Hour
 )
 
 // 元素类别相关（如课程、评论、老师）

@@ -29,7 +29,6 @@ import (
 var _ ICommentRepo = (*CommentRepo)(nil)
 
 const (
-	CommentCacheKeyPrefix = "meowpick:comment:courseID="
 	CommentCollectionName = "comment"
 )
 
@@ -59,9 +58,7 @@ func (r *CommentRepo) Insert(ctx context.Context, c *model.Comment) error {
 
 // Count 统计评论总数
 func (r *CommentRepo) Count(ctx context.Context) (int64, error) {
-	// 考虑到性能，暂使用EstimatedDocumentCount
-	//return m.conn.CountDocuments(ctx, bson.M{consts.Deleted: bson.M{"$ne": true}})
-	return r.conn.EstimatedDocumentCount(ctx)
+	return r.conn.CountDocuments(ctx, bson.M{consts.Deleted: bson.M{"$ne": true}})
 }
 
 // GetTagsByCourseID 根据课程ID统计课程所有标签
