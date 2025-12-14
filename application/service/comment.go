@@ -146,9 +146,9 @@ func (s *CommentService) GetMyComments(ctx context.Context, req *dto.GetMyCommen
 	}
 
 	// 转换为VO
-	vos, err := s.CommentAssembler.ToMyCommentVOList(ctx, comments, userId)
+	vos, err := s.CommentAssembler.ToMyCommentVOArray(ctx, comments, userId)
 	if err != nil {
-		logs.CtxErrorf(ctx, "[CommentAssembler] [ToMyCommentVOList] error: %v", err)
+		logs.CtxErrorf(ctx, "[CommentAssembler] [ToMyCommentVOArray] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrCommentCvtFailed,
 			errorx.KV("src", "database comments"), errorx.KV("dst", "comment vos"))
 	}
@@ -177,9 +177,9 @@ func (s *CommentService) GetCourseComments(ctx context.Context, req *dto.ListCou
 	}
 
 	// 转换为VO
-	vos, err := s.CommentAssembler.ToCommentVOList(ctx, comments, userId)
+	vos, err := s.CommentAssembler.ToCommentVOArray(ctx, comments, userId)
 	if err != nil {
-		logs.CtxErrorf(ctx, "[CommentAssembler] [ToCommentVOList] error: %v", err)
+		logs.CtxErrorf(ctx, "[CommentAssembler] [ToCommentVOArray] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrCommentCvtFailed,
 			errorx.KV("src", "database comments"), errorx.KV("dst", "comment vos"))
 	}

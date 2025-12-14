@@ -24,17 +24,18 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
+	"github.com/zeromicro/go-zero/core/stores/monc"
 )
 
 var _ ICommentAssembler = (*CommentAssembler)(nil)
 
 type ICommentAssembler interface {
-	ToCommentVO(ctx context.Context, c *model.Comment, userID string) (*dto.CommentVO, error)
-	ToComment(ctx context.Context, vo *dto.CommentVO) (*model.Comment, error)
-	TOMyCommentVO(ctx context.Context, c *model.Comment, userID string) (*dto.CommentVO, error)
-	ToMyCommentVOList(ctx context.Context, comments []*model.Comment, userID string) ([]*dto.CommentVO, error)
-	ToCommentVOList(ctx context.Context, comments []*model.Comment, userID string) ([]*dto.CommentVO, error)
-	ToCommentList(ctx context.Context, vos []*dto.CommentVO) ([]*model.Comment, error)
+	ToCommentVO(ctx context.Context, db *model.Comment, userId string) (*dto.CommentVO, error)
+	ToCommentDB(ctx context.Context, vo *dto.CommentVO) (*model.Comment, error)
+	TOMyCommentVO(ctx context.Context, db *model.Comment, userId string) (*dto.CommentVO, error)
+	ToMyCommentVOArray(ctx context.Context, dbs []*model.Comment, userId string) ([]*dto.CommentVO, error)
+	ToCommentVOArray(ctx context.Context, dbs []*model.Comment, userId string) ([]*dto.CommentVO, error)
+	ToCommentDBArray(ctx context.Context, vos []*dto.CommentVO) ([]*model.Comment, error)
 }
 
 type CommentAssembler struct {
@@ -48,39 +49,39 @@ var CommentAssemblerSet = wire.NewSet(
 	wire.Bind(new(ICommentAssembler), new(*CommentAssembler)),
 )
 
-// ToCommentVO 单个Comment转CommentVO (DB to VO) 包含点赞信息查询
-func (a *CommentAssembler) ToCommentVO(ctx context.Context, c *model.Comment, userID string) (*dto.CommentVO, error) {
+// ToCommentVO 单个CommentDB转CommentVO (DB to VO) 包含点赞信息查询
+func (a *CommentAssembler) ToCommentVO(ctx context.Context, db *model.Comment, userId string) (*dto.CommentVO, error) {
 	// 获取点赞信息
-	likeCnt, err := a.LikeRepo.CountByTarget(ctx, c.ID, consts.CommentType)
+	likeCnt, err := a.LikeRepo.CountByTarget(ctx, db.ID, consts.CommentType)
 	if err != nil {
-		logs.CtxErrorf(ctx, "CountByTarget failed for commentID=%s: %v", c.ID, err)
+		logs.CtxErrorf(ctx, "[LikeRepo] [CountByTarget] error: %v", err)
 		return nil, err
 	}
 
-	// 这里的userID是查看评论的用户，而非评论作者
-	active, err := a.LikeRepo.IsLike(ctx, userID, c.ID, consts.CommentType)
+	// 这里的userId是查看评论的用户
+	active, err := a.LikeRepo.IsLike(ctx, userId, db.ID, consts.CommentType)
 	if err != nil {
-		logs.CtxErrorf(ctx, "IsLike failed for userID=%s, commentID=%s: %v", userID, c.ID, err)
+		logs.CtxErrorf(ctx, "[LikeRepo] [IsLike] error: %v", err)
 		return nil, err
 	}
 
 	return &dto.CommentVO{
-		ID:       c.ID,
-		Content:  c.Content,
-		Tags:     c.Tags,
-		UserID:   c.UserID,
-		CourseID: c.CourseID,
+		ID:       db.ID,
+		Content:  db.Content,
+		Tags:     db.Tags,
+		UserID:   db.UserID,
+		CourseID: db.CourseID,
 		LikeVO: &dto.LikeVO{
 			Like:    active,
 			LikeCnt: likeCnt,
 		},
-		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
+		CreatedAt: db.CreatedAt,
+		UpdatedAt: db.UpdatedAt,
 	}, nil
 }
 
-// ToComment 单个CommentVO转Comment (VO to DB)
-func (a *CommentAssembler) ToComment(ctx context.Context, vo *dto.CommentVO) (*model.Comment, error) {
+// ToCommentDB 单个CommentVO转Comment (VO to DB)
+func (a *CommentAssembler) ToCommentDB(ctx context.Context, vo *dto.CommentVO) (*model.Comment, error) {
 	if vo == nil {
 		return nil, nil
 	}
@@ -98,130 +99,142 @@ func (a *CommentAssembler) ToComment(ctx context.Context, vo *dto.CommentVO) (*m
 }
 
 // TOMyCommentVO 单个Comment转MyCommentVO(with 4 Extra fields) (DB to VO)
-func (a *CommentAssembler) TOMyCommentVO(ctx context.Context, c *model.Comment, userID string) (*dto.CommentVO, error) {
+func (a *CommentAssembler) TOMyCommentVO(ctx context.Context, db *model.Comment, userId string) (*dto.CommentVO, error) {
 	// 先获取除了Extra以外的字段
-	myCommentVO, err := a.ToCommentVO(ctx, c, userID)
+	vo, err := a.ToCommentVO(ctx, db, userId)
 	if err != nil {
+		logs.CtxErrorf(ctx, "[CommentAssembler] [ToCommentVO] error: %v", err)
 		return nil, err
 	}
 
 	// 获取Extra course相关
-	var cou *model.Course
-	cou, err = a.CourseRepo.FindByID(ctx, c.CourseID)
+	var course *model.Course
+	course, err = a.CourseRepo.FindByID(ctx, db.CourseID)
 	if err != nil {
+		logs.CtxErrorf(ctx, "[CourseRepo] [FindByID] error: %v", err)
 		return nil, err
+	}
+	if course == nil {
+		return nil, monc.ErrNotFound
 	}
 
 	// 获取Extra teacher相关
 	var teachersNameAndTitle []string
-	for _, teacherID := range cou.TeacherIDs {
-		t, err := a.TeacherRepo.FindByID(ctx, teacherID)
+	for _, teacherID := range course.TeacherIDs {
+		teacher, err := a.TeacherRepo.FindByID(ctx, teacherID)
 		if err != nil {
+			logs.CtxErrorf(ctx, "[TeacherRepo] [FindByID] error: %v", err)
 			continue
 		}
-		teachersNameAndTitle = append(teachersNameAndTitle, t.Name+t.Title)
+		if teacher != nil {
+			teachersNameAndTitle = append(teachersNameAndTitle, teacher.Name+teacher.Title)
+		}
 	}
-	// 组合rawVO和Extra得到MyCommentVO
-	myCommentVO.Name = cou.Name
-	myCommentVO.Category = mapping.Data.GetCategoryNameByID(cou.Category)
-	myCommentVO.Department = mapping.Data.GetDepartmentNameByID(cou.Department)
-	myCommentVO.Teachers = teachersNameAndTitle
 
-	return myCommentVO, nil
+	// 组合rawVO和Extra得到MyCommentVO
+	vo.Name = course.Name
+	vo.Category = mapping.Data.GetCategoryNameByID(course.Category)
+	vo.Department = mapping.Data.GetDepartmentNameByID(course.Department)
+	vo.Teachers = teachersNameAndTitle
+
+	return vo, nil
 }
 
-// ToMyCommentVOList Comment数组转MyCommentVO数组(with 4 extra fields) (DB Array to VO Array)
-func (a *CommentAssembler) ToMyCommentVOList(ctx context.Context, comments []*model.Comment, userID string) ([]*dto.CommentVO, error) {
-	if len(comments) == 0 {
-		log.CtxError(ctx, "ToMyCommentVOList: comments is empty")
+// ToMyCommentVOArray Comment数组转MyCommentVO数组(with 4 extra fields) (DB Array to VO Array)
+func (a *CommentAssembler) ToMyCommentVOArray(ctx context.Context, dbs []*model.Comment, userId string) ([]*dto.CommentVO, error) {
+	if len(dbs) == 0 {
+		logs.CtxWarnf(ctx, "[CommentAssembler] [ToMyCommentVOArray] empty comment db array")
 		return []*dto.CommentVO{}, nil
 	}
-	commentVOs := make([]*dto.CommentVO, 0, len(comments))
 
-	for _, c := range comments {
-		commentVO, err := a.TOMyCommentVO(ctx, c, userID)
+	vos := make([]*dto.CommentVO, 0, len(dbs))
+
+	for _, db := range dbs {
+		vo, err := a.TOMyCommentVO(ctx, db, userId)
 		if err != nil {
+			logs.CtxErrorf(ctx, "[CommentAssembler] [TOMyCommentVO] error: %v", err)
 			return nil, err
 		}
-		if commentVO != nil {
-			commentVOs = append(commentVOs, commentVO)
+		if vo != nil {
+			vos = append(vos, vo)
 		}
 	}
 
-	return commentVOs, nil
+	return vos, nil
 }
 
-// ToCommentList CommentVO数组转Comment数组 (VO Array to DB Array)
+// ToCommentDBArray CommentVO数组转Comment数组 (VO Array to DB Array)
 
-func (a *CommentAssembler) ToCommentList(ctx context.Context, vos []*dto.CommentVO) ([]*model.Comment, error) {
+func (a *CommentAssembler) ToCommentDBArray(ctx context.Context, vos []*dto.CommentVO) ([]*model.Comment, error) {
 	if len(vos) == 0 {
+		logs.CtxWarnf(ctx, "[CommentAssembler] [ToCommentDBArray] empty comment vo array")
 		return []*model.Comment{}, nil
 	}
 
-	comments := make([]*model.Comment, 0, len(vos))
+	dbs := make([]*model.Comment, 0, len(vos))
 
 	for _, vo := range vos {
-		dbComment, err := a.ToComment(ctx, vo)
+		db, err := a.ToCommentDB(ctx, vo)
 		if err != nil {
+			logs.CtxErrorf(ctx, "[CommentAssembler] [ToCommentDB] error: %v", err)
 			return nil, err
 		}
-		if dbComment != nil {
-			comments = append(comments, dbComment)
+		if db != nil {
+			dbs = append(dbs, db)
 		}
 	}
 
-	return comments, nil
+	return dbs, nil
 }
 
-// ToCommentVOList Comment数组转CommentVO数组 (DB Array to VO Array)
-func (a *CommentAssembler) ToCommentVOList(ctx context.Context, comments []*model.Comment, userID string) ([]*dto.CommentVO, error) {
-	if len(comments) == 0 {
-		log.CtxInfo(ctx, "ToCommentVOList: comments is empty")
+// ToCommentVOArray Comment数组转CommentVO数组 (DB Array to VO Array)
+func (a *CommentAssembler) ToCommentVOArray(ctx context.Context, dbs []*model.Comment, userId string) ([]*dto.CommentVO, error) {
+	if len(dbs) == 0 {
+		logs.CtxWarnf(ctx, "[CommentAssembler] [ToCommentVOArray] empty comment db array")
 		return []*dto.CommentVO{}, nil
 	}
 
 	// 提取所有 commentID
-	commentIDs := make([]string, len(comments))
-	for i, c := range comments {
-		commentIDs[i] = c.ID
+	ids := make([]string, len(dbs))
+	for i, db := range dbs {
+		ids[i] = db.ID
 	}
 
 	// 批量获取点赞数
-	likeCountMap, err := a.LikeRepo.GetBatchLikeCount(ctx, userID, commentIDs, consts.CommentType)
+	likeCntMap, err := a.LikeRepo.CountByTargets(ctx, ids, consts.CommentType)
 	if err != nil {
-		log.CtxError(ctx, "GetBatchLikeCount failed: %v", err)
+		logs.CtxErrorf(ctx, "[LikeRepo] [CountByTargets] error: %v", err)
 		return nil, err
 	}
 
 	// 批量获取点赞状态
-	likeStatusMap, err := a.LikeRepo.GetBatchLikeStatus(ctx, userID, commentIDs, consts.CommentType)
+	likeStatusMap, err := a.LikeRepo.GetLikesByUserIDAndTargets(ctx, userId, ids, consts.CommentType)
 	if err != nil {
-		log.CtxError(ctx, "GetBatchLikeStatus failed: %v", err)
+		logs.CtxErrorf(ctx, "[LikeRepo] [GetLikesByUserIDAndTargets] error: %v", err)
 		return nil, err
 	}
 
 	// 构建结果
-	commentVOs := make([]*dto.CommentVO, 0, len(comments))
-	for _, c := range comments {
+	vos := make([]*dto.CommentVO, 0, len(dbs))
+	for _, db := range dbs {
 		// 从批量查询结果中获取点赞信息
-		likeCnt := likeCountMap[c.ID] // 如果不存在则为0
-		active := likeStatusMap[c.ID] // 如果不存在则为false
-
+		likeCnt := likeCntMap[db.ID]   // 如果不存在则为0
+		active := likeStatusMap[db.ID] // 如果不存在则为false
 		commentVO := &dto.CommentVO{
-			ID:       c.ID,
-			Content:  c.Content,
-			Tags:     c.Tags,
-			UserID:   c.UserID,
-			CourseID: c.CourseID,
+			ID:       db.ID,
+			Content:  db.Content,
+			Tags:     db.Tags,
+			UserID:   db.UserID,
+			CourseID: db.CourseID,
 			LikeVO: &dto.LikeVO{
 				Like:    active,
 				LikeCnt: likeCnt,
 			},
-			CreatedAt: c.CreatedAt,
-			UpdatedAt: c.UpdatedAt,
+			CreatedAt: db.CreatedAt,
+			UpdatedAt: db.UpdatedAt,
 		}
-		commentVOs = append(commentVOs, commentVO)
+		vos = append(vos, commentVO)
 	}
 
-	return commentVOs, nil
+	return vos, nil
 }

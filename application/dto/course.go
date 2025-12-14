@@ -29,7 +29,7 @@ type CourseVO struct {
 	Department string            `json:"department"`
 	Link       []*CourseInLinkVO `json:"link"`
 	Teachers   []*TeacherVO      `json:"teachers"`
-	TagCount   map[string]int    `json:"tagCount"`
+	TagCount   map[string]int64  `json:"tagCount"`
 }
 
 type ListCoursesReq struct {

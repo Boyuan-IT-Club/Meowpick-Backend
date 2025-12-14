@@ -9,9 +9,9 @@ package provider
 import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 )
 
 // Injectors from wire.go:
@@ -21,67 +21,53 @@ func NewProvider() (*Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	mongoRepo := repo.NewLikeRepo(configConfig)
-	likeMongoRepo := repo.NewLikeRepo(configConfig)
-	courseMongoRepo := repo.NewLikeRepo(configConfig)
-	staticData, err := mapping.NewStaticData()
-	if err != nil {
-		return nil, err
-	}
-	teacherMongoRepo := repo.NewLikeRepo(configConfig)
-	commentDTO := &assembler.CommentAssembler{
-		LikeRepo:    likeMongoRepo,
-		CourseRepo:  courseMongoRepo,
-		TeacherRepo: teacherMongoRepo,
-		StaticData:  staticData,
+	commentRepo := repo.NewCommentRepo(configConfig)
+	commentCache := cache.NewCommentCache(configConfig)
+	likeRepo := repo.NewLikeRepo(configConfig)
+	courseRepo := repo.NewCourseRepo(configConfig)
+	teacherRepo := repo.NewTeacherRepo(configConfig)
+	commentAssembler := &assembler.CommentAssembler{
+		LikeRepo:    likeRepo,
+		CourseRepo:  courseRepo,
+		TeacherRepo: teacherRepo,
 	}
 	commentService := service.CommentService{
-		CommentRepo:      mongoRepo,
-		LikeRepo:         likeMongoRepo,
-		CourseRepo:       courseMongoRepo,
-		StaticData:       staticData,
-		CommentAssembler: commentDTO,
+		CommentRepo:      commentRepo,
+		CommentCache:     commentCache,
+		CommentAssembler: commentAssembler,
 	}
-	searchhistoryMongoRepo := repo.NewLikeRepo(configConfig)
+	searchHistoryRepo := repo.NewSearchHistoryRepo(configConfig)
 	searchHistoryService := service.SearchHistoryService{
-		SearchHistoryRepo: searchhistoryMongoRepo,
+		SearchHistoryRepo: searchHistoryRepo,
 	}
-	userMongoRepo := repo.NewLikeRepo(configConfig)
+	userRepo := repo.NewUserRepo(configConfig)
 	authService := service.AuthService{
-		UserRepo: userMongoRepo,
+		UserRepo: userRepo,
 	}
+	likeCache := cache.NewLikeCache(configConfig)
 	likeService := service.LikeService{
-		LikeRepo: likeMongoRepo,
+		LikeRepo:  likeRepo,
+		LikeCache: likeCache,
 	}
-	courseDTO := &assembler.CourseAssembler{
-		CommentRepo: mongoRepo,
-		TeacherRepo: teacherMongoRepo,
-		CourseRepo:  courseMongoRepo,
-		StaticData:  staticData,
+	courseAssembler := &assembler.CourseAssembler{
+		CommentRepo: commentRepo,
+		TeacherRepo: teacherRepo,
+		CourseRepo:  courseRepo,
 	}
 	courseService := service.CourseService{
-		CourseRepo:      courseMongoRepo,
-		CommentRepo:     mongoRepo,
-		TeacherRepo:     teacherMongoRepo,
-		StaticData:      staticData,
-		CourseAssembler: courseDTO,
+		CourseRepo:      courseRepo,
+		TeacherRepo:     teacherRepo,
+		CourseAssembler: courseAssembler,
 	}
-	teacherDTO := &assembler.TeacherAssembler{
-		StaticData: staticData,
-	}
+	teacherAssembler := &assembler.TeacherAssembler{}
 	teacherService := service.TeacherService{
-		CourseRepo:       courseMongoRepo,
-		CommentRepo:      mongoRepo,
-		UserRepo:         userMongoRepo,
-		TeacherRepo:      teacherMongoRepo,
-		CourseAssembler:  courseDTO,
-		TeacherAssembler: teacherDTO,
+		UserRepo:         userRepo,
+		TeacherRepo:      teacherRepo,
+		TeacherAssembler: teacherAssembler,
 	}
 	searchService := service.SearchService{
-		CourseRepo:      courseMongoRepo,
-		TeacherRepo:     teacherMongoRepo,
-		StaticData:      staticData,
-		CourseAssembler: courseDTO,
+		CourseRepo:  courseRepo,
+		TeacherRepo: teacherRepo,
 	}
 	providerProvider := &Provider{
 		Config:               configConfig,

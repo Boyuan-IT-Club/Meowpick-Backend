@@ -15,19 +15,22 @@
 package assembler
 
 import (
+	"context"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
 )
 
 var _ ITeacherAssembler = (*TeacherAssembler)(nil)
 
 type ITeacherAssembler interface {
-	ToTeacherVO(db *model.Teacher) *dto.TeacherVO
-	ToTeacherDB(vo *dto.TeacherVO) *model.Teacher
-	ToTeacherVOArray(dbs []*model.Teacher) []*dto.TeacherVO
-	ToTeacherDBArray(vos []*dto.TeacherVO) []*model.Teacher
+	ToTeacherVO(ctx context.Context, db *model.Teacher) *dto.TeacherVO
+	ToTeacherDB(ctx context.Context, vo *dto.TeacherVO) *model.Teacher
+	ToTeacherVOArray(ctx context.Context, dbs []*model.Teacher) []*dto.TeacherVO
+	ToTeacherDBArray(ctx context.Context, vos []*dto.TeacherVO) []*model.Teacher
 }
 
 type TeacherAssembler struct {
@@ -39,7 +42,7 @@ var TeacherAssemblerSet = wire.NewSet(
 )
 
 // ToTeacherVO 单个TeacherDB转TeacherVO (DB to VO)
-func (a *TeacherAssembler) ToTeacherVO(db *model.Teacher) *dto.TeacherVO {
+func (a *TeacherAssembler) ToTeacherVO(ctx context.Context, db *model.Teacher) *dto.TeacherVO {
 	return &dto.TeacherVO{
 		ID:         db.ID,
 		Name:       db.Name,
@@ -49,7 +52,7 @@ func (a *TeacherAssembler) ToTeacherVO(db *model.Teacher) *dto.TeacherVO {
 }
 
 // ToTeacherDB 单个TeacherVO转TeacherDB (VO to DB)
-func (a *TeacherAssembler) ToTeacherDB(vo *dto.TeacherVO) *model.Teacher {
+func (a *TeacherAssembler) ToTeacherDB(ctx context.Context, vo *dto.TeacherVO) *model.Teacher {
 	return &model.Teacher{
 		ID:         vo.ID,
 		Name:       vo.Name,
@@ -59,10 +62,14 @@ func (a *TeacherAssembler) ToTeacherDB(vo *dto.TeacherVO) *model.Teacher {
 }
 
 // ToTeacherVOArray TeacherDB数组转TeacherVO数组 (DB Array to VO Array)
-func (a *TeacherAssembler) ToTeacherVOArray(dbs []*model.Teacher) []*dto.TeacherVO {
+func (a *TeacherAssembler) ToTeacherVOArray(ctx context.Context, dbs []*model.Teacher) []*dto.TeacherVO {
+	if len(dbs) == 0 {
+		logs.CtxWarnf(ctx, "[TeacherAssembler] [ToTeacherVOArray] empty teacher db array")
+		return nil
+	}
 	vos := []*dto.TeacherVO{}
 	for _, db := range dbs {
-		if vo := a.ToTeacherVO(db); vo != nil {
+		if vo := a.ToTeacherVO(ctx, db); vo != nil {
 			vos = append(vos, vo)
 		}
 	}
@@ -70,11 +77,14 @@ func (a *TeacherAssembler) ToTeacherVOArray(dbs []*model.Teacher) []*dto.Teacher
 }
 
 // ToTeacherDBArray TeacherVO数组转TeacherDB数组 (VO Array to DB Array)
-func (a *TeacherAssembler) ToTeacherDBArray(vos []*dto.TeacherVO) []*model.Teacher {
+func (a *TeacherAssembler) ToTeacherDBArray(ctx context.Context, vos []*dto.TeacherVO) []*model.Teacher {
+	if len(vos) == 0 {
+		logs.CtxWarnf(ctx, "[TeacherAssembler] [ToTeacherDBArray] empty teacher vo array")
+		return nil
+	}
 	dbs := []*model.Teacher{}
 	for _, vo := range vos {
-
-		if db := a.ToTeacherDB(vo); db != nil {
+		if db := a.ToTeacherDB(ctx, vo); db != nil {
 			dbs = append(dbs, db)
 		}
 	}

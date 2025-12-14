@@ -24,6 +24,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var _ ICommentRepo = (*CommentRepo)(nil)
@@ -35,7 +36,7 @@ const (
 type ICommentRepo interface {
 	Insert(ctx context.Context, c *model.Comment) error
 	Count(ctx context.Context) (int64, error)
-	GetTagsByCourseID(ctx context.Context, courseId string) (map[string]int, error)
+	GetTagsByCourseID(ctx context.Context, courseId string) (map[string]int64, error)
 
 	FindManyByUserID(ctx context.Context, param *dto.PageParam, userId string) ([]*model.Comment, int64, error)
 	FindManyByCourseID(ctx context.Context, param *dto.PageParam, courseId string) ([]*model.Comment, int64, error)
@@ -61,43 +62,40 @@ func (r *CommentRepo) Count(ctx context.Context) (int64, error) {
 	return r.conn.CountDocuments(ctx, bson.M{consts.Deleted: bson.M{"$ne": true}})
 }
 
-// GetTagsByCourseID 根据课程ID统计课程所有标签
-func (r *CommentRepo) GetTagsByCourseID(ctx context.Context, courseId string) (map[string]int, error) {
-	pipeline := bson.A{
-		bson.M{"$match": bson.M{
-			consts.CourseID: courseId,
-			consts.Deleted:  bson.M{"$ne": true},
-			consts.Tags:     bson.M{"$ne": nil},
-		}},
-		// 展开tags数组
-		bson.M{"$unwind": bson.M{
-			"path":                       "$tags",
-			"preserveNullAndEmptyArrays": false,
-		}},
-		// 过滤掉空字符串的tag
-		bson.M{"$match": bson.M{
-			consts.Tags: bson.M{"$ne": ""},
-		}},
-		// 按tag分组并计数
-		bson.M{"$group": bson.M{
-			consts.ID:    "$tags",
-			consts.Count: bson.M{"$sum": 1},
-		}},
-		// 按计数降序排序
-		bson.M{"$sort": bson.M{consts.Count: -1}},
-		// 限制返回结果数量
-		bson.M{"$limit": 3},
+// GetTagsByCourseID 根据课程ID统计课程数量前3的标签
+func (r *CommentRepo) GetTagsByCourseID(ctx context.Context, courseId string) (map[string]int64, error) {
+	pipeline := mongo.Pipeline{
+		{{"$match", bson.D{
+			{consts.CourseID, courseId},
+			{consts.Deleted, bson.M{"$ne": true}},
+			{consts.Tags, bson.M{"$ne": nil}},
+		}}},
+		{{"$unwind", bson.D{
+			{"path", "$tags"},
+			{"preserveNullAndEmptyArrays", false},
+		}}},
+		{{"$match", bson.D{
+			{consts.Tags, bson.M{"$ne": ""}},
+		}}},
+		{{"$group", bson.D{
+			{consts.ID, "$tags"},
+			{consts.Count, bson.D{{"$sum", 1}}},
+		}}},
+		{{"$sort", bson.D{
+			{consts.Count, -1},
+		}}},
+		{{"$limit", 3}},
 	}
 	var tags []struct {
-		Tag   string `bson:"_id"`
+		ID    string `bson:"_id"`
 		Count int64  `bson:"count"`
 	}
 	if err := r.conn.Aggregate(ctx, &tags, pipeline); err != nil {
 		return nil, err
 	}
-	results := make(map[string]int)
-	for _, result := range tags {
-		results[result.Tag] = int(result.Count)
+	results := make(map[string]int64)
+	for _, tag := range tags {
+		results[tag.ID] = tag.Count
 	}
 	return results, nil
 }

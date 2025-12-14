@@ -74,7 +74,7 @@ func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeach
 	}
 
 	// 转换为DB
-	teacher := s.TeacherAssembler.ToTeacherDB(vo)
+	teacher := s.TeacherAssembler.ToTeacherDB(ctx, vo)
 
 	// 防重
 	if exist, err := s.TeacherRepo.IsExistByID(ctx, teacher.ID); err != nil {
