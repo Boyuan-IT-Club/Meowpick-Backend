@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
@@ -33,7 +34,8 @@ type ILikeService interface {
 }
 
 type LikeService struct {
-	LikeRepo *repo.LikeRepo
+	LikeRepo  *repo.LikeRepo
+	LikeCache *cache.LikeCache
 }
 
 var LikeServiceSet = wire.NewSet(
@@ -49,31 +51,31 @@ func (s *LikeService) ToggleLike(ctx context.Context, req *dto.ToggleLikeReq) (r
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	// 点赞或取消点赞
-	newActive, err := s.LikeRepo.Toggle(ctx, userID, targetID, consts.CommentType)
+	// 点赞或取消点赞目标
+	active, err := s.LikeRepo.Toggle(ctx, userId, req.TargetID, consts.CommentType)
 	if err != nil {
-		return nil, errorx.ErrLikeFailed
+		return nil, errorx.WrapByCode(err, errno.ErrLikeToggleFailed)
 	}
 
-	// 步骤二：操作完成后，再去获取最新的总点赞数
-	likeCount, err := s.LikeRepo.CountByTarget(ctx, targetID, consts.CommentType)
-	if err != nil {
-		return nil, errorx.ErrGetCountFailed
+	// 设置缓存的点赞状态
+	if err = s.LikeCache.SetStatusByUserIdAndTarget(ctx, userId, req.TargetID, active,
+		consts.CacheLikeStatusTTL,
+	); err != nil {
+		logs.CtxWarnf(ctx, "[LikeCache] [SetStatusByUserIdAndTarget] error: %v", err)
 	}
 
-	// 步骤三：使用两个最新的数据创建响应
-	resp = &dto.ToggleLikeResp{
-		Resp: dto.Success(),
-		LikeVO: &dto.LikeVO{
-			Like:    newActive,
-			LikeCnt: likeCount,
-		},
+	// 获取最新的总点赞数
+	likeCount, err := s.LikeRepo.CountByTarget(ctx, req.TargetID, consts.CommentType)
+	if err != nil {
+		logs.CtxWarnf(ctx, "[LikeRepo] [CountByTarget] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrLikeCountFailed,
+			errorx.KV("key", consts.ReqTargetID), errorx.KV("value", req.TargetID))
 	}
 
 	return &dto.ToggleLikeResp{
 		Resp: dto.Success(),
 		LikeVO: &dto.LikeVO{
-			Like:    newActive,
+			Like:    active,
 			LikeCnt: likeCount,
 		},
 	}, nil

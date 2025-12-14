@@ -32,7 +32,6 @@ import (
 var _ ISearchHistoryRepo = (*SearchHistoryRepo)(nil)
 
 const (
-	SearchHistoryCacheKeyPrefix = "meowpick:searchhistory:"
 	SearchHistoryCollectionName = "searchhistory"
 )
 
@@ -74,11 +73,7 @@ func (r *SearchHistoryRepo) CountByUserID(ctx context.Context, userId string) (i
 // DeleteOldestByUserID 删除用户最旧的一条搜索历史
 func (r *SearchHistoryRepo) DeleteOldestByUserID(ctx context.Context, userId string) error {
 	oldest := &model.SearchHistory{}
-	if err := r.conn.FindOneAndDelete(
-		ctx,
-		SearchHistoryCacheKeyPrefix+userId,
-		oldest,
-		bson.M{consts.UserID: userId},
+	if err := r.conn.FindOneAndDeleteNoCache(ctx, oldest, bson.M{consts.UserID: userId},
 		options.FindOneAndDelete().SetSort(page.DSort(consts.CreatedAt, 1)), // 升序，最旧的在前面
 	); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
@@ -91,8 +86,7 @@ func (r *SearchHistoryRepo) DeleteOldestByUserID(ctx context.Context, userId str
 
 // UpsertByUserIDAndQuery 插入或更新用户搜索历史
 func (r *SearchHistoryRepo) UpsertByUserIDAndQuery(ctx context.Context, userId string, query string) error {
-	if _, err := r.conn.UpdateOne(ctx,
-		SearchHistoryCacheKeyPrefix+userId,
+	if _, err := r.conn.UpdateOneNoCache(ctx,
 		bson.M{consts.UserID: userId, consts.Query: query},
 		bson.M{
 			"$set": bson.M{consts.CreatedAt: time.Now()}, // 无论找到还是没找到，都把 createdAt 字段设置为现在的时间

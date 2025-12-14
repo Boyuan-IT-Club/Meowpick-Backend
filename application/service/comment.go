@@ -108,7 +108,7 @@ func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*dto.GetTot
 		}, nil
 	}
 	if err != nil {
-		logs.CtxErrorf(ctx, "[CommentCache] [GetCount] error: %v", err)
+		logs.CtxWarnf(ctx, "[CommentCache] [GetCount] error: %v", err)
 	}
 
 	// 查询总评论数
@@ -120,7 +120,7 @@ func (s *CommentService) GetTotalCommentsCount(ctx context.Context) (*dto.GetTot
 
 	// 设置缓存
 	if err = s.CommentCache.SetCount(ctx, count, consts.CacheCommentCountTTL); err != nil {
-		logs.CtxErrorf(ctx, "[CommentCache] [SetCount] error: %v", err)
+		logs.CtxWarnf(ctx, "[CommentCache] [SetCount] error: %v", err)
 	}
 
 	return &dto.GetTotalCourseCommentsCountResp{

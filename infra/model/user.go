@@ -21,7 +21,7 @@ import (
 type User struct {
 	ID            string    `bson:"_id,omitempty"         json:"id"`
 	Username      string    `bson:"username"              json:"username"`
-	OpenId        string    `bson:"openId"                json:"openId"`
+	OpenID        string    `bson:"openId"  json:"openId"`
 	Avatar        string    `bson:"avatar,omitempty"      json:"avatar,omitempty"`
 	Email         string    `bson:"email,omitempty"       json:"email,omitempty"`
 	EmailVerified bool      `bson:"emailVerified"         json:"emailVerified"`

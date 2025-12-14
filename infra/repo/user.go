@@ -29,19 +29,19 @@ import (
 var _ IUserRepo = (*UserRepo)(nil)
 
 const (
-	UserCollectionName = "user"
-	UserIDPrefix       = "meowpick:user:"
-	UserOpenIDPrefix   = "meowpick:user_openid:"
+	UserCollectionName   = "user"
+	UserOpenID2UserIDKey = consts.CacheUserKeyPrefix + "openId2id:"
+	UserID2DBKey         = consts.CacheUserKeyPrefix + "id2db:"
 )
 
 type IUserRepo interface {
 	Insert(ctx context.Context, user *model.User) (err error)
 	Update(ctx context.Context, user *model.User) (err error)
 
-	FindByID(ctx context.Context, userId string) (user *model.User, err error)
+	FindByID(ctx context.Context, id string) (user *model.User, err error)
 	FindByOpenID(ctx context.Context, openId string) (user *model.User, err error)
 
-	IsAdminByID(ctx context.Context, userId string) (isAdmin bool, err error)
+	IsAdminByID(ctx context.Context, id string) (isAdmin bool, err error)
 }
 
 type UserRepo struct {
@@ -55,15 +55,13 @@ func NewUserRepo(config *config.Config) *UserRepo {
 
 // Insert 插入用户
 func (r *UserRepo) Insert(ctx context.Context, user *model.User) error {
-	if _, err := r.conn.InsertOne(ctx, UserIDPrefix+user.ID, user); err != nil {
+	if _, err := r.conn.InsertOne(ctx, UserID2DBKey+user.ID, user); err != nil {
 		return err
 	}
-	// 单独缓存 openID → _id 映射（如果存在openID）
-	if user.OpenId != "" {
-		openIDCacheKey := UserOpenIDPrefix + user.OpenId
-		// 仅缓存_id，不是完整用户数据
-		if err := r.conn.SetCache(openIDCacheKey, user.ID); err != nil {
-			logs.Warnf("failed to cache openId to userId mapping: %v", err)
+	// 单独缓存 openId → userId 映射（如果存在openId）
+	if user.OpenID != "" {
+		if err := r.conn.SetCache(UserOpenID2UserIDKey+user.OpenID, user.ID); err != nil {
+			logs.CtxWarnf(ctx, "[monc] [SetCache] set openId to userId cache error: %v", err)
 		}
 	}
 	return nil
@@ -71,16 +69,17 @@ func (r *UserRepo) Insert(ctx context.Context, user *model.User) error {
 
 // Update 更新用户信息
 func (r *UserRepo) Update(ctx context.Context, user *model.User) error {
-	if _, err := r.conn.Collection.UpdateByID(ctx, user.ID, bson.M{"$set": user}); err != nil {
+	if _, err := r.conn.UpdateOne(ctx, UserID2DBKey+user.ID,
+		bson.M{consts.ID: user.ID}, bson.M{"$set": user}); err != nil {
 		return err
 	}
 	return nil
 }
 
 // FindByID 通过ID查询用户
-func (r *UserRepo) FindByID(ctx context.Context, userId string) (*model.User, error) {
+func (r *UserRepo) FindByID(ctx context.Context, id string) (*model.User, error) {
 	user := &model.User{}
-	if err := r.conn.FindOne(ctx, UserIDPrefix+userId, user, bson.M{consts.ID: userId}); err != nil {
+	if err := r.conn.FindOne(ctx, UserID2DBKey+id, user, bson.M{consts.ID: id}); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return nil, nil
 		}
@@ -91,25 +90,29 @@ func (r *UserRepo) FindByID(ctx context.Context, userId string) (*model.User, er
 
 // FindByOpenID 通过OpenID查询用户
 func (r *UserRepo) FindByOpenID(ctx context.Context, openId string) (*model.User, error) {
-	var userID string
+	var userId string
 	// 缓存命中 通过_id查完整用户数据
-	if err := r.conn.GetCache(UserOpenIDPrefix+openId, userID); err == nil {
-		return r.FindByID(ctx, userID)
+	if err := r.conn.GetCache(UserOpenID2UserIDKey+openId, &userId); err == nil && userId != "" {
+		return r.FindByID(ctx, userId)
 	}
 	// 若缓存未命中 走数据库查询
-	var user model.User
+	user := model.User{}
 	if err := r.conn.FindOneNoCache(ctx, &user, bson.M{consts.OpenID: openId}); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
+	// 回写缓存
+	if err := r.conn.SetCache(UserOpenID2UserIDKey+openId, user.ID); err != nil {
+		logs.CtxWarnf(ctx, "[monc] [SetCache] set openId to userId cache error: %v", err)
+	}
 	return &user, nil
 }
 
 // IsAdminByID 判断用户是否是管理员
-func (r *UserRepo) IsAdminByID(ctx context.Context, userId string) (bool, error) {
-	user, err := r.FindByID(ctx, userId)
+func (r *UserRepo) IsAdminByID(ctx context.Context, id string) (bool, error) {
+	user, err := r.FindByID(ctx, id)
 	if err != nil {
 		return false, err
 	}

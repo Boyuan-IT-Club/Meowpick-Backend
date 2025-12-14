@@ -31,7 +31,6 @@ import (
 var _ ICourseRepo = (*CourseRepo)(nil)
 
 const (
-	CourseCacheKeyPrefix = "meowpick:course:"
 	CourseCollectionName = "course"
 )
 

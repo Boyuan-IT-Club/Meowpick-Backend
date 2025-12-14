@@ -41,8 +41,15 @@ const (
 
 // 缓存相关
 const (
-	CacheCommentCount    = "count"
+	CacheSearchHistoryKeyPrefix = "meowpick:searchhistory:"
+	CacheCommentKeyPrefix       = "meowpick:comment:"
+	CacheLikeKeyPrefix          = "meowpick:like:"
+	CacheUserKeyPrefix          = "meowpick:user:"
+	CacheTeacherKeyPrefix       = "meowpick:teacher:"
+	CacheCourseKeyPrefix        = "meowpick:course:"
+
 	CacheCommentCountTTL = 12 * time.Hour
+	CacheLikeStatusTTL   = 10 * time.Minute
 )
 
 // 元素类别相关（如课程、评论、老师）
@@ -68,6 +75,7 @@ const (
 	ReqOpenID     = "openId"
 	ReqType       = "type"
 	ReqCourseID   = "courseId"
+	ReqTargetID   = "targetId"
 )
 
 // 限制相关

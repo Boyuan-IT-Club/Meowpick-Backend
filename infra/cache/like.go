@@ -1,17 +1,3 @@
-// Copyright 2025 Boyuan-IT-Club
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package cache
 
 import (
@@ -20,179 +6,51 @@ import (
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
 var _ ILikeCache = (*LikeCache)(nil)
 
 const (
-	LikeCacheKeyPrefix = "meowpick:like:"
+	LikeStatusCacheKey = consts.CacheLikeKeyPrefix + "status:"
 )
 
 type ILikeCache interface {
-	// 点赞数相关
-	GetLikeCount(ctx context.Context, targetID string) (int64, bool)
-	GetBatchLikeCount(ctx context.Context, targetIDs []string, targetType int32) (map[string]int64, []string, error)
-	SetLikeCount(ctx context.Context, targetID string, count int64, expiration time.Duration) error
-	IncrLikeCount(ctx context.Context, targetID string, delta int64) (int64, error)
-	DelLikeCount(ctx context.Context, targetID string) error
-
-	// 点赞状态相关
-	GetLikeStatus(ctx context.Context, userID, targetID string) (bool, bool)
-	GetBatchLikeStatus(ctx context.Context, userID string, targetIDs []string, targetType int32) (map[string]bool, []string, error)
-	SetLikeStatus(ctx context.Context, userID, targetID string, liked bool, expiration time.Duration) error
-	DelLikeStatus(ctx context.Context, userID, targetID string) error
+	GetStatusByUserIdAndTarget(ctx context.Context, userId, targetId string) (bool, bool, error)
+	SetStatusByUserIdAndTarget(ctx context.Context, userId, targetId string, isLike bool, ttl time.Duration) error
 }
 
 type LikeCache struct {
 	cache *redis.Redis
 }
 
-func NewLikeCache(config *config.Config) *LikeCache {
-	cache := redis.MustNewRedis(*config.Redis)
+func NewLikeCache(cfg *config.Config) *LikeCache {
+	cache := redis.MustNewRedis(*cfg.Redis)
 	return &LikeCache{cache: cache}
 }
 
-// GetLikeCount 点赞数缓存操作
-func (r *LikeCache) GetLikeCount(ctx context.Context, targetID string) (int64, bool) {
-	key := "like:count:" + targetID
-	val, err := r.cache.Get(key)
+// GetStatusByUserIdAndTarget 获取点赞状态缓存
+// 返回值：isLike, isHit, error
+func (c *LikeCache) GetStatusByUserIdAndTarget(ctx context.Context, userId, targetId string) (bool, bool, error) {
+	key := LikeStatusCacheKey + userId + ":" + targetId
+	statusStr, err := c.cache.GetCtx(ctx, key)
 	if err != nil {
-		return 0, false
+		return false, false, err
 	}
-	count, err := strconv.ParseInt(val, 10, 64)
+	if statusStr == "" {
+		return false, false, nil
+	}
+	isLike, err := strconv.ParseBool(statusStr)
 	if err != nil {
-		return 0, false
+		_, _ = c.cache.DelCtx(ctx, key)
+		return false, false, err
 	}
-	return count, true
+	return isLike, true, nil
 }
 
-func (r *LikeCache) SetLikeCount(ctx context.Context, targetID string, count int64, expiration time.Duration) error {
-	key := "like:count:" + targetID
-	return r.cache.Setex(key, strconv.FormatInt(count, 10), int(expiration.Seconds()))
-}
-
-func (r *LikeCache) IncrLikeCount(ctx context.Context, targetID string, delta int64) (int64, error) {
-	key := "like:count:" + targetID
-	if delta == 1 {
-		return r.cache.Incr(key)
-	} else if delta == -1 {
-		return r.cache.Decr(key)
-	} else {
-		return r.cache.Incrby(key, delta)
-	}
-}
-
-func (r *LikeCache) DelLikeCount(ctx context.Context, targetID string) error {
-	key := "like:count:" + targetID
-	_, err := r.cache.Del(key)
-	return err
-}
-
-// GetBatchLikeCount 批量获取缓存，返回命中的id->LikeCount映射和未命中id列表
-// 未命中id列表应作为mapper层聚合查询参数和SetBatchLikeCount的缓存键
-func (r *LikeCache) GetBatchLikeCount(ctx context.Context, targetIDs []string, targetType int32) (map[string]int64, []string, error) {
-	if len(targetIDs) == 0 {
-		return make(map[string]int64), nil, nil
-	}
-
-	// 构建所有的缓存键
-	keys := make([]string, len(targetIDs))
-	for i, targetID := range targetIDs {
-		keys[i] = "like:count:" + targetID
-	}
-
-	// 使用 MGET 批量获取
-	values, err := r.cache.Mget(keys...)
-	if err != nil {
-		return nil, targetIDs, err // 缓存失败，返回所有ID作为未命中
-	}
-
-	result := make(map[string]int64) // 命中的结果
-	var missingIDs []string          // 未命中id列表
-	// 遍历批量获取到的缓存结果
-	for i, val := range values {
-		targetID := targetIDs[i]
-		if val == "" {
-			// 缓存未命中，将id加入missingIDs
-			missingIDs = append(missingIDs, targetID)
-		} else {
-			// 缓存命中，解析数值
-			count, parseErr := strconv.ParseInt(val, 10, 64)
-			if parseErr != nil {
-				// 解析失败，视为未命中
-				missingIDs = append(missingIDs, targetID)
-			} else {
-				// 缓存命中且解析成功，加入result
-				result[targetID] = count
-			}
-		}
-	}
-
-	return result, missingIDs, nil
-}
-
-// 点赞状态缓存操作
-func (r *LikeCache) GetLikeStatus(ctx context.Context, userID, targetID string) (bool, bool) {
-	key := "like:status:" + userID + ":" + targetID
-	val, err := r.cache.Get(key)
-	if err != nil {
-		return false, false
-	}
-	liked, err := strconv.ParseBool(val)
-	if err != nil {
-		return false, false
-	}
-	return liked, true
-}
-
-func (r *LikeCache) SetLikeStatus(ctx context.Context, userID, targetID string, liked bool, expiration time.Duration) error {
-	key := "like:status:" + userID + ":" + targetID
-	return r.cache.Setex(key, strconv.FormatBool(liked), int(expiration.Seconds()))
-}
-
-func (r *LikeCache) DelLikeStatus(ctx context.Context, userID, targetID string) error {
-	key := "like:status:" + userID + ":" + targetID
-	_, err := r.cache.Del(key)
-	return err
-}
-
-func (r *LikeCache) GetBatchLikeStatus(ctx context.Context, userID string, targetIDs []string, targetType int32) (map[string]bool, []string, error) {
-	if len(targetIDs) == 0 {
-		return make(map[string]bool), nil, nil
-	}
-
-	// 构建所有的缓存键
-	keys := make([]string, len(targetIDs))
-	for i, targetID := range targetIDs {
-		keys[i] = "like:status:" + userID + ":" + targetID
-	}
-
-	// 使用 MGET 批量获取
-	values, err := r.cache.Mget(keys...)
-	if err != nil {
-		return nil, targetIDs, err // MGET失败，返回所有ID作为未命中
-	}
-
-	result := make(map[string]bool)
-	var missingIDs []string
-
-	for i, val := range values {
-		targetID := targetIDs[i]
-		if val == "" {
-			// 缓存未命中
-			missingIDs = append(missingIDs, targetID)
-		} else {
-			// 缓存命中，解析布尔值
-			liked, parseErr := strconv.ParseBool(val)
-			if parseErr != nil {
-				// 解析失败，视为未命中
-				missingIDs = append(missingIDs, targetID)
-			} else {
-				result[targetID] = liked
-			}
-		}
-	}
-
-	return result, missingIDs, nil
+// SetStatusByUserIdAndTarget 设置点赞状态缓存
+func (c *LikeCache) SetStatusByUserIdAndTarget(ctx context.Context, userId, targetId string, isLike bool, ttl time.Duration) error {
+	key := LikeStatusCacheKey + userId + ":" + targetId
+	return c.cache.SetexCtx(ctx, key, strconv.FormatBool(isLike), int(ttl.Seconds()))
 }

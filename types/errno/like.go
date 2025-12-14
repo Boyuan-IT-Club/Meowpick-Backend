@@ -14,4 +14,24 @@
 
 package errno
 
+import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
+
 // like: 102 000 000 ~ 102 999 999
+
+const (
+	ErrLikeToggleFailed = 102000001
+	ErrLikeCountFailed  = 102000002
+)
+
+func init() {
+	code.Register(
+		ErrLikeToggleFailed,
+		"failed to toggle like status",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrLikeCountFailed,
+		"failed to get like count by {key}: {value}",
+		code.WithAffectStability(false),
+	)
+}

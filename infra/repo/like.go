@@ -24,13 +24,13 @@ import (
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var _ ILikeRepo = (*LikeRepo)(nil)
 
 const (
-	LikeCacheKeyPrefix = "meowpick:like:"
 	LikeCollectionName = "like"
 )
 
@@ -50,109 +50,32 @@ type LikeRepo struct {
 
 func NewLikeRepo(config *config.Config) *LikeRepo {
 	conn := monc.MustNewModel(config.Mongo.URL, config.Mongo.DB, LikeCollectionName, config.Cache)
-	return &LikeRepo{
-		conn:  conn,
-		cache: cache.NewLikeCache(config),
-	}
+	return &LikeRepo{conn: conn}
 }
 
 // Toggle 翻转点赞状态，返回完成后目标的点赞状态
 func (r *LikeRepo) Toggle(ctx context.Context, userId, targetId string, targetType int32) (bool, error) {
-	cnt, err := r.conn.CountDocuments(ctx, bson.M{
-		consts.UserID:   userId,
-		consts.TargetID: targetId,
-		consts.Active:   bson.M{"$ne": false}, // 非false
-		//consts.TargetType: targetType,
-	})
-	if err != nil {
-		return false, err
-	}
 
-	// 如果已有记录（包含缺失 active 字段的历史记录），则本次操作为取消（newActive=false）
-	// 否则为点赞（newActive=true）
-	newActive := cnt == 0
-
-	update := bson.M{
-		"$set": bson.M{
-			consts.Active:    newActive,
-			consts.UpdatedAt: time.Now(),
-		},
-		"$setOnInsert": bson.M{
-			consts.CreatedAt: time.Now(),
-			//"targetType": targetType,
-		},
-	}
-	ops := options.Update().SetUpsert(true)
-
-	filter := bson.M{
-		consts.UserID:   userId,
-		consts.TargetID: targetId,
-	}
-	cacheKey := LikeCacheKeyPrefix + userId + "-" + targetId
-	if _, err = r.conn.UpdateOne(ctx, cacheKey, filter, update, ops); err != nil {
-		return false, err
-	}
-
-	// 更新点赞状态缓存
-	_ = r.cache.SetLikeStatus(ctx, userId, targetId, newActive, 10*time.Minute)
-
-	// 更新点赞数缓存（如果缓存中存在的话）
-	if newActive {
-		// 点赞：缓存+1，如果缓存不存在则不处理（等下次查询时回填）
-		if _, err = r.cache.IncrLikeCount(ctx, targetId, 1); err != nil {
-			logs.Errorf("Increase like count cache error: %v", err)
-		}
-	} else {
-		// 取消点赞：缓存-1
-		if _, err = r.cache.IncrLikeCount(ctx, targetId, -1); err != nil {
-			logs.Errorf("Increase like count cache error: %v", err)
-		}
-	}
-
-	return newActive, nil
 }
 
 // IsLike 获取一个用户对一个目标的当前点赞状态（是/否点赞）
 func (r *LikeRepo) IsLike(ctx context.Context, userId, targetId string, targetType int32) (bool, error) {
-	// 缓存查询
-	if liked, found := r.cache.GetLikeStatus(ctx, userId, targetId); found {
-		return liked, nil
-	}
-
-	// 缓存未命中，走数据库查询
-	filter := bson.M{
+	cnt, err := r.conn.CountDocuments(ctx, bson.M{
 		consts.UserID:   userId,
 		consts.TargetID: targetId,
-		consts.Active:   bson.M{"$ne": false}, // 非 false 视为点赞（包含缺失字段）
-		//"targetType": targetType,
-	}
-
-	cnt, err := r.conn.CountDocuments(ctx, filter)
-	if err != nil {
-		return false, err
-	}
-	return cnt > 0, nil
+		consts.Active:   bson.M{"$ne": false},
+		//consts.TargetType: targetType,
+	})
+	return cnt > 0, err
 }
 
 // CountByTarget 获得目标的总点赞数
 func (r *LikeRepo) CountByTarget(ctx context.Context, targetId string, targetType int32) (int64, error) {
-	// 缓存查询
-	if count, found := r.cache.GetLikeCount(ctx, targetId); found {
-		return count, nil
-	}
-
-	// 缓存未命中，走数据库查询
-	filter := bson.M{
+	return r.conn.CountDocuments(ctx, bson.M{
 		consts.TargetID: targetId,
-		consts.Active:   bson.M{"$ne": false}, // 排除 active==false，包含缺失字段
-		//"targetType": targetType,
-	}
-
-	count, err := r.conn.CountDocuments(ctx, filter)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
+		consts.Active:   bson.M{"$ne": false},
+		//consts.TargetType: targetType,
+	})
 }
 
 // GetBatchLikeStatus 批量获取一个用户对多个目标的点赞状态，返回目标id->bool映射

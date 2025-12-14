@@ -72,7 +72,7 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 		if oldUser == nil {
 			newUser := model.User{ // 创建用户并存入数据库
 				ID:            primitive.NewObjectID().Hex(),
-				OpenId:        openId,
+				OpenID:        openId,
 				Admin:         false,
 				Email:         "",
 				EmailVerified: false,
