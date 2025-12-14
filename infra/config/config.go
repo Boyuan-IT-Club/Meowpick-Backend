@@ -25,10 +25,6 @@ import (
 
 var config *Config
 
-type Log struct {
-	Level string
-}
-
 type Auth struct {
 	SecretKey    string
 	PublicKey    string
@@ -42,7 +38,6 @@ type WeApp struct {
 
 type Config struct {
 	service.ServiceConf
-	Log      Log
 	ListenOn string
 	State    string
 	Auth     Auth

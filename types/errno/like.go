@@ -19,8 +19,9 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 // like: 102 000 000 ~ 102 999 999
 
 const (
-	ErrLikeToggleFailed = 102000001
-	ErrLikeCountFailed  = 102000002
+	ErrLikeToggleFailed    = 102000001
+	ErrLikeCountFailed     = 102000002
+	ErrLikeGetStatusFailed = 102000003
 )
 
 func init() {
@@ -32,6 +33,11 @@ func init() {
 	code.Register(
 		ErrLikeCountFailed,
 		"failed to get like count by {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrLikeGetStatusFailed,
+		"failed to get like status by {key}: {value}",
 		code.WithAffectStability(false),
 	)
 }

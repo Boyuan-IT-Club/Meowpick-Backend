@@ -54,6 +54,7 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 	if req.Code == "test123" {
 		openId = "debug-openid-001" // 测试环境固定openid
 	} else {
+		// 为微信API调用设置超时
 		openId = openid.GetWeChatOpenID(
 			config.GetConfig().WeApp.AppID,
 			config.GetConfig().WeApp.AppSecret,
@@ -68,30 +69,30 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 	// 查找用户
 	oldUser, err := s.UserRepo.FindByOpenID(ctx, openId)
 	if err != nil {
-		// 用户不存在则创建新用户
-		if oldUser == nil {
-			newUser := model.User{ // 创建用户并存入数据库
-				ID:            primitive.NewObjectID().Hex(),
-				OpenID:        openId,
-				Admin:         false,
-				Email:         "",
-				EmailVerified: false,
-				Ban:           false,
-				Avatar:        "",
-				Username:      "",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-			}
-			if err = s.UserRepo.Insert(ctx, &newUser); err != nil {
-				logs.CtxErrorf(ctx, "[AuthRepo] [Insert] error: %v", err)
-				return nil, errorx.WrapByCode(err, errno.ErrUserInsertFailed, errorx.KV("id", newUser.ID))
-			}
-			oldUser = &newUser
-		} else {
-			logs.CtxErrorf(ctx, "[AuthRepo] [FindByOpenID] error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
-				errorx.KV("key", consts.ReqOpenID), errorx.KV("value", openId))
+		logs.CtxErrorf(ctx, "[AuthRepo] [FindByOpenID] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.ReqOpenID), errorx.KV("value", openId))
+	}
+
+	// 用户不存在则创建新用户
+	if oldUser == nil {
+		newUser := model.User{ // 创建用户并存入数据库
+			ID:            primitive.NewObjectID().Hex(),
+			OpenID:        openId,
+			Admin:         false,
+			Email:         "",
+			EmailVerified: false,
+			Ban:           false,
+			Avatar:        "",
+			Username:      "",
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
 		}
+		if err = s.UserRepo.Insert(ctx, &newUser); err != nil {
+			logs.CtxErrorf(ctx, "[AuthRepo] [Insert] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrUserInsertFailed, errorx.KV("id", newUser.ID))
+		}
+		oldUser = &newUser
 	}
 
 	// 智能Token签发逻辑

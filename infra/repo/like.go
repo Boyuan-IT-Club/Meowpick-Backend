@@ -55,17 +55,23 @@ func NewLikeRepo(config *config.Config) *LikeRepo {
 
 // Toggle 翻转点赞状态
 func (r *LikeRepo) Toggle(ctx context.Context, userId, targetId string, targetType int32) (bool, error) {
+	now := time.Now()
 	pipeline := mongo.Pipeline{
 		{{"$set", bson.M{
-			consts.Active:    bson.M{"$not": "$active"}, // 翻转 bool
-			consts.UpdatedAt: time.Now(),
-		}}},
-		{{"$setOnInsert", bson.M{ // 如果记录不存在则插入
-			consts.ID:       primitive.NewObjectID().Hex(),
-			consts.UserID:   userId,
-			consts.TargetID: targetId,
-			//consts.TargetType: targetType,
-			consts.CreatedAt: time.Now(),
+			consts.ID: bson.M{"$ifNull": bson.A{"$" + consts.ID, primitive.NewObjectID().Hex()}},
+
+			consts.UserID:   bson.M{"$ifNull": bson.A{"$" + consts.UserID, userId}},
+			consts.TargetID: bson.M{"$ifNull": bson.A{"$" + consts.TargetID, targetId}},
+			// consts.TargetType: bson.M{"$ifNull": bson.A{"$" + consts.TargetType, targetType}},
+
+			consts.CreatedAt: bson.M{"$ifNull": bson.A{"$" + consts.CreatedAt, now}},
+			consts.UpdatedAt: now,
+
+			consts.Active: bson.M{"$cond": bson.A{
+				bson.M{"$not": bson.M{"$ifNull": bson.A{"$" + consts.ID, nil}}},
+				true,
+				bson.M{"$not": "$active"},
+			}},
 		}}},
 	}
 	var like struct {

@@ -76,7 +76,7 @@ func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeach
 	// 转换为DB
 	teacher := s.TeacherAssembler.ToTeacherDB(ctx, vo)
 
-	// 防重
+	// 防重 TODO：名字 职称是否重复
 	if exist, err := s.TeacherRepo.IsExistByID(ctx, teacher.ID); err != nil {
 		logs.CtxErrorf(ctx, "[TeacherRepo] [IsExistByID] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrTeacherExistsFailed, errorx.KV("name", teacher.Name))
