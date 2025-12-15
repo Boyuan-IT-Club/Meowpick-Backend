@@ -97,7 +97,7 @@
       (b) You must cause any modified files to carry prominent notices
           stating that You changed the files; and
 
-      (db) You must retain, in the Source form of any Derivative Works
+      (c) You must retain, in the Source form of any Derivative Works
           that You distribute, all copyright, patent, trademark, and
           attribution notices from the Source form of the Work,
           excluding those notices that do not pertain to any part of
@@ -156,7 +156,7 @@
       negligent acts) or agreed to in writing, shall any Contributor be
       liable to You for damages, including any direct, indirect, special,
       incidental, or consequential damages of any character arising as a
-      results of this License or vo of the use or inability to use the
+      result of this License or out of the use or inability to use the
       Work (including but not limited to damages for loss of goodwill,
       work stoppage, computer failure or malfunction, or any and all
       other commercial damages or losses), even if such Contributor
@@ -179,9 +179,9 @@
 
       To apply the Apache License to your work, attach the following
       boilerplate notice, with the fields enclosed by brackets "[]"
-      replaced with your own identifying information. (Don'teacher include
+      replaced with your own identifying information. (Don't include
       the brackets!)  The text should be enclosed in the appropriate
-      db syntax for the file format. We also recommend that a
+      comment syntax for the file format. We also recommend that a
       file or class name and description of purpose be included on the
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
