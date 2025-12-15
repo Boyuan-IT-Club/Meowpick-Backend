@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# 使用官方 Go 1.24.5 Alpine 镜像
+# 使用官方 Go 1.25.5 Alpine 镜像
 FROM golang:1.25.5-alpine AS builder
 
 # 安装必要工具（可选，根据需求）
@@ -36,7 +36,7 @@ FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/meowpick-backend ./
 
-# 暴露端口（根据你项目端口修改）
+# 暴露端口
 EXPOSE 8080
 
 # 启动命令

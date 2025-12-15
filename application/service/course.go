@@ -220,7 +220,7 @@ func (s *CourseService) GetCampuses(ctx context.Context, req *dto.GetCourseCampu
 	// 转换为校区名称列表
 	campuses := make([]string, 0, len(ids))
 	for _, id := range ids {
-		campuses = append(campuses, mapping.Data.GetCategoryNameByID(id))
+		campuses = append(campuses, mapping.Data.GetCampusNameByID(id))
 	}
 
 	return &dto.GetCourseCampusesResp{
