@@ -39,7 +39,7 @@ func Get() *Provider {
 	return provider
 }
 
-// Provider 提供controller依赖的对象
+// Provider 提供Handler依赖的对象
 type Provider struct {
 	Config               *config.Config
 	CommentService       service.CommentService
@@ -49,6 +49,7 @@ type Provider struct {
 	CourseService        service.CourseService
 	TeacherService       service.TeacherService
 	SearchService        service.SearchService
+	ProposalService      service.ProposalService
 }
 
 var ApplicationSet = wire.NewSet(
@@ -59,6 +60,7 @@ var ApplicationSet = wire.NewSet(
 	service.CourseServiceSet,
 	service.TeacherServiceSet,
 	service.SearchServiceSet,
+	service.ProposalServiceSet,
 	// Assembler 相关
 	assembler.CommentAssemblerSet,
 	assembler.CourseAssemblerSet,
@@ -73,6 +75,7 @@ var InfraSet = wire.NewSet(
 	repo.NewTeacherRepo,
 	repo.NewCommentRepo,
 	repo.NewSearchHistoryRepo,
+	repo.NewProposalRepo,
 	// 缓存相关
 	cache.NewLikeCache,
 	cache.NewCommentCache,

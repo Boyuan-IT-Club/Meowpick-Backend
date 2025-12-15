@@ -14,22 +14,16 @@
 
 package dto
 
-type CourseInLinkVO struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
 // CourseVO 传递给前端的课程类型 模糊搜索和精确搜索结果都可用此类型
 type CourseVO struct {
-	ID         string            `json:"id"`
-	Name       string            `json:"name"`
-	Code       string            `json:"code"` // 暂未使用
-	Category   string            `json:"category"`
-	Campuses   []string          `json:"campuses"`
-	Department string            `json:"department"`
-	Link       []*CourseInLinkVO `json:"link"`
-	Teachers   []*TeacherVO      `json:"teachers"`
-	TagCount   map[string]int64  `json:"tagCount"`
+	ID         string           `json:"id"`
+	Name       string           `json:"name"`
+	Code       string           `json:"code"` // 暂未使用
+	Category   string           `json:"category"`
+	Campuses   []string         `json:"campuses"`
+	Department string           `json:"department"`
+	Teachers   []*TeacherVO     `json:"teachers"`
+	TagCount   map[string]int64 `json:"tagCount"`
 }
 
 type ListCoursesReq struct {

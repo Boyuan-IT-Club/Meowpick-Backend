@@ -48,8 +48,8 @@ type LikeRepo struct {
 	cache *cache.LikeCache
 }
 
-func NewLikeRepo(config *config.Config) *LikeRepo {
-	conn := monc.MustNewModel(config.Mongo.URL, config.Mongo.DB, LikeCollectionName, config.Cache)
+func NewLikeRepo(cfg *config.Config) *LikeRepo {
+	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, LikeCollectionName, cfg.Cache)
 	return &LikeRepo{conn: conn}
 }
 

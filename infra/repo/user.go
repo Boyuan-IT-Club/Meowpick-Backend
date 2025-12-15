@@ -48,8 +48,8 @@ type UserRepo struct {
 	conn *monc.Model
 }
 
-func NewUserRepo(config *config.Config) *UserRepo {
-	conn := monc.MustNewModel(config.Mongo.URL, config.Mongo.DB, UserCollectionName, config.Cache)
+func NewUserRepo(cfg *config.Config) *UserRepo {
+	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, UserCollectionName, cfg.Cache)
 	return &UserRepo{conn: conn}
 }
 

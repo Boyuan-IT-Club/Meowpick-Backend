@@ -60,5 +60,16 @@ func SetupRoutes() *gin.Engine {
 	//teacherGroup := router.Group("/api/teacher")
 	//{
 	//}
+
+	// ProposalApi
+	proposalGroup := router.Group("/api/proposal")
+	{
+		proposalGroup.POST("/add", handler.CreateProposal)
+		proposalGroup.GET("/:id", handler.GetProposal)
+		proposalGroup.GET("/list", handler.ListProposals)
+		proposalGroup.POST("/:id/update", handler.UpdateProposal)
+		proposalGroup.POST("/:id/delete", handler.DeleteProposal)
+		proposalGroup.POST("/suggest", handler.GetProposalSuggestions)
+	}
 	return router
 }
