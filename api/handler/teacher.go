@@ -22,8 +22,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CreateTeacher 新建教师
-// @router /api/teacher/add
+// CreateTeacher godoc
+// @Summary 新建教师
+// @Description 新建教师
+// @Tags teacher
+// @Accept json
+// @Produce json
+// @Param body body dto.CreateTeacherReq true "CreateTeacherReq"
+// @Success 200 {object} dto.CreateTeacherResp
+// @Router /api/teacher/add [post]
 func CreateTeacher(c *gin.Context) {
 	var req *dto.CreateTeacherReq
 	var resp *dto.CreateTeacherResp

@@ -12,19 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// @title Meowpick Backend API
+// @version 1.0
+// @description 选课猫后端接口文档
+// @BasePath /
 package main
 
 import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/router"
+	_ "github.com/Boyuan-IT-Club/Meowpick-Backend/docs"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
 	provider.Init()
 	r := router.SetupRoutes()
 	setLogLevel()
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	err := r.Run(":8080")
 	if err != nil {
