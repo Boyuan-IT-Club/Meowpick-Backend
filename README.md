@@ -10,7 +10,7 @@
 
 ## 技术栈
 
-- **语言**: Go 1.24.5
+- **语言**: Go 1.25.5
 - **框架**: Gin
 - **数据库**: MongoDB
 - **缓存**: Redis
@@ -52,21 +52,25 @@
 
 ```
 .
-├── adaptor          # 适配器层（控制器、路由、命令等）
-│   ├── cmd          # API 请求/响应结构体
-│   ├── controller   # 控制器层
+├── api              # API层（处理HTTP请求和响应）
+│   ├── handler      # 请求处理器
 │   ├── router       # 路由配置
 │   └── token        # 认证相关
 ├── application      # 应用服务层
+│   ├── assembler    # 数据组装器
 │   ├── dto          # 数据传输对象
 │   └── service      # 业务逻辑服务
 ├── infra            # 基础设施层
 │   ├── cache        # 缓存实现
-│   ├── db       # 配置管理
-│   ├── consts       # 常量定义
-│   ├── mapper       # 数据访问层
+│   ├── config       # 配置管理
+│   ├── model        # 数据模型
+│   ├── repo         # 数据访问层
 │   └── util         # 工具类
-└── provider         # 依赖注入配置
+├── provider         # 依赖注入配置
+└── types            # 类型定义
+    ├── consts       # 常量定义
+    ├── errno        # 错误码定义
+    └── mapping      # 映射数据
 ```
 
 ## API 接口
