@@ -106,7 +106,10 @@ func (r *CourseRepo) FindManyByTeacherID(ctx context.Context, teacherId string, 
 	courses := []*model.Course{}
 	filter := bson.M{consts.TeacherIDs: teacherId}
 	if err := r.conn.Find(ctx, &courses, filter,
-		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+		page.FindPageOption(param).SetSort(bson.D{
+			{consts.CreatedAt, -1},
+			{consts.ID, 1}, // 添加_id作为二级排序，确保排序稳定性
+		}),
 	); err != nil {
 		return nil, 0, err
 	}
