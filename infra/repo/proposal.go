@@ -15,8 +15,15 @@
 package repo
 
 import (
+	"context"
+
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var _ IProposalRepo = (*ProposalRepo)(nil)
@@ -26,6 +33,7 @@ const (
 )
 
 type IProposalRepo interface {
+	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 }
 
 type ProposalRepo struct {
@@ -35,4 +43,26 @@ type ProposalRepo struct {
 func NewProposalRepo(cfg *config.Config) *ProposalRepo {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, ProposalCollectionName, cfg.Cache)
 	return &ProposalRepo{conn: conn}
+}
+
+// FindMany 分页查询所有未删除的提案
+func (r *ProposalRepo) FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error) {
+	proposals := []*model.Proposal{}
+	filter := bson.M{consts.Deleted: bson.M{"$ne": true}}
+
+	total, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if err = r.conn.Find(
+		ctx,
+		&proposals,
+		filter,
+		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+	); err != nil {
+		return nil, 0, err
+	}
+
+	return proposals, total, nil
 }

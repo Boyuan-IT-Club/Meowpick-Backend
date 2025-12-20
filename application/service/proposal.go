@@ -14,17 +14,61 @@
 
 package service
 
-import "github.com/google/wire"
+import (
+	"context"
+
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
+	"github.com/google/wire"
+)
 
 var _ IProposalService = (*ProposalService)(nil)
 
 type IProposalService interface {
+	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
 }
 
 type ProposalService struct {
+	ProposalRepo      repo.IProposalRepo
+	ProposalAssembler *assembler.ProposalAssembler
 }
 
 var ProposalServiceSet = wire.NewSet(
 	wire.Struct(new(ProposalService), "*"),
 	wire.Bind(new(IProposalService), new(*ProposalService)),
 )
+
+// ListProposals 分页查询所有提案，用于投票列表或管理端审核
+func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 查询提案列表
+	proposals, total, err := s.ProposalRepo.FindMany(ctx, req.PageParam)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindMany] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
+	}
+
+	// 转换为VO
+	vos, err := s.ProposalAssembler.ToProposalVOArray(ctx, proposals)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVOArray] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
+			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
+	}
+
+	return &dto.ListProposalResp{
+		Resp:      dto.Success(),
+		Total:     total,
+		Proposals: vos,
+	}, nil
+}
