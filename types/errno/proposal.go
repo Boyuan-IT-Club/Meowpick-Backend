@@ -19,8 +19,11 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 // proposal: 106 000 000 ~ 106 999 999
 
 const (
-	ErrProposalFindFailed = 106000001
-	ErrProposalCvtFailed  = 106000002
+	ErrProposalFindFailed      = 106000001
+	ErrProposalCvtFailed       = 106000002
+	ErrProposalToggleFailed    = 106000003
+	ErrProposalCountFailed     = 106000004
+	ErrProposalGetStatusFailed = 106000005
 )
 
 func init() {
@@ -34,5 +37,19 @@ func init() {
 		"failed to convert proposal from {src} to {dst}",
 		code.WithAffectStability(false),
 	)
+	code.Register(
+		ErrProposalToggleFailed,
+		"failed to toggle vote status",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalCountFailed,
+		"failed to get vote count by {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalGetStatusFailed,
+		"failed to get vote status by {key}: {value}",
+		code.WithAffectStability(false),
+	)
 }
-
