@@ -18,7 +18,6 @@ on:
   push:
     branches:
       - main
-  # 添加手动触发事件
   workflow_dispatch:
     inputs:
       version:
@@ -33,45 +32,83 @@ env:
 
 jobs:
   build:
-    # 逻辑：如果是手动触发 (workflow_dispatch) 则运行，或者如果是 push 触发且 commit message 不含 '[skip ci]' 则运行。
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]'))
 
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
+      # =========================
+      # 1. 安装 Go & swag
+      # =========================
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.5'
+
+      - name: Install swag
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@latest
+
+      # =========================
+      # 2. 生成 Swagger
+      # =========================
+      - name: Generate Swagger docs
+        run: |
+          swag init \
+            --parseDependency \
+            --parseInternal \
+            --output docs
+
+      # =========================
+      # 3. 如果 Swagger 有变化，则自动 commit
+      # =========================
+      - name: Commit Swagger changes
+        run: |
+          if git status --porcelain | grep '^ docs/'; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add docs/
+            git commit -m "chore(swagger): auto-generate swagger docs [skip ci]"
+            git push
+          else
+            echo "No swagger changes detected."
+          fi
+
+      # =========================
+      # 4. 版本号逻辑（你原封不动的）
+      # =========================
       - name: Determine Version
         id: version
         run: |
-          # 如果用户提供了版本号，则使用该版本号
           if [ -n "${{ github.event.inputs.version }}" ]; then
             echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
-            echo "Using manual version: ${{ github.event.inputs.version }}"
             exit 0
           fi
-          
-          # 获取已有 tags
+
           tags=$(curl -s "https://hub.docker.com/v2/repositories/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}/tags?page_size=100" | jq -r '.results[].name')
           latest=$(echo "$tags" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
 
-          # 优化版本递增逻辑 (确保仓库为空时从 v1.0.0 开始)
           if [ -z "$latest" ]; then
-            # 如果没有找到匹配的 tag，则从 v1.0.0 开始
             next_version="v1.0.0"
           else
-            # 否则，在最新版本上增加 patch 号
             base=${latest%.*}
             patch=${latest##*.}
             next_patch=$((patch + 1))
             next_version="${base}.${next_patch}"
           fi
-          
-          echo "VERSION=$next_version" >> $GITHUB_ENV
-          echo "Next version: $next_version"
 
+          echo "VERSION=$next_version" >> $GITHUB_ENV
+
+      # =========================
+      # 5. Docker 构建 & 推送
+      # =========================
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@v3
 
