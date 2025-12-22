@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/Boyuan-IT-Club/go-kit v0.0.0-20251208085541-b33f68a15880
-	github.com/cloudwego/hertz v0.10.1
+	github.com/cloudwego/hertz v0.10.3
 	github.com/gin-gonic/gin v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
