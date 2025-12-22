@@ -1,0 +1,72 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Docker image version (e.g., v1.1.0). If empty, auto-increment.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: docker.io
+  USERNAME: boyuanclub
+  IMAGE_NAME: meowpick-backend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # 1. 版本号逻辑
+      - name: Determine Version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          tags=$(curl -s "https://hub.docker.com/v2/repositories/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}/tags?page_size=100" | jq -r '.results[].name')
+          latest=$(echo "$tags" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+
+          if [ -z "$latest" ]; then
+            next_version="v1.0.0"
+          else
+            base=${latest%.*}
+            patch=${latest##*.}
+            next_patch=$((patch + 1))
+            next_version="${base}.${next_patch}"
+          fi
+
+          echo "VERSION=$next_version" >> $GITHUB_ENV
+
+      # 2. Docker build & push
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}:latest

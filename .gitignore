@@ -1,7 +1,6 @@
 /.idea
 /etc
 /docker-compose.yml
-/Makefile
 /vendor/
 /scripts/
 /data/
