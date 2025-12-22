@@ -27,6 +27,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var _ IProposalRepo = (*ProposalRepo)(nil)
@@ -43,6 +44,7 @@ type IProposalRepo interface {
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
 	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
   DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
+	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, error)
 }
 
 type ProposalRepo struct {
@@ -169,7 +171,7 @@ func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalId string, op
 
 	return nil
 }
-  
+
 // UpdateProposal 更新提案
 func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Proposal) error {
 
@@ -189,4 +191,20 @@ func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Propo
 
 	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
 	return err
+}
+// GetSuggestionsByTitle 根据提案标题模糊分页查询提案
+func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, error) {
+	proposals := []*model.Proposal{}
+	filter := bson.M{
+		"title":   bson.M{"$regex": primitive.Regex{Pattern: title, Options: "i"}},
+		consts.Deleted: bson.M{"$ne": true},
+	}
+	sort := bson.D{
+		{consts.Status, 1},
+		{consts.CreatedAt, -1},
+	}
+	if err := r.conn.Find(ctx, &proposals, filter, page.FindPageOption(param).SetSort(sort)); err != nil {
+		return nil, err
+	}
+	return proposals, nil
 }

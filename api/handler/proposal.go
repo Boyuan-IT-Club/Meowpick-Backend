@@ -149,8 +149,27 @@ func DeleteProposal(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
-// GetProposalSuggestions 获取提案搜索建议
-// @router /api/proposal/suggest [GET]
+// GetProposalSuggestions godoc
+// @Summary 获取提案搜索建议
+// @Description 根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表
+// @Tags proposal
+// @Produce json
+// @Param keyword query string true "搜索关键词"
+// @Param page query int false "页码" default(0)
+// @Param pageSize query int false "每页数量" default(10)
+// @Success 200 {object} dto.GetProposalSuggestionsResp
+// @Router /api/proposal/suggest [post]
 func GetProposalSuggestions(c *gin.Context) {
-	// TODO: not implemented
+	var req dto.GetProposalSuggestionsReq
+	var resp *dto.GetProposalSuggestionsResp
+	var err error
+
+	if err = c.ShouldBindQuery(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.GetProposalSuggestions(c, &req)
+	PostProcess(c, &req, resp, err)
 }

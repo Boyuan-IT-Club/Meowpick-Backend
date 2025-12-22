@@ -48,6 +48,7 @@ type ListProposalReq struct {
 	*PageParam
 }
 
+
 // ListProposalResp 对应 /api/proposal/list 的响应体
 type ListProposalResp struct {
 	*Resp
@@ -84,6 +85,7 @@ type DeleteProposalResp struct {
 	DeletedAt  time.Time `json:"deletedAt"`
 	OperatorID string    `json:"operatorId"`
 	Deleted    bool      `json:"deleted"`
+}
 
 // UpdateProposalReq 更新提案请求参数
 type UpdateProposalReq struct {
@@ -97,4 +99,22 @@ type UpdateProposalReq struct {
 type UpdateProposalResp struct {
 	*Resp      `json:",inline"`
 	ProposalID string `json:"proposalId"`
+}
+
+// GetProposalSuggestionsReq 获取提案搜索建议请求
+type GetProposalSuggestionsReq struct {
+	Keyword string `form:"keyword" binding:"required"`
+	*PageParam
+}
+
+// GetProposalSuggestionsResp 获取提案搜索建议响应
+type GetProposalSuggestionsResp struct {
+	*Resp
+	Suggestions []*ProposalSuggestionsVO `json:"suggestions"`
+}
+
+// ProposalSuggestionsVO 提案搜索建议视图对象
+type ProposalSuggestionsVO struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
 }

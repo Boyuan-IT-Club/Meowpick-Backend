@@ -32,6 +32,7 @@ const (
 	ErrProposalNotFound                    = 108000011
 	ErrProposalDeleteFailed                = 108000012
 	ErrProposalUpdateFailed                = 108000013
+	ErrProposalGetSuggestionsFailed        = 108000014
 )
 
 func init() {
@@ -93,11 +94,16 @@ func init() {
 	code.Register(
 		ErrProposalDeleteFailed,
 		"failed to delete proposal: {proposal_id}",
-    code.WithAffectStability(false),
-  )
-  code.Register(
+		code.WithAffectStability(false),
+	)
+	code.Register(
 		ErrProposalUpdateFailed,
 		"failed to update proposal: {proposalId}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalGetSuggestionsFailed,
+		"failed to get proposal suggestions: {keyword}",
 		code.WithAffectStability(false),
 	)
 }
