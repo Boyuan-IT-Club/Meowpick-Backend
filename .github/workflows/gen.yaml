@@ -41,7 +41,7 @@ jobs:
 
       # 1. 安装工具
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25.5'
 
