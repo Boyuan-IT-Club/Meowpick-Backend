@@ -292,6 +292,36 @@ definitions:
         description: 符合条件的总记录数
         type: integer
     type: object
+  dto.ListProposalResp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+      proposals:
+        items:
+          $ref: '#/definitions/dto.ProposalVO'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.ProposalVO:
+    properties:
+      content:
+        type: string
+      course:
+        $ref: '#/definitions/dto.CourseVO'
+      createdAt:
+        type: string
+      id:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+      userId:
+        type: string
+    type: object
   dto.SearchHistoryVO:
     properties:
       createdAt:
@@ -548,9 +578,30 @@ paths:
   /api/proposal/add:
     post:
       responses: {}
-  /api/proposal/list:
+  /api/proposal/query:
     get:
-      responses: {}
+      description: 分页查询提案列表数据
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        name: pageSize
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ListProposalResp'
+      summary: 分页获取提案列表
+      tags:
+      - proposal
   /api/proposal/suggest:
     get:
       responses: {}

@@ -310,9 +310,40 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/proposal/list": {
+        "/api/proposal/query": {
             "get": {
-                "responses": {}
+                "description": "分页查询提案列表数据",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "分页获取提案列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ListProposalResp"
+                        }
+                    }
+                }
             }
         },
         "/api/proposal/suggest": {
@@ -910,6 +941,52 @@ const docTemplate = `{
                 "total": {
                     "description": "符合条件的总记录数",
                     "type": "integer"
+                }
+            }
+        },
+        "dto.ListProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "proposals": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ProposalVO"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.ProposalVO": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "course": {
+                    "$ref": "#/definitions/dto.CourseVO"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
                 }
             }
         },
