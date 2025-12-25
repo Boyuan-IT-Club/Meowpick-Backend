@@ -14,7 +14,13 @@
 
 package handler
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/gin-gonic/gin"
+)
 
 // CreateProposal 新建一个提案
 // @router /api/proposal/add [POST]
@@ -22,10 +28,31 @@ func CreateProposal(c *gin.Context) {
 	// TODO: not implemented
 }
 
-// ListProposals 分页列出所有提案
-// @router /api/proposal/list [GET]
+// ListProposals godoc
+// @Summary 分页获取提案列表
+// @Description 分页查询提案列表数据
+// @Tags proposal
+// @Produce json
+// @Param page query int true "页码"
+// @Param pageSize query int true "每页数量"
+// @Success 200 {object} dto.ListProposalResp
+// @Router /api/proposal/query [get]
 func ListProposals(c *gin.Context) {
-	// TODO: not implemented
+	var (
+		err  error
+		req  dto.ListProposalReq
+		resp *dto.ListProposalResp
+	)
+
+	if err = c.ShouldBindQuery(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.ListProposals(c, &req)
+	PostProcess(c, &req, resp, err)
+
 }
 
 // GetProposal 获取提案详情

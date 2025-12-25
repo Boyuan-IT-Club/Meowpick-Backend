@@ -14,9 +14,26 @@
 
 package dto
 
+import "time"
+
 type ProposalVO struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"userId"`
+	Title     string    `json:"title"`
+	Content   string    `json:"content"`
+	Course    *CourseVO `json:"course"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// type XxxProposalReq struct { }
+// ListProposalReq 对应 /api/proposal/list 的请求体（分页）
+type ListProposalReq struct {
+	*PageParam
+}
 
-// type XxxProposalResp struct { }
+// ListProposalResp 对应 /api/proposal/list 的响应体
+type ListProposalResp struct {
+	*Resp
+	Total     int64         `json:"total"`
+	Proposals []*ProposalVO `json:"proposals"`
+}
