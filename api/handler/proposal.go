@@ -84,3 +84,23 @@ func DeleteProposal(c *gin.Context) {
 func GetProposalSuggestions(c *gin.Context) {
 	// TODO: not implemented
 }
+
+// ToggleProposal 翻转投票状态
+// @Summary 投票或取消投票
+// @Description 对提案进行投票或取消投票
+// @Tags proposal
+// @Produce json
+// @Param id path string true "提案ID"
+// @Success 200 {object} dto.ToggleProposalResp
+// @Router /api/proposal/{id} [post]
+func ToggleProposal(c *gin.Context) {
+	var req dto.ToggleProposalReq
+	var resp *dto.ToggleProposalResp
+	var err error
+
+	req.TargetID = c.Param(consts.CtxProposalID)
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.ToggleProposal(c, &req)
+	PostProcess(c, req, resp, err)
+}

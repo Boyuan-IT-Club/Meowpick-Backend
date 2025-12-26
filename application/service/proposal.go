@@ -19,9 +19,11 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
@@ -30,11 +32,13 @@ import (
 var _ IProposalService = (*ProposalService)(nil)
 
 type IProposalService interface {
+	ToggleProposal(ctx context.Context, req *dto.ToggleProposalReq) (resp *dto.ToggleProposalResp, err error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
 }
 
 type ProposalService struct {
-	ProposalRepo      repo.IProposalRepo
+	ProposalRepo      *repo.ProposalRepo
+	ProposalCache     *cache.ProposalCache
 	ProposalAssembler *assembler.ProposalAssembler
 }
 
@@ -42,6 +46,44 @@ var ProposalServiceSet = wire.NewSet(
 	wire.Struct(new(ProposalService), "*"),
 	wire.Bind(new(IProposalService), new(*ProposalService)),
 )
+
+// ToggleProposal 切换投票状态
+func (s *ProposalService) ToggleProposal(ctx context.Context, req *dto.ToggleProposalReq) (resp *dto.ToggleProposalResp, err error) {
+
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 投票或取消投票目标
+	active, err := s.ProposalRepo.Toggle(ctx, userId, req.TargetID, consts.ProposalType)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrProposalToggleFailed)
+	}
+
+	// 设置缓存的投票状态
+	if err = s.ProposalCache.SetStatusByUserIdAndTarget(ctx, userId, req.TargetID, active,
+		consts.CacheProposalStatusTTL,
+	); err != nil {
+		logs.CtxWarnf(ctx, "[ProposalCache] [SetStatusByUserIdAndTarget] error: %v", err)
+	}
+
+	// 获取新的总投票数
+	proposalCount, err := s.ProposalRepo.CountProposalByTarget(ctx, req.TargetID, consts.ProposalType)
+	if err != nil {
+		logs.CtxWarnf(ctx, "[ProposalRepo] [CountByTarget] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCountFailed,
+			errorx.KV("key", consts.ReqTargetID), errorx.KV("value", req.TargetID))
+	}
+
+	// 构造响应并返回
+	return &dto.ToggleProposalResp{
+		Resp:        dto.Success(),
+		Proposal:    active,
+		ProposalCnt: proposalCount,
+	}, nil
+}
 
 // ListProposals 分页查询所有提案，用于投票列表或管理端审核
 func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error) {

@@ -70,6 +70,7 @@ func SetupRoutes() *gin.Engine {
 		proposalGroup.POST("/:id/update", handler.UpdateProposal)
 		proposalGroup.POST("/:id/delete", handler.DeleteProposal)
 		proposalGroup.POST("/suggest", handler.GetProposalSuggestions)
+		proposalGroup.POST("/:id", handler.ToggleProposal)
 	}
 	return router
 }
