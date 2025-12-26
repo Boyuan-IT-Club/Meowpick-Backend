@@ -351,6 +351,35 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/api/proposal/{id}": {
+            "post": {
+                "description": "对提案进行投票或取消投票",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "投票或取消投票",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "提案ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ToggleProposalResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/search": {
             "post": {
                 "description": "搜索课程列表",
@@ -1088,6 +1117,23 @@ const docTemplate = `{
                 },
                 "msg": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.ToggleProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "proposal": {
+                    "type": "boolean"
+                },
+                "proposalCnt": {
+                    "type": "integer"
                 }
             }
         }
