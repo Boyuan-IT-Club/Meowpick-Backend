@@ -34,6 +34,7 @@ var _ IProposalService = (*ProposalService)(nil)
 type IProposalService interface {
 	ToggleProposal(ctx context.Context, req *dto.ToggleProposalReq) (resp *dto.ToggleProposalResp, err error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
+	GetProposal(ctx context.Context, req *dto.GetProposalReq) (resp *dto.GetProposalResp, err error)
 }
 
 type ProposalService struct {
@@ -70,7 +71,7 @@ func (s *ProposalService) ToggleProposal(ctx context.Context, req *dto.TogglePro
 	}
 
 	// 获取新的总投票数
-	proposalCount, err := s.ProposalRepo.CountProposalByTarget(ctx, req.TargetID, consts.ProposalType)
+	proposalCount, err := s.ProposalRepo.CountByTarget(ctx, req.TargetID, consts.ProposalType)
 	if err != nil {
 		logs.CtxWarnf(ctx, "[ProposalRepo] [CountByTarget] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalCountFailed,
@@ -112,5 +113,38 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 		Resp:      dto.Success(),
 		Total:     total,
 		Proposals: vos,
+	}, nil
+}
+
+// GetProposalDetail 获取提案详情
+func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalReq) (resp *dto.GetProposalResp, err error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 查询提案详情
+	proposalId := req.ProposalID
+	proposalModel, err := s.ProposalRepo.FindByID(ctx, proposalId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindProposalByID] error: %v, proposalID: %s", err, proposalId)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
+	}
+	if proposalModel == nil {
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalID", proposalId))
+	}
+
+	// 转换为VO
+	proposalVO, err := s.ProposalAssembler.ToProposalVO(ctx, proposalModel)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVO] error: %v, proposalID: %s", err, proposalId)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed)
+	}
+
+	// 构造响应
+	return &dto.GetProposalResp{
+		Resp:     dto.Success(),
+		Proposal: proposalVO,
 	}, nil
 }
