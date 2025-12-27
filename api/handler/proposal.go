@@ -67,8 +67,22 @@ func ListProposals(c *gin.Context) {
 
 // GetProposal 获取提案详情
 // @router /api/proposal/:id [GET]
+// @Summary 获取提案详情
+// @Description 根据提案ID查询提案完整信息
+// @Tags proposal
+// @Produce json
+// @Param id path string true "提案ID"
+// @Success 200 {object} dto.GetProposalDetailResp
 func GetProposal(c *gin.Context) {
-	// TODO: not implemented
+	var req dto.GetProposalReq
+	var resp *dto.GetProposalResp
+	var err error
+
+	req.TargetID = c.Param(consts.CtxProposalID)
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.GetProposal(c, &req)
+	PostProcess(c, &req, resp, err)
 }
 
 // ApproveProposal 审批提案
