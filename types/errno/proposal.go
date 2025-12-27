@@ -16,40 +16,35 @@ package errno
 
 import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 
-// proposal: 106 000 000 ~ 106 999 999
+// proposal: 108 000 000 ~ 108 999 999
 
 const (
-	ErrProposalFindFailed      = 106000001
-	ErrProposalCvtFailed       = 106000002
-	ErrProposalToggleFailed    = 106000003
-	ErrProposalCountFailed     = 106000004
-	ErrProposalGetStatusFailed = 106000005
+	ErrProposalCourseFindInProposalFailed = 108000001
+	ErrProposalCourseFindInCoursesFailed  = 108000002
+	ErrProposalCourseFoundInProposals     = 108000003
+	ErrProposalCourseFoundInCourses       = 108000004
 )
 
 func init() {
 	code.Register(
-		ErrProposalFindFailed,
-		"failed to find proposals",
+		ErrProposalCourseFindInProposalFailed,
+		"failed to find course in proposal {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
-		ErrProposalCvtFailed,
-		"failed to convert proposal from {src} to {dst}",
+		ErrProposalCourseFindInCoursesFailed,
+		"failed to find course in course {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
-		ErrProposalToggleFailed,
-		"failed to toggle vote status",
+		ErrProposalCourseFoundInProposals,
+		"found course in proposal {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
-		ErrProposalCountFailed,
-		"failed to get vote count by {key}: {value}",
+		ErrProposalCourseFoundInCourses,
+		"found course in course {key}: {value}",
 		code.WithAffectStability(false),
 	)
-	code.Register(
-		ErrProposalGetStatusFailed,
-		"failed to get vote status by {key}: {value}",
-		code.WithAffectStability(false),
-	)
+
 }

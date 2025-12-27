@@ -47,27 +47,23 @@ const (
 	CacheUserKeyPrefix          = "meowpick:user:"
 	CacheTeacherKeyPrefix       = "meowpick:teacher:"
 	CacheCourseKeyPrefix        = "meowpick:course:"
-	CacheProposalKeyPrefix      = "meowpick:proposal:"
 
-	CacheCommentCountTTL   = 12 * time.Hour
-	CacheLikeStatusTTL     = 10 * time.Minute
-	CacheProposalStatusTTL = 10 * time.Minute
+	CacheCommentCountTTL = 12 * time.Hour
+	CacheLikeStatusTTL   = 10 * time.Minute
 )
 
 // 元素类别相关（如课程、评论、老师）
 const (
 	CourseType int32 = 101 + iota
 	CommentType
-	ProposalType
 )
 
 // 上下文相关
 const (
-	CtxUserID     = "userID"
-	CtxToken      = "token"
-	CtxLikeID     = "id"
-	CtxCourseID   = "courseId"
-	CtxProposalID = "proposalId"
+	CtxUserID   = "userID"
+	CtxToken    = "token"
+	CtxLikeID   = "id"
+	CtxCourseID = "courseId"
 )
 
 // Request 相关

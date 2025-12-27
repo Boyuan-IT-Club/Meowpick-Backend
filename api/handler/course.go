@@ -19,18 +19,11 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
-	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/gin-gonic/gin"
 )
 
-// GetCourse godoc
-// @Summary 获取课程信息
-// @Description 获取课程信息
-// @Tags course
-// @Produce json
-// @Param courseId path string true "课程ID"
-// @Success 200 {object} dto.GetCourseResp
-// @Router /api/course/{courseId} [get]
+// GetCourse 精确搜索一个课程，返回课程元信息
+// @router /api/course/:courseId [GET]
 func GetCourse(c *gin.Context) {
 	var req dto.GetCourseReq
 	var resp *dto.GetCourseResp
@@ -40,17 +33,11 @@ func GetCourse(c *gin.Context) {
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().CourseService.GetCourse(c, &req)
-	PostProcess(c, &req, resp, err)
+	PostProcess(c, req, resp, err)
 }
 
-// GetCourseDepartments godoc
-// @Summary 获取课程开课院系
-// @Description 根据课程名字获取课程开课院系
-// @Tags course
-// @Produce json
-// @Param keyword query string true "课程名称关键词"
-// @Success 200 {object} dto.GetCourseDepartmentsResp
-// @Router /api/course/departs [get]
+// GetCourseDepartments 根据课程名字获得开课院系
+// @router /api/course/departs [GET]
 func GetCourseDepartments(c *gin.Context) {
 	var req dto.GetCourseDepartmentsReq
 	var resp *dto.GetCourseDepartmentsResp
@@ -66,14 +53,8 @@ func GetCourseDepartments(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
-// GetCourseCategories godoc
-// @Summary 获取课程分类
-// @Description 根据课程名字获取课程分类
-// @Tags course
-// @Produce json
-// @Param keyword query string true "课程名称关键词"
-// @Success 200 {object} dto.GetCourseCategoriesResp
-// @Router /api/course/categories [get]
+// GetCourseCategories 根据课程名字获得课程分类
+// @router /api/course/categories [GET]
 func GetCourseCategories(c *gin.Context) {
 	var req dto.GetCourseCategoriesReq
 	var resp *dto.GetCourseCategoriesResp
@@ -89,14 +70,8 @@ func GetCourseCategories(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
-// GetCourseCampuses godoc
-// @Summary 获取课程开课校区
-// @Description 根据课程名字获取课程开课校区
-// @Tags course
-// @Produce json
-// @Param keyword query string true "课程名称关键词"
-// @Success 200 {object} dto.GetCourseCampusesResp
-// @Router /api/course/campuses [get]
+// GetCourseCampuses 根据课程名字获得开课校区
+// @router /api/course/campuses [GET]
 func GetCourseCampuses(c *gin.Context) {
 	var req dto.GetCourseCampusesReq
 	var resp *dto.GetCourseCampusesResp
@@ -109,38 +84,5 @@ func GetCourseCampuses(c *gin.Context) {
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().CourseService.GetCampuses(c, &req)
-	PostProcess(c, &req, resp, err)
-}
-
-// ListCourses godoc
-// @Summary 搜索课程列表
-// @Description 搜索课程列表
-// @Tags courses
-// @Accept json
-// @Produce json
-// @Param body body dto.ListCoursesReq true "ListCoursesReq"
-// @Success 200 {object} dto.ListCoursesResp
-// @Router /api/search [post]
-func ListCourses(c *gin.Context) {
-	var req dto.ListCoursesReq
-	var resp *dto.ListCoursesResp
-	var err error
-
-	if err = c.ShouldBindJSON(&req); err != nil {
-		PostProcess(c, &req, nil, err)
-		return
-	}
-	c.Set(consts.CtxUserID, token.GetUserID(c))
-
-	if req.Keyword != "" {
-		go func() {
-			cCopy := c.Copy()
-			if errCopy := provider.Get().SearchHistoryService.LogSearch(cCopy, req.Keyword); errCopy != nil {
-				logs.CtxErrorf(cCopy, "[SearchHistoryService] [LogSearch] error: %v", errCopy)
-			}
-		}()
-	}
-
-	resp, err = provider.Get().CourseService.ListCourses(c, &req)
-	PostProcess(c, &req, resp, err)
+	PostProcess(c, req, resp, err)
 }

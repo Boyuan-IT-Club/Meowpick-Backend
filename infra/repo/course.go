@@ -21,8 +21,11 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	"github.com/Boyuan-IT-Club/go-kit/errorx"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -46,6 +49,8 @@ type ICourseRepo interface {
 	GetCategoriesByName(ctx context.Context, name string) ([]int32, error)
 	GetCampusesByName(ctx context.Context, name string) ([]int32, error)
 	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, error)
+
+	IsCourseInExistingCourses(ctx context.Context, courseVO *dto.CourseVO) (bool, error)
 }
 
 type CourseRepo struct {
@@ -106,10 +111,7 @@ func (r *CourseRepo) FindManyByTeacherID(ctx context.Context, teacherId string, 
 	courses := []*model.Course{}
 	filter := bson.M{consts.TeacherIDs: teacherId}
 	if err := r.conn.Find(ctx, &courses, filter,
-		page.FindPageOption(param).SetSort(bson.D{
-			{consts.CreatedAt, -1},
-			{consts.ID, 1}, // 添加_id作为二级排序，确保排序稳定性
-		}),
+		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
 	); err != nil {
 		return nil, 0, err
 	}
@@ -210,4 +212,54 @@ func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, para
 		return nil, err
 	}
 	return courses, nil
+}
+
+// IsCourseInExistingCourses 检查课程是否已经存在于现有课程中
+// 比较的字段包括: Name, Code, Department, Category, Campuses, TeacherIDs
+func (s *CourseRepo) IsCourseInExistingCourses(ctx context.Context, courseVO *dto.CourseVO) (bool, error) {
+	// 将DTO中的值转换为ID形式以便数据库查询
+	departmentID := mapping.Data.GetDepartmentIDByName(courseVO.Department)
+	categoryID := mapping.Data.GetCategoryIDByName(courseVO.Category)
+
+	// 将校区名称转换为ID
+	campusIDs := make([]int32, len(courseVO.Campuses))
+	for i, campus := range courseVO.Campuses {
+		campusIDs[i] = mapping.Data.GetCampusIDByName(campus)
+	}
+
+	// 处理教师ID - 在创建新课程时，TeacherIDs初始化为空切片
+	// 所以这里我们也应该允许空的TeacherIDs匹配
+
+	// 构造查询条件
+	filter := bson.M{
+		"name":       courseVO.Name,
+		"code":       courseVO.Code,
+		"department": departmentID,
+		"category":   categoryID,
+		"campuses":   bson.M{"$all": campusIDs, "$size": len(campusIDs)},
+	}
+
+	// 如果提供了教师信息，则也加入查询条件
+	if len(courseVO.Teachers) > 0 {
+		teacherIDs := make([]string, len(courseVO.Teachers))
+		for i, teacher := range courseVO.Teachers {
+			teacherIDs[i] = teacher.ID
+		}
+		filter["teacherIds"] = bson.M{"$all": teacherIDs, "$size": len(teacherIDs)}
+	} else {
+		// 如果没有提供教师信息，则查询teacherIds为空或者不存在的记录
+		filter["$or"] = []bson.M{
+			{"teacherIds": bson.M{"$exists": false}},
+			{"teacherIds": bson.M{"$size": 0}},
+		}
+	}
+
+	// 查询课程是否存在
+	count, err := s.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return false, errorx.WrapByCode(err, errno.ErrProposalCourseFindInCoursesFailed,
+			errorx.KV("operation", "check course existence"))
+	}
+
+	return count > 0, nil
 }

@@ -22,14 +22,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ToggleLike godoc
-// @Summary 点赞或取消点赞
-// @Description 点赞或取消点赞
-// @Tags action
-// @Produce json
-// @Param id path string true "目标ID"
-// @Success 200 {object} dto.ToggleLikeResp
-// @Router /api/action/like/{id} [post]
+// ToggleLike 点赞或取消点赞某个目标（课程、评论等）
+// @router /api/action/like/{id} [POST]
 func ToggleLike(c *gin.Context) {
 	var req dto.ToggleLikeReq
 	var resp *dto.ToggleLikeResp
