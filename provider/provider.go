@@ -65,7 +65,6 @@ var ApplicationSet = wire.NewSet(
 	assembler.CommentAssemblerSet,
 	assembler.CourseAssemblerSet,
 	assembler.TeacherAssemblerSet,
-	assembler.ProposalAssemblerSet,
 )
 
 var InfraSet = wire.NewSet(

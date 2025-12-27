@@ -51,9 +51,9 @@ func SetupRoutes() *gin.Engine {
 	courseGroup := router.Group("/api/course")
 	{
 		courseGroup.GET("/:courseId", handler.GetCourse) // 精确搜索某个课程
-		//courseGroup.GET("/departs", handler.GetCourseDepartments)   // 获得某课程的“所属部门”信息
-		//courseGroup.GET("/categories", handler.GetCourseCategories) // 获得某课程的“课程类型”信息
-		//courseGroup.GET("/campuses", handler.GetCourseCampuses)     // 获得某课程的“开设校区”信息
+		//courseGroup.GET("/departs", handler.GetCourseDepartments)   // 获得某课程的"所属部门"信息
+		//courseGroup.GET("/categories", handler.GetCourseCategories) // 获得某课程的"课程类型"信息
+		//courseGroup.GET("/campuses", handler.GetCourseCampuses)     // 获得某课程的"开设校区"信息
 	}
 
 	// TeacherApi
@@ -70,7 +70,6 @@ func SetupRoutes() *gin.Engine {
 		proposalGroup.POST("/:id/update", handler.UpdateProposal)
 		proposalGroup.POST("/:id/delete", handler.DeleteProposal)
 		proposalGroup.POST("/suggest", handler.GetProposalSuggestions)
-		proposalGroup.POST("/:id", handler.ToggleProposal)
 	}
 	return router
 }

@@ -22,14 +22,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SignIn godoc
-// @Summary 登录
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param body body dto.SignInReq true "SignInReq"
-// @Success 200 {object} dto.SignInResp
-// @Router /api/sign_in [post]
+// SignIn 用户登录接口
+// @router /api/sign_in [POST]
 func SignIn(c *gin.Context) {
 	var err error
 	var req dto.SignInReq

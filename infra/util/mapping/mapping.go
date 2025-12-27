@@ -15,92 +15,66 @@
 package mapping
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
-
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/mapping"
 )
 
-// StaticData 存放所有静态映射数据
-type StaticData struct {
-	CampusNameByID     map[int32]string
-	DepartmentNameByID map[int32]string
-	CategoryNameByID   map[int32]string
-	CampusIDByName     map[string]int32
-	DepartmentIDByName map[string]int32
-	CategoryIDByName   map[string]int32
-}
-
-var Data = &StaticData{
-	CampusNameByID:     make(map[int32]string),
-	DepartmentNameByID: make(map[int32]string),
-	CategoryNameByID:   make(map[int32]string),
-	CampusIDByName:     make(map[string]int32),
-	DepartmentIDByName: make(map[string]int32),
-	CategoryIDByName:   make(map[string]int32),
-}
-
-func init() {
-	for k, v := range mapping.CampusesMap {
-		Data.CampusNameByID[k] = v
-	}
-	for k, v := range mapping.DepartmentsMap {
-		Data.DepartmentNameByID[k] = v
-	}
-	for k, v := range mapping.CategoriesMap {
-		Data.CategoryNameByID[k] = v
-	}
-
-	for id, name := range Data.CampusNameByID {
-		Data.CampusIDByName[name] = id
-	}
-	for id, name := range Data.DepartmentNameByID {
-		Data.DepartmentIDByName[name] = id
-	}
-	for id, name := range Data.CategoryNameByID {
-		Data.CategoryIDByName[name] = id
-	}
-}
-
 func (d *StaticData) GetCampusNameByID(id int32) string {
-	if name, ok := d.CampusNameByID[id]; ok {
+	key := fmt.Sprintf("%d", id)
+	if name, ok := d.Campuses[key]; ok {
 		return name
 	}
 	return "未知校区"
 }
 
 func (d *StaticData) GetDepartmentNameByID(id int32) string {
-	if name, ok := d.DepartmentNameByID[id]; ok {
+	key := fmt.Sprintf("%d", id)
+	if name, ok := d.Departments[key]; ok {
 		return name
 	}
-	return "未知开课院系"
+	return "未知院系"
 }
 
 func (d *StaticData) GetCategoryNameByID(id int32) string {
-	if name, ok := d.CategoryNameByID[id]; ok {
+	key := fmt.Sprintf("%d", id)
+	if name, ok := d.Categories[key]; ok {
 		return name
 	}
-	return "未知分类"
+	return "未知课程"
 }
 
 func (d *StaticData) GetCampusIDByName(name string) int32 {
-	if id, ok := d.CampusIDByName[name]; ok {
-		return id
+	for idStr, campusName := range d.Campuses {
+		if campusName == name {
+			if id, err := strconv.ParseInt(idStr, 10, 32); err == nil {
+				return int32(id)
+			}
+		}
 	}
 	return 0
 }
 
 func (d *StaticData) GetDepartmentIDByName(name string) int32 {
-	if id, ok := d.DepartmentIDByName[name]; ok {
-		return id
+	for idStr, departmentName := range d.Departments {
+		if departmentName == name {
+			if id, err := strconv.ParseInt(idStr, 10, 32); err == nil {
+				return int32(id)
+			}
+		}
 	}
 	return 0
 }
 
 func (d *StaticData) GetCategoryIDByName(name string) int32 {
-	if id, ok := d.CategoryIDByName[name]; ok {
-		return id
+	for idStr, categoryName := range d.Categories {
+		if categoryName == name {
+			if id, err := strconv.ParseInt(idStr, 10, 32); err == nil {
+				return int32(id)
+			}
+		}
 	}
 	return 0
 }
@@ -127,16 +101,16 @@ func (d *StaticData) GetBestDepartmentIDByKeyword(keyword string) int32 {
 
 // GetCategoryIDsByKeyword 根据类别关键词快速查找匹配的分类ID
 func (d *StaticData) GetCategoryIDsByKeyword(keyword string) []int32 {
-	return fuzzySearch(keyword, d.CategoryNameByID)
+	return fuzzySearch(keyword, d.Categories)
 }
 
 // GetDepartmentIDsByKeyword 根据部门关键词快速查找匹配的院系ID
 func (d *StaticData) GetDepartmentIDsByKeyword(keyword string) []int32 {
-	return fuzzySearch(keyword, d.DepartmentNameByID)
+	return fuzzySearch(keyword, d.Departments)
 }
 
 // 正则+包含模糊搜索，按匹配度排序
-func fuzzySearch(keyword string, dataMap map[int32]string) []int32 {
+func fuzzySearch(keyword string, dataMap map[string]string) []int32 {
 	keyword = strings.TrimSpace(keyword)
 	if keyword == "" {
 		return nil
@@ -150,16 +124,20 @@ func fuzzySearch(keyword string, dataMap map[int32]string) []int32 {
 		score int // 匹配度分数
 	}
 	var results []result
-	for id, name := range dataMap {
+	for idStr, name := range dataMap {
+		id, err := strconv.ParseInt(idStr, 10, 32)
+		if err != nil {
+			continue
+		}
 		nameLower := strings.ToLower(name)
 		keywordLower := strings.ToLower(keyword)
 		if strings.HasPrefix(nameLower, keywordLower) {
-			results = append(results, result{id, 100})
+			results = append(results, result{int32(id), 100})
 		} else if re.MatchString(name) {
 			// 匹配位置越靠前分数越高
 			idx := strings.Index(nameLower, keywordLower)
 			score := 80 - idx
-			results = append(results, result{id, score})
+			results = append(results, result{int32(id), score})
 		}
 	}
 	// 按分数排序

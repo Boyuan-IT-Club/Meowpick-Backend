@@ -14,9 +14,9 @@
 
 package mapping
 
-var CampusesMap = map[int32]string{
-	1: "滴水湖软件楼",
-	2: "临港校区",
-	3: "普陀校区",
-	4: "闵行校区",
+var CampusesMap = map[string]string{
+	"1": "滴水湖软件楼",
+	"2": "临港校区",
+	"3": "普陀校区",
+	"4": "闵行校区",
 }
