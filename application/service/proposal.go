@@ -31,9 +31,11 @@ import (
 
 var _ IProposalService = (*ProposalService)(nil)
 
+// 保留现有接口方法，新增GetProposalDetail，保持接口兼容性
 type IProposalService interface {
 	ToggleProposal(ctx context.Context, req *dto.ToggleProposalReq) (resp *dto.ToggleProposalResp, err error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
+	GetProposalDetail(ctx context.Context, proposalID string) (resp *dto.GetProposalDetailResp, err error) // 新增方法
 }
 
 type ProposalService struct {
@@ -112,5 +114,37 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 		Resp:      dto.Success(),
 		Total:     total,
 		Proposals: vos,
+	}, nil
+}
+
+// GetProposalDetail 获取提案详情
+func (s *ProposalService) GetProposalDetail(ctx context.Context, proposalID string) (resp *dto.GetProposalDetailResp, err error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 查询提案详情
+	proposalModel, err := s.ProposalRepo.FindProposalByID(ctx, proposalID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindProposalByID] error: %v, proposalID: %s", err, proposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
+	}
+	if proposalModel == nil {
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalID", proposalID))
+	}
+
+	// 转换为VO
+	proposalVO, err := s.ProposalAssembler.ToProposalVO(ctx, proposalModel)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVO] error: %v, proposalID: %s", err, proposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed)
+	}
+
+	// 构造响应
+	return &dto.GetProposalDetailResp{
+		Resp:     dto.Success(),
+		Proposal: proposalVO,
 	}, nil
 }
