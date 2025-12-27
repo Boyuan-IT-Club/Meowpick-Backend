@@ -47,3 +47,8 @@ type ToggleProposalResp struct {
 	ProposalCnt int64 `json:"proposalCnt"`
 	*Resp
 }
+
+type GetProposalDetailResp struct {
+	*Resp
+	Proposal *ProposalVO `json:"proposal"`
+}
