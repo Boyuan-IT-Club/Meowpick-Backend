@@ -38,6 +38,8 @@ const (
 )
 
 type IProposalRepo interface {
+	Insert(ctx context.Context, proposal *model.Proposal) error
+	IsCourseInExistingProposals(ctx context.Context, courseVO *model.Course) (bool, error)
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	Toggle(ctx context.Context, userId, targetId string, targetType int32) (bool, error)
 	IsProposal(ctx context.Context, userId, targetId string, targetType int32) (bool, error)
@@ -52,6 +54,34 @@ type ProposalRepo struct {
 func NewProposalRepo(cfg *config.Config) *ProposalRepo {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, ProposalCollectionName, cfg.Cache)
 	return &ProposalRepo{conn: conn}
+}
+
+// Insert 插入一个新的提案
+func (r *ProposalRepo) Insert(ctx context.Context, proposal *model.Proposal) error {
+	_, err := r.conn.InsertOneNoCache(ctx, proposal)
+	return err
+}
+
+// IsCourseInExistingProposals 检查课程是否已经存在于现有提案中
+// 比较的字段包括: Name, Code, Department, Category, Campuses, TeacherIDs
+func (r *ProposalRepo) IsCourseInExistingProposals(ctx context.Context, courseDB *model.Course) (bool, error) {
+	filter := bson.M{
+		consts.Name:       courseDB.Name,
+		consts.Code:       courseDB.Code,
+		consts.Department: courseDB.Department,
+		consts.Categories: courseDB.Category,
+		consts.Campuses:   courseDB.Campuses,
+		consts.TeacherIDs: courseDB.TeacherIDs,
+		consts.Deleted:    false, // 只检查未删除的提案
+	}
+
+	// 查询提案中是否已存在该课程
+	count, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }
 
 // FindMany 分页查询所有未删除的提案

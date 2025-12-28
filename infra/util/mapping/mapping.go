@@ -24,21 +24,25 @@ import (
 
 // StaticData 存放所有静态映射数据
 type StaticData struct {
-	CampusNameByID     map[int32]string
-	DepartmentNameByID map[int32]string
-	CategoryNameByID   map[int32]string
-	CampusIDByName     map[string]int32
-	DepartmentIDByName map[string]int32
-	CategoryIDByName   map[string]int32
+	CampusNameByID         map[int32]string
+	DepartmentNameByID     map[int32]string
+	CategoryNameByID       map[int32]string
+	ProposalStatusNameByID map[int32]string
+	CampusIDByName         map[string]int32
+	DepartmentIDByName     map[string]int32
+	CategoryIDByName       map[string]int32
+	ProposalStatusIDByName map[string]int32
 }
 
 var Data = &StaticData{
-	CampusNameByID:     make(map[int32]string),
-	DepartmentNameByID: make(map[int32]string),
-	CategoryNameByID:   make(map[int32]string),
-	CampusIDByName:     make(map[string]int32),
-	DepartmentIDByName: make(map[string]int32),
-	CategoryIDByName:   make(map[string]int32),
+	CampusNameByID:         make(map[int32]string),
+	DepartmentNameByID:     make(map[int32]string),
+	CategoryNameByID:       make(map[int32]string),
+	ProposalStatusNameByID: make(map[int32]string),
+	CampusIDByName:         make(map[string]int32),
+	DepartmentIDByName:     make(map[string]int32),
+	CategoryIDByName:       make(map[string]int32),
+	ProposalStatusIDByName: make(map[string]int32),
 }
 
 func init() {
@@ -51,6 +55,9 @@ func init() {
 	for k, v := range mapping.CategoriesMap {
 		Data.CategoryNameByID[k] = v
 	}
+	for k, v := range mapping.ProposalStatusMap {
+		Data.ProposalStatusNameByID[k] = v
+	}
 
 	for id, name := range Data.CampusNameByID {
 		Data.CampusIDByName[name] = id
@@ -60,6 +67,9 @@ func init() {
 	}
 	for id, name := range Data.CategoryNameByID {
 		Data.CategoryIDByName[name] = id
+	}
+	for id, name := range Data.ProposalStatusNameByID {
+		Data.ProposalStatusIDByName[name] = id
 	}
 }
 
@@ -84,6 +94,13 @@ func (d *StaticData) GetCategoryNameByID(id int32) string {
 	return "未知分类"
 }
 
+func (d *StaticData) GetProposalStatusNameByID(id int32) string {
+	if name, ok := d.ProposalStatusNameByID[id]; ok {
+		return name
+	}
+	return "未知状态"
+}
+
 func (d *StaticData) GetCampusIDByName(name string) int32 {
 	if id, ok := d.CampusIDByName[name]; ok {
 		return id
@@ -100,6 +117,13 @@ func (d *StaticData) GetDepartmentIDByName(name string) int32 {
 
 func (d *StaticData) GetCategoryIDByName(name string) int32 {
 	if id, ok := d.CategoryIDByName[name]; ok {
+		return id
+	}
+	return 0
+}
+
+func (d *StaticData) GetProposalStatusIDByName(name string) int32 {
+	if id, ok := d.ProposalStatusIDByName[name]; ok {
 		return id
 	}
 	return 0

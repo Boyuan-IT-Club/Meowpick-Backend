@@ -46,6 +46,8 @@ type ICourseRepo interface {
 	GetCategoriesByName(ctx context.Context, name string) ([]int32, error)
 	GetCampusesByName(ctx context.Context, name string) ([]int32, error)
 	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, error)
+
+	IsCourseInExistingCourses(ctx context.Context, vo *model.Course) (bool, error)
 }
 
 type CourseRepo struct {
@@ -210,4 +212,25 @@ func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, para
 		return nil, err
 	}
 	return courses, nil
+}
+
+// IsCourseInExistingCourses 检查课程是否已经存在于现有课程中
+// 比较的字段包括: Name, Code, Department, Category, Campuses, TeacherIDs
+func (r *CourseRepo) IsCourseInExistingCourses(ctx context.Context, vo *model.Course) (bool, error) {
+	filter := bson.M{
+		consts.Name:       vo.Name,
+		consts.Code:       vo.Code,
+		consts.Department: vo.Department,
+		consts.Categories: vo.Category,
+		consts.Campuses:   vo.Campuses,
+		consts.TeacherIDs: vo.TeacherIDs,
+		consts.Deleted:    false, // 只检查未删除的提案
+	}
+
+	count, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }

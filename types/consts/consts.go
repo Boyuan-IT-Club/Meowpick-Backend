@@ -80,6 +80,7 @@ const (
 	ReqType       = "type"
 	ReqCourseID   = "courseId"
 	ReqTargetID   = "targetId"
+	ReqTitle      = "title"
 )
 
 // 限制相关
