@@ -35,6 +35,10 @@ type ToggleProposalReq struct {
 	TargetID string `json:"targetId"`
 }
 
+type GetProposalReq struct {
+	ProposalID string `uri:"id" json:"proposalId"`
+}
+
 // ListProposalResp 对应 /api/proposal/list 的响应体
 type ListProposalResp struct {
 	*Resp
@@ -46,4 +50,9 @@ type ToggleProposalResp struct {
 	Proposal    bool  `json:"proposal"`
 	ProposalCnt int64 `json:"proposalCnt"`
 	*Resp
+}
+
+type GetProposalResp struct {
+	*Resp
+	Proposal *ProposalVO `json:"proposal"`
 }

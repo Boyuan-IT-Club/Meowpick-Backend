@@ -37,11 +37,13 @@ const (
 	ProposalCollectionName = "proposal"
 )
 
+// 保留现有接口方法，修改新增方法名：FindOneByID → FindProposalByID
 type IProposalRepo interface {
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	Toggle(ctx context.Context, userId, targetId string, targetType int32) (bool, error)
 	IsProposal(ctx context.Context, userId, targetId string, targetType int32) (bool, error)
-	CountProposalByTarget(ctx context.Context, targetId string, targetType int32) (int64, error)
+	CountByTarget(ctx context.Context, targetId string, targetType int32) (int64, error)
+	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error) // 修改方法名
 }
 
 type ProposalRepo struct {
@@ -120,9 +122,28 @@ func (r *ProposalRepo) IsProposal(ctx context.Context, userId, targetId string, 
 }
 
 // CountProposalByTarget 获得目标的总投票数
-func (r *ProposalRepo) CountProposalByTarget(ctx context.Context, targetId string, targetType int32) (int64, error) {
+func (r *ProposalRepo) CountByTarget(ctx context.Context, targetId string, targetType int32) (int64, error) {
 	return r.conn.CountDocuments(ctx, bson.M{
 		consts.TargetID: targetId,
 		consts.Active:   bson.M{"$ne": false},
 	})
+}
+
+// FindProposalByID 根据提案ID查询单个未删除的提案
+func (r *ProposalRepo) FindByID(ctx context.Context, proposalID string) (*model.Proposal, error) {
+	var proposal model.Proposal
+
+	filter := bson.M{
+		consts.ID:      proposalID,
+		consts.Deleted: bson.M{"$ne": true},
+	}
+
+	err := r.conn.FindOneNoCache(ctx, &proposal, filter, nil)
+	if err != nil {
+		if err == monc.ErrNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &proposal, nil
 }
