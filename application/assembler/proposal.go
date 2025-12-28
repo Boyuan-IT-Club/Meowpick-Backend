@@ -19,6 +19,7 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
 )
@@ -28,6 +29,8 @@ var _ IProposalAssembler = (*ProposalAssembler)(nil)
 type IProposalAssembler interface {
 	ToProposalVO(ctx context.Context, db *model.Proposal) (*dto.ProposalVO, error)
 	ToProposalVOArray(ctx context.Context, dbs []*model.Proposal) ([]*dto.ProposalVO, error)
+	ToProposalDB(ctx context.Context, vo *dto.ProposalVO) (*model.Proposal, error)
+	ToProposalDBArray(ctx context.Context, vos []*dto.ProposalVO) ([]*model.Proposal, error)
 }
 
 type ProposalAssembler struct {
@@ -57,6 +60,9 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 		Title:     db.Title,
 		Content:   db.Content,
 		Course:    courseVO,
+		Status:    mapping.Data.GetProposalStatusNameByID(db.Status),
+		Deleted:   db.Deleted,
+		AgreeCnt:  db.AgreeCount,
 		CreatedAt: db.CreatedAt,
 		UpdatedAt: db.UpdatedAt,
 	}, nil
@@ -84,3 +90,50 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 	return vos, nil
 }
 
+// ToProposalDB 单个ProposalVO转ProposalDB (VO to DB)
+func (a *ProposalAssembler) ToProposalDB(ctx context.Context, vo *dto.ProposalVO) (*model.Proposal, error) {
+	var courseDB *model.Course
+	if vo.Course != nil {
+		var err error
+		courseDB, err = a.CourseAssembler.ToCourseDB(ctx, vo.Course)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDB] error: %v", err)
+			return nil, err
+		}
+	}
+
+	return &model.Proposal{
+		ID:         vo.ID,
+		UserID:     vo.UserID,
+		Title:      vo.Title,
+		Content:    vo.Content,
+		Course:     courseDB,
+		Status:     mapping.Data.GetProposalStatusIDByName(vo.Status),
+		Deleted:    vo.Deleted,
+		AgreeCount: vo.AgreeCnt,
+		CreatedAt:  vo.CreatedAt,
+		UpdatedAt:  vo.UpdatedAt,
+	}, nil
+}
+
+// ToProposalDBArray ProposalVO数组转ProposalDB数组 (VO Array to DB Array)
+func (a *ProposalAssembler) ToProposalDBArray(ctx context.Context, vos []*dto.ProposalVO) ([]*model.Proposal, error) {
+	if len(vos) == 0 {
+		logs.CtxWarnf(ctx, "[ProposalAssembler] [ToProposalDBArray] empty proposal vo array")
+		return []*model.Proposal{}, nil
+	}
+
+	dbs := make([]*model.Proposal, 0, len(vos))
+	for _, vo := range vos {
+		db, err := a.ToProposalDB(ctx, vo)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalDB] error: %v", err)
+			return nil, err
+		}
+		if db != nil {
+			dbs = append(dbs, db)
+		}
+	}
+
+	return dbs, nil
+}

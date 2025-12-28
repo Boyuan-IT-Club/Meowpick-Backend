@@ -81,6 +81,7 @@ const (
 	ReqCourseID   = "courseId"
 	ReqTargetID   = "targetId"
 	ReqTitle      = "title"
+	ReqProposalID = "proposalId"
 )
 
 // 限制相关

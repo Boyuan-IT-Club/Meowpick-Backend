@@ -37,6 +37,7 @@ type ProposalVO struct {
 	Content   string    `json:"content"`
 	Status    string    `json:"status"` // pending / approved / rejected
 	Deleted   bool      `json:"deleted"`
+	AgreeCnt  int64     `json:"agreeCnt"`
 	Course    *CourseVO `json:"course"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
@@ -48,11 +49,11 @@ type ListProposalReq struct {
 }
 
 type ToggleProposalReq struct {
-	TargetID string `json:"targetId"`
+	ProposalID string `json:"proposalID"`
 }
 
 type GetProposalReq struct {
-	TargetID string `json:"proposalId"`
+	ProposalID string `json:"proposalId"`
 }
 
 // ListProposalResp 对应 /api/proposal/list 的响应体

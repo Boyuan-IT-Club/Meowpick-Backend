@@ -36,7 +36,7 @@ func CreateProposal(c *gin.Context) {
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().ProposalService.CreateProposal(c, &req)
-	PostProcess(c, req, resp, err)
+	PostProcess(c, &req, resp, err)
 }
 
 // ListProposals godoc
@@ -78,7 +78,7 @@ func GetProposal(c *gin.Context) {
 	var resp *dto.GetProposalResp
 	var err error
 
-	req.TargetID = c.Param(consts.CtxProposalID)
+	req.ProposalID = c.Param(consts.CtxProposalID)
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().ProposalService.GetProposal(c, &req)
@@ -122,7 +122,7 @@ func ToggleProposal(c *gin.Context) {
 	var resp *dto.ToggleProposalResp
 	var err error
 
-	req.TargetID = c.Param(consts.CtxProposalID)
+	req.ProposalID = c.Param(consts.CtxProposalID)
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().ProposalService.ToggleProposal(c, &req)

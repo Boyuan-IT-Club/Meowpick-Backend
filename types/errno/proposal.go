@@ -16,40 +16,40 @@ package errno
 
 import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 
-// proposal: 106 000 000 ~ 106 999 999
+// proposal: 108 000 000 ~ 108 999 999
 
 const (
-	ErrProposalFindFailed                  = 106000001
-	ErrProposalCvtFailed                   = 106000002
-	ErrProposalToggleFailed                = 106000003
-	ErrProposalCountFailed                 = 106000004
-	ErrProposalGetStatusFailed             = 106000005
-	ErrProposalCourseFindInProposalsFailed = 106000006
-	ErrProposalCourseFindInCoursesFailed   = 106000007
-	ErrProposalCourseFoundInProposals      = 106000008
-	ErrProposalCourseFoundInCourses        = 106000009
-	ErrProposalCreateFailed                = 106000010
+	ErrProposalFindFailed                  = 108000001
+	ErrProposalCvtFailed                   = 108000002
+	ErrProposalToggleFailed                = 108000003
+	ErrProposalCountFailed                 = 108000004
+	ErrProposalGetStatusFailed             = 108000005
+	ErrProposalCourseFindInProposalsFailed = 108000006
+	ErrProposalCourseFindInCoursesFailed   = 108000007
+	ErrProposalCourseFoundInProposals      = 108000008
+	ErrProposalCourseFoundInCourses        = 108000009
+	ErrProposalCreateFailed                = 108000010
 )
 
 func init() {
 	code.Register(
 		ErrProposalCourseFindInProposalsFailed,
-		"failed to find course in proposals {key}: {value}",
+		"failed to find course in proposals: {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrProposalCourseFindInCoursesFailed,
-		"failed to find course in courses {key}: {value}",
+		"failed to find course in courses: {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrProposalCourseFoundInProposals,
-		"found course in proposals {key}: {value}",
+		"found course in proposals: {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrProposalCourseFoundInCourses,
-		"found course in courses {key}: {value}",
+		"found course in courses: {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
@@ -79,7 +79,7 @@ func init() {
 	)
 	code.Register(
 		ErrProposalCreateFailed,
-		"failed to create proposal",
+		"failed to create proposal: {name}",
 		code.WithAffectStability(false),
 	)
 }

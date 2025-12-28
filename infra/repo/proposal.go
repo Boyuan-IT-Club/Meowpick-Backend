@@ -16,6 +16,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
@@ -150,7 +151,7 @@ func (r *ProposalRepo) IsProposal(ctx context.Context, userId, targetId string, 
 	return cnt > 0, err
 }
 
-// CountProposalByTarget 获得目标的总投票数
+// CountByTarget 获得目标的总投票数
 func (r *ProposalRepo) CountByTarget(ctx context.Context, targetId string, targetType int32) (int64, error) {
 	return r.conn.CountDocuments(ctx, bson.M{
 		consts.TargetID: targetId,
@@ -158,18 +159,12 @@ func (r *ProposalRepo) CountByTarget(ctx context.Context, targetId string, targe
 	})
 }
 
-// FindProposalByID 根据提案ID查询单个未删除的提案
+// FindByID 根据提案ID查询单个未删除的提案
 func (r *ProposalRepo) FindByID(ctx context.Context, proposalID string) (*model.Proposal, error) {
-	var proposal model.Proposal
-
-	filter := bson.M{
-		consts.ID:      proposalID,
-		consts.Deleted: bson.M{"$ne": true},
-	}
-
-	err := r.conn.FindOneNoCache(ctx, &proposal, filter, nil)
-	if err != nil {
-		if err == monc.ErrNotFound {
+	proposal := model.Proposal{}
+	if err := r.conn.FindOneNoCache(ctx, &proposal,
+		bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}, nil); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
 			return nil, nil
 		}
 		return nil, err
