@@ -31,13 +31,13 @@ type CreateProposalResp struct {
 }
 
 type ProposalVO struct {
-	ID      string `json:"id"`
-	UserID  string `json:"userId"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
-	Status  string `json:"status"` // pending / approved / rejected
-	Deleted bool   `json:"deleted"`
-	Course *CourseVO `json:"course"`
+	ID        string    `json:"id"`
+	UserID    string    `json:"userId"`
+	Title     string    `json:"title"`
+	Content   string    `json:"content"`
+	Status    string    `json:"status"` // pending / approved / rejected
+	Deleted   bool      `json:"deleted"`
+	Course    *CourseVO `json:"course"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -51,6 +51,10 @@ type ToggleProposalReq struct {
 	TargetID string `json:"targetId"`
 }
 
+type GetProposalReq struct {
+	TargetID string `json:"proposalId"`
+}
+
 // ListProposalResp 对应 /api/proposal/list 的响应体
 type ListProposalResp struct {
 	*Resp
@@ -62,4 +66,9 @@ type ToggleProposalResp struct {
 	Proposal    bool  `json:"proposal"`
 	ProposalCnt int64 `json:"proposalCnt"`
 	*Resp
+}
+
+type GetProposalResp struct {
+	*Resp
+	Proposal *ProposalVO `json:"proposal"`
 }
