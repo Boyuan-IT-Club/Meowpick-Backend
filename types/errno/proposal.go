@@ -19,36 +19,37 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 // proposal: 106 000 000 ~ 106 999 999
 
 const (
-	ErrProposalFindFailed      = 106000001
-	ErrProposalCvtFailed       = 106000002
-	ErrProposalToggleFailed    = 106000003
-	ErrProposalCountFailed     = 106000004
-	ErrProposalGetStatusFailed = 106000005
-	ErrProposalCourseFindInProposalFailed = 106000006
-	ErrProposalCourseFindInCoursesFailed  = 106000007
-	ErrProposalCourseFoundInProposals     = 106000008
-	ErrProposalCourseFoundInCourses       = 106000009
+	ErrProposalFindFailed                  = 106000001
+	ErrProposalCvtFailed                   = 106000002
+	ErrProposalToggleFailed                = 106000003
+	ErrProposalCountFailed                 = 106000004
+	ErrProposalGetStatusFailed             = 106000005
+	ErrProposalCourseFindInProposalsFailed = 106000006
+	ErrProposalCourseFindInCoursesFailed   = 106000007
+	ErrProposalCourseFoundInProposals      = 106000008
+	ErrProposalCourseFoundInCourses        = 106000009
+	ErrProposalCreateFailed                = 106000010
 )
 
 func init() {
 	code.Register(
-		ErrProposalCourseFindInProposalFailed,
-		"failed to find course in proposal {key}: {value}",
+		ErrProposalCourseFindInProposalsFailed,
+		"failed to find course in proposals {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrProposalCourseFindInCoursesFailed,
-		"failed to find course in course {key}: {value}",
+		"failed to find course in courses {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrProposalCourseFoundInProposals,
-		"found course in proposal {key}: {value}",
+		"found course in proposals {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrProposalCourseFoundInCourses,
-		"found course in course {key}: {value}",
+		"found course in courses {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
@@ -63,17 +64,22 @@ func init() {
 	)
 	code.Register(
 		ErrProposalToggleFailed,
-		"failed to toggle vote status",
+		"failed to toggle proposal status",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrProposalCountFailed,
-		"failed to get vote count by {key}: {value}",
+		"failed to get proposal count by {key}: {value}",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrProposalGetStatusFailed,
-		"failed to get vote status by {key}: {value}",
+		"failed to get proposal status by {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalCreateFailed,
+		"failed to create proposal",
 		code.WithAffectStability(false),
 	)
 }

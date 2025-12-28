@@ -20,8 +20,8 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
@@ -42,8 +42,9 @@ type IProposalService interface {
 }
 
 type ProposalService struct {
-	CourseRepo   *repo.CourseRepo
-	ProposalRepo *repo.ProposalRepo
+	CourseRepo        *repo.CourseRepo
+	CourseAssembler   *assembler.CourseAssembler
+	ProposalRepo      *repo.ProposalRepo
 	ProposalCache     *cache.ProposalCache
 	ProposalAssembler *assembler.ProposalAssembler
 }
@@ -61,38 +62,50 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	// 检查是否已经存在相同的提案（前端传回的和我已有的ProposalCourse）
-	existingProposal, err1 := s.ProposalRepo.IsCourseInExistingProposals(ctx, req.Course)
-	if err1 != nil {
-		return nil, errorx.WrapByCode(err1, errno.ErrProposalCourseFindInProposalFailed,
-			errorx.KV("operation", "IsCourseInExistingProposals"),
-			errorx.KV("title", req.Title),            // 提案标题
-			errorx.KV("userID", userId),              // 用户ID
-			errorx.KV("courseName", req.Course.Name), // 课程名
-			errorx.KV("courseCode", req.Course.Code))
+	// 转换为 courseModel
+	courseDB, err := s.CourseAssembler.ToCourseDB(ctx, req.Course)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed,
+			errorx.KV("src", "database course"), errorx.KV("dst", "course vo"),
+		)
 	}
-	//检查是否已经存在相同的课程（前端传回的的和我已有的course）
-	existingCourse, err2 := s.CourseRepo.IsCourseInExistingCourses(ctx, req.Course)
-	if err2 != nil {
-		return nil, errorx.WrapByCode(err2, errno.ErrProposalCourseFindInCoursesFailed,
-			errorx.KV("operation", "IsCourseInExistingCourses"),
-			errorx.KV("title", req.Title))
+
+	// 检查是否已经存在相同的提案（前端传回的和我已有的ProposalCourse）
+	existingProposal, err := s.ProposalRepo.IsCourseInExistingProposals(ctx, courseDB)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCourseFindInProposalsFailed,
+			errorx.KV("key", consts.ReqCourse),
+			errorx.KV("value", req.Course.Name),
+		)
+	}
+
+	// 检查是否已经存在相同的课程（前端传回的的和我已有的course）
+	existingCourse, err := s.CourseRepo.IsCourseInExistingCourses(ctx, courseDB)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCourseFindInCoursesFailed,
+			errorx.KV("key", consts.ReqCourse),
+			errorx.KV("value", req.Course.Name),
+		)
 	}
 
 	if existingProposal == true {
 		return nil, errorx.New(errno.ErrProposalCourseFoundInProposals,
-			errorx.KV("title", req.Title))
+			errorx.KV("key", consts.ReqCourse),
+			errorx.KV("value", req.Course.Name),
+		)
 	}
 	if existingCourse == true {
 		return nil, errorx.New(errno.ErrProposalCourseFoundInCourses,
-			errorx.KV("title", req.Title))
+			errorx.KV("key", consts.ReqCourse),
+			errorx.KV("value", req.Course.Name),
+		)
 	}
 	campuses := []int32{}
 	for _, campus := range req.Course.Campuses {
 		campuses = append(campuses, mapping.Data.GetCampusIDByName(campus))
 	}
 
-	// 4. 构造课程信息
+	// 构造课程信息
 	course := model.Course{
 		Name:       req.Course.Name,
 		Code:       req.Course.Code,
@@ -104,7 +117,7 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		UpdatedAt:  time.Now(),
 	}
 
-	// 5. 创建提案对象
+	// 创建提案对象
 	status := mapping.Data.GetProposalStatusIDByName(req.Status)
 	proposal := &model.Proposal{
 		ID:        primitive.NewObjectID().Hex(),
@@ -112,18 +125,19 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		Title:     req.Title,
 		Content:   req.Content,
 		Deleted:   false,
-		Course:    course,
+		Course:    &course,
 		Status:    status,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
-	// 6. 保存提案到数据库
-	if err := s.ProposalRepo.Insert(ctx, proposal); err != nil {
+	// 保存提案到数据库
+	if err = s.ProposalRepo.Insert(ctx, proposal); err != nil {
 		return nil, errorx.WrapByCode(err, errno.ErrProposalCreateFailed,
-			errorx.KV("title", req.Title),
-			errorx.KV("userID", userId))
+			errorx.KV(consts.ReqTitle, req.Title),
+			errorx.KV(consts.CtxUserID, userId))
 	}
+
 	return &dto.CreateProposalResp{
 		Resp:       dto.Success(),
 		ProposalID: proposal.ID,
