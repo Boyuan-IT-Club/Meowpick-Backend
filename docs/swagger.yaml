@@ -313,7 +313,12 @@ definitions:
         $ref: '#/definitions/dto.CourseVO'
       createdAt:
         type: string
+      deleted:
+        type: boolean
       id:
+        type: string
+      status:
+        description: pending / approved / rejected
         type: string
       title:
         type: string

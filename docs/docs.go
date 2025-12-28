@@ -1005,7 +1005,14 @@ const docTemplate = `{
                 "createdAt": {
                     "type": "string"
                 },
+                "deleted": {
+                    "type": "boolean"
+                },
                 "id": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending / approved / rejected",
                     "type": "string"
                 },
                 "title": {
