@@ -25,7 +25,18 @@ import (
 // CreateProposal 新建一个提案
 // @router /api/proposal/add [POST]
 func CreateProposal(c *gin.Context) {
-	// TODO: not implemented
+	var req dto.CreateProposalReq
+	var resp *dto.CreateProposalResp
+	var err error
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.CreateProposal(c, &req)
+	PostProcess(c, req, resp, err)
 }
 
 // ListProposals godoc
@@ -52,7 +63,6 @@ func ListProposals(c *gin.Context) {
 
 	resp, err = provider.Get().ProposalService.ListProposals(c, &req)
 	PostProcess(c, &req, resp, err)
-
 }
 
 // GetProposal 获取提案详情

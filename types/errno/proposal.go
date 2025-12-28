@@ -24,9 +24,33 @@ const (
 	ErrProposalToggleFailed    = 106000003
 	ErrProposalCountFailed     = 106000004
 	ErrProposalGetStatusFailed = 106000005
+	ErrProposalCourseFindInProposalFailed = 106000006
+	ErrProposalCourseFindInCoursesFailed  = 106000007
+	ErrProposalCourseFoundInProposals     = 106000008
+	ErrProposalCourseFoundInCourses       = 106000009
 )
 
 func init() {
+	code.Register(
+		ErrProposalCourseFindInProposalFailed,
+		"failed to find course in proposal {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalCourseFindInCoursesFailed,
+		"failed to find course in course {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalCourseFoundInProposals,
+		"found course in proposal {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalCourseFoundInCourses,
+		"found course in course {key}: {value}",
+		code.WithAffectStability(false),
+	)
 	code.Register(
 		ErrProposalFindFailed,
 		"failed to find proposals",
