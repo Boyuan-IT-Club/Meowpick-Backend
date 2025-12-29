@@ -16,7 +16,7 @@ package consts
 
 import "time"
 
-// 数据库相关
+// 数据库字段相关
 const (
 	ID         = "_id"
 	Status     = "status"
@@ -30,13 +30,14 @@ const (
 	CourseID   = "courseId"
 	OpenID     = "openId"
 	TeacherIDs = "teacherIds"
-	Categories = "categories"
+	Category   = "category"
 	Department = "department"
 	Campuses   = "campuses"
 	Code       = "code"
 	Name       = "name"
 	Tags       = "tags"
 	Count      = "count"
+	TargetType = "targetType"
 )
 
 // 缓存相关
@@ -54,18 +55,11 @@ const (
 	CacheProposalStatusTTL = 10 * time.Minute
 )
 
-// 元素类别相关（如课程、评论、老师）
-const (
-	CourseType int32 = 101 + iota
-	CommentType
-	ProposalType
-)
-
 // 上下文相关
 const (
-	CtxUserID     = "userID"
+	CtxUserID     = "userId"
 	CtxToken      = "token"
-	CtxLikeID     = "id"
+	CtxLikeID     = "likeId"
 	CtxCourseID   = "courseId"
 	CtxProposalID = "proposalId"
 )
@@ -89,9 +83,15 @@ const (
 	SearchHistoryLimit = 15
 )
 
-// DTO 相关
+// 提案状态相关
 const (
-	Category = "category"
-	Course   = "course"
-	Teacher  = "teacher"
+	ProposalStatusPending  = "pending"  // 待审核
+	ProposalStatusApproved = "approved" // 已通过
+	ProposalStatusRejected = "rejected" // 已拒绝
+)
+
+// 点赞目标类型相关
+const (
+	LikeTargetTypeComment  = "comment"
+	LikeTargetTypeProposal = "proposal"
 )

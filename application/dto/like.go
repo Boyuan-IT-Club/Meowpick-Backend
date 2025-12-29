@@ -15,7 +15,8 @@
 package dto
 
 type ToggleLikeReq struct {
-	TargetID string `json:"targetId"`
+	TargetID   string `json:"targetId"`
+	TargetType string `json:"targetType"` // 1: "proposal"，2: "comment"
 }
 
 type ToggleLikeResp struct {

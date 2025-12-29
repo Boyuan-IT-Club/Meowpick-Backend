@@ -20,6 +20,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
@@ -43,7 +44,7 @@ var LikeServiceSet = wire.NewSet(
 	wire.Bind(new(ILikeService), new(*LikeService)),
 )
 
-// ToggleLike 点赞或取消点赞评论
+// ToggleLike 点赞或取消点赞
 func (s *LikeService) ToggleLike(ctx context.Context, req *dto.ToggleLikeReq) (resp *dto.ToggleLikeResp, err error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
@@ -51,8 +52,11 @@ func (s *LikeService) ToggleLike(ctx context.Context, req *dto.ToggleLikeReq) (r
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
+	// 获得目标
+	targetType := mapping.Data.GetLikeTargetTypeIDByName(req.TargetType)
+
 	// 点赞或取消点赞目标
-	active, err := s.LikeRepo.Toggle(ctx, userId, req.TargetID, consts.CommentType)
+	active, err := s.LikeRepo.Toggle(ctx, userId, req.TargetID, targetType)
 	if err != nil {
 		return nil, errorx.WrapByCode(err, errno.ErrLikeToggleFailed)
 	}
@@ -65,9 +69,9 @@ func (s *LikeService) ToggleLike(ctx context.Context, req *dto.ToggleLikeReq) (r
 	}
 
 	// 获取最新的总点赞数
-	likeCount, err := s.LikeRepo.CountByTarget(ctx, req.TargetID, consts.CommentType)
+	likeCount, err := s.LikeRepo.CountByTarget(ctx, req.TargetID, targetType)
 	if err != nil {
-		logs.CtxWarnf(ctx, "[LikeRepo] [CountByTarget] error: %v", err)
+		logs.CtxWarnf(ctx, "[LikeRepo] [CountByID] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrLikeCountFailed,
 			errorx.KV("key", consts.ReqTargetID), errorx.KV("value", req.TargetID))
 	}

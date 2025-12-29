@@ -70,7 +70,6 @@ func NewProvider() (*Provider, error) {
 		TeacherRepo: teacherRepo,
 	}
 	proposalRepo := repo.NewProposalRepo(configConfig)
-	proposalCache := cache.NewProposalCache(configConfig)
 	proposalAssembler := &assembler.ProposalAssembler{
 		CourseAssembler: courseAssembler,
 	}
@@ -78,8 +77,9 @@ func NewProvider() (*Provider, error) {
 		CourseRepo:        courseRepo,
 		CourseAssembler:   courseAssembler,
 		ProposalRepo:      proposalRepo,
-		ProposalCache:     proposalCache,
 		ProposalAssembler: proposalAssembler,
+		LikeRepo:          likeRepo,
+		LikeCache:         likeCache,
 	}
 	providerProvider := &Provider{
 		Config:               configConfig,

@@ -62,7 +62,7 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 		Course:    courseVO,
 		Status:    mapping.Data.GetProposalStatusNameByID(db.Status),
 		Deleted:   db.Deleted,
-		AgreeCnt:  db.AgreeCount,
+		AgreeCnt:  db.AgreeCnt,
 		CreatedAt: db.CreatedAt,
 		UpdatedAt: db.UpdatedAt,
 	}, nil
@@ -103,16 +103,16 @@ func (a *ProposalAssembler) ToProposalDB(ctx context.Context, vo *dto.ProposalVO
 	}
 
 	return &model.Proposal{
-		ID:         vo.ID,
-		UserID:     vo.UserID,
-		Title:      vo.Title,
-		Content:    vo.Content,
-		Course:     courseDB,
-		Status:     mapping.Data.GetProposalStatusIDByName(vo.Status),
-		Deleted:    vo.Deleted,
-		AgreeCount: vo.AgreeCnt,
-		CreatedAt:  vo.CreatedAt,
-		UpdatedAt:  vo.UpdatedAt,
+		ID:        vo.ID,
+		UserID:    vo.UserID,
+		Title:     vo.Title,
+		Content:   vo.Content,
+		Course:    courseDB,
+		Status:    mapping.Data.GetProposalStatusIDByName(vo.Status),
+		Deleted:   vo.Deleted,
+		AgreeCnt:  vo.AgreeCnt,
+		CreatedAt: vo.CreatedAt,
+		UpdatedAt: vo.UpdatedAt,
 	}, nil
 }
 

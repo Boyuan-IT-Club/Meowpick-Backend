@@ -28,10 +28,12 @@ type StaticData struct {
 	DepartmentNameByID     map[int32]string
 	CategoryNameByID       map[int32]string
 	ProposalStatusNameByID map[int32]string
+	LikeTargetTypeNameByID map[int32]string
 	CampusIDByName         map[string]int32
 	DepartmentIDByName     map[string]int32
 	CategoryIDByName       map[string]int32
 	ProposalStatusIDByName map[string]int32
+	LikeTargetTypeIDByName map[string]int32
 }
 
 var Data = &StaticData{
@@ -39,10 +41,12 @@ var Data = &StaticData{
 	DepartmentNameByID:     make(map[int32]string),
 	CategoryNameByID:       make(map[int32]string),
 	ProposalStatusNameByID: make(map[int32]string),
+	LikeTargetTypeNameByID: make(map[int32]string),
 	CampusIDByName:         make(map[string]int32),
 	DepartmentIDByName:     make(map[string]int32),
 	CategoryIDByName:       make(map[string]int32),
 	ProposalStatusIDByName: make(map[string]int32),
+	LikeTargetTypeIDByName: make(map[string]int32),
 }
 
 func init() {
@@ -58,6 +62,9 @@ func init() {
 	for k, v := range mapping.ProposalStatusMap {
 		Data.ProposalStatusNameByID[k] = v
 	}
+	for k, v := range mapping.LikeTargetTypeMap {
+		Data.LikeTargetTypeNameByID[k] = v
+	}
 
 	for id, name := range Data.CampusNameByID {
 		Data.CampusIDByName[name] = id
@@ -70,6 +77,9 @@ func init() {
 	}
 	for id, name := range Data.ProposalStatusNameByID {
 		Data.ProposalStatusIDByName[name] = id
+	}
+	for id, name := range Data.LikeTargetTypeNameByID {
+		Data.LikeTargetTypeIDByName[name] = id
 	}
 }
 
@@ -98,7 +108,14 @@ func (d *StaticData) GetProposalStatusNameByID(id int32) string {
 	if name, ok := d.ProposalStatusNameByID[id]; ok {
 		return name
 	}
-	return "未知状态"
+	return "未知提案状态"
+}
+
+func (d *StaticData) GetLikeTargetTypeNameByID(id int32) string {
+	if name, ok := d.LikeTargetTypeNameByID[id]; ok {
+		return name
+	}
+	return "未知点赞目标类型"
 }
 
 func (d *StaticData) GetCampusIDByName(name string) int32 {
@@ -124,6 +141,13 @@ func (d *StaticData) GetCategoryIDByName(name string) int32 {
 
 func (d *StaticData) GetProposalStatusIDByName(name string) int32 {
 	if id, ok := d.ProposalStatusIDByName[name]; ok {
+		return id
+	}
+	return 0
+}
+
+func (d *StaticData) GetLikeTargetTypeIDByName(name string) int32 {
+	if id, ok := d.LikeTargetTypeIDByName[name]; ok {
 		return id
 	}
 	return 0

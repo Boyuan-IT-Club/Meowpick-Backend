@@ -174,7 +174,7 @@ func (r *CourseRepo) GetDepartmentsByName(ctx context.Context, name string) ([]i
 
 // GetCategoriesByName 根据课程名称查询课程分类
 func (r *CourseRepo) GetCategoriesByName(ctx context.Context, name string) ([]int32, error) {
-	results, err := r.conn.Distinct(ctx, consts.Categories, bson.M{consts.Name: name})
+	results, err := r.conn.Distinct(ctx, consts.Category, bson.M{consts.Name: name})
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (r *CourseRepo) IsCourseInExistingCourses(ctx context.Context, vo *model.Co
 		consts.Name:       vo.Name,
 		consts.Code:       vo.Code,
 		consts.Department: vo.Department,
-		consts.Categories: vo.Category,
+		consts.Category:   vo.Category,
 		consts.Campuses:   vo.Campuses,
 		consts.TeacherIDs: vo.TeacherIDs,
 		consts.Deleted:    false, // 只检查未删除的提案

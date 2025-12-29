@@ -37,7 +37,6 @@ var _ IProposalService = (*ProposalService)(nil)
 
 type IProposalService interface {
 	CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error)
-	ToggleProposal(ctx context.Context, req *dto.ToggleProposalReq) (resp *dto.ToggleProposalResp, err error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
 	GetProposal(ctx context.Context, req *dto.GetProposalReq) (resp *dto.GetProposalResp, err error)
 }
@@ -46,8 +45,9 @@ type ProposalService struct {
 	CourseRepo        *repo.CourseRepo
 	CourseAssembler   *assembler.CourseAssembler
 	ProposalRepo      *repo.ProposalRepo
-	ProposalCache     *cache.ProposalCache
 	ProposalAssembler *assembler.ProposalAssembler
+	LikeRepo          *repo.LikeRepo
+	LikeCache         *cache.LikeCache
 }
 
 var ProposalServiceSet = wire.NewSet(
@@ -64,7 +64,7 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 	}
 
 	// 转换为 courseModel
-	courseDB, err := s.CourseAssembler.ToCourseDB(ctx, req.Course)
+	course, err := s.CourseAssembler.ToCourseDB(ctx, req.Course)
 	if err != nil {
 		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed,
 			errorx.KV("src", "database course"), errorx.KV("dst", "course vo"),
@@ -72,7 +72,7 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 	}
 
 	// 检查是否已经存在相同的提案
-	existingProposal, err := s.ProposalRepo.IsCourseInExistingProposals(ctx, courseDB)
+	existingProposal, err := s.ProposalRepo.IsCourseInExistingProposals(ctx, course)
 	if err != nil {
 		return nil, errorx.WrapByCode(err, errno.ErrProposalCourseFindInProposalsFailed,
 			errorx.KV("key", consts.ReqCourse),
@@ -81,7 +81,7 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 	}
 
 	// 检查是否已经存在相同的课程
-	existingCourse, err := s.CourseRepo.IsCourseInExistingCourses(ctx, courseDB)
+	existingCourse, err := s.CourseRepo.IsCourseInExistingCourses(ctx, course)
 	if err != nil {
 		return nil, errorx.WrapByCode(err, errno.ErrProposalCourseFindInCoursesFailed,
 			errorx.KV("key", consts.ReqCourse),
@@ -102,36 +102,29 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		)
 	}
 
-	campuses := []int32{}
-	for _, campus := range req.Course.Campuses {
-		campuses = append(campuses, mapping.Data.GetCampusIDByName(campus))
-	}
-
-	// 构造课程信息
-	course := model.Course{
-		Name:       req.Course.Name,
-		Code:       req.Course.Code,
-		TeacherIDs: make([]string, 0),
-		Department: mapping.Data.GetDepartmentIDByName(req.Course.Department),
-		Category:   mapping.Data.GetCategoryIDByName(req.Course.Category),
-		Campuses:   campuses,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-	}
-
-	// 创建提案对象
-	status := mapping.Data.GetProposalStatusIDByName(req.Status)
-	proposal := &model.Proposal{
-		ID:        primitive.NewObjectID().Hex(),
-		UserID:    userId,
-		Title:     req.Title,
-		Content:   req.Content,
-		Deleted:   false,
-		Course:    &course,
-		Status:    status,
+	// 使用Assembler转换提案
+	proposalVO := &dto.ProposalVO{
+		ID:       primitive.NewObjectID().Hex(),
+		UserID:   userId,
+		Title:    req.Title,
+		Content:  req.Content,
+		Deleted:  false,
+		Status:   consts.ProposalStatusPending,
+		AgreeCnt: 0,
+		// 这里不设置Course，因为上面已经获得过CourseDB了
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
+
+	proposal, err := s.ProposalAssembler.ToProposalDB(ctx, proposalVO)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
+			errorx.KV("src", "proposal vo"), errorx.KV("dst", "database proposal"),
+		)
+	}
+
+	// 设置课程，防止重复转换
+	proposal.Course = course
 
 	// 保存提案到数据库
 	if err = s.ProposalRepo.Insert(ctx, proposal); err != nil {
@@ -144,44 +137,7 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 	}, nil
 }
 
-// ToggleProposal 切换投票状态
-func (s *ProposalService) ToggleProposal(ctx context.Context, req *dto.ToggleProposalReq) (resp *dto.ToggleProposalResp, err error) {
-
-	// 鉴权
-	userId, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userId == "" {
-		return nil, errorx.New(errno.ErrUserNotLogin)
-	}
-
-	// 投票或取消投票目标
-	active, err := s.ProposalRepo.Toggle(ctx, userId, req.ProposalID, consts.ProposalType)
-	if err != nil {
-		return nil, errorx.WrapByCode(err, errno.ErrProposalToggleFailed)
-	}
-
-	// 设置缓存的投票状态
-	if err = s.ProposalCache.SetStatusByUserIdAndTarget(ctx, userId, req.ProposalID, active,
-		consts.CacheProposalStatusTTL,
-	); err != nil {
-		logs.CtxWarnf(ctx, "[ProposalCache] [SetStatusByUserIdAndTarget] error: %v", err)
-	}
-
-	// 获取新的总投票数
-	proposalCount, err := s.ProposalRepo.CountByTarget(ctx, req.ProposalID, consts.ProposalType)
-	if err != nil {
-		logs.CtxWarnf(ctx, "[ProposalRepo] [CountByTarget] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalCountFailed,
-			errorx.KV("key", consts.ReqTargetID), errorx.KV("value", req.ProposalID))
-	}
-
-	return &dto.ToggleProposalResp{
-		Resp:        dto.Success(),
-		Proposal:    active,
-		ProposalCnt: proposalCount,
-	}, nil
-}
-
-// ListProposals 分页查询所有提案，用于投票列表或管理端审核
+// ListProposals 分页查询不同状态的提案，用于投票列表或管理端审核
 func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
@@ -189,11 +145,25 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	// 查询提案列表
-	proposals, total, err := s.ProposalRepo.FindMany(ctx, req.PageParam)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[ProposalRepo] [FindMany] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
+	// 获得状态
+	status := mapping.Data.GetProposalStatusIDByName(req.Status)
+
+	// 获得提案
+	var err error
+	var total int64
+	var proposals []*model.Proposal
+	if status == 0 { // 获取所有
+		proposals, total, err = s.ProposalRepo.FindMany(ctx, req.PageParam)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[ProposalRepo] [FindMany] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
+		}
+	} else { // 获取指定状态
+		proposals, total, err = s.ProposalRepo.FindManyByStatus(ctx, req.PageParam, status)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[ProposalRepo] [FindManyByStatus] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
+		}
 	}
 
 	// 转换为VO

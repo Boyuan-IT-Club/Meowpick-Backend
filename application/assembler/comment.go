@@ -51,15 +51,18 @@ var CommentAssemblerSet = wire.NewSet(
 
 // ToCommentVO 单个CommentDB转CommentVO (DB to VO) 包含点赞信息查询
 func (a *CommentAssembler) ToCommentVO(ctx context.Context, db *model.Comment, userId string) (*dto.CommentVO, error) {
+	// 获得点赞目标类型
+	targetType := mapping.Data.GetLikeTargetTypeIDByName(consts.LikeTargetTypeComment)
+
 	// 获取点赞信息
-	likeCnt, err := a.LikeRepo.CountByTarget(ctx, db.ID, consts.CommentType)
+	likeCnt, err := a.LikeRepo.CountByTarget(ctx, db.ID, targetType)
 	if err != nil {
-		logs.CtxErrorf(ctx, "[LikeRepo] [CountByTarget] error: %v", err)
+		logs.CtxErrorf(ctx, "[LikeRepo] [CountByID] error: %v", err)
 		return nil, err
 	}
 
 	// 这里的userId是查看评论的用户
-	active, err := a.LikeRepo.IsLike(ctx, userId, db.ID, consts.CommentType)
+	active, err := a.LikeRepo.IsLike(ctx, userId, db.ID, targetType)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[LikeRepo] [IsLike] error: %v", err)
 		return nil, err
@@ -98,7 +101,7 @@ func (a *CommentAssembler) ToCommentDB(ctx context.Context, vo *dto.CommentVO) (
 	}, nil
 }
 
-// TOMyCommentVO 单个Comment转MyCommentVO(with 4 Extra fields) (DB to VO)
+// TOMyCommentVO 单个Comment转MyCommentVO (with 4 Extra fields) (DB to VO)
 func (a *CommentAssembler) TOMyCommentVO(ctx context.Context, db *model.Comment, userId string) (*dto.CommentVO, error) {
 	// 先获取除了Extra以外的字段
 	vo, err := a.ToCommentVO(ctx, db, userId)
@@ -164,7 +167,6 @@ func (a *CommentAssembler) ToMyCommentVOArray(ctx context.Context, dbs []*model.
 }
 
 // ToCommentDBArray CommentVO数组转Comment数组 (VO Array to DB Array)
-
 func (a *CommentAssembler) ToCommentDBArray(ctx context.Context, vos []*dto.CommentVO) ([]*model.Comment, error) {
 	if len(vos) == 0 {
 		logs.CtxWarnf(ctx, "[CommentAssembler] [ToCommentDBArray] empty comment vo array")
@@ -200,15 +202,18 @@ func (a *CommentAssembler) ToCommentVOArray(ctx context.Context, dbs []*model.Co
 		ids[i] = db.ID
 	}
 
+	// 获得点赞目标类型
+	targetType := mapping.Data.GetLikeTargetTypeIDByName(consts.LikeTargetTypeComment)
+
 	// 批量获取点赞数
-	likeCntMap, err := a.LikeRepo.CountByTargets(ctx, ids, consts.CommentType)
+	likeCntMap, err := a.LikeRepo.CountByTargets(ctx, ids, targetType)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[LikeRepo] [CountByTargets] error: %v", err)
 		return nil, err
 	}
 
 	// 批量获取点赞状态
-	likeStatusMap, err := a.LikeRepo.GetLikesByUserIDAndTargets(ctx, userId, ids, consts.CommentType)
+	likeStatusMap, err := a.LikeRepo.GetLikesByUserIDAndTargets(ctx, userId, ids, targetType)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[LikeRepo] [GetLikesByUserIDAndTargets] error: %v", err)
 		return nil, err

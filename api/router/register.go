@@ -40,20 +40,20 @@ func SetupRoutes() *gin.Engine {
 	}
 
 	// AuthApi
-	authGroup := router.Group("/api")
+	authGroup := router.Group("/api/auth")
 	authGroup.POST("/sign_in", handler.SignIn) // 初始化时的登录、授权
 
 	// LikeApi
-	likeGroup := router.Group("/api/action")
-	likeGroup.POST("/like/:id", handler.ToggleLike) // 为评论点赞
+	likeGroup := router.Group("/api/like")
+	likeGroup.POST("/:likeId", handler.ToggleLike) // 为评论点赞
 
 	// CourseApi
 	courseGroup := router.Group("/api/course")
 	{
-		courseGroup.GET("/:courseId", handler.GetCourse) // 精确搜索某个课程
-		//courseGroup.GET("/departs", handler.GetCourseDepartments)   // 获得某课程的“所属部门”信息
-		//courseGroup.GET("/categories", handler.GetCourseCategories) // 获得某课程的“课程类型”信息
-		//courseGroup.GET("/campuses", handler.GetCourseCampuses)     // 获得某课程的“开设校区”信息
+		courseGroup.GET("/:courseId", handler.GetCourse)              // 精确搜索某个课程
+		courseGroup.GET("/departments", handler.GetCourseDepartments) // 获得某课程的“所属部门”信息
+		courseGroup.GET("/categories", handler.GetCourseCategories)   // 获得某课程的“课程类型”信息
+		courseGroup.GET("/campuses", handler.GetCourseCampuses)       // 获得某课程的“开设校区”信息
 	}
 
 	// TeacherApi
@@ -67,10 +67,9 @@ func SetupRoutes() *gin.Engine {
 		proposalGroup.POST("/add", handler.CreateProposal)
 		proposalGroup.GET("/:id", handler.GetProposal)
 		proposalGroup.GET("/list", handler.ListProposals)
-		proposalGroup.POST("/:id/update", handler.UpdateProposal)
-		proposalGroup.POST("/:id/delete", handler.DeleteProposal)
+		proposalGroup.POST("/:proposalId/update", handler.UpdateProposal)
+		proposalGroup.POST("/:proposalId/delete", handler.DeleteProposal)
 		proposalGroup.POST("/suggest", handler.GetProposalSuggestions)
-		proposalGroup.POST("/:id", handler.ToggleProposal)
 	}
 	return router
 }

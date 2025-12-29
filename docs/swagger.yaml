@@ -127,6 +127,32 @@ definitions:
       userId:
         type: string
     type: object
+  dto.CreateProposalReq:
+    properties:
+      content:
+        type: string
+      course:
+        $ref: '#/definitions/dto.CourseVO'
+      status:
+        type: string
+      title:
+        type: string
+    required:
+    - content
+    - course
+    - status
+    - title
+    type: object
+  dto.CreateProposalResp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+      proposalId:
+        description: 提案ID
+        type: string
+    type: object
   dto.CreateTeacherReq:
     properties:
       department:
@@ -216,6 +242,15 @@ definitions:
         type: string
       total:
         type: integer
+    type: object
+  dto.GetProposalResp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+      proposal:
+        $ref: '#/definitions/dto.ProposalVO'
     type: object
   dto.GetSearchHistoriesResp:
     properties:
@@ -307,6 +342,8 @@ definitions:
     type: object
   dto.ProposalVO:
     properties:
+      agreeCnt:
+        type: integer
       content:
         type: string
       course:
@@ -394,28 +431,17 @@ definitions:
       msg:
         type: string
     type: object
-  dto.ToggleProposalResp:
-    properties:
-      code:
-        type: integer
-      msg:
-        type: string
-      proposal:
-        type: boolean
-      proposalCnt:
-        type: integer
-    type: object
 info:
   contact: {}
   description: 选课猫后端接口文档
   title: Meowpick Backend API
   version: "1.0"
 paths:
-  /api/action/like/{id}:
+  /api/action/like/{likeId}:
     post:
       description: 点赞或取消点赞
       parameters:
-      - description: 目标ID
+      - description: 目标ID(提案/评论)
         in: path
         name: id
         required: true
@@ -579,9 +605,6 @@ paths:
       summary: 获取课程开课院系
       tags:
       - course
-  /api/proposal/:id:
-    get:
-      responses: {}
   /api/proposal/:id/approve:
     post:
       responses: {}
@@ -591,9 +614,9 @@ paths:
   /api/proposal/:id/update:
     post:
       responses: {}
-  /api/proposal/{id}:
-    post:
-      description: 对提案进行投票或取消投票
+  /api/proposal/{proposalId}:
+    get:
+      description: 根据提案ID查询提案完整信息
       parameters:
       - description: 提案ID
         in: path
@@ -606,13 +629,30 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.ToggleProposalResp'
-      summary: 投票或取消投票
+            $ref: '#/definitions/dto.GetProposalResp'
+      summary: 获取提案详情
       tags:
       - proposal
   /api/proposal/add:
     post:
-      responses: {}
+      consumes:
+      - application/json
+      description: 创建一个新的提案
+      parameters:
+      - description: 创建提案的请求参数
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateProposalReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CreateProposalResp'
+      summary: 新增提案
+      tags:
+      - proposal
   /api/proposal/query:
     get:
       description: 分页查询提案列表数据

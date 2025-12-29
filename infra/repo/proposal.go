@@ -17,19 +17,14 @@ package repo
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var _ IProposalRepo = (*ProposalRepo)(nil)
@@ -42,15 +37,12 @@ type IProposalRepo interface {
 	Insert(ctx context.Context, proposal *model.Proposal) error
 	IsCourseInExistingProposals(ctx context.Context, courseVO *model.Course) (bool, error)
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
-	Toggle(ctx context.Context, userId, targetId string, targetType int32) (bool, error)
-	IsProposal(ctx context.Context, userId, targetId string, targetType int32) (bool, error)
-	CountByTarget(ctx context.Context, targetId string, targetType int32) (int64, error)
+	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error) // 修改方法名
 }
 
 type ProposalRepo struct {
-	conn  *monc.Model
-	cache *cache.ProposalCache
+	conn *monc.Model
 }
 
 func NewProposalRepo(cfg *config.Config) *ProposalRepo {
@@ -71,7 +63,7 @@ func (r *ProposalRepo) IsCourseInExistingProposals(ctx context.Context, courseDB
 		consts.Name:       courseDB.Name,
 		consts.Code:       courseDB.Code,
 		consts.Department: courseDB.Department,
-		consts.Categories: courseDB.Category,
+		consts.Category:   courseDB.Category,
 		consts.Campuses:   courseDB.Campuses,
 		consts.TeacherIDs: courseDB.TeacherIDs,
 		consts.Deleted:    false, // 只检查未删除的提案
@@ -108,55 +100,29 @@ func (r *ProposalRepo) FindMany(ctx context.Context, param *dto.PageParam) ([]*m
 	return proposals, total, nil
 }
 
-// Toggle 翻转投票状态
-func (r *ProposalRepo) Toggle(ctx context.Context, userId, targetId string, targetType int32) (bool, error) {
-	now := time.Now()
-	pipeline := mongo.Pipeline{
-		{{"$set", bson.M{
-			consts.ID: bson.M{"$ifNull": bson.A{"$" + consts.ID, primitive.NewObjectID().Hex()}},
-
-			consts.UserID:   bson.M{"$ifNull": bson.A{"$" + consts.UserID, userId}},
-			consts.TargetID: bson.M{"$ifNull": bson.A{"$" + consts.TargetID, targetId}},
-
-			consts.CreatedAt: bson.M{"$ifNull": bson.A{"$" + consts.CreatedAt, now}},
-			consts.UpdatedAt: now,
-
-			consts.Active: bson.M{"$cond": bson.A{
-				bson.M{"$not": bson.M{"$ifNull": bson.A{"$" + consts.ID, nil}}},
-				true,
-				bson.M{"$not": "$active"},
-			}},
-		}}},
-	}
-	var proposal struct {
-		Active bool `bson:"active"`
+// FindManyByStatus 分页查询指定状态的提案
+func (r *ProposalRepo) FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error) {
+	proposals := []*model.Proposal{}
+	filter := bson.M{
+		consts.Status:  status,
+		consts.Deleted: bson.M{"$ne": true},
 	}
 
-	err := r.conn.FindOneAndUpdateNoCache(ctx,
-		&proposal,
-		bson.M{consts.UserID: userId, consts.TargetID: targetId},
-		pipeline,
-		options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After),
-	)
-	return proposal.Active, err
-}
+	total, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
 
-// IsProposal 获取一个用户对一个目标的当前投票状态
-func (r *ProposalRepo) IsProposal(ctx context.Context, userId, targetId string, targetType int32) (bool, error) {
-	cnt, err := r.conn.CountDocuments(ctx, bson.M{
-		consts.UserID:   userId,
-		consts.TargetID: targetId,
-		consts.Active:   bson.M{"$ne": false},
-	})
-	return cnt > 0, err
-}
+	if err = r.conn.Find(
+		ctx,
+		&proposals,
+		filter,
+		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+	); err != nil {
+		return nil, 0, err
+	}
 
-// CountByTarget 获得目标的总投票数
-func (r *ProposalRepo) CountByTarget(ctx context.Context, targetId string, targetType int32) (int64, error) {
-	return r.conn.CountDocuments(ctx, bson.M{
-		consts.TargetID: targetId,
-		consts.Active:   bson.M{"$ne": false},
-	})
+	return proposals, total, nil
 }
 
 // FindByID 根据提案ID查询单个未删除的提案

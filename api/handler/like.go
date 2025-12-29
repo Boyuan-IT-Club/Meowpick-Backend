@@ -27,9 +27,9 @@ import (
 // @Description 点赞或取消点赞
 // @Tags action
 // @Produce json
-// @Param id path string true "目标ID"
+// @Param id path string true "目标ID(提案/评论)"
 // @Success 200 {object} dto.ToggleLikeResp
-// @Router /api/action/like/{id} [post]
+// @Router /api/action/like/{likeId} [post]
 func ToggleLike(c *gin.Context) {
 	var req dto.ToggleLikeReq
 	var resp *dto.ToggleLikeResp
@@ -39,5 +39,5 @@ func ToggleLike(c *gin.Context) {
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().LikeService.ToggleLike(c, &req)
-	PostProcess(c, req, resp, err)
+	PostProcess(c, &req, resp, err)
 }

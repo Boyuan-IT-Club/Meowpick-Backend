@@ -80,7 +80,6 @@ var InfraSet = wire.NewSet(
 	// 缓存相关
 	cache.NewLikeCache,
 	cache.NewCommentCache,
-	cache.NewProposalCache,
 )
 
 var AllProvider = wire.NewSet(

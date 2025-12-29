@@ -45,6 +45,7 @@ type ProposalVO struct {
 
 // ListProposalReq 对应 /api/proposal/list 的请求体（分页）
 type ListProposalReq struct {
+	Status string `json:"status"` // pending / approved / rejected / 空则为全部
 	*PageParam
 }
 

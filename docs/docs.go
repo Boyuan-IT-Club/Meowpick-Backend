@@ -29,7 +29,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/action/like/{id}": {
+        "/api/action/like/{likeId}": {
             "post": {
                 "description": "点赞或取消点赞",
                 "produces": [
@@ -42,7 +42,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "目标ID",
+                        "description": "目标ID(提案/评论)",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -285,11 +285,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/proposal/:id": {
-            "get": {
-                "responses": {}
-            }
-        },
         "/api/proposal/:id/approve": {
             "post": {
                 "responses": {}
@@ -307,7 +302,33 @@ const docTemplate = `{
         },
         "/api/proposal/add": {
             "post": {
-                "responses": {}
+                "description": "创建一个新的提案",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "新增提案",
+                "parameters": [
+                    {
+                        "description": "创建提案的请求参数",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateProposalReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateProposalResp"
+                        }
+                    }
+                }
             }
         },
         "/api/proposal/query": {
@@ -351,16 +372,16 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/api/proposal/{id}": {
-            "post": {
-                "description": "对提案进行投票或取消投票",
+        "/api/proposal/{proposalId}": {
+            "get": {
+                "description": "根据提案ID查询提案完整信息",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "proposal"
                 ],
-                "summary": "投票或取消投票",
+                "summary": "获取提案详情",
                 "parameters": [
                     {
                         "type": "string",
@@ -374,7 +395,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.ToggleProposalResp"
+                            "$ref": "#/definitions/dto.GetProposalResp"
                         }
                     }
                 }
@@ -721,6 +742,44 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CreateProposalReq": {
+            "type": "object",
+            "required": [
+                "content",
+                "course",
+                "status",
+                "title"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "course": {
+                    "$ref": "#/definitions/dto.CourseVO"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "proposalId": {
+                    "description": "提案ID",
+                    "type": "string"
+                }
+            }
+        },
         "dto.CreateTeacherReq": {
             "type": "object",
             "required": [
@@ -856,6 +915,20 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.GetProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "proposal": {
+                    "$ref": "#/definitions/dto.ProposalVO"
                 }
             }
         },
@@ -996,6 +1069,9 @@ const docTemplate = `{
         "dto.ProposalVO": {
             "type": "object",
             "properties": {
+                "agreeCnt": {
+                    "type": "integer"
+                },
                 "content": {
                     "type": "string"
                 },
@@ -1124,23 +1200,6 @@ const docTemplate = `{
                 },
                 "msg": {
                     "type": "string"
-                }
-            }
-        },
-        "dto.ToggleProposalResp": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
-                },
-                "proposal": {
-                    "type": "boolean"
-                },
-                "proposalCnt": {
-                    "type": "integer"
                 }
             }
         }

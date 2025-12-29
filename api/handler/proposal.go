@@ -22,8 +22,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CreateProposal 新建一个提案
-// @router /api/proposal/add [POST]
+// CreateProposal godoc
+// @Summary 新增提案
+// @Description 创建一个新的提案
+// @Tags proposal
+// @Accept json
+// @Param req body dto.CreateProposalReq true "创建提案的请求参数"
+// @success 200 {object} dto.CreateProposalResp
+// @Router /api/proposal/add [post]
 func CreateProposal(c *gin.Context) {
 	var req dto.CreateProposalReq
 	var resp *dto.CreateProposalResp
@@ -49,11 +55,9 @@ func CreateProposal(c *gin.Context) {
 // @Success 200 {object} dto.ListProposalResp
 // @Router /api/proposal/query [get]
 func ListProposals(c *gin.Context) {
-	var (
-		err  error
-		req  dto.ListProposalReq
-		resp *dto.ListProposalResp
-	)
+	var req dto.ListProposalReq
+	var resp *dto.ListProposalResp
+	var err error
 
 	if err = c.ShouldBindQuery(&req); err != nil {
 		PostProcess(c, &req, nil, err)
@@ -66,13 +70,13 @@ func ListProposals(c *gin.Context) {
 }
 
 // GetProposal 获取提案详情
-// @router /api/proposal/:id [GET]
 // @Summary 获取提案详情
 // @Description 根据提案ID查询提案完整信息
 // @Tags proposal
 // @Produce json
 // @Param id path string true "提案ID"
-// @Success 200 {object} dto.GetProposalDetailResp
+// @Success 200 {object} dto.GetProposalResp
+// @Router /api/proposal/{proposalId} [get]
 func GetProposal(c *gin.Context) {
 	var req dto.GetProposalReq
 	var resp *dto.GetProposalResp
@@ -107,24 +111,4 @@ func DeleteProposal(c *gin.Context) {
 // @router /api/proposal/suggest [GET]
 func GetProposalSuggestions(c *gin.Context) {
 	// TODO: not implemented
-}
-
-// ToggleProposal 翻转投票状态
-// @Summary 投票或取消投票
-// @Description 对提案进行投票或取消投票
-// @Tags proposal
-// @Produce json
-// @Param id path string true "提案ID"
-// @Success 200 {object} dto.ToggleProposalResp
-// @Router /api/proposal/{id} [post]
-func ToggleProposal(c *gin.Context) {
-	var req dto.ToggleProposalReq
-	var resp *dto.ToggleProposalResp
-	var err error
-
-	req.ProposalID = c.Param(consts.CtxProposalID)
-	c.Set(consts.CtxUserID, token.GetUserID(c))
-
-	resp, err = provider.Get().ProposalService.ToggleProposal(c, &req)
-	PostProcess(c, req, resp, err)
 }

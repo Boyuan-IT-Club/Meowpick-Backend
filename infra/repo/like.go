@@ -60,9 +60,9 @@ func (r *LikeRepo) Toggle(ctx context.Context, userId, targetId string, targetTy
 		{{"$set", bson.M{
 			consts.ID: bson.M{"$ifNull": bson.A{"$" + consts.ID, primitive.NewObjectID().Hex()}},
 
-			consts.UserID:   bson.M{"$ifNull": bson.A{"$" + consts.UserID, userId}},
-			consts.TargetID: bson.M{"$ifNull": bson.A{"$" + consts.TargetID, targetId}},
-			// consts.TargetType: bson.M{"$ifNull": bson.A{"$" + consts.TargetType, targetType}},
+			consts.UserID:     bson.M{"$ifNull": bson.A{"$" + consts.UserID, userId}},
+			consts.TargetID:   bson.M{"$ifNull": bson.A{"$" + consts.TargetID, targetId}},
+			consts.TargetType: bson.M{"$ifNull": bson.A{"$" + consts.TargetType, targetType}},
 
 			consts.CreatedAt: bson.M{"$ifNull": bson.A{"$" + consts.CreatedAt, now}},
 			consts.UpdatedAt: now,
@@ -89,10 +89,10 @@ func (r *LikeRepo) Toggle(ctx context.Context, userId, targetId string, targetTy
 // IsLike 获取一个用户对一个目标的当前点赞状态（是/否点赞）
 func (r *LikeRepo) IsLike(ctx context.Context, userId, targetId string, targetType int32) (bool, error) {
 	cnt, err := r.conn.CountDocuments(ctx, bson.M{
-		consts.UserID:   userId,
-		consts.TargetID: targetId,
-		consts.Active:   bson.M{"$ne": false},
-		//consts.TargetType: targetType,
+		consts.UserID:     userId,
+		consts.TargetID:   targetId,
+		consts.Active:     bson.M{"$ne": false},
+		consts.TargetType: targetType,
 	})
 	return cnt > 0, err
 }
@@ -100,9 +100,9 @@ func (r *LikeRepo) IsLike(ctx context.Context, userId, targetId string, targetTy
 // CountByTarget 获得目标的总点赞数
 func (r *LikeRepo) CountByTarget(ctx context.Context, targetId string, targetType int32) (int64, error) {
 	return r.conn.CountDocuments(ctx, bson.M{
-		consts.TargetID: targetId,
-		consts.Active:   bson.M{"$ne": false},
-		//consts.TargetType: targetType,
+		consts.TargetID:   targetId,
+		consts.Active:     bson.M{"$ne": false},
+		consts.TargetType: targetType,
 	})
 }
 
@@ -112,10 +112,10 @@ func (r *LikeRepo) GetLikesByUserIDAndTargets(ctx context.Context, userId string
 		TargetID string `bson:"targetId"`
 	}
 	if err := r.conn.Find(ctx, &likes, bson.M{
-		consts.UserID:   userId,
-		consts.TargetID: bson.M{"$in": targetIds},
-		consts.Active:   bson.M{"$ne": false},
-		//consts.TargetType: targetType,
+		consts.UserID:     userId,
+		consts.TargetID:   bson.M{"$in": targetIds},
+		consts.Active:     bson.M{"$ne": false},
+		consts.TargetType: targetType,
 	}); err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (r *LikeRepo) CountByTargets(ctx context.Context, targetIds []string, targe
 		{{"$match", bson.D{
 			{consts.TargetID, bson.D{{"$in", targetIds}}},
 			{consts.Active, bson.D{{"$ne", false}}},
-			//{consts.TargetType, targetType},
+			{consts.TargetType, targetType},
 		}}},
 		{{"$group", bson.D{
 			{"_id", "$targetId"},
