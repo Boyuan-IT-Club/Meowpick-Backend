@@ -8,6 +8,39 @@
     },
     "basePath": "/",
     "paths": {
+        "/api/auth/sign_in": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "登录",
+                "parameters": [
+                    {
+                        "description": "SignInReq",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SignInReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SignInResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/comment/add": {
             "post": {
                 "description": "用户对指定课程发布评论",
@@ -276,21 +309,6 @@
                 }
             }
         },
-        "/api/proposal/:id/approve": {
-            "post": {
-                "responses": {}
-            }
-        },
-        "/api/proposal/:id/delete": {
-            "post": {
-                "responses": {}
-            }
-        },
-        "/api/proposal/:id/update": {
-            "post": {
-                "responses": {}
-            }
-        },
         "/api/proposal/add": {
             "post": {
                 "description": "创建一个新的提案",
@@ -322,7 +340,7 @@
                 }
             }
         },
-        "/api/proposal/query": {
+        "/api/proposal/list": {
             "get": {
                 "description": "分页查询提案列表数据",
                 "produces": [
@@ -390,6 +408,21 @@
                         }
                     }
                 }
+            }
+        },
+        "/api/proposal/{proposalId}/approve": {
+            "post": {
+                "responses": {}
+            }
+        },
+        "/api/proposal/{proposalId}/delete": {
+            "post": {
+                "responses": {}
+            }
+        },
+        "/api/proposal/{proposalId}/update": {
+            "post": {
+                "responses": {}
             }
         },
         "/api/search": {
@@ -495,39 +528,6 @@
                 }
             }
         },
-        "/api/sign_in": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "登录",
-                "parameters": [
-                    {
-                        "description": "SignInReq",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.SignInReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.SignInResp"
-                        }
-                    }
-                }
-            }
-        },
         "/api/teacher/add": {
             "post": {
                 "description": "新建教师",
@@ -628,7 +628,6 @@
                     "type": "string"
                 },
                 "code": {
-                    "description": "暂未使用",
                     "type": "string"
                 },
                 "department": {
@@ -738,7 +737,6 @@
             "required": [
                 "content",
                 "course",
-                "status",
                 "title"
             ],
             "properties": {
@@ -747,9 +745,6 @@
                 },
                 "course": {
                     "$ref": "#/definitions/dto.CourseVO"
-                },
-                "status": {
-                    "type": "string"
                 },
                 "title": {
                     "type": "string"
@@ -1060,9 +1055,6 @@
         "dto.ProposalVO": {
             "type": "object",
             "properties": {
-                "agreeCnt": {
-                    "type": "integer"
-                },
                 "content": {
                     "type": "string"
                 },
@@ -1077,6 +1069,12 @@
                 },
                 "id": {
                     "type": "string"
+                },
+                "like": {
+                    "type": "boolean"
+                },
+                "likeCnt": {
+                    "type": "integer"
                 },
                 "status": {
                     "description": "pending / approved / rejected",
