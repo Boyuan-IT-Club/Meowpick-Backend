@@ -23,18 +23,24 @@ import (
 )
 
 // ToggleLike godoc
-// @Summary 点赞或取消点赞
-// @Description 点赞或取消点赞
-// @Tags action
+// @Summary 点赞 / 取消点赞
+// @Description 对指定目标（提案或评论）进行点赞或取消点赞操作；若已点赞则取消，未点赞则新增
+// @Tags like
+// @Accept json
 // @Produce json
-// @Param id path string true "目标ID(提案/评论)"
-// @Success 200 {object} dto.ToggleLikeResp
-// @Router /api/action/like/{likeId} [post]
+// @Param likeId path string true "目标ID（提案ID或评论ID）"
+// @Param body body dto.ToggleLikeReq true "点赞请求参数"
+// @Success 200 {object} dto.ToggleLikeResp "操作成功"
+// @Router /api/like/{likeId} [post]
 func ToggleLike(c *gin.Context) {
 	var req dto.ToggleLikeReq
 	var resp *dto.ToggleLikeResp
 	var err error
 
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
 	req.TargetID = c.Param(consts.CtxLikeID)
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 

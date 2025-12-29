@@ -64,6 +64,7 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 	}
 
 	// 转换为 courseModel
+	req.Course.ID = primitive.NewObjectID().Hex()
 	course, err := s.CourseAssembler.ToCourseDB(ctx, req.Course)
 	if err != nil {
 		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed,
@@ -103,17 +104,18 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 	}
 
 	// 使用Assembler转换提案
+	now := time.Now()
 	proposalVO := &dto.ProposalVO{
-		ID:       primitive.NewObjectID().Hex(),
-		UserID:   userId,
-		Title:    req.Title,
-		Content:  req.Content,
-		Deleted:  false,
-		Status:   consts.ProposalStatusPending,
-		AgreeCnt: 0,
+		ID:        primitive.NewObjectID().Hex(),
+		UserID:    userId,
+		Title:     req.Title,
+		Content:   req.Content,
+		Deleted:   false,
+		Status:    consts.ProposalStatusPending,
+		CreatedAt: now,
+		UpdatedAt: now,
 		// 这里不设置Course，因为上面已经获得过CourseDB了
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+
 	}
 
 	proposal, err := s.ProposalAssembler.ToProposalDB(ctx, proposalVO)
@@ -167,7 +169,7 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 	}
 
 	// 转换为VO
-	vos, err := s.ProposalAssembler.ToProposalVOArray(ctx, proposals)
+	vos, err := s.ProposalAssembler.ToProposalVOArray(ctx, proposals, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVOArray] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
@@ -197,12 +199,12 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", proposalId))
 	}
 	if proposal == nil {
-		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed,
-			errorx.KV("key", consts.ReqProposalID), errorx.KV("value", proposalId))
+		logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", proposalId)
+		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", proposalId))
 	}
 
 	// 转换为VO
-	vo, err := s.ProposalAssembler.ToProposalVO(ctx, proposal)
+	vo, err := s.ProposalAssembler.ToProposalVO(ctx, proposal, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVO] error: %v, proposalId: %s", err, proposalId)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,

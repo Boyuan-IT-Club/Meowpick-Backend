@@ -18,7 +18,7 @@ package dto
 type CourseVO struct {
 	ID         string           `json:"id"`
 	Name       string           `json:"name"`
-	Code       string           `json:"code"` // 暂未使用
+	Code       string           `json:"code"`
 	Category   string           `json:"category"`
 	Campuses   []string         `json:"campuses"`
 	Department string           `json:"department"`

@@ -20,7 +20,6 @@ import "time"
 type CreateProposalReq struct {
 	Title   string    `json:"title" binding:"required"`
 	Content string    `json:"content" binding:"required"`
-	Status  string    `json:"status" binding:"required"`
 	Course  *CourseVO `json:"course" binding:"required"`
 }
 
@@ -31,13 +30,13 @@ type CreateProposalResp struct {
 }
 
 type ProposalVO struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"userId"`
-	Title     string    `json:"title"`
-	Content   string    `json:"content"`
-	Status    string    `json:"status"` // pending / approved / rejected
-	Deleted   bool      `json:"deleted"`
-	AgreeCnt  int64     `json:"agreeCnt"`
+	ID      string `json:"id"`
+	UserID  string `json:"userId"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+	Status  string `json:"status"` // pending / approved / rejected
+	Deleted bool   `json:"deleted"`
+	*LikeVO
 	Course    *CourseVO `json:"course"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`

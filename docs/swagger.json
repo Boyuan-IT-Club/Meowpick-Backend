@@ -8,35 +8,6 @@
     },
     "basePath": "/",
     "paths": {
-        "/api/action/like/{likeId}": {
-            "post": {
-                "description": "点赞或取消点赞",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "action"
-                ],
-                "summary": "点赞或取消点赞",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "目标ID(提案/评论)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ToggleLikeResp"
-                        }
-                    }
-                }
-            }
-        },
         "/api/comment/add": {
             "post": {
                 "description": "用户对指定课程发布评论",
@@ -259,6 +230,47 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/dto.GetCourseResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/like/{likeId}": {
+            "post": {
+                "description": "对指定目标（提案或评论）进行点赞或取消点赞操作；若已点赞则取消，未点赞则新增",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "like"
+                ],
+                "summary": "点赞 / 取消点赞",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "目标ID（提案ID或评论ID）",
+                        "name": "likeId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "点赞请求参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ToggleLikeReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "操作成功",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ToggleLikeResp"
                         }
                     }
                 }
@@ -1161,6 +1173,18 @@
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ToggleLikeReq": {
+            "type": "object",
+            "properties": {
+                "targetId": {
+                    "type": "string"
+                },
+                "targetType": {
+                    "description": "1: \"proposal\"，2: \"comment\"",
                     "type": "string"
                 }
             }

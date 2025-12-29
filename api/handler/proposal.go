@@ -53,7 +53,7 @@ func CreateProposal(c *gin.Context) {
 // @Param page query int true "页码"
 // @Param pageSize query int true "每页数量"
 // @Success 200 {object} dto.ListProposalResp
-// @Router /api/proposal/query [get]
+// @Router /api/proposal/list [get]
 func ListProposals(c *gin.Context) {
 	var req dto.ListProposalReq
 	var resp *dto.ListProposalResp
@@ -90,19 +90,19 @@ func GetProposal(c *gin.Context) {
 }
 
 // ApproveProposal 审批提案
-// @router /api/proposal/:id/approve [POST]
+// @router /api/proposal/{proposalId}/approve [POST]
 func ApproveProposal(c *gin.Context) {
 	// TODO: not implemented
 }
 
 // UpdateProposal 修改提案
-// @router /api/proposal/:id/update [POST]
+// @router /api/proposal/{proposalId}/update [POST]
 func UpdateProposal(c *gin.Context) {
 	// TODO: not implemented
 }
 
 // DeleteProposal 删除提案
-// @router /api/proposal/:id/delete [POST]
+// @router /api/proposal/{proposalId}/delete [POST]
 func DeleteProposal(c *gin.Context) {
 	// TODO: not implemented
 }

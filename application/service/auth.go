@@ -51,14 +51,14 @@ var AuthServiceSet = wire.NewSet(
 func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto.SignInResp, err error) {
 	// 查找或创建用户
 	var openId string
-	if req.Code == "test123" {
+	if req.VerifyCode == "test123" {
 		openId = "debug-openid-001" // 测试环境固定openid
 	} else {
 		// 为微信API调用设置超时
 		openId = openid.GetWeChatOpenID(
 			config.GetConfig().WeApp.AppID,
 			config.GetConfig().WeApp.AppSecret,
-			req.Code,
+			req.VerifyCode,
 		)
 	}
 	if openId == "" {

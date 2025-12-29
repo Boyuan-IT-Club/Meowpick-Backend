@@ -72,6 +72,7 @@ func NewProvider() (*Provider, error) {
 	proposalRepo := repo.NewProposalRepo(configConfig)
 	proposalAssembler := &assembler.ProposalAssembler{
 		CourseAssembler: courseAssembler,
+		LikeRepo:        likeRepo,
 	}
 	proposalService := service.ProposalService{
 		CourseRepo:        courseRepo,

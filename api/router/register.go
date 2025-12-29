@@ -65,8 +65,8 @@ func SetupRoutes() *gin.Engine {
 	proposalGroup := router.Group("/api/proposal")
 	{
 		proposalGroup.POST("/add", handler.CreateProposal)
-		proposalGroup.GET("/:id", handler.GetProposal)
 		proposalGroup.GET("/list", handler.ListProposals)
+		proposalGroup.GET("/:proposalId", handler.GetProposal)
 		proposalGroup.POST("/:proposalId/update", handler.UpdateProposal)
 		proposalGroup.POST("/:proposalId/delete", handler.DeleteProposal)
 		proposalGroup.POST("/suggest", handler.GetProposalSuggestions)
