@@ -39,6 +39,7 @@ type IProposalService interface {
 	CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
 	GetProposal(ctx context.Context, req *dto.GetProposalReq) (resp *dto.GetProposalResp, err error)
+	ApproveProposal(ctx context.Context, req *dto.ToggleProposalReq) (*dto.ToggleProposalResp, error)
 }
 
 type ProposalService struct {
@@ -214,5 +215,69 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 	return &dto.GetProposalResp{
 		Resp:     dto.Success(),
 		Proposal: vo,
+	}, nil
+}
+
+// ApproveProposal 审批提案
+func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.ToggleProposalReq) (*dto.ToggleProposalResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 验证提案ID
+	if req.ProposalID == "" {
+		return nil, errorx.New(errno.ErrProposalIDRequired, errorx.KV("key", consts.ReqProposalID))
+	}
+
+	// 查询提案是否存在
+	proposal, err := s.ProposalRepo.FindByID(ctx, req.ProposalID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, req.ProposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+	if proposal == nil {
+		logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", req.ProposalID)
+		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
+	}
+
+	// 检查当前状态，不允许重复审批
+	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
+	rejectedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
+	if proposal.Status == approvedStatusID || proposal.Status == rejectedStatusID {
+		return nil, errorx.New(errno.ErrProposalAlreadyProcessed, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
+	}
+
+	// 更新提案状态为已通过
+	newStatus := consts.ProposalStatusApproved
+	updated, err := s.ProposalRepo.UpdateStatusByID(ctx, req.ProposalID, newStatus)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusByID] error: %v, proposalId: %s", err, req.ProposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+	if !updated {
+		return nil, errorx.New(errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+
+	// 如果提案通过，同时创建对应的课程
+	if newStatus == consts.ProposalStatusApproved {
+		// 创建课程
+		course := proposal.Course
+		course.ID = primitive.NewObjectID().Hex()
+		course.CreatedAt = time.Now()
+		course.UpdatedAt = time.Now()
+		course.Deleted = false
+
+		err = s.CourseRepo.Insert(ctx, course)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[CourseRepo] [Insert] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed)
+		}
+	}
+
+	// 返回成功响应
+	return &dto.ToggleProposalResp{
+		Resp: dto.Success(),
 	}, nil
 }

@@ -48,12 +48,18 @@ type ICourseRepo interface {
 	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, error)
 
 	IsCourseInExistingCourses(ctx context.Context, vo *model.Course) (bool, error)
+	Insert(ctx context.Context, course *model.Course) error
 }
 
 type CourseRepo struct {
 	conn *monc.Model
 }
 
+// Insert 插入一个新的课程
+func (r *CourseRepo) Insert(ctx context.Context, course *model.Course) error {
+	_, err := r.conn.InsertOneNoCache(ctx, course)
+	return err
+}
 func NewCourseRepo(cfg *config.Config) *CourseRepo {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, CourseCollectionName, cfg.Cache)
 	return &CourseRepo{conn: conn}

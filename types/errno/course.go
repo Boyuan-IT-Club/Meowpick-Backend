@@ -27,6 +27,7 @@ const (
 	ErrCourseGetDepartmentsFailed = 101000006
 	ErrCourseGetCategoriesFailed  = 101000007
 	ErrCourseGetCampusesFailed    = 101000008
+	ErrCourseCreateFailed         = 101000009
 )
 
 func init() {
@@ -68,6 +69,11 @@ func init() {
 	code.Register(
 		ErrCourseGetCampusesFailed,
 		"failed to get course campuses: {name}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCourseCreateFailed,
+		"failed to create course: {name}",
 		code.WithAffectStability(false),
 	)
 }

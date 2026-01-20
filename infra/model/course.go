@@ -28,4 +28,5 @@ type Course struct {
 	Campuses   []int32   `bson:"campuses"           json:"campuses"`
 	CreatedAt  time.Time `bson:"createdAt"          json:"createdAt"`
 	UpdatedAt  time.Time `bson:"updatedAt"          json:"updatedAt"`
+	Deleted    bool
 }
