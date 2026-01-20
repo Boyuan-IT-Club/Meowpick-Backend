@@ -22,6 +22,7 @@ const (
 	Status     = "status"
 	CreatedAt  = "createdAt"
 	UpdatedAt  = "updatedAt"
+	DeletedAt  = "deletedAt"
 	UserID     = "userId"
 	Query      = "query"
 	Deleted    = "deleted"

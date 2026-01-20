@@ -39,6 +39,7 @@ type IProposalService interface {
 	CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
 	GetProposal(ctx context.Context, req *dto.GetProposalReq) (resp *dto.GetProposalResp, err error)
+	DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (resp *dto.DeleteProposalResp, err error)
 }
 
 type ProposalService struct {
@@ -48,6 +49,7 @@ type ProposalService struct {
 	ProposalAssembler *assembler.ProposalAssembler
 	LikeRepo          *repo.LikeRepo
 	LikeCache         *cache.LikeCache
+	UserRepo          *repo.UserRepo
 }
 
 var ProposalServiceSet = wire.NewSet(
@@ -215,4 +217,60 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 		Resp:     dto.Success(),
 		Proposal: vo,
 	}, nil
+}
+
+// DeleteProposal 删除提案
+func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (resp *dto.DeleteProposalResp, err error) {
+
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	proposalId := req.ProposalID
+
+	// 检查提案是否存在
+	proposal, err := s.ProposalRepo.FindByID(ctx, proposalId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, proposalId)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
+	}
+	if proposal == nil {
+		logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", proposalId)
+		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", proposalId))
+	}
+
+	//权限检查：非管理员只能删除自己的提案
+	if proposal.UserID != userId {
+		// 查询用户是否是管理员
+		isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[UserRepo] [GetByID] error: %v, userId: %s", err, userId)
+			return nil, errorx.New(errno.ErrUserNotAdmin,
+				errorx.KV("id", userId))
+		}
+
+		if !isAdmin {
+			return nil, errorx.New(errno.ErrUserNotOwner,
+				errorx.KV("id", userId))
+		}
+	}
+
+	//执行删除提案
+	err = s.ProposalRepo.DeleteProposal(ctx, proposalId, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [Delete] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalDeleteFailed,
+			errorx.KV("proposal_id", proposalId))
+	}
+
+	return &dto.DeleteProposalResp{
+		Resp:       dto.Success(),
+		ProposalID: req.ProposalID,
+		DeletedAt:  time.Now(),
+		OperatorID: userId,
+		Deleted:    true,
+	}, nil
+
 }

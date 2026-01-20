@@ -17,6 +17,8 @@ package repo
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
@@ -136,4 +138,36 @@ func (r *ProposalRepo) FindByID(ctx context.Context, proposalID string) (*model.
 		return nil, err
 	}
 	return &proposal, nil
+}
+
+// DeleteProposal 删除单个提案
+func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalID string, operatorID string) error {
+	// 查找未删除的提案
+	filter := bson.M{
+		consts.ID:      proposalID,
+		consts.Deleted: bson.M{"$ne": true},
+	}
+
+	// 更新删除状态和删除时间
+	now := time.Now()
+	update := bson.M{
+		"$set": bson.M{
+			consts.Deleted:   true,
+			consts.DeletedAt: now,
+			consts.UpdatedAt: now,
+		},
+	}
+
+	// 执行软删除操作
+	key := fmt.Sprintf("proposal:%s", proposalID)
+	result, err := r.conn.UpdateOne(ctx, key, filter, update)
+	if err != nil {
+		return err
+	}
+
+	if result.ModifiedCount == 0 {
+		return errors.New("proposal not found or already deleted")
+	}
+
+	return nil
 }

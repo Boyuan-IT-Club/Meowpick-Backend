@@ -73,3 +73,15 @@ type GetProposalResp struct {
 	*Resp
 	Proposal *ProposalVO `json:"proposal"`
 }
+
+type DeleteProposalReq struct {
+	ProposalID string `json:"proposalId"`
+}
+
+type DeleteProposalResp struct {
+	*Resp
+	ProposalID string    `json:"proposalId"`
+	DeletedAt  time.Time `json:"deletedAt"`
+	OperatorID string    `json:"operatorId"`
+	Deleted    bool      `json:"deleted"`
+}
