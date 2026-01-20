@@ -34,6 +34,8 @@ const (
 	ErrProposalUpdateFailed                = 108000013
 	ErrProposalGetSuggestionsFailed        = 108000014
 	ErrProposalInvalidField                = 108000015
+	ErrProposalIDRequired                  = 108000016
+	ErrProposalAlreadyProcessed            = 108000017
 )
 
 func init() {
@@ -110,6 +112,16 @@ func init() {
 	code.Register(
 		ErrProposalInvalidField,
 		"invalid field type: {field}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalIDRequired,
+		"proposal ID is required: {key}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalAlreadyProcessed,
+		"proposal already processed: {key}: {value}",
 		code.WithAffectStability(false),
 	)
 }

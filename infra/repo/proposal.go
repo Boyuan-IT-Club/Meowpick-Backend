@@ -23,6 +23,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
@@ -205,16 +206,16 @@ func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, 
 		{consts.Status, 1},
 		{consts.CreatedAt, -1},
 	}
-	
+
 	if err := r.conn.Find(ctx, &proposals, filter, page.FindPageOption(param).SetSort(sort)); err != nil {
 		return nil, 0, err
 	}
-	
+
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	return proposals, total, nil
 }
 
@@ -224,12 +225,29 @@ func (r *ProposalRepo) FindByIDs(ctx context.Context, proposalIDs []string) ([]*
 	filter := bson.M{
 		consts.ID: bson.M{"$in": proposalIDs},
 	}
-	
+
 	if err := r.conn.Find(ctx, &proposals, filter); err != nil {
 		return nil, err
 	}
-	
+
 	return proposals, nil
+}
+
+// UpdateStatusByID 根据提案ID更新提案状态
+func (r *ProposalRepo) UpdateStatusByID(ctx context.Context, proposalID string, status string) (bool, error) {
+	// 将状态字符串转换为整数ID
+	statusID := mapping.Data.GetProposalStatusIDByName(status)
+	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}
+	update := bson.M{"$set": bson.M{consts.Status: statusID, consts.UpdatedAt: time.Now()}}
+
+	result, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	if err != nil {
+		return false, err
+	}
+
+	// 检查是否更新了文档
+	updated := result.ModifiedCount > 0
+	return updated, nil
 }
 
 // FindManyByUserID 根据用户ID批量获取提案
