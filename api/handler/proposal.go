@@ -133,7 +133,7 @@ func UpdateProposal(c *gin.Context) {
 // @Tags proposal
 // @Accept json
 // @Param proposalId path string true "提案ID"
-// @success 200 {object} Response[dto.DeleteProposalResp]
+// @success 200 {object} dto.DeleteProposalResp
 // @Router /api/proposal/{proposalId}/delete [POST]
 func DeleteProposal(c *gin.Context) {
 	var err error
