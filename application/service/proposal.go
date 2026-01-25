@@ -39,6 +39,7 @@ type IProposalService interface {
 	CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
 	GetProposal(ctx context.Context, req *dto.GetProposalReq) (resp *dto.GetProposalResp, err error)
+	UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error)
 }
 
 type ProposalService struct {
@@ -214,5 +215,48 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 	return &dto.GetProposalResp{
 		Resp:     dto.Success(),
 		Proposal: vo,
+	}, nil
+}
+
+// UpdateProposal 更新提案
+func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error) {
+	//鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	if req.ProposalID == "" {
+		return nil, errorx.New(errno.ErrProposalFindFailed,
+			errorx.KV("key", consts.ReqProposalID),
+			errorx.KV("value", "提案ID不能为空"),
+		)
+	}
+
+	proposal, err := s.ProposalRepo.FindByID(ctx, req.ProposalID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, req.ProposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+	if proposal == nil {
+		logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", req.ProposalID)
+		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
+	}
+
+	//更新提案字段
+	proposal.Title = req.Title
+	proposal.Content = req.Content
+	proposal.UpdatedAt = time.Now()
+
+	// 执行更新
+	if err = s.ProposalRepo.UpdateProposal(ctx, proposal); err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateProposal] error: %v, proposalId: %s", err, req.ProposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+
+	return &dto.UpdateProposalResp{
+		Resp:       dto.Resp{Code: 0, Msg: "success"}, // 直接构造基础响应体
+		ProposalID: proposal.ID,
+		Message:    "提案更新成功",
 	}, nil
 }
