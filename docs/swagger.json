@@ -457,18 +457,6 @@
                         "schema": {
                             "$ref": "#/definitions/dto.UpdateProposalResp"
                         }
-                    },
-                    "400": {
-                        "description": "参数错误响应",
-                        "schema": {
-                            "$ref": "#/definitions/dto.UpdateProposalResp"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误响应",
-                        "schema": {
-                            "$ref": "#/definitions/dto.UpdateProposalResp"
-                        }
                     }
                 }
             }
@@ -1256,11 +1244,15 @@
             "type": "object",
             "required": [
                 "content",
+                "course",
                 "title"
             ],
             "properties": {
                 "content": {
                     "type": "string"
+                },
+                "course": {
+                    "$ref": "#/definitions/dto.CourseVO"
                 },
                 "title": {
                     "type": "string"
@@ -1272,9 +1264,6 @@
             "properties": {
                 "code": {
                     "type": "integer"
-                },
-                "message": {
-                    "type": "string"
                 },
                 "msg": {
                     "type": "string"
