@@ -95,10 +95,33 @@ func ApproveProposal(c *gin.Context) {
 	// TODO: not implemented
 }
 
-// UpdateProposal 修改提案
-// @router /api/proposal/{proposalId}/update [POST]
+// UpdateProposal 更新提案接口
+// @Summary 更新提案内容
+// @Description 根据提案ID修改提案的标题和内容
+// @Tags proposal
+// @Accept json
+// @Produce json
+// @Param proposalId path string true "提案唯一ID"
+// @Param body body dto.UpdateProposalReq true "更新参数（标题、内容）"
+// @Success 200 {object} dto.UpdateProposalResp "更新成功响应"
+// @Router /api/proposal/{proposalId}/update [post]
 func UpdateProposal(c *gin.Context) {
-	// TODO: not implemented
+	var req dto.UpdateProposalReq
+	var resp *dto.UpdateProposalResp
+	var err error
+
+	req.ProposalID = c.Param(consts.CtxProposalID)
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.UpdateProposal(c, &req)
+
+	PostProcess(c, &req, resp, err)
 }
 
 // DeleteProposal 删除提案

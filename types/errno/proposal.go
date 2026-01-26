@@ -30,6 +30,7 @@ const (
 	ErrProposalCourseFoundInCourses        = 108000009
 	ErrProposalCreateFailed                = 108000010
 	ErrProposalNotFound                    = 108000011
+	ErrProposalUpdateFailed                = 108000012
 )
 
 func init() {
@@ -86,6 +87,11 @@ func init() {
 	code.Register(
 		ErrProposalNotFound,
 		"proposal not found: {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalUpdateFailed,
+		"failed to update proposal: {proposalId}",
 		code.WithAffectStability(false),
 	)
 }

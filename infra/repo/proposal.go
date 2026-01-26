@@ -38,7 +38,8 @@ type IProposalRepo interface {
 	IsCourseInExistingProposals(ctx context.Context, courseVO *model.Course) (bool, error)
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
-	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error) // 修改方法名
+	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
+	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
 }
 
 type ProposalRepo struct {
@@ -136,4 +137,25 @@ func (r *ProposalRepo) FindByID(ctx context.Context, proposalID string) (*model.
 		return nil, err
 	}
 	return &proposal, nil
+}
+
+// UpdateProposal 更新提案
+func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Proposal) error {
+
+	filter := bson.M{
+		consts.ID:      proposal.ID,
+		consts.Deleted: bson.M{"$ne": true},
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"title":          proposal.Title,
+			"content":        proposal.Content,
+			"course":         proposal.Course,
+			consts.UpdatedAt: proposal.UpdatedAt,
+		},
+	}
+
+	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	return err
 }
