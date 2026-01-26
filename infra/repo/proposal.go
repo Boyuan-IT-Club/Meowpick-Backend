@@ -151,6 +151,7 @@ func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Propo
 		"$set": bson.M{
 			"title":          proposal.Title,
 			"content":        proposal.Content,
+			"course":         proposal.Course,
 			consts.UpdatedAt: proposal.UpdatedAt,
 		},
 	}

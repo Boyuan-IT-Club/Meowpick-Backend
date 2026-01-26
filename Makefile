@@ -1,9 +1,17 @@
-meowpick-run:
-	@echo "初始化 meowpick 数据库和缓存服务"
-	docker-compose --project-name meowpick -f ./docker-compose.yml up -d meowpick-mongodb meowpick-redis
-	@echo "初始化完成"
+.PHONY: license wire swagger
 
-meowpick-clean:
-	@echo "删除 meowpick 数据库和缓存服务"
-	docker-compose --project-name meowpick -f ./docker-compose.yml down --remove-orphans
-	@echo "删除完成"
+license:
+	@ROOT=$$(git rev-parse --show-toplevel); \
+	echo "Generating LICENSE..."; \
+	cd $$ROOT && addlicense -c "Boyuan-IT-Club" -l apache .
+
+wire:
+	@echo "Running wire code generation..."
+	wire gen ./provider
+
+swagger:
+	@echo "Generating swagger..."
+	swag init \
+		--parseDependency \
+		--parseInternal \
+		--output docs

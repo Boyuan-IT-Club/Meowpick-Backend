@@ -225,14 +225,7 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
-
-	if req.ProposalID == "" {
-		return nil, errorx.New(errno.ErrProposalFindFailed,
-			errorx.KV("key", consts.ReqProposalID),
-			errorx.KV("value", "提案ID不能为空"),
-		)
-	}
-
+	//查询提案
 	proposal, err := s.ProposalRepo.FindByID(ctx, req.ProposalID)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, req.ProposalID)
@@ -246,17 +239,23 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 	//更新提案字段
 	proposal.Title = req.Title
 	proposal.Content = req.Content
+	courseModel, err := s.CourseAssembler.ToCourseDB(ctx, req.Course)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed,
+			errorx.KV("src", "course vo"), errorx.KV("dst", "course model"),
+		)
+	}
+	proposal.Course = courseModel
 	proposal.UpdatedAt = time.Now()
 
 	// 执行更新
 	if err = s.ProposalRepo.UpdateProposal(ctx, proposal); err != nil {
 		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateProposal] error: %v, proposalId: %s", err, req.ProposalID)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
+		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
 	}
 
 	return &dto.UpdateProposalResp{
-		Resp:       dto.Resp{Code: 0, Msg: "success"}, // 直接构造基础响应体
+		Resp:       dto.Success(),
 		ProposalID: proposal.ID,
-		Message:    "提案更新成功",
 	}, nil
 }

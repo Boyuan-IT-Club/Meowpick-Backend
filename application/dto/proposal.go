@@ -76,14 +76,14 @@ type GetProposalResp struct {
 
 // UpdateProposalReq 更新提案请求参数
 type UpdateProposalReq struct {
-	ProposalID string `json:"-"`
-	Title      string `json:"title" binding:"required"`
-	Content    string `json:"content" binding:"required"`
+	ProposalID string    `json:"-"`
+	Title      string    `json:"title" binding:"required"`
+	Content    string    `json:"content" binding:"required"`
+	Course     *CourseVO `json:"course" binding:"required"`
 }
 
 // UpdateProposalResp 更新提案响应参数
 type UpdateProposalResp struct {
-	Resp       `json:",inline"`
+	*Resp      `json:",inline"`
 	ProposalID string `json:"proposalId"`
-	Message    string `json:"message"`
 }

@@ -104,8 +104,6 @@ func ApproveProposal(c *gin.Context) {
 // @Param proposalId path string true "提案唯一ID"
 // @Param body body dto.UpdateProposalReq true "更新参数（标题、内容）"
 // @Success 200 {object} dto.UpdateProposalResp "更新成功响应"
-// @Failure 400 {object} dto.UpdateProposalResp "参数错误响应"
-// @Failure 500 {object} dto.UpdateProposalResp "服务器内部错误响应"
 // @Router /api/proposal/{proposalId}/update [post]
 func UpdateProposal(c *gin.Context) {
 	var req dto.UpdateProposalReq
