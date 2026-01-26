@@ -33,6 +33,7 @@ const (
 	ErrProposalIDRequired                  = 108000012
 	ErrProposalAlreadyProcessed            = 108000013
 	ErrProposalUpdateFailed                = 108000014
+	ErrUserPermissionDenied                = 108000015
 )
 
 func init() {
@@ -104,6 +105,11 @@ func init() {
 	code.Register(
 		ErrProposalUpdateFailed,
 		"failed to update proposal: {proposalId}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrUserPermissionDenied,
+		"user permission denied: {userId}",
 		code.WithAffectStability(false),
 	)
 }

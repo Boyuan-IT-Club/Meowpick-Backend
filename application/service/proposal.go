@@ -49,6 +49,7 @@ type ProposalService struct {
 	ProposalAssembler *assembler.ProposalAssembler
 	LikeRepo          *repo.LikeRepo
 	LikeCache         *cache.LikeCache
+	UserRepo          *repo.UserRepo
 }
 
 var ProposalServiceSet = wire.NewSet(
@@ -225,7 +226,15 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
-
+	// 检查用户是否为管理员
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
+		return nil, errorx.WrapByCode(err, errno.ErrUserPermissionDenied, errorx.KV("userId", userId))
+	}
+	if !isAdmin {
+		return nil, errorx.New(errno.ErrUserPermissionDenied, errorx.KV("userId", userId))
+	}
 	// 验证提案ID
 	if req.ProposalID == "" {
 		return nil, errorx.New(errno.ErrProposalIDRequired, errorx.KV("key", consts.ReqProposalID))
@@ -272,7 +281,7 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		err = s.CourseRepo.Insert(ctx, course)
 		if err != nil {
 			logs.CtxErrorf(ctx, "[CourseRepo] [Insert] error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed, errorx.KV("name", course.Name))
 		}
 	}
 
