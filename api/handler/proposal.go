@@ -90,9 +90,23 @@ func GetProposal(c *gin.Context) {
 }
 
 // ApproveProposal 审批提案
-// @router /api/proposal/{proposalId}/approve [POST]
+// @Summary 审批提案
+// @Description 通过提案并创建课程，或拒绝提案
+// @Tags proposal
+// @Produce json
+// @Param proposalId path string true "提案ID"
+// @Success 200 {object} dto.ToggleProposalResp
+// @Router /api/proposal/{proposalId}/approve [POST]
 func ApproveProposal(c *gin.Context) {
-	// TODO: not implemented
+	var req dto.ToggleProposalReq
+	var resp *dto.ToggleProposalResp
+	var err error
+
+	req.ProposalID = c.Param(consts.CtxProposalID)
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.ApproveProposal(c, &req)
+	PostProcess(c, &req, resp, err)
 }
 
 // UpdateProposal 修改提案
