@@ -446,7 +446,43 @@
         },
         "/api/proposal/{proposalId}/update": {
             "post": {
-                "responses": {}
+                "description": "根据提案ID修改提案的标题和内容",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "更新提案内容",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "提案唯一ID",
+                        "name": "proposalId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新参数（标题、内容）",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateProposalReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功响应",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateProposalResp"
+                        }
+                    }
+                }
             }
         },
         "/api/search": {
@@ -1247,6 +1283,39 @@
                     "type": "integer"
                 },
                 "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateProposalReq": {
+            "type": "object",
+            "required": [
+                "content",
+                "course",
+                "title"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "course": {
+                    "$ref": "#/definitions/dto.CourseVO"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "proposalId": {
                     "type": "string"
                 }
             }

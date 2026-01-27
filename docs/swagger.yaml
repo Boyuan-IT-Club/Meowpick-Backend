@@ -1,3 +1,17 @@
+# Copyright 2026 Boyuan-IT-Club
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 basePath: /
 definitions:
   dto.CommentVO:
@@ -438,6 +452,28 @@ definitions:
       msg:
         type: string
     type: object
+  dto.UpdateProposalReq:
+    properties:
+      content:
+        type: string
+      course:
+        $ref: '#/definitions/dto.CourseVO'
+      title:
+        type: string
+    required:
+    - content
+    - course
+    - title
+    type: object
+  dto.UpdateProposalResp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+      proposalId:
+        type: string
+    type: object
 info:
   contact: {}
   description: 选课猫后端接口文档
@@ -684,7 +720,31 @@ paths:
       - proposal
   /api/proposal/{proposalId}/update:
     post:
-      responses: {}
+      consumes:
+      - application/json
+      description: 根据提案ID修改提案的标题和内容
+      parameters:
+      - description: 提案唯一ID
+        in: path
+        name: proposalId
+        required: true
+        type: string
+      - description: 更新参数（标题、内容）
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProposalReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功响应
+          schema:
+            $ref: '#/definitions/dto.UpdateProposalResp'
+      summary: 更新提案内容
+      tags:
+      - proposal
   /api/proposal/add:
     post:
       consumes:

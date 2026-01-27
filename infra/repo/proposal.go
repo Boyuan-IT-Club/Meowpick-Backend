@@ -40,7 +40,9 @@ type IProposalRepo interface {
 	IsCourseInExistingProposals(ctx context.Context, courseVO *model.Course) (bool, error)
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
-	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error) // 修改方法名
+	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
+	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
+  DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
 }
 
 type ProposalRepo struct {
@@ -141,10 +143,10 @@ func (r *ProposalRepo) FindByID(ctx context.Context, proposalID string) (*model.
 }
 
 // DeleteProposal 删除单个提案
-func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalID string, operatorID string) error {
+func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalId string, operatorId string) error {
 	// 查找未删除的提案
 	filter := bson.M{
-		consts.ID:      proposalID,
+		consts.ID:      proposalId,
 		consts.Deleted: bson.M{"$ne": true},
 	}
 
@@ -159,15 +161,32 @@ func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalID string, op
 	}
 
 	// 执行软删除操作
-	key := fmt.Sprintf("proposal:%s", proposalID)
+	key := fmt.Sprintf("proposal:%s", proposalId)
 	result, err := r.conn.UpdateOne(ctx, key, filter, update)
 	if err != nil {
 		return err
 	}
 
-	if result.ModifiedCount == 0 {
-		return errors.New("proposal not found or already deleted")
+	return nil
+}
+  
+// UpdateProposal 更新提案
+func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Proposal) error {
+
+	filter := bson.M{
+		consts.ID:      proposal.ID,
+		consts.Deleted: bson.M{"$ne": true},
 	}
 
-	return nil
+	update := bson.M{
+		"$set": bson.M{
+			"title":          proposal.Title,
+			"content":        proposal.Content,
+			"course":         proposal.Course,
+			consts.UpdatedAt: proposal.UpdatedAt,
+		},
+	}
+
+	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	return err
 }

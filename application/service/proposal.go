@@ -38,8 +38,9 @@ var _ IProposalService = (*ProposalService)(nil)
 type IProposalService interface {
 	CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
-	GetProposal(ctx context.Context, req *dto.GetProposalReq) (resp *dto.GetProposalResp, err error)
-	DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (resp *dto.DeleteProposalResp, err error)
+	GetProposal(ctx context.Context, req *dto.GetProposalReq) (*dto.GetProposalResp, error)
+	DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (*dto.DeleteProposalResp, error)
+	UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error)
 }
 
 type ProposalService struct {
@@ -186,7 +187,7 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 }
 
 // GetProposal 获取提案详情
-func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalReq) (resp *dto.GetProposalResp, err error) {
+func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalReq) (*dto.GetProposalResp, error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
@@ -220,10 +221,9 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 }
 
 // DeleteProposal 删除提案
-func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (resp *dto.DeleteProposalResp, err error) {
-
+func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (*dto.DeleteProposalResp, error) {
 	// 鉴权
-	userId, ok := ctx.Value(consts.CtxUserID).(string)
+  userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
@@ -272,5 +272,47 @@ func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeletePro
 		OperatorID: userId,
 		Deleted:    true,
 	}, nil
+}
+  
+// UpdateProposal 更新提案
+func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
 
+	//查询提案
+	proposal, err := s.ProposalRepo.FindByID(ctx, req.ProposalID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, req.ProposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+	if proposal == nil {
+		logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", req.ProposalID)
+		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
+	}
+
+	//更新提案字段
+	proposal.Title = req.Title
+	proposal.Content = req.Content
+	courseModel, err := s.CourseAssembler.ToCourseDB(ctx, req.Course)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed,
+			errorx.KV("src", "course vo"), errorx.KV("dst", "course model"),
+		)
+	}
+	proposal.Course = courseModel
+	proposal.UpdatedAt = time.Now()
+
+	// 执行更新
+	if err = s.ProposalRepo.UpdateProposal(ctx, proposal); err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateProposal] error: %v, proposalId: %s", err, req.ProposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+
+	return &dto.UpdateProposalResp{
+		Resp:       dto.Success(),
+		ProposalID: proposal.ID,
+	}, nil
 }
