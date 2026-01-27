@@ -48,19 +48,24 @@ type ListProposalReq struct {
 	*PageParam
 }
 
-type ToggleProposalReq struct {
-	ProposalID string `json:"proposalID"`
+// ListProposalResp 对应 /api/proposal/list 的响应体
+type ListProposalResp struct {
+	*Resp
+	Total     int64         `json:"total"`
+	Proposals []*ProposalVO `json:"proposals"`
 }
 
 type GetProposalReq struct {
 	ProposalID string `json:"proposalId"`
 }
 
-// ListProposalResp 对应 /api/proposal/list 的响应体
-type ListProposalResp struct {
+type GetProposalResp struct {
 	*Resp
-	Total     int64         `json:"total"`
-	Proposals []*ProposalVO `json:"proposals"`
+	Proposal *ProposalVO `json:"proposal"`
+}
+
+type ToggleProposalReq struct {
+	ProposalID string `json:"proposalID"`
 }
 
 type ToggleProposalResp struct {
@@ -69,10 +74,16 @@ type ToggleProposalResp struct {
 	*Resp
 }
 
-type GetProposalResp struct {
-	*Resp
-	Proposal *ProposalVO `json:"proposal"`
+type DeleteProposalReq struct {
+	ProposalID string `json:"proposalId"`
 }
+
+type DeleteProposalResp struct {
+	*Resp
+	ProposalID string    `json:"proposalId"`
+	DeletedAt  time.Time `json:"deletedAt"`
+	OperatorID string    `json:"operatorId"`
+	Deleted    bool      `json:"deleted"`
 
 // UpdateProposalReq 更新提案请求参数
 type UpdateProposalReq struct {

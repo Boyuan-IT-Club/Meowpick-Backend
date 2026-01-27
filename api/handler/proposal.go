@@ -124,10 +124,29 @@ func UpdateProposal(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
-// DeleteProposal 删除提案
-// @router /api/proposal/{proposalId}/delete [POST]
+// DeleteProposal godoc
+// @Summary 删除提案
+// @Description 根据提案ID软删除提案（标记为已删除状态）
+// @Tags proposal
+// @Accept json
+// @Param proposalId path string true "提案ID"
+// @success 200 {object} dto.DeleteProposalResp
+// @Router /api/proposal/{proposalId}/delete [POST]
 func DeleteProposal(c *gin.Context) {
-	// TODO: not implemented
+	var err error
+	var req dto.DeleteProposalReq
+	var resp *dto.DeleteProposalResp
+
+	req.ProposalID = c.Param(consts.CtxProposalID)
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.DeleteProposal(c, &req)
+	PostProcess(c, &req, resp, err)
 }
 
 // GetProposalSuggestions 获取提案搜索建议

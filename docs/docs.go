@@ -438,7 +438,31 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/delete": {
             "post": {
-                "responses": {}
+                "description": "根据提案ID软删除提案（标记为已删除状态）",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "删除提案",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "提案ID",
+                        "name": "proposalId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeleteProposalResp"
+                        }
+                    }
+                }
             }
         },
         "/api/proposal/{proposalId}/update": {
@@ -861,6 +885,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.DeleteProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "deleted": {
+                    "type": "boolean"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "operatorId": {
+                    "type": "string"
+                },
+                "proposalId": {
                     "type": "string"
                 }
             }

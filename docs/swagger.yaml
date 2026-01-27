@@ -177,6 +177,21 @@ definitions:
       title:
         type: string
     type: object
+  dto.DeleteProposalResp:
+    properties:
+      code:
+        type: integer
+      deleted:
+        type: boolean
+      deletedAt:
+        type: string
+      msg:
+        type: string
+      operatorId:
+        type: string
+      proposalId:
+        type: string
+    type: object
   dto.GetCourseCampusesResp:
     properties:
       campuses:
@@ -686,7 +701,23 @@ paths:
       responses: {}
   /api/proposal/{proposalId}/delete:
     post:
-      responses: {}
+      consumes:
+      - application/json
+      description: 根据提案ID软删除提案（标记为已删除状态）
+      parameters:
+      - description: 提案ID
+        in: path
+        name: proposalId
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DeleteProposalResp'
+      summary: 删除提案
+      tags:
+      - proposal
   /api/proposal/{proposalId}/update:
     post:
       consumes:

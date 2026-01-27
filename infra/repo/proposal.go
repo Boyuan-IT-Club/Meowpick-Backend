@@ -17,6 +17,8 @@ package repo
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
@@ -40,6 +42,7 @@ type IProposalRepo interface {
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
 	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
+  DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
 }
 
 type ProposalRepo struct {
@@ -139,6 +142,34 @@ func (r *ProposalRepo) FindByID(ctx context.Context, proposalID string) (*model.
 	return &proposal, nil
 }
 
+// DeleteProposal 删除单个提案
+func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalId string, operatorId string) error {
+	// 查找未删除的提案
+	filter := bson.M{
+		consts.ID:      proposalId,
+		consts.Deleted: bson.M{"$ne": true},
+	}
+
+	// 更新删除状态和删除时间
+	now := time.Now()
+	update := bson.M{
+		"$set": bson.M{
+			consts.Deleted:   true,
+			consts.DeletedAt: now,
+			consts.UpdatedAt: now,
+		},
+	}
+
+	// 执行软删除操作
+	key := fmt.Sprintf("proposal:%s", proposalId)
+	result, err := r.conn.UpdateOne(ctx, key, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+  
 // UpdateProposal 更新提案
 func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Proposal) error {
 
