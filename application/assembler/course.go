@@ -17,6 +17,7 @@ package assembler
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
@@ -24,6 +25,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var _ ICourseAssembler = (*CourseAssembler)(nil)
@@ -119,27 +121,68 @@ func (a *CourseAssembler) ToCourseDB(ctx context.Context, vo *dto.CourseVO) (*mo
 	// 将校区名称转换为ID
 	var campusIDs []int32
 	for _, campus := range vo.Campuses {
-		campusID := mapping.Data.GetCampusIDByName(campus)
+		campusID := mapping.Data.AutoRegisterCampus(campus)
 		if campusID != 0 {
 			campusIDs = append(campusIDs, campusID)
 		} else {
-			logs.CtxWarnf(ctx, "[Mapping] [GetCampusIDByName] campus %s not found", campus)
+			logs.CtxWarnf(ctx, "[Mapping] [AutoRegisterCampus] failed to register campus %s", campus)
 		}
 	}
 
-	// 获取教师ID
+	// 处理院系 - 自动注册不存在的院系
+	departmentID := mapping.Data.AutoRegisterDepartment(vo.Department)
+	if departmentID == 0 {
+		logs.CtxWarnf(ctx, "[Mapping] [AutoRegisterDepartment] failed to register department %s", vo.Department)
+	}
+
+	// 处理课程类别 - 自动注册不存在的类别
+	categoryID := mapping.Data.AutoRegisterCategory(vo.Category)
+	if categoryID == 0 {
+		logs.CtxWarnf(ctx, "[Mapping] [AutoRegisterCategory] failed to register category %s", vo.Category)
+	}
+
+	// 处理教师 - 自动创建不存在的教师
 	var teacherIDs []string
 	for _, teacher := range vo.Teachers {
-		teacherIDs = append(teacherIDs, teacher.ID)
+		// 检查教师是否已存在
+		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[TeacherRepo] [GetIDByName] error finding teacher %s: %v", teacher.Name, err)
+		}
+
+		var teacherID string
+		if existingTeacherID != "" {
+			// 教师已存在，使用现有ID
+			teacherID = existingTeacherID
+		} else {
+			// 教师不存在，创建新教师
+			now := primitive.NewDateTimeFromTime(time.Now())
+			newTeacher := &model.Teacher{
+				ID:         primitive.NewObjectID().Hex(),
+				Name:       teacher.Name,
+				Title:      teacher.Title,
+				Department: mapping.Data.AutoRegisterDepartment(teacher.Department),
+				CreatedAt:  time.Unix(0, int64(now)),
+				UpdatedAt:  time.Unix(0, int64(now)),
+			}
+			
+			if err := a.TeacherRepo.Insert(ctx, newTeacher); err != nil {
+				logs.CtxErrorf(ctx, "[TeacherRepo] [Insert] error inserting teacher %s: %v", teacher.Name, err)
+				continue // 跳过这个教师
+			}
+			teacherID = newTeacher.ID
+		}
+		
+		teacherIDs = append(teacherIDs, teacherID)
 	}
 
 	return &model.Course{
 		ID:         vo.ID,
 		Name:       vo.Name,
 		Code:       vo.Code,
-		Category:   mapping.Data.GetCategoryIDByName(vo.Category),
+		Category:   categoryID,
 		Campuses:   campusIDs,
-		Department: mapping.Data.GetDepartmentIDByName(vo.Department),
+		Department: departmentID,
 		TeacherIDs: teacherIDs,
 	}, nil
 }
