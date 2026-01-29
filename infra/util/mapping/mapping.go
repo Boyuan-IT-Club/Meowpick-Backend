@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/mapping"
 )
@@ -34,6 +35,7 @@ type StaticData struct {
 	CategoryIDByName       map[string]int32
 	ProposalStatusIDByName map[string]int32
 	LikeTargetTypeIDByName map[string]int32
+	mutex                  sync.RWMutex // 用于并发安全
 }
 
 var Data = &StaticData{
@@ -84,6 +86,9 @@ func init() {
 }
 
 func (d *StaticData) GetCampusNameByID(id int32) string {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
 	if name, ok := d.CampusNameByID[id]; ok {
 		return name
 	}
@@ -91,6 +96,9 @@ func (d *StaticData) GetCampusNameByID(id int32) string {
 }
 
 func (d *StaticData) GetDepartmentNameByID(id int32) string {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
 	if name, ok := d.DepartmentNameByID[id]; ok {
 		return name
 	}
@@ -98,6 +106,9 @@ func (d *StaticData) GetDepartmentNameByID(id int32) string {
 }
 
 func (d *StaticData) GetCategoryNameByID(id int32) string {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
 	if name, ok := d.CategoryNameByID[id]; ok {
 		return name
 	}
@@ -105,6 +116,9 @@ func (d *StaticData) GetCategoryNameByID(id int32) string {
 }
 
 func (d *StaticData) GetProposalStatusNameByID(id int32) string {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
 	if name, ok := d.ProposalStatusNameByID[id]; ok {
 		return name
 	}
@@ -112,6 +126,9 @@ func (d *StaticData) GetProposalStatusNameByID(id int32) string {
 }
 
 func (d *StaticData) GetLikeTargetTypeNameByID(id int32) string {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
 	if name, ok := d.LikeTargetTypeNameByID[id]; ok {
 		return name
 	}
@@ -119,6 +136,9 @@ func (d *StaticData) GetLikeTargetTypeNameByID(id int32) string {
 }
 
 func (d *StaticData) GetCampusIDByName(name string) int32 {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
 	if id, ok := d.CampusIDByName[name]; ok {
 		return id
 	}
@@ -126,6 +146,9 @@ func (d *StaticData) GetCampusIDByName(name string) int32 {
 }
 
 func (d *StaticData) GetDepartmentIDByName(name string) int32 {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
 	if id, ok := d.DepartmentIDByName[name]; ok {
 		return id
 	}
@@ -133,6 +156,9 @@ func (d *StaticData) GetDepartmentIDByName(name string) int32 {
 }
 
 func (d *StaticData) GetCategoryIDByName(name string) int32 {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
 	if id, ok := d.CategoryIDByName[name]; ok {
 		return id
 	}
@@ -140,6 +166,9 @@ func (d *StaticData) GetCategoryIDByName(name string) int32 {
 }
 
 func (d *StaticData) GetProposalStatusIDByName(name string) int32 {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
 	if id, ok := d.ProposalStatusIDByName[name]; ok {
 		return id
 	}
@@ -147,10 +176,91 @@ func (d *StaticData) GetProposalStatusIDByName(name string) int32 {
 }
 
 func (d *StaticData) GetLikeTargetTypeIDByName(name string) int32 {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
 	if id, ok := d.LikeTargetTypeIDByName[name]; ok {
 		return id
 	}
 	return 0
+}
+
+// AutoRegisterDepartment 自动注册不存在的院系，返回其ID
+func (d *StaticData) AutoRegisterDepartment(name string) int32 {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	// 检查是否已存在
+	if id, ok := d.DepartmentIDByName[name]; ok {
+		return id
+	}
+
+	// 找到下一个可用的最大ID
+	maxID := int32(0)
+	for _, id := range d.DepartmentIDByName { // 修复：遍历值而不是键
+		if id > maxID {
+			maxID = id
+		}
+	}
+	newID := maxID + 1
+
+	// 注册新的院系
+	d.DepartmentNameByID[newID] = name
+	d.DepartmentIDByName[name] = newID
+
+	return newID
+}
+
+// AutoRegisterCategory 自动注册不存在的类别，返回其ID
+func (d *StaticData) AutoRegisterCategory(name string) int32 {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	// 检查是否已存在
+	if id, ok := d.CategoryIDByName[name]; ok {
+		return id
+	}
+
+	// 找到下一个可用的最大ID
+	maxID := int32(0)
+	for _, id := range d.CategoryIDByName { // 修复：遍历值而不是键
+		if id > maxID {
+			maxID = id
+		}
+	}
+	newID := maxID + 1
+
+	// 注册新的类别
+	d.CategoryNameByID[newID] = name
+	d.CategoryIDByName[name] = newID
+
+	return newID
+}
+
+// AutoRegisterCampus 自动注册不存在的校区，返回其ID
+func (d *StaticData) AutoRegisterCampus(name string) int32 {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	// 检查是否已存在
+	if id, ok := d.CampusIDByName[name]; ok {
+		return id
+	}
+
+	// 找到下一个可用的最大ID
+	maxID := int32(0)
+	for _, id := range d.CampusIDByName { // 修复：遍历值而不是键
+		if id > maxID {
+			maxID = id
+		}
+	}
+	newID := maxID + 1
+
+	// 注册新的校区
+	d.CampusNameByID[newID] = name
+	d.CampusIDByName[name] = newID
+
+	return newID
 }
 
 // --- 搜索方法（正则+包含匹配）---

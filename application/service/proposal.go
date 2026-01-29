@@ -230,10 +230,10 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.WrapByCode(err, errno.ErrUserPermissionDenied, errorx.KV("userId", userId))
+		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
 	}
 	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserPermissionDenied, errorx.KV("userId", userId))
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
 	}
 	// 验证提案ID
 	if req.ProposalID == "" {
