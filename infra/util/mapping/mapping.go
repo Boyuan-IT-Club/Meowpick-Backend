@@ -234,9 +234,6 @@ func (d *StaticData) GetCampusIDByName(name string) int32 {
 }
 
 func (d *StaticData) GetDepartmentIDByName(name string) int32 {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-
 	if id, ok := d.DepartmentIDByName[name]; ok {
 		return id
 	}
