@@ -13,7 +13,7 @@ require (
 	github.com/swaggo/gin-swagger v1.6.1
 	github.com/swaggo/swag v1.16.6
 	github.com/zeromicro/go-zero v1.8.5
-	go.mongodb.org/mongo-driver v1.17.4
+	go.mongodb.org/mongo-driver v1.17.8
 	golang.org/x/sync v0.19.0
 )
 
