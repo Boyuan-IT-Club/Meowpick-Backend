@@ -41,6 +41,7 @@ type IProposalService interface {
 	GetProposal(ctx context.Context, req *dto.GetProposalReq) (*dto.GetProposalResp, error)
 	DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (*dto.DeleteProposalResp, error)
 	UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error)
+	GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.GetProposalSuggestionsResp, error)
 }
 
 type ProposalService struct {
@@ -273,7 +274,7 @@ func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeletePro
 		Deleted:    true,
 	}, nil
 }
-  
+
 // UpdateProposal 更新提案
 func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error) {
 	// 鉴权
@@ -314,5 +315,36 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 	return &dto.UpdateProposalResp{
 		Resp:       dto.Success(),
 		ProposalID: proposal.ID,
+	}, nil
+}
+
+// GetProposalSuggestions 获取提案搜索建议
+func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.GetProposalSuggestionsResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 查询提案建议
+	proposals, err := s.ProposalRepo.GetSuggestionsByTitle(ctx, req.Keyword, req.PageParam)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [GetSuggestionsByTitle] error: %v, keyword: %s", err, req.Keyword)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalGetSuggestionsFailed,
+			errorx.KV("keyword", req.Keyword))
+	}
+
+	// 转换为VO
+	var vos []*dto.ProposalSuggestionsVO
+	for _, proposal := range proposals {
+		vos = append(vos, &dto.ProposalSuggestionsVO{
+			ID:    proposal.ID,
+			Title: proposal.Title,
+		})
+	}
+
+	return &dto.GetProposalSuggestionsResp{
+		Resp:        dto.Success(),
+		Suggestions: vos,
 	}, nil
 }

@@ -15,3 +15,4 @@ swagger:
 		--parseDependency \
 		--parseInternal \
 		--output docs
+
