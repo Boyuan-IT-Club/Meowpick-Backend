@@ -43,7 +43,7 @@ type IProposalRepo interface {
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
 	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
-  DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
+	DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
 	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, error)
 }
 
@@ -164,7 +164,7 @@ func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalId string, op
 
 	// 执行软删除操作
 	key := fmt.Sprintf("proposal:%s", proposalId)
-	result, err := r.conn.UpdateOne(ctx, key, filter, update)
+	_, err := r.conn.UpdateOne(ctx, key, filter, update)
 	if err != nil {
 		return err
 	}
@@ -192,11 +192,12 @@ func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Propo
 	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
 	return err
 }
+
 // GetSuggestionsByTitle 根据提案标题模糊分页查询提案
 func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, error) {
 	proposals := []*model.Proposal{}
 	filter := bson.M{
-		"title":   bson.M{"$regex": primitive.Regex{Pattern: title, Options: "i"}},
+		"title":        bson.M{"$regex": primitive.Regex{Pattern: title, Options: "i"}},
 		consts.Deleted: bson.M{"$ne": true},
 	}
 	sort := bson.D{
