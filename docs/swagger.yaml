@@ -263,6 +263,17 @@ definitions:
       proposal:
         $ref: '#/definitions/dto.ProposalVO'
     type: object
+  dto.GetProposalSuggestionsResp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+      suggestions:
+        items:
+          $ref: '#/definitions/dto.ProposalSuggestionsVO'
+        type: array
+    type: object
   dto.GetSearchHistoriesResp:
     properties:
       code:
@@ -350,6 +361,13 @@ definitions:
         type: array
       total:
         type: integer
+    type: object
+  dto.ProposalSuggestionsVO:
+    properties:
+      id:
+        type: string
+      title:
+        type: string
     type: object
   dto.ProposalVO:
     properties:
@@ -790,8 +808,34 @@ paths:
       tags:
       - proposal
   /api/proposal/suggest:
-    get:
-      responses: {}
+    post:
+      description: 根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表
+      parameters:
+      - description: 搜索关键词
+        in: query
+        name: keyword
+        required: true
+        type: string
+      - default: 0
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetProposalSuggestionsResp'
+      summary: 获取提案搜索建议
+      tags:
+      - proposal
   /api/search:
     post:
       consumes:
