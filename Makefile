@@ -1,4 +1,4 @@
-.PHONY: license wire swagger meowpick-run meowpick-clean
+.PHONY: license wire swagger
 
 license:
 	@ROOT=$$(git rev-parse --show-toplevel); \
