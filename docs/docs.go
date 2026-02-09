@@ -398,8 +398,46 @@ const docTemplate = `{
             }
         },
         "/api/proposal/suggest": {
-            "get": {
-                "responses": {}
+            "post": {
+                "description": "根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "获取提案搜索建议",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "搜索关键词",
+                        "name": "keyword",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetProposalSuggestionsResp"
+                        }
+                    }
+                }
             }
         },
         "/api/proposal/{proposalId}": {
@@ -1022,6 +1060,23 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.GetProposalSuggestionsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "suggestions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ProposalSuggestionsVO"
+                    }
+                }
+            }
+        },
         "dto.GetSearchHistoriesResp": {
             "type": "object",
             "properties": {
@@ -1153,6 +1208,17 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.ProposalSuggestionsVO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
