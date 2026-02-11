@@ -50,6 +50,7 @@ type Provider struct {
 	TeacherService       service.TeacherService
 	SearchService        service.SearchService
 	ProposalService      service.ProposalService
+	ChangeLogService     service.ChangeLogService
 }
 
 var ApplicationSet = wire.NewSet(
@@ -61,6 +62,7 @@ var ApplicationSet = wire.NewSet(
 	service.TeacherServiceSet,
 	service.SearchServiceSet,
 	service.ProposalServiceSet,
+	service.ChangeLogServiceSet,
 	// Assembler 相关
 	assembler.CommentAssemblerSet,
 	assembler.CourseAssemblerSet,
@@ -77,6 +79,7 @@ var InfraSet = wire.NewSet(
 	repo.NewCommentRepo,
 	repo.NewSearchHistoryRepo,
 	repo.NewProposalRepo,
+	repo.NewChangeLogRepo,
 	// 缓存相关
 	cache.NewLikeCache,
 	cache.NewCommentCache,

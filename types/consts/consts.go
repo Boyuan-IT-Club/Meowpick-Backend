@@ -18,26 +18,30 @@ import "time"
 
 // 数据库字段相关
 const (
-	ID         = "_id"
-	Status     = "status"
-	CreatedAt  = "createdAt"
-	UpdatedAt  = "updatedAt"
-	UserID     = "userId"
-	Query      = "query"
-	Deleted    = "deleted"
-	TargetID   = "targetId"
-	Active     = "active"
-	CourseID   = "courseId"
-	OpenID     = "openId"
-	TeacherIDs = "teacherIds"
-	Category   = "category"
-	Department = "department"
-	Campuses   = "campuses"
-	Code       = "code"
-	Name       = "name"
-	Tags       = "tags"
-	Count      = "count"
-	TargetType = "targetType"
+	ID           = "_id"
+	Status       = "status"
+	CreatedAt    = "createdAt"
+	UpdatedAt    = "updatedAt"
+	UserID       = "userId"
+	Query        = "query"
+	Deleted      = "deleted"
+	TargetID     = "targetId"
+	Active       = "active"
+	CourseID     = "courseId"
+	OpenID       = "openId"
+	TeacherIDs   = "teacherIds"
+	Category     = "category"
+	Department   = "department"
+	Campuses     = "campuses"
+	Code         = "code"
+	Name         = "name"
+	Tags         = "tags"
+	Count        = "count"
+	TargetType   = "targetType"
+	Action       = "action"
+	Content      = "content"
+	UpdateSource = "updateSource"
+	ProposalID   = "proposalId"
 )
 
 // 缓存相关
@@ -49,19 +53,22 @@ const (
 	CacheTeacherKeyPrefix       = "meowpick:teacher:"
 	CacheCourseKeyPrefix        = "meowpick:course:"
 	CacheProposalKeyPrefix      = "meowpick:proposal:"
+	CacheChangeLogKeyPrefix     = "meowpick:changelog:"
 
 	CacheCommentCountTTL   = 12 * time.Hour
 	CacheLikeStatusTTL     = 10 * time.Minute
 	CacheProposalStatusTTL = 10 * time.Minute
+	CacheChangeLogTTL      = 1 * time.Hour
 )
 
 // 上下文相关
 const (
-	CtxUserID     = "userId"
-	CtxToken      = "token"
-	CtxLikeID     = "likeId"
-	CtxCourseID   = "courseId"
-	CtxProposalID = "proposalId"
+	CtxUserID      = "userId"
+	CtxToken       = "token"
+	CtxLikeID      = "likeId"
+	CtxCourseID    = "courseId"
+	CtxProposalID  = "proposalId"
+	CtxChangeLogID = "changeLogId"
 )
 
 // Request 相关
@@ -76,11 +83,14 @@ const (
 	ReqTargetID   = "targetId"
 	ReqTitle      = "title"
 	ReqProposalID = "proposalId"
+	ReqTargetType = "targetType"
+	ReqAction     = "action"
 )
 
 // 限制相关
 const (
 	SearchHistoryLimit = 15
+	ChangeLogLimit     = 50
 )
 
 // 提案状态相关
@@ -94,4 +104,25 @@ const (
 const (
 	LikeTargetTypeComment  = "comment"
 	LikeTargetTypeProposal = "proposal"
+)
+
+// 变更记录目标类型
+const (
+	ChangeLogTargetTypeCourse   = "course"   // 课程
+	ChangeLogTargetTypeProposal = "proposal" // 提案
+	ChangeLogTargetTypeTeacher  = "teacher"  // 老师
+	ChangeLogTargetTypeUser     = "user"     // 用户
+)
+
+// 变更记录操作类型
+const (
+	ChangeLogActionCreate = "create" // 新增
+	ChangeLogActionUpdate = "update" // 修改
+	ChangeLogActionDelete = "delete" // 删除
+)
+
+// 变更记录来源类型
+const (
+	ChangeLogSourceManual = "manual" // 手动操作
+	ChangeLogSourceSystem = "system" // 系统自动
 )

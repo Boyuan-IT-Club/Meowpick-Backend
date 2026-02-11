@@ -21,10 +21,11 @@ import (
 type ChangeLog struct {
 	ID           string    `bson:"_id,omitempty"         json:"-"`
 	TargetID     string    `bson:"targetId"              json:"-"`
-	TargetType   int32     `bson:"targetType"            json:"-"`
-	Like         int32     `bson:"action"                json:"-"`
+	TargetType   string    `bson:"targetType"            json:"-"`
+	Action       string    `bson:"action"                json:"-"`
 	Content      string    `bson:"content"               json:"-"`
-	UpdateSource int32     `bson:"updateSource"          json:"-"`
+	UserID       string    `bson:"userId"                json:"-"`
+	UpdateSource string    `bson:"updateSource"          json:"-"`
 	ProposalID   string    `bson:"proposalId,omitempty"  json:"-"`
-	UpdatedAt    time.Time `bson:"updatedAt"             json:"-"`
+	CreatedAt    time.Time `bson:"createdAt"             json:"-"`
 }
