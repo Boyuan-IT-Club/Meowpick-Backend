@@ -34,6 +34,7 @@ import (
 var _ IChangeLogService = (*ChangeLogService)(nil)
 
 type IChangeLogService interface {
+	ListChangeLogs(ctx context.Context, req *dto.ListChangeLogReq) (*dto.ListChangeLogResp, error)
 	CreateChangeLog(ctx context.Context, req *dto.CreateChangeLogReq) (*dto.CreateChangeLogResp, error)
 	ListProposalLogsGrouped(ctx context.Context, req *dto.ListProposalLogsGroupedReq) (*dto.ListProposalLogsGroupedResp, error)
 	ListProposalLogsTimeline(ctx context.Context, req *dto.ListProposalLogsTimelineReq) (*dto.ListProposalLogsTimelineResp, error)
@@ -51,6 +52,48 @@ var ChangeLogServiceSet = wire.NewSet(
 	wire.Struct(new(ChangeLogService), "*"),
 	wire.Bind(new(IChangeLogService), new(*ChangeLogService)),
 )
+
+// ListChangeLogs 分页查询变更记录（简化：无类型转换）
+func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChangeLogReq) (*dto.ListChangeLogResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 查询变更记录
+	changeLogs, total, err := s.ChangeLogRepo.FindByTarget(ctx, req.TargetType, req.TargetID, req.PageParam)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ChangeLogRepo] [FindByTarget] error: %v, targetType: %s, targetID: %s", err, req.TargetType, req.TargetID)
+		return nil, errorx.WrapByCode(err, errno.ErrChangeLogFindFailed,
+			errorx.KV("targetType", req.TargetType),
+			errorx.KV("targetId", req.TargetID),
+		)
+	}
+
+	// 转换为 VO
+	vos := make([]*dto.ChangeLogVO, len(changeLogs))
+	for i, cl := range changeLogs {
+		vos[i] = &dto.ChangeLogVO{
+			ID:           cl.ID,
+			TargetID:     cl.TargetID,
+			TargetType:   cl.TargetType,
+			Action:       cl.Action,
+			Content:      cl.Content,
+			UserID:       cl.UserID,
+			UpdateSource: cl.UpdateSource,
+			ProposalID:   cl.ProposalID,
+			UpdatedAt:    cl.UpdatedAt,
+		}
+	}
+
+	// 构造resp
+	return &dto.ListChangeLogResp{
+		Resp:       dto.Success(),
+		Total:      total,
+		ChangeLogs: vos,
+	}, nil
+}
 
 // CreateChangeLog 添加一个新的变更日志
 func (s *ChangeLogService) CreateChangeLog(ctx context.Context, req *dto.CreateChangeLogReq) (*dto.CreateChangeLogResp, error) {

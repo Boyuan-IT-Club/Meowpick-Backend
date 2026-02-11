@@ -16,6 +16,13 @@ package dto
 
 import "time"
 
+// ListChangeLogReq 变更记录列表查询请求
+type ListChangeLogReq struct {
+	TargetType string `json:"targetType" binding:"required,one of=course proposal teacher user"`
+	TargetID   string `json:"targetId" binding:"required"`
+	*PageParam
+}
+
 // CreateChangeLogReq 新增变更日志请求参数
 type CreateChangeLogReq struct {
 	TargetID     string `json:"targetId" binding:"required"`
@@ -51,22 +58,29 @@ type ListProposalLogsGroupedReq struct {
 	*PageParam
 }
 
+// ListChangeLogResp 变更记录列表响应
+type ListChangeLogResp struct {
+	*Resp      `json:",inline"`
+	Total      int64          `json:"total"`
+	ChangeLogs []*ChangeLogVO `json:"changeLogs"`
+}
+
 // ListProposalLogsGroupedResp 按提案聚合的日志列表响应
 type ListProposalLogsGroupedResp struct {
 	*Resp
-	Total     int64              `json:"total"`
-	Proposals []*ProposalLogVO   `json:"proposals"`
+	Total     int64            `json:"total"`
+	Proposals []*ProposalLogVO `json:"proposals"`
 }
 
 // ProposalLogVO 提案日志展示对象
 type ProposalLogVO struct {
-	ProposalID  string          `json:"proposalId"`
-	Title       string          `json:"title"`
-	Content     string          `json:"content"`
-	Status      string          `json:"status"`
-	Course      *CourseVO       `json:"course"`
-	Creator     *CreatorVO      `json:"creator"`
-	AdminAction *AdminActionVO  `json:"adminAction,omitempty"`
+	ProposalID  string         `json:"proposalId"`
+	Title       string         `json:"title"`
+	Content     string         `json:"content"`
+	Status      string         `json:"status"`
+	Course      *CourseVO      `json:"course"`
+	Creator     *CreatorVO     `json:"creator"`
+	AdminAction *AdminActionVO `json:"adminAction,omitempty"`
 }
 
 // CreatorVO 创建者信息
