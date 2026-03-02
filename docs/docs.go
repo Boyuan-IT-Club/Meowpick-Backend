@@ -29,6 +29,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+<<<<<<< HEAD
         "/api/auth/grant_admin": {
             "post": {
                 "description": "授予指定用户管理员权限",
@@ -63,6 +64,8 @@ const docTemplate = `{
                 }
             }
         },
+=======
+>>>>>>> be0dd6f (chore(ci): auto-generate swagger & license [skip ci])
         "/api/auth/is_admin": {
             "get": {
                 "description": "判断当前用户是否具有管理员权限",
@@ -1334,6 +1337,7 @@ const docTemplate = `{
                 }
             }
         },
+<<<<<<< HEAD
         "dto.GrantAdminReq": {
             "type": "object",
             "properties": {
@@ -1354,6 +1358,8 @@ const docTemplate = `{
                 }
             }
         },
+=======
+>>>>>>> be0dd6f (chore(ci): auto-generate swagger & license [skip ci])
         "dto.IsAdminResp": {
             "type": "object",
             "properties": {
