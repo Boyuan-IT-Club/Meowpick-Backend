@@ -48,7 +48,9 @@ func SetupRoutes() *gin.Engine {
 
 	// LikeApi
 	likeGroup := router.Group("/api/like")
-	likeGroup.POST("/:likeId", handler.ToggleLike) // 为评论点赞
+	{
+		likeGroup.POST("/:likeId", handler.ToggleLike) // 为评论点赞
+	}
 
 	// CourseApi
 	courseGroup := router.Group("/api/course")
@@ -60,9 +62,10 @@ func SetupRoutes() *gin.Engine {
 	}
 
 	// TeacherApi
-	//teacherGroup := router.Group("/api/teacher")
-	//{
-	//}
+	teacherGroup := router.Group("/api/teacher")
+	{
+		teacherGroup.GET("/suggest", handler.GetTeacherSuggestions) // 获取教师搜索建议
+	}
 
 	// ProposalApi
 	proposalGroup := router.Group("/api/proposal")
@@ -74,5 +77,6 @@ func SetupRoutes() *gin.Engine {
 		proposalGroup.POST("/:proposalId/delete", handler.DeleteProposal)
 		proposalGroup.POST("/suggest", handler.GetProposalSuggestions)
 	}
+
 	return router
 }

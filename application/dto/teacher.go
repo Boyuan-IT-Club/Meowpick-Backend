@@ -41,3 +41,13 @@ type TeacherVO struct {
 	Title      string `json:"title"`
 	Department string `json:"department"`
 }
+
+type GetTeacherSuggestionsReq struct {
+	Keyword string `form:"keyword" binding:"required"`
+	*PageParam
+}
+
+type GetTeacherSuggestionsResp struct {
+	*Resp
+	Teachers []*TeacherVO `json:"teachers"`
+}
