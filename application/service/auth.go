@@ -38,6 +38,7 @@ var _ IAuthService = (*AuthService)(nil)
 type IAuthService interface {
 	SignIn(ctx context.Context, req *dto.SignInReq) (resp *dto.SignInResp, err error)
 	IsAdmin(ctx context.Context) (resp *dto.IsAdminResp, err error)
+	GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (resp *dto.GrantAdminResp, err error)
 }
 
 type AuthService struct {
@@ -148,5 +149,35 @@ func (s *AuthService) IsAdmin(ctx context.Context) (resp *dto.IsAdminResp, err e
 	return &dto.IsAdminResp{
 		IsAdmin: isAdmin,
 		Resp:    dto.Success(),
+	}, nil
+}
+
+func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (resp *dto.GrantAdminResp, err error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 判断用户是否为管理员
+	admin, err := s.UserRepo.IsAdminByID(ctx, req.UserID)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
+		)
+	}
+	if admin {
+		return nil, errorx.New(errno.ErrUserAlreadyAdmin, errorx.KV("id", req.UserID))
+	}
+
+	// 添加管理员
+	if err = s.UserRepo.Update(ctx, &model.User{ID: req.UserID, Admin: true}); err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrUserUpdateFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
+		)
+	}
+
+	return &dto.GrantAdminResp{
+		Resp: dto.Success(),
 	}, nil
 }

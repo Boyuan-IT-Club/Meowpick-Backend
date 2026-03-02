@@ -29,6 +29,40 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/auth/grant_admin": {
+            "post": {
+                "description": "授予指定用户管理员权限",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "授予管理员权限",
+                "parameters": [
+                    {
+                        "description": "GrantAdminReq",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.GrantAdminReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.GrantAdminResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/is_admin": {
             "get": {
                 "description": "判断当前用户是否具有管理员权限",
@@ -1184,6 +1218,28 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "count": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.GrantAdminReq": {
+            "type": "object",
+            "properties": {
+                "userId": {
+                    "type": "string"
+                },
+                "verifyCode": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.GrantAdminResp": {
+            "type": "object",
+            "properties": {
+                "code": {
                     "type": "integer"
                 },
                 "msg": {
