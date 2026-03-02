@@ -46,3 +46,21 @@ func SignIn(c *gin.Context) {
 	resp, err = provider.Get().AuthService.SignIn(c, &req)
 	PostProcess(c, &req, resp, err)
 }
+
+// IsAdmin godoc
+// @Summary 是否管理员
+// @Description 判断当前用户是否具有管理员权限
+// @Tags auth
+// @Produce json
+// @Success 200 {object} dto.IsAdminResp
+// @Router /api/auth/is_admin [get]
+func IsAdmin(c *gin.Context) {
+	var err error
+	var resp *dto.IsAdminResp
+
+	tokenStr, _ := token.ExtractToken(c.Request.Header)
+	c.Set(consts.CtxToken, tokenStr)
+
+	resp, err = provider.Get().AuthService.IsAdmin(c)
+	PostProcess(c, nil, resp, err)
+}

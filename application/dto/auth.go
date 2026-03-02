@@ -28,3 +28,9 @@ type SignInResp struct {
 	ExpiresIn   int64  `json:"expiresIn"`
 	UserID      string `json:"userId"`
 }
+
+// IsAdminResp 判断用户是否是管理员
+type IsAdminResp struct {
+	*Resp
+	IsAdmin bool `json:"isAdmin"`
+}

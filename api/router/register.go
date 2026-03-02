@@ -41,7 +41,10 @@ func SetupRoutes() *gin.Engine {
 
 	// AuthApi
 	authGroup := router.Group("/api/auth")
-	authGroup.POST("/sign_in", handler.SignIn) // 初始化时的登录、授权
+	{
+		authGroup.POST("/sign_in", handler.SignIn) // 初始化时的登录、授权
+		authGroup.GET("/is_admin", handler.IsAdmin)
+	}
 
 	// LikeApi
 	likeGroup := router.Group("/api/like")

@@ -37,6 +37,7 @@ var _ IAuthService = (*AuthService)(nil)
 
 type IAuthService interface {
 	SignIn(ctx context.Context, req *dto.SignInReq) (resp *dto.SignInResp, err error)
+	IsAdmin(ctx context.Context) (resp *dto.IsAdminResp, err error)
 }
 
 type AuthService struct {
@@ -125,5 +126,27 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 		AccessToken: tokenStr,
 		ExpiresIn:   config.GetConfig().Auth.AccessExpire,
 		UserID:      oldUser.ID,
+	}, nil
+}
+
+// IsAdmin 判断当前用户是否为管理员
+func (s *AuthService) IsAdmin(ctx context.Context) (resp *dto.IsAdminResp, err error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 查询
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId),
+		)
+	}
+
+	return &dto.IsAdminResp{
+		IsAdmin: isAdmin,
+		Resp:    dto.Success(),
 	}, nil
 }
