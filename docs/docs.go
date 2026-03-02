@@ -29,6 +29,26 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/auth/is_admin": {
+            "get": {
+                "description": "判断当前用户是否具有管理员权限",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "是否管理员",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IsAdminResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/sign_in": {
             "post": {
                 "consumes": [
@@ -680,6 +700,35 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/teacher/suggest": {
+            "get": {
+                "description": "根据关键词获取教师搜索建议",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "teacher"
+                ],
+                "summary": "获取教师搜索建议",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "搜索关键词",
+                        "name": "keyword",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetTeacherSuggestionsResp"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1111,6 +1160,23 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.GetTeacherSuggestionsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "teachers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TeacherVO"
+                    }
+                }
+            }
+        },
         "dto.GetTotalCourseCommentsCountResp": {
             "type": "object",
             "properties": {
@@ -1119,6 +1185,20 @@ const docTemplate = `{
                 },
                 "count": {
                     "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IsAdminResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "isAdmin": {
+                    "type": "boolean"
                 },
                 "msg": {
                     "type": "string"

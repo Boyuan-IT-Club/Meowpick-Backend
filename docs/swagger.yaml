@@ -296,12 +296,32 @@ definitions:
           $ref: '#/definitions/dto.SearchSuggestionsVO'
         type: array
     type: object
+  dto.GetTeacherSuggestionsResp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+      teachers:
+        items:
+          $ref: '#/definitions/dto.TeacherVO'
+        type: array
+    type: object
   dto.GetTotalCourseCommentsCountResp:
     properties:
       code:
         type: integer
       count:
         type: integer
+      msg:
+        type: string
+    type: object
+  dto.IsAdminResp:
+    properties:
+      code:
+        type: integer
+      isAdmin:
+        type: boolean
       msg:
         type: string
     type: object
@@ -498,6 +518,19 @@ info:
   title: Meowpick Backend API
   version: "1.0"
 paths:
+  /api/auth/is_admin:
+    get:
+      description: 判断当前用户是否具有管理员权限
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.IsAdminResp'
+      summary: 是否管理员
+      tags:
+      - auth
   /api/auth/sign_in:
     post:
       consumes:
@@ -929,6 +962,25 @@ paths:
           schema:
             $ref: '#/definitions/dto.CreateTeacherResp'
       summary: 新建教师
+      tags:
+      - teacher
+  /api/teacher/suggest:
+    get:
+      description: 根据关键词获取教师搜索建议
+      parameters:
+      - description: 搜索关键词
+        in: query
+        name: keyword
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetTeacherSuggestionsResp'
+      summary: 获取教师搜索建议
       tags:
       - teacher
 swagger: "2.0"
