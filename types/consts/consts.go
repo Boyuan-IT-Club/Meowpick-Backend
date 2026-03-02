@@ -96,3 +96,11 @@ const (
 	LikeTargetTypeComment  = "comment"
 	LikeTargetTypeProposal = "proposal"
 )
+
+// 搜索建议类型相关
+const (
+	SuggestionTargetTypeCourse     = "course"
+	SuggestionTargetTypeTeacher    = "teacher"
+	SuggestionTargetTypeDepartment = "department"
+	SuggestionTargetTypeCategory   = "category"
+)
