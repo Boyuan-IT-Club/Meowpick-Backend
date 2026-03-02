@@ -15,8 +15,8 @@
 package handler
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/gin-gonic/gin"
