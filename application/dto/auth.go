@@ -46,3 +46,9 @@ type GrantAdminReq struct {
 type GrantAdminResp struct {
 	*Resp
 }
+
+// IsAdminResp 判断用户是否是管理员
+type IsAdminResp struct {
+	*Resp
+	IsAdmin bool `json:"isAdmin"`
+}
