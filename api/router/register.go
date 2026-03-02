@@ -44,6 +44,7 @@ func SetupRoutes() *gin.Engine {
 	{
 		authGroup.POST("/sign_in", handler.SignIn) // 初始化时的登录、授权
 		authGroup.GET("/is_admin", handler.IsAdmin)
+		authGroup.POST("/grant_admin", handler.GrantAdmin)
 	}
 
 	// LikeApi

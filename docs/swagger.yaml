@@ -316,6 +316,20 @@ definitions:
       msg:
         type: string
     type: object
+  dto.GrantAdminReq:
+    properties:
+      userId:
+        type: string
+      verifyCode:
+        type: string
+    type: object
+  dto.GrantAdminResp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+    type: object
   dto.IsAdminResp:
     properties:
       code:
@@ -518,6 +532,28 @@ info:
   title: Meowpick Backend API
   version: "1.0"
 paths:
+  /api/auth/grant_admin:
+    post:
+      consumes:
+      - application/json
+      description: 授予指定用户管理员权限
+      parameters:
+      - description: GrantAdminReq
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GrantAdminReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GrantAdminResp'
+      summary: 授予管理员权限
+      tags:
+      - auth
   /api/auth/is_admin:
     get:
       description: 判断当前用户是否具有管理员权限

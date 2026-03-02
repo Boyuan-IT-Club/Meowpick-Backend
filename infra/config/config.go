@@ -45,9 +45,10 @@ type Config struct {
 		URL string
 		DB  string
 	}
-	Cache cache.CacheConf
-	Redis *redis.RedisConf
-	WeApp WeApp
+	Cache         cache.CacheConf
+	Redis         *redis.RedisConf
+	WeApp         WeApp
+	AdminGrantKey string
 }
 
 func NewConfig() (*Config, error) {

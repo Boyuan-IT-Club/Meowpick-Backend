@@ -58,9 +58,33 @@ func IsAdmin(c *gin.Context) {
 	var err error
 	var resp *dto.IsAdminResp
 
-	tokenStr, _ := token.ExtractToken(c.Request.Header)
-	c.Set(consts.CtxToken, tokenStr)
+	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().AuthService.IsAdmin(c)
 	PostProcess(c, nil, resp, err)
+}
+
+// GrantAdmin godoc
+// @Summary 授予管理员权限
+// @Description 授予指定用户管理员权限
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body dto.GrantAdminReq true "GrantAdminReq"
+// @Success 200 {object} dto.GrantAdminResp
+// @Router /api/auth/grant_admin [post]
+func GrantAdmin(c *gin.Context) {
+	var err error
+	var req dto.GrantAdminReq
+	var resp *dto.GrantAdminResp
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().AuthService.GrantAdmin(c, &req)
+	PostProcess(c, &req, resp, err)
 }
