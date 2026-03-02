@@ -65,7 +65,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 			var vo []*dto.SearchSuggestionsVO
 			for _, course := range courses {
 				vo = append(vo, &dto.SearchSuggestionsVO{
-					Type: consts.ReqCourse,
+					Type: consts.SuggestionTargetTypeCourse,
 					Name: course.Name,
 				})
 			}
@@ -82,7 +82,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 			var vo []*dto.SearchSuggestionsVO
 			for _, teacher := range teachers {
 				vo = append(vo, &dto.SearchSuggestionsVO{
-					Type: consts.ReqTeacher,
+					Type: consts.SuggestionTargetTypeTeacher,
 					Name: teacher.Name,
 				})
 			}
@@ -95,7 +95,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 			for _, id := range ids {
 				name := mapping.Data.GetCategoryNameByID(id)
 				vo = append(vo, &dto.SearchSuggestionsVO{
-					Type: consts.ReqCategory,
+					Type: consts.SuggestionTargetTypeCategory,
 					Name: name,
 				})
 			}
@@ -108,7 +108,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 			for _, id := range ids {
 				name := mapping.Data.GetDepartmentNameByID(id)
 				vo = append(vo, &dto.SearchSuggestionsVO{
-					Type: consts.ReqDepartment,
+					Type: consts.SuggestionTargetTypeDepartment,
 					Name: name,
 				})
 			}
