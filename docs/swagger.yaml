@@ -316,6 +316,7 @@ definitions:
       msg:
         type: string
     type: object
+<<<<<<< HEAD
   dto.GrantAdminReq:
     properties:
       userId:
@@ -330,6 +331,8 @@ definitions:
       msg:
         type: string
     type: object
+=======
+>>>>>>> be0dd6f (chore(ci): auto-generate swagger & license [skip ci])
   dto.IsAdminResp:
     properties:
       code:
@@ -534,6 +537,7 @@ info:
   title: Meowpick Backend API
   version: "1.0"
 paths:
+<<<<<<< HEAD
   /api/auth/grant_admin:
     post:
       consumes:
@@ -556,6 +560,8 @@ paths:
       summary: 授予管理员权限
       tags:
       - auth
+=======
+>>>>>>> be0dd6f (chore(ci): auto-generate swagger & license [skip ci])
   /api/auth/is_admin:
     get:
       description: 判断当前用户是否具有管理员权限
