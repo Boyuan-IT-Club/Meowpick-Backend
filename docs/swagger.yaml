@@ -317,6 +317,9 @@ definitions:
         type: string
     type: object
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4669dd9 (feat: 新增授予管理员功能)
   dto.GrantAdminReq:
     properties:
       userId:
@@ -331,8 +334,11 @@ definitions:
       msg:
         type: string
     type: object
+<<<<<<< HEAD
 =======
 >>>>>>> be0dd6f (chore(ci): auto-generate swagger & license [skip ci])
+=======
+>>>>>>> 4669dd9 (feat: 新增授予管理员功能)
   dto.IsAdminResp:
     properties:
       code:
@@ -538,6 +544,9 @@ info:
   version: "1.0"
 paths:
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4669dd9 (feat: 新增授予管理员功能)
   /api/auth/grant_admin:
     post:
       consumes:
@@ -560,8 +569,11 @@ paths:
       summary: 授予管理员权限
       tags:
       - auth
+<<<<<<< HEAD
 =======
 >>>>>>> be0dd6f (chore(ci): auto-generate swagger & license [skip ci])
+=======
+>>>>>>> 4669dd9 (feat: 新增授予管理员功能)
   /api/auth/is_admin:
     get:
       description: 判断当前用户是否具有管理员权限

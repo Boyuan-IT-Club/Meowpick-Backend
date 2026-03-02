@@ -30,6 +30,9 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4669dd9 (feat: 新增授予管理员功能)
         "/api/auth/grant_admin": {
             "post": {
                 "description": "授予指定用户管理员权限",
@@ -64,8 +67,11 @@ const docTemplate = `{
                 }
             }
         },
+<<<<<<< HEAD
 =======
 >>>>>>> be0dd6f (chore(ci): auto-generate swagger & license [skip ci])
+=======
+>>>>>>> 4669dd9 (feat: 新增授予管理员功能)
         "/api/auth/is_admin": {
             "get": {
                 "description": "判断当前用户是否具有管理员权限",
@@ -1229,6 +1235,9 @@ const docTemplate = `{
             }
         },
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4669dd9 (feat: 新增授予管理员功能)
         "dto.GrantAdminReq": {
             "type": "object",
             "properties": {
@@ -1251,8 +1260,11 @@ const docTemplate = `{
                 }
             }
         },
+<<<<<<< HEAD
 =======
 >>>>>>> be0dd6f (chore(ci): auto-generate swagger & license [skip ci])
+=======
+>>>>>>> 4669dd9 (feat: 新增授予管理员功能)
         "dto.IsAdminResp": {
             "type": "object",
             "properties": {

@@ -165,19 +165,28 @@ func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (r
 	// 判断用户是否为管理员
 	admin, err := s.UserRepo.IsAdminByID(ctx, req.UserID)
 	if err != nil {
+<<<<<<< HEAD
 		logs.CtxErrorf(ctx, "[AuthRepo] [IsAdminByID] error: %v", err)
+=======
+>>>>>>> 4669dd9 (feat: 新增授予管理员功能)
 		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
 			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
 		)
 	}
 	if admin {
+<<<<<<< HEAD
 		logs.CtxErrorf(ctx, "[AuthService] [GrantAdmin] user %s is already an admin", req.UserID)
+=======
+>>>>>>> 4669dd9 (feat: 新增授予管理员功能)
 		return nil, errorx.New(errno.ErrUserAlreadyAdmin, errorx.KV("id", req.UserID))
 	}
 
 	// 添加管理员
 	if err = s.UserRepo.Update(ctx, &model.User{ID: req.UserID, Admin: true}); err != nil {
+<<<<<<< HEAD
 		logs.CtxErrorf(ctx, "[AuthRepo] [Update] error: %v", err)
+=======
+>>>>>>> 4669dd9 (feat: 新增授予管理员功能)
 		return nil, errorx.WrapByCode(err, errno.ErrUserUpdateFailed,
 			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
 		)
