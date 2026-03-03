@@ -1456,6 +1456,9 @@ const docTemplate = `{
                 "expiresIn": {
                     "type": "integer"
                 },
+                "isAdmin": {
+                    "type": "boolean"
+                },
                 "msg": {
                     "type": "string"
                 },

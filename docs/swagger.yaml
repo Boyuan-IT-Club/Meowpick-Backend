@@ -469,6 +469,8 @@ definitions:
         type: integer
       expiresIn:
         type: integer
+      isAdmin:
+        type: boolean
       msg:
         type: string
       userId:
