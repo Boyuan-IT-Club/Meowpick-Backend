@@ -105,6 +105,7 @@ func (s *TeacherService) GetTeacherSuggestions(ctx context.Context, req *dto.Get
 	// 获取教师建议列表
 	dbs, err := s.TeacherRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
 	if err != nil {
+		logs.CtxErrorf(ctx, "[TeacherRepo] [GetSuggestionsByName] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrTeacherGetSuggestionsFailed, errorx.KV("keyword", req.Keyword))
 	}
 
