@@ -27,6 +27,7 @@ type SignInResp struct {
 	AccessToken string `json:"accessToken"`
 	ExpiresIn   int64  `json:"expiresIn"`
 	UserID      string `json:"userId"`
+	IsAdmin     bool   `json:"isAdmin"`
 }
 
 // IsAdminResp 判断用户是否是管理员

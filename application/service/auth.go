@@ -122,11 +122,20 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 		return nil, errorx.WrapByCode(err, errno.ErrAuthTokenGenerateFailed)
 	}
 
+	// 查看当前用户是否为管理员
+	admin, err := s.UserRepo.IsAdminByID(ctx, oldUser.ID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[AuthRepo] [IsAdminByID] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.ReqOpenID), errorx.KV("value", openId))
+	}
+
 	return &dto.SignInResp{
 		Resp:        dto.Success(),
 		AccessToken: tokenStr,
 		ExpiresIn:   config.GetConfig().Auth.AccessExpire,
 		UserID:      oldUser.ID,
+		IsAdmin:     admin,
 	}, nil
 }
 
@@ -141,6 +150,7 @@ func (s *AuthService) IsAdmin(ctx context.Context) (resp *dto.IsAdminResp, err e
 	// 查询
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
+		logs.CtxErrorf(ctx, "[AuthRepo] [IsAdminByID] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
 			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId),
 		)
@@ -162,16 +172,19 @@ func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (r
 	// 判断用户是否为管理员
 	admin, err := s.UserRepo.IsAdminByID(ctx, req.UserID)
 	if err != nil {
+		logs.CtxErrorf(ctx, "[AuthRepo] [IsAdminByID] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
 			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
 		)
 	}
 	if admin {
+		logs.CtxErrorf(ctx, "[AuthService] [GrantAdmin] user %s is already an admin", req.UserID)
 		return nil, errorx.New(errno.ErrUserAlreadyAdmin, errorx.KV("id", req.UserID))
 	}
 
 	// 添加管理员
 	if err = s.UserRepo.Update(ctx, &model.User{ID: req.UserID, Admin: true}); err != nil {
+		logs.CtxErrorf(ctx, "[AuthRepo] [Update] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrUserUpdateFailed,
 			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
 		)
