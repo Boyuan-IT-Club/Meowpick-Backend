@@ -123,12 +123,24 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 		return nil, errorx.WrapByCode(err, errno.ErrAuthTokenGenerateFailed)
 	}
 
+	// 查看当前用户是否为管理员
+	admin, err := s.UserRepo.IsAdminByID(ctx, oldUser.ID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[AuthRepo] [IsAdminByID] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.ReqOpenID), errorx.KV("value", openId))
+	}
+
 	return &dto.SignInResp{
 		Resp:        dto.Success(),
 		AccessToken: tokenStr,
 		ExpiresIn:   config.GetConfig().Auth.AccessExpire,
 		UserID:      oldUser.ID,
+<<<<<<< HEAD
 		IsAdmin:     oldUser.Admin,
+=======
+		IsAdmin:     admin,
+>>>>>>> c130651 (feat: 登陆返回是否是管理员)
 	}, nil
 }
 
@@ -166,27 +178,39 @@ func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (r
 	admin, err := s.UserRepo.IsAdminByID(ctx, req.UserID)
 	if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		logs.CtxErrorf(ctx, "[AuthRepo] [IsAdminByID] error: %v", err)
 =======
 >>>>>>> 4669dd9 (feat: 新增授予管理员功能)
+=======
+		logs.CtxErrorf(ctx, "[AuthRepo] [IsAdminByID] error: %v", err)
+>>>>>>> c130651 (feat: 登陆返回是否是管理员)
 		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
 			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
 		)
 	}
 	if admin {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		logs.CtxErrorf(ctx, "[AuthService] [GrantAdmin] user %s is already an admin", req.UserID)
 =======
 >>>>>>> 4669dd9 (feat: 新增授予管理员功能)
+=======
+		logs.CtxErrorf(ctx, "[AuthService] [GrantAdmin] user %s is already an admin", req.UserID)
+>>>>>>> c130651 (feat: 登陆返回是否是管理员)
 		return nil, errorx.New(errno.ErrUserAlreadyAdmin, errorx.KV("id", req.UserID))
 	}
 
 	// 添加管理员
 	if err = s.UserRepo.Update(ctx, &model.User{ID: req.UserID, Admin: true}); err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		logs.CtxErrorf(ctx, "[AuthRepo] [Update] error: %v", err)
 =======
 >>>>>>> 4669dd9 (feat: 新增授予管理员功能)
+=======
+		logs.CtxErrorf(ctx, "[AuthRepo] [Update] error: %v", err)
+>>>>>>> c130651 (feat: 登陆返回是否是管理员)
 		return nil, errorx.WrapByCode(err, errno.ErrUserUpdateFailed,
 			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
 		)

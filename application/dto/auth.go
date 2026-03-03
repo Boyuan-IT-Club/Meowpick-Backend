@@ -28,6 +28,7 @@ type SignInResp struct {
 	ExpiresIn   int64  `json:"expiresIn"`
 	UserID      string `json:"userId"`
 	IsAdmin     bool   `json:"isAdmin"`
+<<<<<<< HEAD
 }
 
 // IsAdminResp 判断用户是否是管理员
@@ -45,6 +46,8 @@ type GrantAdminReq struct {
 // GrantAdminResp 授予管理员权限的响应体
 type GrantAdminResp struct {
 	*Resp
+=======
+>>>>>>> c130651 (feat: 登陆返回是否是管理员)
 }
 
 // IsAdminResp 判断用户是否是管理员
