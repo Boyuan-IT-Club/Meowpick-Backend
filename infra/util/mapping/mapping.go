@@ -15,12 +15,17 @@
 package mapping
 
 import (
+	"context"
 	"regexp"
 	"sort"
 	"strings"
 	"sync"
 
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/mapping"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 )
 
 // StaticData 存放所有静态映射数据
@@ -35,7 +40,11 @@ type StaticData struct {
 	CategoryIDByName       map[string]int32
 	ProposalStatusIDByName map[string]int32
 	LikeTargetTypeIDByName map[string]int32
-	mutex                  sync.RWMutex // 用于并发安全
+
+	// 数据库和缓存依赖
+	mappingRepo  *repo.MappingRepo
+	mappingCache *cache.MappingCache
+	mutex        sync.RWMutex // 用于并发安全
 }
 
 var Data = &StaticData{
@@ -83,6 +92,64 @@ func init() {
 	for id, name := range Data.LikeTargetTypeNameByID {
 		Data.LikeTargetTypeIDByName[name] = id
 	}
+}
+
+// InitWithDependencies 初始化映射工具类的数据库和缓存依赖
+type MappingDependencies struct {
+	MappingRepo  *repo.MappingRepo
+	MappingCache *cache.MappingCache
+}
+
+func (d *StaticData) InitWithDependencies(deps *MappingDependencies) {
+	d.mappingRepo = deps.MappingRepo
+	d.mappingCache = deps.MappingCache
+
+	// 加载数据库中的动态映射数据到内存
+	ctx := context.Background()
+	if err := d.loadDynamicMappings(ctx); err != nil {
+		logs.Errorf("[Mapping] Failed to load dynamic mappings: %v", err)
+	}
+}
+
+// loadDynamicMappings 从数据库加载动态映射数据到内存
+func (d *StaticData) loadDynamicMappings(ctx context.Context) error {
+	logs.Info("[Mapping] Starting to load dynamic mappings from database")
+
+	// 加载校区映射
+	campusMappings, err := d.mappingRepo.FindAllByType(ctx, model.MappingTypeCampus)
+	if err != nil {
+		return err
+	}
+	for _, m := range campusMappings {
+		d.CampusNameByID[m.Code] = m.Name
+		d.CampusIDByName[m.Name] = m.Code
+	}
+	logs.Infof("[Mapping] Loaded %d campus mappings", len(campusMappings))
+
+	// 加载院系映射
+	deptMappings, err := d.mappingRepo.FindAllByType(ctx, model.MappingTypeDepartment)
+	if err != nil {
+		return err
+	}
+	for _, m := range deptMappings {
+		d.DepartmentNameByID[m.Code] = m.Name
+		d.DepartmentIDByName[m.Name] = m.Code
+	}
+	logs.Infof("[Mapping] Loaded %d department mappings", len(deptMappings))
+
+	// 加载课程类别映射
+	categoryMappings, err := d.mappingRepo.FindAllByType(ctx, model.MappingTypeCategory)
+	if err != nil {
+		return err
+	}
+	for _, m := range categoryMappings {
+		d.CategoryNameByID[m.Code] = m.Name
+		d.CategoryIDByName[m.Name] = m.Code
+	}
+	logs.Infof("[Mapping] Loaded %d category mappings", len(categoryMappings))
+
+	logs.Info("[Mapping] Dynamic mappings loaded successfully")
+	return nil
 }
 
 func (d *StaticData) GetCampusNameByID(id int32) string {
@@ -187,79 +254,111 @@ func (d *StaticData) GetLikeTargetTypeIDByName(name string) int32 {
 
 // AutoRegisterDepartment 自动注册不存在的院系，返回其ID
 func (d *StaticData) AutoRegisterDepartment(name string) int32 {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
-	// 检查是否已存在
-	if id, ok := d.DepartmentIDByName[name]; ok {
-		return id
-	}
-
-	// 找到下一个可用的最大ID
-	maxID := int32(0)
-	for _, id := range d.DepartmentIDByName { // 修复：遍历值而不是键
-		if id > maxID {
-			maxID = id
-		}
-	}
-	newID := maxID + 1
-
-	// 注册新的院系
-	d.DepartmentNameByID[newID] = name
-	d.DepartmentIDByName[name] = newID
-
-	return newID
+	return d.autoRegisterMapping(name, model.MappingTypeDepartment,
+		func(id int32, name string) {
+			d.DepartmentNameByID[id] = name
+			d.DepartmentIDByName[name] = id
+		})
 }
 
 // AutoRegisterCategory 自动注册不存在的类别，返回其ID
 func (d *StaticData) AutoRegisterCategory(name string) int32 {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
-	// 检查是否已存在
-	if id, ok := d.CategoryIDByName[name]; ok {
-		return id
-	}
-
-	// 找到下一个可用的最大ID
-	maxID := int32(0)
-	for _, id := range d.CategoryIDByName { // 修复：遍历值而不是键
-		if id > maxID {
-			maxID = id
-		}
-	}
-	newID := maxID + 1
-
-	// 注册新的类别
-	d.CategoryNameByID[newID] = name
-	d.CategoryIDByName[name] = newID
-
-	return newID
+	return d.autoRegisterMapping(name, model.MappingTypeCategory,
+		func(id int32, name string) {
+			d.CategoryNameByID[id] = name
+			d.CategoryIDByName[name] = id
+		})
 }
 
 // AutoRegisterCampus 自动注册不存在的校区，返回其ID
 func (d *StaticData) AutoRegisterCampus(name string) int32 {
+	return d.autoRegisterMapping(name, model.MappingTypeCampus,
+		func(id int32, name string) {
+			d.CampusNameByID[id] = name
+			d.CampusIDByName[name] = id
+		})
+}
+
+// autoRegisterMapping 通用的自动注册方法
+func (d *StaticData) autoRegisterMapping(name string, mappingType model.MappingType, updateFunc func(int32, string)) int32 {
+	if name == "" {
+		return 0
+	}
+
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	// 检查是否已存在
-	if id, ok := d.CampusIDByName[name]; ok {
-		return id
-	}
+	ctx := context.Background()
 
-	// 找到下一个可用的最大ID
-	maxID := int32(0)
-	for _, id := range d.CampusIDByName { // 修复：遍历值而不是键
-		if id > maxID {
-			maxID = id
+	// 1. 先检查内存中是否已存在
+	switch mappingType {
+	case model.MappingTypeDepartment:
+		if id, ok := d.DepartmentIDByName[name]; ok {
+			return id
+		}
+	case model.MappingTypeCategory:
+		if id, ok := d.CategoryIDByName[name]; ok {
+			return id
+		}
+	case model.MappingTypeCampus:
+		if id, ok := d.CampusIDByName[name]; ok {
+			return id
 		}
 	}
-	newID := maxID + 1
 
-	// 注册新的校区
-	d.CampusNameByID[newID] = name
-	d.CampusIDByName[name] = newID
+	// 2. 检查缓存中是否存在
+	if d.mappingCache != nil {
+		if id, hit, err := d.mappingCache.GetCodeByKey(ctx, mappingType, name); err == nil && hit {
+			updateFunc(id, name) // 同步到内存
+			return id
+		}
+	}
 
+	// 3. 查询数据库
+	if d.mappingRepo != nil {
+		if existing, err := d.mappingRepo.FindByNameAndType(ctx, name, mappingType); err == nil && existing != nil {
+			// 存在于数据库，同步到内存和缓存
+			updateFunc(existing.Code, name)
+			if d.mappingCache != nil {
+				d.mappingCache.SetCodeByKey(ctx, mappingType, name, existing.Code, cache.DefaultTTL)
+				d.mappingCache.SetNameByKey(ctx, mappingType, existing.Code, name, cache.DefaultTTL)
+			}
+			return existing.Code
+		}
+	}
+
+	// 4. 需要创建新的映射
+	maxCode, err := d.mappingRepo.FindMaxCodeByType(ctx, mappingType)
+	if err != nil {
+		logs.Errorf("[Mapping] Failed to find max code for type %d: %v", mappingType, err)
+		return 0
+	}
+
+	newID := maxCode + 1
+	newMapping := &model.Mapping{
+		Type: mappingType,
+		Name: name,
+		Code: newID,
+	}
+
+	// 保存到数据库
+	if err := d.mappingRepo.Insert(ctx, newMapping); err != nil {
+		logs.Errorf("[Mapping] Failed to insert new mapping: %v", err)
+		return 0
+	}
+
+	// 更新内存
+	updateFunc(newID, name)
+
+	// 更新缓存
+	if d.mappingCache != nil {
+		d.mappingCache.SetCodeByKey(ctx, mappingType, name, newID, cache.DefaultTTL)
+		d.mappingCache.SetNameByKey(ctx, mappingType, newID, name, cache.DefaultTTL)
+		// 清除列表缓存，因为有新数据加入
+		d.mappingCache.Invalidate(ctx, mappingType)
+	}
+
+	logs.Infof("[Mapping] Auto registered new mapping: type=%d, name=%s, code=%d", mappingType, name, newID)
 	return newID
 }
 

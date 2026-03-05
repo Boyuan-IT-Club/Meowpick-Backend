@@ -259,8 +259,8 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	}
 
 	// 更新提案状态为已通过
-	newStatus := consts.ProposalStatusApproved
-	updated, err := s.ProposalRepo.UpdateStatusByID(ctx, req.ProposalID, newStatus)
+	newStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
+	updated, err := s.ProposalRepo.UpdateStatusByID(ctx, req.ProposalID, newStatusID)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusByID] error: %v, proposalId: %s", err, req.ProposalID)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
@@ -270,7 +270,8 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	}
 
 	// 如果提案通过，同时创建对应的课程
-	if newStatus == consts.ProposalStatusApproved {
+	approvedStatusID = mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
+	if newStatusID == approvedStatusID {
 		// 创建课程
 		course := proposal.Course
 		course.ID = primitive.NewObjectID().Hex()

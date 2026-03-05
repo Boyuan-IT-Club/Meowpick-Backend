@@ -22,7 +22,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
@@ -41,7 +41,7 @@ type IProposalRepo interface {
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error) // 修改方法名
-	UpdateStatusByID(ctx context.Context, proposalID string, status string) (bool, error)
+	UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error)
 }
 
 type ProposalRepo struct {
@@ -142,9 +142,7 @@ func (r *ProposalRepo) FindByID(ctx context.Context, proposalID string) (*model.
 }
 
 // UpdateStatusByID 根据提案ID更新提案状态
-func (r *ProposalRepo) UpdateStatusByID(ctx context.Context, proposalID string, status string) (bool, error) {
-	// 将状态字符串转换为整数ID
-	statusID := mapping.Data.GetProposalStatusIDByName(status)
+func (r *ProposalRepo) UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error) {
 	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}
 	update := bson.M{"$set": bson.M{consts.Status: statusID, consts.UpdatedAt: time.Now()}}
 
