@@ -234,9 +234,7 @@ func (r *ProposalRepo) FindByIDs(ctx context.Context, proposalIDs []string) ([]*
 }
 
 // UpdateStatusByID 根据提案ID更新提案状态
-func (r *ProposalRepo) UpdateStatusByID(ctx context.Context, proposalID string, status string) (bool, error) {
-	// 将状态字符串转换为整数ID
-	statusID := mapping.Data.GetProposalStatusIDByName(status)
+func (r *ProposalRepo) UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error) {
 	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}
 	update := bson.M{"$set": bson.M{consts.Status: statusID, consts.UpdatedAt: time.Now()}}
 
