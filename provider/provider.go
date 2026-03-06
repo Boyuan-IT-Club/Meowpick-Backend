@@ -22,6 +22,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/google/wire"
 )
 
@@ -33,6 +34,12 @@ func Init() {
 	if err != nil {
 		panic(err)
 	}
+
+	// 初始化映射工具类的依赖
+	mapping.Data.InitWithDependencies(&mapping.MappingDependencies{
+		MappingRepo:  provider.MappingRepo,
+		MappingCache: provider.MappingCache,
+	})
 }
 
 func Get() *Provider {
@@ -50,6 +57,10 @@ type Provider struct {
 	TeacherService       service.TeacherService
 	SearchService        service.SearchService
 	ProposalService      service.ProposalService
+
+	// 新增的映射相关依赖
+	MappingRepo  *repo.MappingRepo
+	MappingCache *cache.MappingCache
 }
 
 var ApplicationSet = wire.NewSet(
@@ -77,12 +88,25 @@ var InfraSet = wire.NewSet(
 	repo.NewCommentRepo,
 	repo.NewSearchHistoryRepo,
 	repo.NewProposalRepo,
+	repo.NewMappingRepo, // 添加映射仓储
 	// 缓存相关
 	cache.NewLikeCache,
 	cache.NewCommentCache,
+	cache.NewMappingCache, // 添加映射缓存
 )
 
 var AllProvider = wire.NewSet(
 	ApplicationSet,
 	InfraSet,
+	// 初始化映射工具类
+	InitMapping,
 )
+
+// InitMapping 初始化映射工具类的Wire绑定函数
+func InitMapping(mappingRepo *repo.MappingRepo, mappingCache *cache.MappingCache) {
+	deps := &mapping.MappingDependencies{
+		MappingRepo:  mappingRepo,
+		MappingCache: mappingCache,
+	}
+	mapping.Data.InitWithDependencies(deps)
+}

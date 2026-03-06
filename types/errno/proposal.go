@@ -33,6 +33,10 @@ const (
 	ErrProposalDeleteFailed                = 108000012
 	ErrProposalUpdateFailed                = 108000013
 	ErrProposalGetSuggestionsFailed        = 108000014
+  ErrProposalIDRequired                  = 108000015
+	ErrProposalAlreadyProcessed            = 108000016
+	ErrProposalUpdateFailed                = 108000017
+	ErrUserPermissionDenied                = 108000018
 )
 
 func init() {
@@ -104,6 +108,26 @@ func init() {
 	code.Register(
 		ErrProposalGetSuggestionsFailed,
 		"failed to get proposal suggestions: {keyword}",
+		code.WithAffectStability(false),
+	)
+  	code.Register(
+		ErrProposalIDRequired,
+		"proposal ID is required: {key}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalAlreadyProcessed,
+		"proposal already processed: {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalUpdateFailed,
+		"failed to update proposal: {proposalId}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrUserPermissionDenied,
+		"user permission denied: {userId}",
 		code.WithAffectStability(false),
 	)
 }
