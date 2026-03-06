@@ -22,6 +22,7 @@ const (
 	Status     = "status"
 	CreatedAt  = "createdAt"
 	UpdatedAt  = "updatedAt"
+	DeletedAt  = "deletedAt"
 	UserID     = "userId"
 	Query      = "query"
 	Deleted    = "deleted"
@@ -94,4 +95,12 @@ const (
 const (
 	LikeTargetTypeComment  = "comment"
 	LikeTargetTypeProposal = "proposal"
+)
+
+// 搜索建议类型相关
+const (
+	SuggestionTargetTypeCourse     = "course"
+	SuggestionTargetTypeTeacher    = "teacher"
+	SuggestionTargetTypeDepartment = "department"
+	SuggestionTargetTypeCategory   = "category"
 )

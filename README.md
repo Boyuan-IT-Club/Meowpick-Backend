@@ -126,7 +126,7 @@ WeApp:
 ### 使用 Docker 部署
 ```bash
 # 构建镜像
-docker build -teacher meowpick-backend .
+docker build -t meowpick-backend .
 
 # 运行容器
 docker run -d -p 8080:8080 meowpick-backend

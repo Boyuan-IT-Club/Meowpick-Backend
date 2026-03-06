@@ -27,4 +27,22 @@ type SignInResp struct {
 	AccessToken string `json:"accessToken"`
 	ExpiresIn   int64  `json:"expiresIn"`
 	UserID      string `json:"userId"`
+	IsAdmin     bool   `json:"isAdmin"`
+}
+
+// IsAdminResp 判断用户是否是管理员
+type IsAdminResp struct {
+	*Resp
+	IsAdmin bool `json:"isAdmin"`
+}
+
+// GrantAdminReq 授予管理员权限的请求体
+type GrantAdminReq struct {
+	UserID     string `json:"userId"`
+	VerifyCode string `json:"verifyCode"`
+}
+
+// GrantAdminResp 授予管理员权限的响应体
+type GrantAdminResp struct {
+	*Resp
 }

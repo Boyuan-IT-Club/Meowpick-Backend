@@ -86,6 +86,7 @@ func NewProvider() (*Provider, error) {
 		ProposalAssembler: proposalAssembler,
 		LikeRepo:          likeRepo,
 		LikeCache:         likeCache,
+		UserRepo:          userRepo,
 	}
 	providerProvider := &Provider{
 		Config:               configConfig,

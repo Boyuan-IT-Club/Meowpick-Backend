@@ -34,6 +34,7 @@ var _ ITeacherService = (*TeacherService)(nil)
 
 type ITeacherService interface {
 	CreateTeacher(ctx context.Context, req *dto.CreateTeacherReq) (*dto.CreateTeacherResp, error)
+	GetTeacherSuggestions(ctx context.Context, req *dto.GetTeacherSuggestionsReq) (*dto.GetTeacherSuggestionsResp, error)
 }
 
 type TeacherService struct {
@@ -91,4 +92,27 @@ func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeach
 	}
 
 	return &dto.CreateTeacherResp{Resp: dto.Success(), TeacherVO: vo}, nil
+}
+
+// GetTeacherSuggestions 获取教师建议列表
+func (s *TeacherService) GetTeacherSuggestions(ctx context.Context, req *dto.GetTeacherSuggestionsReq) (*dto.GetTeacherSuggestionsResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 获取教师建议列表
+	dbs, err := s.TeacherRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[TeacherRepo] [GetSuggestionsByName] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrTeacherGetSuggestionsFailed, errorx.KV("keyword", req.Keyword))
+	}
+
+	vos := s.TeacherAssembler.ToTeacherVOArray(ctx, dbs)
+
+	return &dto.GetTeacherSuggestionsResp{
+		Resp:     dto.Success(),
+		Teachers: vos,
+	}, nil
 }

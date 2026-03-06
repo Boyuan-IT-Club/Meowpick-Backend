@@ -24,6 +24,9 @@ const (
 	ErrUserFindFailed   = 100000003
 	ErrUserNotFound     = 100000004
 	ErrUserInsertFailed = 100000005
+	ErrUserNotOwner     = 100000006
+	ErrUserAlreadyAdmin = 100000007
+	ErrUserUpdateFailed = 100000008
 )
 
 func init() {
@@ -50,6 +53,21 @@ func init() {
 	code.Register(
 		ErrUserInsertFailed,
 		"failed to insert user: {id}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrUserNotOwner,
+		"user not owner: {id}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrUserAlreadyAdmin,
+		"user already admin: {id}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrUserUpdateFailed,
+		"failed to update user: {id}",
 		code.WithAffectStability(false),
 	)
 }

@@ -15,8 +15,8 @@
 package handler
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/gin-gonic/gin"
@@ -43,5 +43,28 @@ func CreateTeacher(c *gin.Context) {
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().TeacherService.CreateTeacher(c, req)
+	PostProcess(c, req, resp, err)
+}
+
+// GetTeacherSuggestions godoc
+// @Summary 获取教师搜索建议
+// @Description 根据关键词获取教师搜索建议
+// @Tags teacher
+// @Produce json
+// @Param keyword query string true "搜索关键词"
+// @Success 200 {object} dto.GetTeacherSuggestionsResp
+// @Router /api/teacher/suggest [get]
+func GetTeacherSuggestions(c *gin.Context) {
+	var req *dto.GetTeacherSuggestionsReq
+	var resp *dto.GetTeacherSuggestionsResp
+	var err error
+
+	if err = c.ShouldBindQuery(&req); err != nil {
+		PostProcess(c, req, resp, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().TeacherService.GetTeacherSuggestions(c, req)
 	PostProcess(c, req, resp, err)
 }

@@ -40,6 +40,9 @@ type IProposalService interface {
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
 	GetProposal(ctx context.Context, req *dto.GetProposalReq) (resp *dto.GetProposalResp, err error)
 	ApproveProposal(ctx context.Context, req *dto.ToggleProposalReq) (*dto.ToggleProposalResp, error)
+	DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (*dto.DeleteProposalResp, error)
+	UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error)
+	GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.GetProposalSuggestionsResp, error)
 }
 
 type ProposalService struct {
@@ -186,7 +189,7 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 }
 
 // GetProposal 获取提案详情
-func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalReq) (resp *dto.GetProposalResp, err error) {
+func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalReq) (*dto.GetProposalResp, error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
@@ -216,6 +219,134 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 	return &dto.GetProposalResp{
 		Resp:     dto.Success(),
 		Proposal: vo,
+	}, nil
+}
+
+// DeleteProposal 删除提案
+func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (*dto.DeleteProposalResp, error) {
+	// 鉴权
+  userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	proposalId := req.ProposalID
+
+	// 检查提案是否存在
+	proposal, err := s.ProposalRepo.FindByID(ctx, proposalId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, proposalId)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
+	}
+	if proposal == nil {
+		logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", proposalId)
+		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", proposalId))
+	}
+
+	//权限检查：非管理员只能删除自己的提案
+	if proposal.UserID != userId {
+		// 查询用户是否是管理员
+		isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[UserRepo] [GetByID] error: %v, userId: %s", err, userId)
+			return nil, errorx.New(errno.ErrUserNotAdmin,
+				errorx.KV("id", userId))
+		}
+
+		if !isAdmin {
+			return nil, errorx.New(errno.ErrUserNotOwner,
+				errorx.KV("id", userId))
+		}
+	}
+
+	//执行删除提案
+	err = s.ProposalRepo.DeleteProposal(ctx, proposalId, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [Delete] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalDeleteFailed,
+			errorx.KV("proposal_id", proposalId))
+	}
+
+	return &dto.DeleteProposalResp{
+		Resp:       dto.Success(),
+		ProposalID: req.ProposalID,
+		DeletedAt:  time.Now(),
+		OperatorID: userId,
+		Deleted:    true,
+	}, nil
+}
+
+// UpdateProposal 更新提案
+func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	//查询提案
+	proposal, err := s.ProposalRepo.FindByID(ctx, req.ProposalID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, req.ProposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+	if proposal == nil {
+		logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", req.ProposalID)
+		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
+	}
+
+	//更新提案字段
+	proposal.Title = req.Title
+	proposal.Content = req.Content
+	courseModel, err := s.CourseAssembler.ToCourseDB(ctx, req.Course)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed,
+			errorx.KV("src", "course vo"), errorx.KV("dst", "course model"),
+		)
+	}
+	proposal.Course = courseModel
+	proposal.UpdatedAt = time.Now()
+
+	// 执行更新
+	if err = s.ProposalRepo.UpdateProposal(ctx, proposal); err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateProposal] error: %v, proposalId: %s", err, req.ProposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+
+	return &dto.UpdateProposalResp{
+		Resp:       dto.Success(),
+		ProposalID: proposal.ID,
+	}, nil
+}
+
+// GetProposalSuggestions 获取提案搜索建议
+func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.GetProposalSuggestionsResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 查询提案建议
+	proposals, err := s.ProposalRepo.GetSuggestionsByTitle(ctx, req.Keyword, req.PageParam)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [GetSuggestionsByTitle] error: %v, keyword: %s", err, req.Keyword)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalGetSuggestionsFailed,
+			errorx.KV("keyword", req.Keyword))
+	}
+
+	// 转换为VO
+	var vos []*dto.ProposalSuggestionsVO
+	for _, proposal := range proposals {
+		vos = append(vos, &dto.ProposalSuggestionsVO{
+			ID:    proposal.ID,
+			Title: proposal.Title,
+		})
+	}
+
+	return &dto.GetProposalSuggestionsResp{
+		Resp:        dto.Success(),
+		Suggestions: vos,
 	}, nil
 }
 

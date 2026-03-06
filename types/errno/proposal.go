@@ -30,10 +30,13 @@ const (
 	ErrProposalCourseFoundInCourses        = 108000009
 	ErrProposalCreateFailed                = 108000010
 	ErrProposalNotFound                    = 108000011
-	ErrProposalIDRequired                  = 108000012
-	ErrProposalAlreadyProcessed            = 108000013
-	ErrProposalUpdateFailed                = 108000014
-	ErrUserPermissionDenied                = 108000015
+	ErrProposalDeleteFailed                = 108000012
+	ErrProposalUpdateFailed                = 108000013
+	ErrProposalGetSuggestionsFailed        = 108000014
+  ErrProposalIDRequired                  = 108000015
+	ErrProposalAlreadyProcessed            = 108000016
+	ErrProposalUpdateFailed                = 108000017
+	ErrUserPermissionDenied                = 108000018
 )
 
 func init() {
@@ -93,6 +96,21 @@ func init() {
 		code.WithAffectStability(false),
 	)
 	code.Register(
+		ErrProposalDeleteFailed,
+		"failed to delete proposal: {proposal_id}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalUpdateFailed,
+		"failed to update proposal: {proposalId}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalGetSuggestionsFailed,
+		"failed to get proposal suggestions: {keyword}",
+		code.WithAffectStability(false),
+	)
+  	code.Register(
 		ErrProposalIDRequired,
 		"proposal ID is required: {key}",
 		code.WithAffectStability(false),

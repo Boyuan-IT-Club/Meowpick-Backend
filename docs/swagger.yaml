@@ -1,4 +1,4 @@
-# Copyright 2025 Boyuan-IT-Club
+# Copyright 2026 Boyuan-IT-Club
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -177,6 +177,21 @@ definitions:
       title:
         type: string
     type: object
+  dto.DeleteProposalResp:
+    properties:
+      code:
+        type: integer
+      deleted:
+        type: boolean
+      deletedAt:
+        type: string
+      msg:
+        type: string
+      operatorId:
+        type: string
+      proposalId:
+        type: string
+    type: object
   dto.GetCourseCampusesResp:
     properties:
       campuses:
@@ -248,6 +263,17 @@ definitions:
       proposal:
         $ref: '#/definitions/dto.ProposalVO'
     type: object
+  dto.GetProposalSuggestionsResp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+      suggestions:
+        items:
+          $ref: '#/definitions/dto.ProposalSuggestionsVO'
+        type: array
+    type: object
   dto.GetSearchHistoriesResp:
     properties:
       code:
@@ -270,12 +296,46 @@ definitions:
           $ref: '#/definitions/dto.SearchSuggestionsVO'
         type: array
     type: object
+  dto.GetTeacherSuggestionsResp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+      teachers:
+        items:
+          $ref: '#/definitions/dto.TeacherVO'
+        type: array
+    type: object
   dto.GetTotalCourseCommentsCountResp:
     properties:
       code:
         type: integer
       count:
         type: integer
+      msg:
+        type: string
+    type: object
+  dto.GrantAdminReq:
+    properties:
+      userId:
+        type: string
+      verifyCode:
+        type: string
+    type: object
+  dto.GrantAdminResp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+    type: object
+  dto.IsAdminResp:
+    properties:
+      code:
+        type: integer
+      isAdmin:
+        type: boolean
       msg:
         type: string
     type: object
@@ -335,6 +395,13 @@ definitions:
         type: array
       total:
         type: integer
+    type: object
+  dto.ProposalSuggestionsVO:
+    properties:
+      id:
+        type: string
+      title:
+        type: string
     type: object
   dto.ProposalVO:
     properties:
@@ -402,6 +469,8 @@ definitions:
         type: integer
       expiresIn:
         type: integer
+      isAdmin:
+        type: boolean
       msg:
         type: string
       userId:
@@ -437,12 +506,69 @@ definitions:
       msg:
         type: string
     type: object
+  dto.UpdateProposalReq:
+    properties:
+      content:
+        type: string
+      course:
+        $ref: '#/definitions/dto.CourseVO'
+      title:
+        type: string
+    required:
+    - content
+    - course
+    - title
+    type: object
+  dto.UpdateProposalResp:
+    properties:
+      code:
+        type: integer
+      msg:
+        type: string
+      proposalId:
+        type: string
+    type: object
 info:
   contact: {}
   description: 选课猫后端接口文档
   title: Meowpick Backend API
   version: "1.0"
 paths:
+  /api/auth/grant_admin:
+    post:
+      consumes:
+      - application/json
+      description: 授予指定用户管理员权限
+      parameters:
+      - description: GrantAdminReq
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GrantAdminReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GrantAdminResp'
+      summary: 授予管理员权限
+      tags:
+      - auth
+  /api/auth/is_admin:
+    get:
+      description: 判断当前用户是否具有管理员权限
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.IsAdminResp'
+      summary: 是否管理员
+      tags:
+      - auth
   /api/auth/sign_in:
     post:
       consumes:
@@ -664,10 +790,50 @@ paths:
       responses: {}
   /api/proposal/{proposalId}/delete:
     post:
-      responses: {}
+      consumes:
+      - application/json
+      description: 根据提案ID软删除提案（标记为已删除状态）
+      parameters:
+      - description: 提案ID
+        in: path
+        name: proposalId
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DeleteProposalResp'
+      summary: 删除提案
+      tags:
+      - proposal
   /api/proposal/{proposalId}/update:
     post:
-      responses: {}
+      consumes:
+      - application/json
+      description: 根据提案ID修改提案的标题和内容
+      parameters:
+      - description: 提案唯一ID
+        in: path
+        name: proposalId
+        required: true
+        type: string
+      - description: 更新参数（标题、内容）
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProposalReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功响应
+          schema:
+            $ref: '#/definitions/dto.UpdateProposalResp'
+      summary: 更新提案内容
+      tags:
+      - proposal
   /api/proposal/add:
     post:
       consumes:
@@ -713,8 +879,34 @@ paths:
       tags:
       - proposal
   /api/proposal/suggest:
-    get:
-      responses: {}
+    post:
+      description: 根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表
+      parameters:
+      - description: 搜索关键词
+        in: query
+        name: keyword
+        required: true
+        type: string
+      - default: 0
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetProposalSuggestionsResp'
+      summary: 获取提案搜索建议
+      tags:
+      - proposal
   /api/search:
     post:
       consumes:
@@ -808,6 +1000,25 @@ paths:
           schema:
             $ref: '#/definitions/dto.CreateTeacherResp'
       summary: 新建教师
+      tags:
+      - teacher
+  /api/teacher/suggest:
+    get:
+      description: 根据关键词获取教师搜索建议
+      parameters:
+      - description: 搜索关键词
+        in: query
+        name: keyword
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetTeacherSuggestionsResp'
+      summary: 获取教师搜索建议
       tags:
       - teacher
 swagger: "2.0"

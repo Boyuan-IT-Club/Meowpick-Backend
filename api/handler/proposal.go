@@ -15,8 +15,8 @@
 package handler
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/gin-gonic/gin"
@@ -109,20 +109,81 @@ func ApproveProposal(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
-// UpdateProposal 修改提案
-// @router /api/proposal/{proposalId}/update [POST]
+// UpdateProposal 更新提案接口
+// @Summary 更新提案内容
+// @Description 根据提案ID修改提案的标题和内容
+// @Tags proposal
+// @Accept json
+// @Produce json
+// @Param proposalId path string true "提案唯一ID"
+// @Param body body dto.UpdateProposalReq true "更新参数（标题、内容）"
+// @Success 200 {object} dto.UpdateProposalResp "更新成功响应"
+// @Router /api/proposal/{proposalId}/update [post]
 func UpdateProposal(c *gin.Context) {
-	// TODO: not implemented
+	var req dto.UpdateProposalReq
+	var resp *dto.UpdateProposalResp
+	var err error
+
+	req.ProposalID = c.Param(consts.CtxProposalID)
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.UpdateProposal(c, &req)
+
+	PostProcess(c, &req, resp, err)
 }
 
-// DeleteProposal 删除提案
-// @router /api/proposal/{proposalId}/delete [POST]
+// DeleteProposal godoc
+// @Summary 删除提案
+// @Description 根据提案ID软删除提案（标记为已删除状态）
+// @Tags proposal
+// @Accept json
+// @Param proposalId path string true "提案ID"
+// @success 200 {object} dto.DeleteProposalResp
+// @Router /api/proposal/{proposalId}/delete [POST]
 func DeleteProposal(c *gin.Context) {
-	// TODO: not implemented
+	var err error
+	var req dto.DeleteProposalReq
+	var resp *dto.DeleteProposalResp
+
+	req.ProposalID = c.Param(consts.CtxProposalID)
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.DeleteProposal(c, &req)
+	PostProcess(c, &req, resp, err)
 }
 
-// GetProposalSuggestions 获取提案搜索建议
-// @router /api/proposal/suggest [GET]
+// GetProposalSuggestions godoc
+// @Summary 获取提案搜索建议
+// @Description 根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表
+// @Tags proposal
+// @Produce json
+// @Param keyword query string true "搜索关键词"
+// @Param page query int false "页码" default(0)
+// @Param pageSize query int false "每页数量" default(10)
+// @Success 200 {object} dto.GetProposalSuggestionsResp
+// @Router /api/proposal/suggest [post]
 func GetProposalSuggestions(c *gin.Context) {
-	// TODO: not implemented
+	var req dto.GetProposalSuggestionsReq
+	var resp *dto.GetProposalSuggestionsResp
+	var err error
+
+	if err = c.ShouldBindQuery(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.GetProposalSuggestions(c, &req)
+	PostProcess(c, &req, resp, err)
 }

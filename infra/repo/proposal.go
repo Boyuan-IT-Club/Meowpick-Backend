@@ -17,6 +17,7 @@ package repo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
@@ -27,6 +28,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var _ IProposalRepo = (*ProposalRepo)(nil)
@@ -40,8 +42,10 @@ type IProposalRepo interface {
 	IsCourseInExistingProposals(ctx context.Context, courseVO *model.Course) (bool, error)
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
-	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error) // 修改方法名
-	UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error)
+	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
+	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
+	DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
+	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, error)
 }
 
 type ProposalRepo struct {
@@ -141,6 +145,71 @@ func (r *ProposalRepo) FindByID(ctx context.Context, proposalID string) (*model.
 	return &proposal, nil
 }
 
+// DeleteProposal 删除单个提案
+func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalId string, operatorId string) error {
+	// 查找未删除的提案
+	filter := bson.M{
+		consts.ID:      proposalId,
+		consts.Deleted: bson.M{"$ne": true},
+	}
+
+	// 更新删除状态和删除时间
+	now := time.Now()
+	update := bson.M{
+		"$set": bson.M{
+			consts.Deleted:   true,
+			consts.DeletedAt: now,
+			consts.UpdatedAt: now,
+		},
+	}
+
+	// 执行软删除操作
+	key := fmt.Sprintf("proposal:%s", proposalId)
+	_, err := r.conn.UpdateOne(ctx, key, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateProposal 更新提案
+func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Proposal) error {
+
+	filter := bson.M{
+		consts.ID:      proposal.ID,
+		consts.Deleted: bson.M{"$ne": true},
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"title":          proposal.Title,
+			"content":        proposal.Content,
+			"course":         proposal.Course,
+			consts.UpdatedAt: proposal.UpdatedAt,
+		},
+	}
+
+	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	return err
+}
+
+// GetSuggestionsByTitle 根据提案标题模糊分页查询提案
+func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, error) {
+	proposals := []*model.Proposal{}
+	filter := bson.M{
+		"title":        bson.M{"$regex": primitive.Regex{Pattern: title, Options: "i"}},
+		consts.Deleted: bson.M{"$ne": true},
+	}
+	sort := bson.D{
+		{consts.Status, 1},
+		{consts.CreatedAt, -1},
+	}
+	if err := r.conn.Find(ctx, &proposals, filter, page.FindPageOption(param).SetSort(sort)); err != nil {
+		return nil, err
+	}
+	return proposals, nil
+}
 // UpdateStatusByID 根据提案ID更新提案状态
 func (r *ProposalRepo) UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error) {
 	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}

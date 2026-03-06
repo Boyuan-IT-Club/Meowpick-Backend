@@ -15,8 +15,8 @@
 package handler
 
 import (
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/gin-gonic/gin"
@@ -44,5 +44,47 @@ func SignIn(c *gin.Context) {
 	c.Set(consts.CtxToken, tokenStr)
 
 	resp, err = provider.Get().AuthService.SignIn(c, &req)
+	PostProcess(c, &req, resp, err)
+}
+
+// IsAdmin godoc
+// @Summary 是否管理员
+// @Description 判断当前用户是否具有管理员权限
+// @Tags auth
+// @Produce json
+// @Success 200 {object} dto.IsAdminResp
+// @Router /api/auth/is_admin [get]
+func IsAdmin(c *gin.Context) {
+	var err error
+	var resp *dto.IsAdminResp
+
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().AuthService.IsAdmin(c)
+	PostProcess(c, nil, resp, err)
+}
+
+// GrantAdmin godoc
+// @Summary 授予管理员权限
+// @Description 授予指定用户管理员权限
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body dto.GrantAdminReq true "GrantAdminReq"
+// @Success 200 {object} dto.GrantAdminResp
+// @Router /api/auth/grant_admin [post]
+func GrantAdmin(c *gin.Context) {
+	var err error
+	var req dto.GrantAdminReq
+	var resp *dto.GrantAdminResp
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().AuthService.GrantAdmin(c, &req)
 	PostProcess(c, &req, resp, err)
 }

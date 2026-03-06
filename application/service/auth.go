@@ -18,12 +18,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/openid"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
@@ -37,6 +37,8 @@ var _ IAuthService = (*AuthService)(nil)
 
 type IAuthService interface {
 	SignIn(ctx context.Context, req *dto.SignInReq) (resp *dto.SignInResp, err error)
+	IsAdmin(ctx context.Context) (resp *dto.IsAdminResp, err error)
+	GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (resp *dto.GrantAdminResp, err error)
 }
 
 type AuthService struct {
@@ -120,10 +122,75 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 		return nil, errorx.WrapByCode(err, errno.ErrAuthTokenGenerateFailed)
 	}
 
+	// 查看当前用户是否为管理员
+	admin, err := s.UserRepo.IsAdminByID(ctx, oldUser.ID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[AuthRepo] [IsAdminByID] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.ReqOpenID), errorx.KV("value", openId))
+	}
+
 	return &dto.SignInResp{
 		Resp:        dto.Success(),
 		AccessToken: tokenStr,
 		ExpiresIn:   config.GetConfig().Auth.AccessExpire,
 		UserID:      oldUser.ID,
+		IsAdmin:     admin,
+	}, nil
+}
+
+// IsAdmin 判断当前用户是否为管理员
+func (s *AuthService) IsAdmin(ctx context.Context) (resp *dto.IsAdminResp, err error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 查询
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[AuthRepo] [IsAdminByID] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId),
+		)
+	}
+
+	return &dto.IsAdminResp{
+		IsAdmin: isAdmin,
+		Resp:    dto.Success(),
+	}, nil
+}
+
+func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (resp *dto.GrantAdminResp, err error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 判断用户是否为管理员
+	admin, err := s.UserRepo.IsAdminByID(ctx, req.UserID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[AuthRepo] [IsAdminByID] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
+		)
+	}
+	if admin {
+		logs.CtxErrorf(ctx, "[AuthService] [GrantAdmin] user %s is already an admin", req.UserID)
+		return nil, errorx.New(errno.ErrUserAlreadyAdmin, errorx.KV("id", req.UserID))
+	}
+
+	// 添加管理员
+	if err = s.UserRepo.Update(ctx, &model.User{ID: req.UserID, Admin: true}); err != nil {
+		logs.CtxErrorf(ctx, "[AuthRepo] [Update] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrUserUpdateFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
+		)
+	}
+
+	return &dto.GrantAdminResp{
+		Resp: dto.Success(),
 	}, nil
 }

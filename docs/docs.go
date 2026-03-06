@@ -1,4 +1,4 @@
-// Copyright 2025 Boyuan-IT-Club
+// Copyright 2026 Boyuan-IT-Club
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,60 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/auth/grant_admin": {
+            "post": {
+                "description": "授予指定用户管理员权限",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "授予管理员权限",
+                "parameters": [
+                    {
+                        "description": "GrantAdminReq",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.GrantAdminReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.GrantAdminResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/is_admin": {
+            "get": {
+                "description": "判断当前用户是否具有管理员权限",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "是否管理员",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IsAdminResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/sign_in": {
             "post": {
                 "consumes": [
@@ -398,8 +452,46 @@ const docTemplate = `{
             }
         },
         "/api/proposal/suggest": {
-            "get": {
-                "responses": {}
+            "post": {
+                "description": "根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "获取提案搜索建议",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "搜索关键词",
+                        "name": "keyword",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetProposalSuggestionsResp"
+                        }
+                    }
+                }
             }
         },
         "/api/proposal/{proposalId}": {
@@ -438,12 +530,72 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/delete": {
             "post": {
-                "responses": {}
+                "description": "根据提案ID软删除提案（标记为已删除状态）",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "删除提案",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "提案ID",
+                        "name": "proposalId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeleteProposalResp"
+                        }
+                    }
+                }
             }
         },
         "/api/proposal/{proposalId}/update": {
             "post": {
-                "responses": {}
+                "description": "根据提案ID修改提案的标题和内容",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "更新提案内容",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "提案唯一ID",
+                        "name": "proposalId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新参数（标题、内容）",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateProposalReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功响应",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateProposalResp"
+                        }
+                    }
+                }
             }
         },
         "/api/search": {
@@ -578,6 +730,35 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/dto.CreateTeacherResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/teacher/suggest": {
+            "get": {
+                "description": "根据关键词获取教师搜索建议",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "teacher"
+                ],
+                "summary": "获取教师搜索建议",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "搜索关键词",
+                        "name": "keyword",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetTeacherSuggestionsResp"
                         }
                     }
                 }
@@ -829,6 +1010,29 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.DeleteProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "deleted": {
+                    "type": "boolean"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "operatorId": {
+                    "type": "string"
+                },
+                "proposalId": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.GetCourseCampusesResp": {
             "type": "object",
             "properties": {
@@ -939,6 +1143,23 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.GetProposalSuggestionsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "suggestions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ProposalSuggestionsVO"
+                    }
+                }
+            }
+        },
         "dto.GetSearchHistoriesResp": {
             "type": "object",
             "properties": {
@@ -973,6 +1194,23 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.GetTeacherSuggestionsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "teachers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TeacherVO"
+                    }
+                }
+            }
+        },
         "dto.GetTotalCourseCommentsCountResp": {
             "type": "object",
             "properties": {
@@ -981,6 +1219,42 @@ const docTemplate = `{
                 },
                 "count": {
                     "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.GrantAdminReq": {
+            "type": "object",
+            "properties": {
+                "userId": {
+                    "type": "string"
+                },
+                "verifyCode": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.GrantAdminResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IsAdminResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "isAdmin": {
+                    "type": "boolean"
                 },
                 "msg": {
                     "type": "string"
@@ -1070,6 +1344,17 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.ProposalSuggestionsVO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
@@ -1171,6 +1456,9 @@ const docTemplate = `{
                 "expiresIn": {
                     "type": "integer"
                 },
+                "isAdmin": {
+                    "type": "boolean"
+                },
                 "msg": {
                     "type": "string"
                 },
@@ -1221,6 +1509,39 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateProposalReq": {
+            "type": "object",
+            "required": [
+                "content",
+                "course",
+                "title"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "course": {
+                    "$ref": "#/definitions/dto.CourseVO"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "proposalId": {
                     "type": "string"
                 }
             }
