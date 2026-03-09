@@ -83,6 +83,12 @@ func NewProvider() (*Provider, error) {
 		LikeCache:         likeCache,
 		UserRepo:          userRepo,
 	}
+	changeLogRepo := repo.NewChangeLogRepo(configConfig)
+	changeLogAssembler := &assembler.ChangeLogAssembler{}
+	changeLogService := service.ChangeLogService{
+		ChangeLogRepo:      changeLogRepo,
+		ChangeLogAssembler: changeLogAssembler,
+	}
 	providerProvider := &Provider{
 		Config:               configConfig,
 		CommentService:       commentService,
@@ -93,6 +99,7 @@ func NewProvider() (*Provider, error) {
 		TeacherService:       teacherService,
 		SearchService:        searchService,
 		ProposalService:      proposalService,
+		ChangeLogService:     changeLogService,
 	}
 	return providerProvider, nil
 }
