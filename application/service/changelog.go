@@ -47,6 +47,11 @@ var ChangeLogServiceSet = wire.NewSet(
 
 // CreateChangeLog 添加一个新的变更日志
 func (s *ChangeLogService) CreateChangeLog(ctx context.Context, req *dto.CreateChangeLogReq) (*dto.CreateChangeLogResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
 
 	// 使用Assembler转换变更日志
 	now := time.Now()
