@@ -24,29 +24,33 @@ import (
 
 // StaticData 存放所有静态映射数据
 type StaticData struct {
-	CampusNameByID         map[int32]string
-	DepartmentNameByID     map[int32]string
-	CategoryNameByID       map[int32]string
-	ProposalStatusNameByID map[int32]string
-	LikeTargetTypeNameByID map[int32]string
-	CampusIDByName         map[string]int32
-	DepartmentIDByName     map[string]int32
-	CategoryIDByName       map[string]int32
-	ProposalStatusIDByName map[string]int32
-	LikeTargetTypeIDByName map[string]int32
+	CampusNameByID              map[int32]string
+	DepartmentNameByID          map[int32]string
+	CategoryNameByID            map[int32]string
+	ProposalStatusNameByID      map[int32]string
+	LikeTargetTypeNameByID      map[int32]string
+	ChangeLogTargetTypeNameByID map[int32]string
+	CampusIDByName              map[string]int32
+	DepartmentIDByName          map[string]int32
+	CategoryIDByName            map[string]int32
+	ProposalStatusIDByName      map[string]int32
+	LikeTargetTypeIDByName      map[string]int32
+	ChangeLogTargetTypeIDByName map[string]int32
 }
 
 var Data = &StaticData{
-	CampusNameByID:         make(map[int32]string),
-	DepartmentNameByID:     make(map[int32]string),
-	CategoryNameByID:       make(map[int32]string),
-	ProposalStatusNameByID: make(map[int32]string),
-	LikeTargetTypeNameByID: make(map[int32]string),
-	CampusIDByName:         make(map[string]int32),
-	DepartmentIDByName:     make(map[string]int32),
-	CategoryIDByName:       make(map[string]int32),
-	ProposalStatusIDByName: make(map[string]int32),
-	LikeTargetTypeIDByName: make(map[string]int32),
+	CampusNameByID:              make(map[int32]string),
+	DepartmentNameByID:          make(map[int32]string),
+	CategoryNameByID:            make(map[int32]string),
+	ProposalStatusNameByID:      make(map[int32]string),
+	LikeTargetTypeNameByID:      make(map[int32]string),
+	ChangeLogTargetTypeNameByID: make(map[int32]string),
+	CampusIDByName:              make(map[string]int32),
+	DepartmentIDByName:          make(map[string]int32),
+	CategoryIDByName:            make(map[string]int32),
+	ProposalStatusIDByName:      make(map[string]int32),
+	LikeTargetTypeIDByName:      make(map[string]int32),
+	ChangeLogTargetTypeIDByName: make(map[string]int32),
 }
 
 func init() {
@@ -65,6 +69,9 @@ func init() {
 	for k, v := range mapping.LikeTargetTypeMap {
 		Data.LikeTargetTypeNameByID[k] = v
 	}
+	for k, v := range mapping.ChangeLogTargetTypeMap {
+		Data.ChangeLogTargetTypeNameByID[k] = v
+	}
 
 	for id, name := range Data.CampusNameByID {
 		Data.CampusIDByName[name] = id
@@ -80,6 +87,9 @@ func init() {
 	}
 	for id, name := range Data.LikeTargetTypeNameByID {
 		Data.LikeTargetTypeIDByName[name] = id
+	}
+	for id, name := range Data.ChangeLogTargetTypeNameByID {
+		Data.ChangeLogTargetTypeIDByName[name] = id
 	}
 }
 
@@ -118,6 +128,13 @@ func (d *StaticData) GetLikeTargetTypeNameByID(id int32) string {
 	return "未知点赞目标类型"
 }
 
+func (d *StaticData) GetChangeLogTargetTypeNameByID(id int32) string {
+	if name, ok := d.ChangeLogTargetTypeNameByID[id]; ok {
+		return name
+	}
+	return "未知变更记录类型"
+}
+
 func (d *StaticData) GetCampusIDByName(name string) int32 {
 	if id, ok := d.CampusIDByName[name]; ok {
 		return id
@@ -153,9 +170,16 @@ func (d *StaticData) GetLikeTargetTypeIDByName(name string) int32 {
 	return 0
 }
 
-// --- 搜索方法（正则+包含匹配）---
+func (d *StaticData) GetChangeLogTargetTypeIDByName(name string) int32 {
+	if id, ok := d.ChangeLogTargetTypeIDByName[name]; ok {
+		return id
+	}
+	return 0
+}
 
-// GetBestCategoryIDByKeyword 根据关键词获取最匹配的单个分类ID
+// --- 搜索方法（正则 + 包含匹配）---
+
+// GetBestCategoryIDByKeyword 根据关键词获取最匹配的单个分类 ID
 func (d *StaticData) GetBestCategoryIDByKeyword(keyword string) int32 {
 	ids := d.GetCategoryIDsByKeyword(keyword)
 	if len(ids) > 0 {
@@ -164,7 +188,7 @@ func (d *StaticData) GetBestCategoryIDByKeyword(keyword string) int32 {
 	return 0
 }
 
-// GetBestDepartmentIDByKeyword 根据关键词获取最匹配的单个部门ID
+// GetBestDepartmentIDByKeyword 根据关键词获取最匹配的单个部门 ID
 func (d *StaticData) GetBestDepartmentIDByKeyword(keyword string) int32 {
 	ids := d.GetDepartmentIDsByKeyword(keyword)
 	if len(ids) > 0 {
@@ -173,17 +197,17 @@ func (d *StaticData) GetBestDepartmentIDByKeyword(keyword string) int32 {
 	return 0
 }
 
-// GetCategoryIDsByKeyword 根据类别关键词快速查找匹配的分类ID
+// GetCategoryIDsByKeyword 根据类别关键词快速查找匹配的分类 ID
 func (d *StaticData) GetCategoryIDsByKeyword(keyword string) []int32 {
 	return fuzzySearch(keyword, d.CategoryNameByID)
 }
 
-// GetDepartmentIDsByKeyword 根据部门关键词快速查找匹配的院系ID
+// GetDepartmentIDsByKeyword 根据部门关键词快速查找匹配的院系 ID
 func (d *StaticData) GetDepartmentIDsByKeyword(keyword string) []int32 {
 	return fuzzySearch(keyword, d.DepartmentNameByID)
 }
 
-// 正则+包含模糊搜索，按匹配度排序
+// 正则 + 包含模糊搜索，按匹配度排序
 func fuzzySearch(keyword string, dataMap map[int32]string) []int32 {
 	keyword = strings.TrimSpace(keyword)
 	if keyword == "" {
