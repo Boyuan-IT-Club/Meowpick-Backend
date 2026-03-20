@@ -19,9 +19,10 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 // changelog: 109 000 000 ~ 109 999 999
 
 const (
-	ErrChangeLogInsertFailed = 109000001
-	ErrChangeLogCvtFailed    = 109000002
-	ErrChangeLogFindFailed   = 109000003
+	ErrChangeLogInsertFailed      = 109000001
+	ErrChangeLogCvtFailed         = 109000002
+	ErrChangeLogFindFailed        = 109000003
+	ErrChangeLogTargetTypeInvalid = 109000004
 )
 
 func init() {

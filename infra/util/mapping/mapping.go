@@ -177,7 +177,7 @@ func (d *StaticData) GetChangeLogTargetTypeIDByName(name string) int32 {
 	return 0
 }
 
-// --- 搜索方法（正则 + 包含匹配）---
+// --- 搜索方法 ---
 
 // GetBestCategoryIDByKeyword 根据关键词获取最匹配的单个分类 ID
 func (d *StaticData) GetBestCategoryIDByKeyword(keyword string) int32 {

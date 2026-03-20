@@ -53,7 +53,7 @@ var ChangeLogServiceSet = wire.NewSet(
 	wire.Bind(new(IChangeLogService), new(*ChangeLogService)),
 )
 
-// ListChangeLogs 分页查询变更记录（简化：无类型转换）
+// ListChangeLogs 分页查询变更记录
 func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChangeLogReq) (*dto.ListChangeLogResp, error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
@@ -61,13 +61,38 @@ func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChan
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	// 查询变更记录
-	changeLogs, total, err := s.ChangeLogRepo.FindByTarget(ctx, req.TargetType, req.TargetID, req.PageParam)
+	// 管理员权限检查
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
-		logs.CtxErrorf(ctx, "[ChangeLogRepo] [FindByTarget] error: %v, targetType: %s, targetID: %s", err, req.TargetType, req.TargetID)
+		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
+		return nil, errorx.New(errno.ErrUserNotAdmin,
+			errorx.KV("id", userId))
+	}
+	if !isAdmin {
+		return nil, errorx.New(errno.ErrUserNotAdmin,
+			errorx.KV("id", userId),
+			errorx.KV("msg", "only admin can view changelogs"))
+	}
+
+	// 类型转换
+	var targetType int32
+	if req.Type != "" {
+		targetType = mapping.Data.GetChangeLogTargetTypeIDByName(req.Type)
+		if targetType == 0 {
+			return nil, errorx.New(errno.ErrChangeLogTargetTypeInvalid,
+				errorx.KV("key", "type"),
+				errorx.KV("value", req.Type),
+			)
+		}
+	}
+
+	// 查询变更记录
+	changeLogs, total, err := s.ChangeLogRepo.FindChangeLogs(ctx, targetType, req.Keyword, req.PageParam)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ChangeLogRepo] [FindChangeLogs] error: %v, type: %s, keyword: %s", err, req.Type, req.Keyword)
 		return nil, errorx.WrapByCode(err, errno.ErrChangeLogFindFailed,
-			errorx.KV("targetType", req.TargetType),
-			errorx.KV("targetId", req.TargetID),
+			errorx.KV("key", "type"),
+			errorx.KV("value", req.Type),
 		)
 	}
 
@@ -87,7 +112,7 @@ func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChan
 		}
 	}
 
-	// 构造resp
+	// 构造 resp
 	return &dto.ListChangeLogResp{
 		Resp:       dto.Success(),
 		Total:      total,

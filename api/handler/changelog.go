@@ -36,13 +36,11 @@ func ListChangeLogs(c *gin.Context) {
 	var resp *dto.ListChangeLogResp
 	var err error
 
-	// 绑定参数
 	if err = c.ShouldBindJSON(&req); err != nil {
 		PostProcess(c, &req, nil, err)
 		return
 	}
 
-	// 设置上下文用户ID
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().ChangeLogService.ListChangeLogs(c, &req)

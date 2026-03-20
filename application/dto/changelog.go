@@ -18,8 +18,8 @@ import "time"
 
 // ListChangeLogReq 变更记录列表查询请求
 type ListChangeLogReq struct {
-	TargetType string `json:"targetType" binding:"required,one of=course proposal teacher user"`
-	TargetID   string `json:"targetId" binding:"required"`
+	Type    string `json:"type" binding:"omitempty,oneof=course proposal teacher user"`
+	Keyword string `json:"keyword"`
 	*PageParam
 }
 

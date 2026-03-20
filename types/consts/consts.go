@@ -18,26 +18,28 @@ import "time"
 
 // 数据库字段相关
 const (
-	ID           = "_id"
-	Status       = "status"
-	CreatedAt    = "createdAt"
-	UpdatedAt    = "updatedAt"
-	UserID       = "userId"
-	Query        = "query"
-	Deleted      = "deleted"
-	TargetID     = "targetId"
-	Active       = "active"
-	CourseID     = "courseId"
-	OpenID       = "openId"
-	TeacherIDs   = "teacherIds"
-	Category     = "category"
-	Department   = "department"
-	Campuses     = "campuses"
-	Code         = "code"
-	Name         = "name"
-	Tags         = "tags"
-	Count        = "count"
-	TargetType   = "targetType"
+	ID         = "_id"
+	Status     = "status"
+	CreatedAt  = "createdAt"
+	UpdatedAt  = "updatedAt"
+	DeletedAt  = "deletedAt"
+	UserID     = "userId"
+	Query      = "query"
+	Deleted    = "deleted"
+	TargetID   = "targetId"
+	Active     = "active"
+	CourseID   = "courseId"
+	OpenID     = "openId"
+	TeacherIDs = "teacherIds"
+	Category   = "category"
+	Department = "department"
+	Campuses   = "campuses"
+	Code       = "code"
+	Name       = "name"
+	Tags       = "tags"
+	Count      = "count"
+	TargetType = "targetType"
+	Content    = "content"
 )
 
 // 缓存相关
@@ -57,11 +59,11 @@ const (
 
 // 上下文相关
 const (
-	CtxUserID      = "userId"
-	CtxToken       = "token"
-	CtxLikeID      = "likeId"
-	CtxCourseID    = "courseId"
-	CtxProposalID  = "proposalId"
+	CtxUserID     = "userId"
+	CtxToken      = "token"
+	CtxLikeID     = "likeId"
+	CtxCourseID   = "courseId"
+	CtxProposalID = "proposalId"
 )
 
 // Request 相关
