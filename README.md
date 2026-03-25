@@ -79,9 +79,9 @@
 - `POST /api/sign_in` - 用户登录
 
 ### 评论接口
-- `POST /api/db/add` - 发布评论
-- `GET /api/db/query` - 分页获取课程下的评论
-- `POST /api/db/history` - 获取我的评论历史
+- `POST /api/comment/add` - 发布评论
+- `GET /api/comment/query` - 分页获取课程下的评论
+- `POST /api/comment/history` - 获取我的评论历史
 
 ### 搜索接口
 - `GET /api/search/recent` - 获取搜索历史
@@ -103,7 +103,7 @@
 - Redis
 
 ### 配置文件
-项目需要一个 `etc/db.yaml` 配置文件，包含以下内容：
+项目需要一个 `etc/config.yaml` 配置文件，包含以下内容：
 ```yaml
 Name: meowpick.backend
 Host: 0.0.0.0
