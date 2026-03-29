@@ -82,15 +82,12 @@ func NewProvider() (*Provider, error) {
 		LikeRepo:          likeRepo,
 		LikeCache:         likeCache,
 		UserRepo:          userRepo,
-<<<<<<< HEAD
 	}
 	changeLogRepo := repo.NewChangeLogRepo(configConfig)
 	changeLogAssembler := &assembler.ChangeLogAssembler{}
 	changeLogService := service.ChangeLogService{
 		ChangeLogRepo:      changeLogRepo,
 		ChangeLogAssembler: changeLogAssembler,
-=======
->>>>>>> 4669dd9 (feat: 新增授予管理员功能)
 	}
 	providerProvider := &Provider{
 		Config:               configConfig,

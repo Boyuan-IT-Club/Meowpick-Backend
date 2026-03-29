@@ -90,6 +90,9 @@ func GetProposal(c *gin.Context) {
 }
 
 // ApproveProposal 审批提案
+// @Summary 审批提案
+// @Description 管理员审批提案
+// @Tags proposal
 // @router /api/proposal/{proposalId}/approve [POST]
 func ApproveProposal(c *gin.Context) {
 	// TODO: not implemented

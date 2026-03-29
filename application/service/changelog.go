@@ -24,7 +24,6 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
-	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

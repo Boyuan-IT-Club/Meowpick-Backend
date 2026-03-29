@@ -105,14 +105,7 @@ func (s *TeacherService) GetTeacherSuggestions(ctx context.Context, req *dto.Get
 	// 获取教师建议列表
 	dbs, err := s.TeacherRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
 	if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
 		logs.CtxErrorf(ctx, "[TeacherRepo] [GetSuggestionsByName] error: %v", err)
-=======
->>>>>>> a73b886 (fix: 新增模糊查询教师搜索建议)
-=======
-		logs.CtxErrorf(ctx, "[TeacherRepo] [GetSuggestionsByName] error: %v", err)
->>>>>>> c130651 (feat: 登陆返回是否是管理员)
 		return nil, errorx.WrapByCode(err, errno.ErrTeacherGetSuggestionsFailed, errorx.KV("keyword", req.Keyword))
 	}
 
