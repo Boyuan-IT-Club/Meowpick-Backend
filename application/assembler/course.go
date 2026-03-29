@@ -62,7 +62,7 @@ func (a *CourseAssembler) ToCourseVO(ctx context.Context, db *model.Course) (*dt
 	}()
 
 	// 获取校区列表
-	var campuses []string
+	campuses := make([]string, 0)
 	for _, campusId := range db.Campuses {
 		campusName := mapping.Data.GetCampusNameByID(campusId)
 		if campusName != "" {

@@ -48,7 +48,6 @@ type ListProposalReq struct {
 	*PageParam
 }
 
-
 // ListProposalResp 对应 /api/proposal/list 的响应体
 type ListProposalResp struct {
 	*Resp
@@ -139,4 +138,16 @@ type FieldSuggestionVO struct {
 	ID    string `json:"id,omitempty"`
 	Value string `json:"value"`
 	Label string `json:"label"`
+}
+
+// GetMyProposalsReq 获取我的提案请求
+type GetMyProposalsReq struct {
+	*PageParam
+}
+
+// GetMyProposalsResp 获取我的提案响应
+type GetMyProposalsResp struct {
+	*Resp
+	Total     int64         `json:"total"`
+	Proposals []*ProposalVO `json:"proposals"`
 }
