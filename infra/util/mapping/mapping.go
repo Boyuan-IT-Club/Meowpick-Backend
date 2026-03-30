@@ -270,6 +270,8 @@ func (d *StaticData) GetLikeTargetTypeIDByName(name string) int32 {
 
 // AutoRegisterDepartment 自动注册不存在的院系，返回其ID
 func (d *StaticData) AutoRegisterDepartment(name string) int32 {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 	return d.autoRegisterMapping(name, model.MappingTypeDepartment,
 		func(id int32, name string) {
 			d.DepartmentNameByID[id] = name
@@ -279,6 +281,8 @@ func (d *StaticData) AutoRegisterDepartment(name string) int32 {
 
 // AutoRegisterCategory 自动注册不存在的类别，返回其ID
 func (d *StaticData) AutoRegisterCategory(name string) int32 {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 	return d.autoRegisterMapping(name, model.MappingTypeCategory,
 		func(id int32, name string) {
 			d.CategoryNameByID[id] = name
@@ -288,6 +292,8 @@ func (d *StaticData) AutoRegisterCategory(name string) int32 {
 
 // AutoRegisterCampus 自动注册不存在的校区，返回其ID
 func (d *StaticData) AutoRegisterCampus(name string) int32 {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 	return d.autoRegisterMapping(name, model.MappingTypeCampus,
 		func(id int32, name string) {
 			d.CampusNameByID[id] = name
@@ -300,9 +306,6 @@ func (d *StaticData) autoRegisterMapping(name string, mappingType model.MappingT
 	if name == "" {
 		return 0
 	}
-
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
 
 	ctx := context.Background()
 
