@@ -569,8 +569,17 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		}
 	}
 
+	// 获取剩余待处理提案数量
+	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
+	_, pendingCount, err := s.ProposalRepo.FindManyByStatus(ctx, nil, pendingStatusID)
+	if err != nil {
+		logs.CtxWarnf(ctx, "[ProposalRepo] [FindManyByStatus] error: %v", err)
+	}
+
 	// 返回成功响应
 	return &dto.ToggleProposalResp{
-		Resp: dto.Success(),
+		Resp:        dto.Success(),
+		Proposal:    true,
+		ProposalCnt: pendingCount,
 	}, nil
 }

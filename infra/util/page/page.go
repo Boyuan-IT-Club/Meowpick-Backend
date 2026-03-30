@@ -21,8 +21,13 @@ import (
 )
 
 func FindPageOption(param dto.IPageParam) *options.FindOptions {
-	page, size := param.UnWrap()
+	// page.go ：修复了一个潜在的空指针风险，确保统计数量时不会崩溃
 	ops := options.Find()
+	if param == nil {
+		ops.SetLimit(100) // 默认上限 100
+		return ops
+	}
+	page, size := param.UnWrap()
 	ops.SetSkip((page - 1) * size)
 	ops.SetLimit(size)
 

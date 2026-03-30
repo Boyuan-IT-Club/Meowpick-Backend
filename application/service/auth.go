@@ -78,12 +78,24 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 			errorx.KV("key", consts.ReqOpenID), errorx.KV("value", openId))
 	}
 
+	// 对于调试用户，强制设为管理员
+	if openId == "debug-openid-001" && oldUser != nil && !oldUser.Admin {
+		oldUser.Admin = true
+		if err = s.UserRepo.Update(ctx, oldUser); err != nil {
+			logs.CtxErrorf(ctx, "[AuthRepo] [Update] error: %v, userId: %s", err, oldUser.ID)
+		}
+	}
+
 	// 用户不存在则创建新用户
 	if oldUser == nil {
+		isAdmin := false
+		if openId == "debug-openid-001" {
+			isAdmin = true
+		}
 		newUser := model.User{ // 创建用户并存入数据库
 			ID:            primitive.NewObjectID().Hex(),
 			OpenID:        openId,
-			Admin:         false,
+			Admin:         isAdmin,
 			Email:         "",
 			EmailVerified: false,
 			Ban:           false,
