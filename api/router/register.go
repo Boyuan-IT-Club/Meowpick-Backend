@@ -77,6 +77,7 @@ func SetupRoutes() *gin.Engine {
 		proposalGroup.POST("/:proposalId/update", handler.UpdateProposal)
 		proposalGroup.POST("/:proposalId/delete", handler.DeleteProposal)
 		proposalGroup.POST("/suggest", handler.GetProposalSuggestions)
+		proposalGroup.GET("/field-suggestions", handler.GetProposalFieldSuggestions) // 获取提案字段建议
 	}
 
 	return router

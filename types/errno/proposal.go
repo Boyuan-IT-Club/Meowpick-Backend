@@ -33,6 +33,7 @@ const (
 	ErrProposalDeleteFailed                = 108000012
 	ErrProposalUpdateFailed                = 108000013
 	ErrProposalGetSuggestionsFailed        = 108000014
+	ErrProposalInvalidField                = 108000015
 )
 
 func init() {
@@ -104,6 +105,11 @@ func init() {
 	code.Register(
 		ErrProposalGetSuggestionsFailed,
 		"failed to get proposal suggestions: {keyword}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalInvalidField,
+		"invalid field type: {field}",
 		code.WithAffectStability(false),
 	)
 }

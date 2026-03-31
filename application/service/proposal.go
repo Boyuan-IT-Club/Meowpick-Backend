@@ -42,6 +42,7 @@ type IProposalService interface {
 	DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (*dto.DeleteProposalResp, error)
 	UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error)
 	GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.GetProposalSuggestionsResp, error)
+	GetProposalFieldSuggestions(ctx context.Context, req *dto.GetProposalFieldSuggestionsReq) (*dto.GetProposalFieldSuggestionsResp, error)
 }
 
 type ProposalService struct {
@@ -52,6 +53,7 @@ type ProposalService struct {
 	LikeRepo          *repo.LikeRepo
 	LikeCache         *cache.LikeCache
 	UserRepo          *repo.UserRepo
+	TeacherRepo       *repo.TeacherRepo
 }
 
 var ProposalServiceSet = wire.NewSet(
@@ -346,5 +348,120 @@ func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.G
 	return &dto.GetProposalSuggestionsResp{
 		Resp:        dto.Success(),
 		Suggestions: vos,
+	}, nil
+}
+
+/ GetProposalFieldSuggestions 获取提案字段建议
+func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *dto.GetProposalFieldSuggestionsReq) (*dto.GetProposalFieldSuggestionsResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	suggestions := []*dto.FieldSuggestionVO{}
+	var total int64
+
+	// 根据字段类型路由到不同的查询逻辑
+	switch req.Field {
+	case consts.FieldDepartment:
+		// 从映射表模糊匹配学院
+		ids := mapping.Data.GetDepartmentIDsByKeyword(req.Keyword)
+		for _, id := range ids {
+			name := mapping.Data.GetDepartmentNameByID(id)
+			suggestions = append(suggestions, &dto.FieldSuggestionVO{
+				Value: name,
+				Label: name,
+			})
+		}
+		total = int64(len(suggestions))
+
+	case consts.FieldCategory:
+		// 从映射表模糊匹配课程类别
+		ids := mapping.Data.GetCategoryIDsByKeyword(req.Keyword)
+		for _, id := range ids {
+			name := mapping.Data.GetCategoryNameByID(id)
+			suggestions = append(suggestions, &dto.FieldSuggestionVO{
+				Value: name,
+				Label: name,
+			})
+		}
+		total = int64(len(suggestions))
+
+	case consts.FieldCampus:
+		// 从映射表模糊匹配校区
+		for id, name := range mapping.Data.CampusNameByID {
+			if strings.Contains(strings.ToLower(name), strings.ToLower(req.Keyword)) {
+				suggestions = append(suggestions, &dto.FieldSuggestionVO{
+					ID:    string(rune(id)),
+					Value: name,
+					Label: name,
+				})
+			}
+		}
+		total = int64(len(suggestions))
+
+	case consts.FieldCourseName:
+		// 从数据库查询课程名称
+		courses, err := s.CourseRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[CourseRepo] [GetSuggestionsByName] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
+				errorx.KV("keyword", req.Keyword))
+		}
+		for _, course := range courses {
+			suggestions = append(suggestions, &dto.FieldSuggestionVO{
+				ID:    course.ID,
+				Value: course.Name,
+				Label: course.Name,
+			})
+		}
+		total = int64(len(suggestions))
+
+	case consts.FieldCourseCode:
+		// 从数据库查询课程代码
+		courses, err := s.CourseRepo.GetSuggestionsByCode(ctx, req.Keyword, req.PageParam)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[CourseRepo] [GetSuggestionsByCode] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
+				errorx.KV("keyword", req.Keyword))
+		}
+		for _, course := range courses {
+			suggestions = append(suggestions, &dto.FieldSuggestionVO{
+				ID:    course.ID,
+				Value: course.Code,
+				Label: course.Code + " - " + course.Name,
+			})
+		}
+		total = int64(len(suggestions))
+
+	case consts.FieldTeacherName:
+		// 从数据库查询教师姓名
+		teachers, err := s.TeacherRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[TeacherRepo] [GetSuggestionsByName] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrTeacherGetSuggestionsFailed,
+				errorx.KV("keyword", req.Keyword))
+		}
+		for _, teacher := range teachers {
+			suggestions = append(suggestions, &dto.FieldSuggestionVO{
+				ID:    teacher.ID,
+				Value: teacher.Name,
+				Label: teacher.Name + " - " + teacher.Title,
+			})
+		}
+		total = int64(len(suggestions))
+
+	default:
+		logs.CtxErrorf(ctx, "[ProposalService] [GetProposalFieldSuggestions] invalid field: %s", req.Field)
+		return nil, errorx.New(errno.ErrProposalInvalidField,
+			errorx.KV("field", req.Field))
+	}
+
+	return &dto.GetProposalFieldSuggestionsResp{
+		Resp:        dto.Success(),
+		Field:       req.Field,
+		Suggestions: suggestions,
+		Total:       total,
 	}, nil
 }

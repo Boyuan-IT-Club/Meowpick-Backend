@@ -104,3 +104,13 @@ const (
 	SuggestionTargetTypeDepartment = "department"
 	SuggestionTargetTypeCategory   = "category"
 )
+
+// 提案字段类型相关
+const (
+	FieldDepartment  = "department"
+	FieldCategory    = "category"
+	FieldCampus      = "campus"
+	FieldCourseName  = "courseName"
+	FieldCourseCode  = "courseCode"
+	FieldTeacherName = "teacherName"
+)
