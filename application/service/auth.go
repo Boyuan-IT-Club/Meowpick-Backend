@@ -123,14 +123,6 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 		return nil, errorx.WrapByCode(err, errno.ErrAuthTokenGenerateFailed)
 	}
 
-	// 查看当前用户是否为管理员
-	admin, err := s.UserRepo.IsAdminByID(ctx, oldUser.ID)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[AuthRepo] [IsAdminByID] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
-			errorx.KV("key", consts.ReqOpenID), errorx.KV("value", openId))
-	}
-
 	return &dto.SignInResp{
 		Resp:        dto.Success(),
 		AccessToken: tokenStr,

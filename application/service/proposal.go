@@ -16,6 +16,8 @@ package service
 
 import (
 	"context"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
@@ -351,7 +353,7 @@ func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.G
 	}, nil
 }
 
-/ GetProposalFieldSuggestions 获取提案字段建议
+// GetProposalFieldSuggestions 获取提案字段建议
 func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *dto.GetProposalFieldSuggestionsReq) (*dto.GetProposalFieldSuggestionsResp, error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
@@ -393,7 +395,7 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 		for id, name := range mapping.Data.CampusNameByID {
 			if strings.Contains(strings.ToLower(name), strings.ToLower(req.Keyword)) {
 				suggestions = append(suggestions, &dto.FieldSuggestionVO{
-					ID:    string(rune(id)),
+					ID:    strconv.Itoa(id),
 					Value: name,
 					Label: name,
 				})
@@ -403,7 +405,7 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 
 	case consts.FieldCourseName:
 		// 从数据库查询课程名称
-		courses, err := s.CourseRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
+		courses, total, err := s.CourseRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
 		if err != nil {
 			logs.CtxErrorf(ctx, "[CourseRepo] [GetSuggestionsByName] error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
@@ -416,7 +418,6 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 				Label: course.Name,
 			})
 		}
-		total = int64(len(suggestions))
 
 	case consts.FieldCourseCode:
 		// 从数据库查询课程代码
