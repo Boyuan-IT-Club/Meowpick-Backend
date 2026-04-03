@@ -82,5 +82,11 @@ func SetupRoutes() *gin.Engine {
 		proposalGroup.GET("/logs/timeline", handler.ListProposalLogsTimeline)        // 扁平化时间线日志
 	}
 
+	// ChangeLogApi
+	adminGroup := router.Group("/api/admin")
+	{
+		adminGroup.GET("/logs", handler.ListAdminLogs) // 查询管理员日志列表
+	}
+
 	return router
 }
