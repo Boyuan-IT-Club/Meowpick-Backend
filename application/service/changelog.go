@@ -24,6 +24,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
+	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -32,11 +33,13 @@ var _ IChangeLogService = (*ChangeLogService)(nil)
 
 type IChangeLogService interface {
 	CreateChangeLog(ctx context.Context, req *dto.CreateChangeLogReq) (*dto.CreateChangeLogResp, error)
+	ListAdminLogs(ctx context.Context, req *dto.ListAdminLogsReq) (*dto.ListAdminLogsResp, error)
 }
 
 type ChangeLogService struct {
 	ChangeLogRepo      *repo.ChangeLogRepo
 	ChangeLogAssembler *assembler.ChangeLogAssembler
+	UserRepo           *repo.UserRepo
 }
 
 var ChangeLogServiceSet = wire.NewSet(
@@ -82,4 +85,87 @@ func (s *ChangeLogService) CreateChangeLog(ctx context.Context, req *dto.CreateC
 		Resp:        dto.Success(),
 		ChangeLogID: changeLog.ID,
 	}, nil
+}
+
+// ListAdminLogs 查询管理员日志列表
+func (s *ChangeLogService) ListAdminLogs(ctx context.Context, req *dto.ListAdminLogsReq) (*dto.ListAdminLogsResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 检查是否是管理员
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed)
+	}
+	if !isAdmin {
+		return nil, errorx.New(errno.ErrUserNotAdmin)
+	}
+
+	// 设置默认分页参数
+	if req.PageParam == nil {
+		req.PageParam = &dto.PageParam{
+			Page:     1,
+			PageSize: 20,
+		}
+	}
+
+	// 查询所有日志（不做筛选）
+	logList, total, err := s.ChangeLogRepo.FindMany(ctx, req.PageParam)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrChangeLogInsertFailed)
+	}
+
+	// 转换为VO
+	logVOs := make([]*dto.AdminLogVO, 0, len(logList))
+	for _, log := range logList {
+		// 查询管理员姓名
+		adminName := ""
+		user, err := s.UserRepo.FindByID(ctx, log.UserID)
+		if err == nil && user != nil {
+			adminName = user.Username
+			if adminName == "" {
+				adminName = user.OpenID
+			}
+		}
+
+		logVOs = append(logVOs, &dto.AdminLogVO{
+			ID:         log.ID,
+			AdminID:    log.UserID,
+			AdminName:  adminName,
+			Action:     log.Action,
+			ActionName: s.getActionName(log.Action),
+			Content:    log.Content,
+			TargetType: log.TargetType,
+			TargetID:   log.TargetID,
+			IP:         log.IP,
+			UserAgent:  log.UserAgent,
+			CreatedAt:  log.UpdatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	return &dto.ListAdminLogsResp{
+		Resp:  dto.Success(),
+		Total: total,
+		Logs:  logVOs,
+	}, nil
+}
+
+// getActionName 获取操作名称
+func (s *ChangeLogService) getActionName(action int32) string {
+	switch action {
+	case 1:
+		return "授予管理员权限"
+	case 2:
+		return "删除提案"
+	case 3:
+		return "更新提案"
+	case 4:
+		return "审核提案"
+	default:
+		return "未知操作"
+	}
 }

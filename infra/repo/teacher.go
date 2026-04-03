@@ -43,7 +43,7 @@ type ITeacherRepo interface {
 	FindByID(ctx context.Context, id string) (*model.Teacher, error)
 
 	GetIDByName(ctx context.Context, name string) (string, error)
-	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, error)
+	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, int64, error)
 }
 
 type TeacherRepo struct {
@@ -108,10 +108,18 @@ func (r *TeacherRepo) GetIDByName(ctx context.Context, name string) (string, err
 }
 
 // GetSuggestionsByName 根据教师名称模糊分页查询教师
-func (r *TeacherRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, error) {
+func (r *TeacherRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, int64, error) {
 	teachers := []*model.Teacher{}
-	if err := r.conn.Find(ctx, &teachers, bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}, page.FindPageOption(param)); err != nil {
-		return nil, err
+	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}
+	
+	if err := r.conn.Find(ctx, &teachers, filter, page.FindPageOption(param)); err != nil {
+		return nil, 0, err
 	}
-	return teachers, nil
+	
+	total, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	
+	return teachers, total, nil
 }

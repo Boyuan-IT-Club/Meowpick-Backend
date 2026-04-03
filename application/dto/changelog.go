@@ -24,6 +24,8 @@ type CreateChangeLogReq struct {
 	Content      string `json:"content" binding:"required"`
 	UpdateSource int32  `json:"updateSource" binding:"required"`
 	ProposalID   string `json:"proposalId"`
+	IP           string `json:"ip"`
+	UserAgent    string `json:"userAgent"`
 }
 
 // CreateChangeLogResp 新增变更日志响应
@@ -42,4 +44,31 @@ type ChangeLogVO struct {
 	ProposalID   string    `json:"proposalId,omitempty"`
 	UserID       string    `json:"userId"`
 	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+// ListAdminLogsReq 查询管理员日志请求参数
+type ListAdminLogsReq struct {
+	PageParam *PageParam `json:"pageParam"`
+}
+
+// ListAdminLogsResp 查询管理员日志响应
+type ListAdminLogsResp struct {
+	*Resp
+	Total int64          `json:"total"`
+	Logs  []*AdminLogVO `json:"logs"`
+}
+
+// AdminLogVO 管理员日志展示对象
+type AdminLogVO struct {
+	ID         string `json:"id"`
+	AdminID    string `json:"adminId"`
+	AdminName  string `json:"adminName"`
+	Action     int32  `json:"action"`
+	ActionName string `json:"actionName"`
+	Content    string `json:"content"`
+	TargetType int32  `json:"targetType"`
+	TargetID   string `json:"targetId"`
+	IP         string `json:"ip"`
+	UserAgent  string `json:"userAgent"`
+	CreatedAt  string `json:"createdAt"`
 }

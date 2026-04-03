@@ -27,5 +27,7 @@ type ChangeLog struct {
 	UpdateSource int32     `bson:"updateSource"          json:"-"`
 	ProposalID   string    `bson:"proposalId,omitempty"  json:"-"`
 	UserID       string    `bson:"userId"                json:"-"`
+	IP           string    `bson:"ip,omitempty"          json:"-"`
+	UserAgent    string    `bson:"userAgent,omitempty"   json:"-"`
 	UpdatedAt    time.Time `bson:"updatedAt"             json:"-"`
 }

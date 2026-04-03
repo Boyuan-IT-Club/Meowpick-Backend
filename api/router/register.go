@@ -80,5 +80,11 @@ func SetupRoutes() *gin.Engine {
 		proposalGroup.GET("/field-suggestions", handler.GetProposalFieldSuggestions) // 获取提案字段建议
 	}
 
+	// ChangeLogApi
+	adminGroup := router.Group("/api/admin")
+	{
+		adminGroup.GET("/logs", handler.ListAdminLogs) // 查询管理员日志列表
+	}
+
 	return router
 }

@@ -42,7 +42,8 @@ type IAuthService interface {
 }
 
 type AuthService struct {
-	UserRepo *repo.UserRepo
+	UserRepo         *repo.UserRepo
+	ChangeLogService IChangeLogService
 }
 
 var AuthServiceSet = wire.NewSet(
@@ -156,12 +157,6 @@ func (s *AuthService) IsAdmin(ctx context.Context) (resp *dto.IsAdminResp, err e
 }
 
 func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (resp *dto.GrantAdminResp, err error) {
-	// 鉴权
-	userId, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userId == "" {
-		return nil, errorx.New(errno.ErrUserNotLogin)
-	}
-
 	// 判断用户是否为管理员
 	admin, err := s.UserRepo.IsAdminByID(ctx, req.UserID)
 	if err != nil {
@@ -182,6 +177,18 @@ func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (r
 			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
 		)
 	}
+
+	// 获取操作者ID（如果有的话）
+	operatorId, _ := ctx.Value(consts.CtxUserID).(string)
+	
+	// 记录管理员操作日志
+	_, _ = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
+		TargetID:     req.UserID,
+		TargetType:   1, // 用户类型
+		Action:       1, // 授予管理员权限
+		Content:      "授予用户管理员权限，操作者: " + operatorId,
+		UpdateSource: 1, // 管理后台
+	})
 
 	return &dto.GrantAdminResp{
 		Resp: dto.Success(),

@@ -331,7 +331,7 @@ func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.G
 	}
 
 	// 查询提案建议
-	proposals, err := s.ProposalRepo.GetSuggestionsByTitle(ctx, req.Keyword, req.PageParam)
+	proposals, _, err := s.ProposalRepo.GetSuggestionsByTitle(ctx, req.Keyword, req.PageParam)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalRepo] [GetSuggestionsByTitle] error: %v, keyword: %s", err, req.Keyword)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalGetSuggestionsFailed,
@@ -372,6 +372,7 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 		for _, id := range ids {
 			name := mapping.Data.GetDepartmentNameByID(id)
 			suggestions = append(suggestions, &dto.FieldSuggestionVO{
+				ID:    strconv.Itoa(int(id)),
 				Value: name,
 				Label: name,
 			})
@@ -384,6 +385,7 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 		for _, id := range ids {
 			name := mapping.Data.GetCategoryNameByID(id)
 			suggestions = append(suggestions, &dto.FieldSuggestionVO{
+				ID:    strconv.Itoa(int(id)),
 				Value: name,
 				Label: name,
 			})
@@ -395,7 +397,7 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 		for id, name := range mapping.Data.CampusNameByID {
 			if strings.Contains(strings.ToLower(name), strings.ToLower(req.Keyword)) {
 				suggestions = append(suggestions, &dto.FieldSuggestionVO{
-					ID:    strconv.Itoa(id),
+					ID:    strconv.Itoa(int(id)),
 					Value: name,
 					Label: name,
 				})
@@ -418,10 +420,11 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 				Label: course.Name,
 			})
 		}
+		_ = total
 
 	case consts.FieldCourseCode:
 		// 从数据库查询课程代码
-		courses, err := s.CourseRepo.GetSuggestionsByCode(ctx, req.Keyword, req.PageParam)
+		courses, total, err := s.CourseRepo.GetSuggestionsByCode(ctx, req.Keyword, req.PageParam)
 		if err != nil {
 			logs.CtxErrorf(ctx, "[CourseRepo] [GetSuggestionsByCode] error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
@@ -434,11 +437,11 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 				Label: course.Code + " - " + course.Name,
 			})
 		}
-		total = int64(len(suggestions))
+		_ = total
 
 	case consts.FieldTeacherName:
 		// 从数据库查询教师姓名
-		teachers, err := s.TeacherRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
+		teachers, total, err := s.TeacherRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
 		if err != nil {
 			logs.CtxErrorf(ctx, "[TeacherRepo] [GetSuggestionsByName] error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrTeacherGetSuggestionsFailed,
@@ -451,7 +454,7 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 				Label: teacher.Name + " - " + teacher.Title,
 			})
 		}
-		total = int64(len(suggestions))
+		_ = total
 
 	default:
 		logs.CtxErrorf(ctx, "[ProposalService] [GetProposalFieldSuggestions] invalid field: %s", req.Field)

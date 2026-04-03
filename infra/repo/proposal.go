@@ -44,7 +44,7 @@ type IProposalRepo interface {
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
 	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
 	DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
-	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, error)
+	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error)
 }
 
 type ProposalRepo struct {
@@ -194,7 +194,7 @@ func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Propo
 }
 
 // GetSuggestionsByTitle 根据提案标题模糊分页查询提案
-func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, error) {
+func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error) {
 	proposals := []*model.Proposal{}
 	filter := bson.M{
 		"title":        bson.M{"$regex": primitive.Regex{Pattern: title, Options: "i"}},
@@ -204,8 +204,15 @@ func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, 
 		{consts.Status, 1},
 		{consts.CreatedAt, -1},
 	}
+	
 	if err := r.conn.Find(ctx, &proposals, filter, page.FindPageOption(param).SetSort(sort)); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return proposals, nil
+	
+	total, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	
+	return proposals, total, nil
 }

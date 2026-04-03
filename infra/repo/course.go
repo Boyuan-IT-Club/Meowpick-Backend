@@ -45,8 +45,8 @@ type ICourseRepo interface {
 	GetDepartmentsByName(ctx context.Context, name string) ([]int32, error)
 	GetCategoriesByName(ctx context.Context, name string) ([]int32, error)
 	GetCampusesByName(ctx context.Context, name string) ([]int32, error)
-	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, error)
-	GetSuggestionsByCode(ctx context.Context, code string, param *dto.PageParam) ([]*model.Course, error)
+	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error)
+	GetSuggestionsByCode(ctx context.Context, code string, param *dto.PageParam) ([]*model.Course, int64, error)
 
 	IsCourseInExistingCourses(ctx context.Context, vo *model.Course) (bool, error)
 }
@@ -204,27 +204,37 @@ func (r *CourseRepo) GetCampusesByName(ctx context.Context, name string) ([]int3
 }
 
 // GetSuggestionsByName 根据课程名称模糊分页查询课程
-func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, error) {
+func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	if err := r.conn.Find(ctx, &courses,
-		bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}},
-		page.FindPageOption(param),
-	); err != nil {
-		return nil, err
+	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}
+	
+	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param)); err != nil {
+		return nil, 0, err
 	}
-	return courses, nil
+	
+	total, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	
+	return courses, total, nil
 }
 
 // GetSuggestionsByCode 根据课程代码模糊分页查询课程
-func (r *CourseRepo) GetSuggestionsByCode(ctx context.Context, code string, param *dto.PageParam) ([]*model.Course, error) {
+func (r *CourseRepo) GetSuggestionsByCode(ctx context.Context, code string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	if err := r.conn.Find(ctx, &courses,
-		bson.M{consts.Code: bson.M{"$regex": primitive.Regex{Pattern: code, Options: "i"}}},
-		page.FindPageOption(param),
-	); err != nil {
-		return nil, err
+	filter := bson.M{consts.Code: bson.M{"$regex": primitive.Regex{Pattern: code, Options: "i"}}}
+	
+	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param)); err != nil {
+		return nil, 0, err
 	}
-	return courses, nil
+	
+	total, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	
+	return courses, total, nil
 }
 
 // IsCourseInExistingCourses 检查课程是否已经存在于现有课程中
