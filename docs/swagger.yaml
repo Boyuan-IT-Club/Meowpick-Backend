@@ -92,8 +92,6 @@ definitions:
     properties:
       category:
         type: string
-      code:
-        type: integer
       content:
         type: string
       courseId:
@@ -108,8 +106,6 @@ definitions:
         type: boolean
       likeCnt:
         type: integer
-      msg:
-        type: string
       name:
         type: string
       tags:
@@ -141,10 +137,6 @@ definitions:
     type: object
   dto.CreateProposalResp:
     properties:
-      code:
-        type: integer
-      msg:
-        type: string
       proposalId:
         description: 提案ID
         type: string
@@ -164,13 +156,9 @@ definitions:
     type: object
   dto.CreateTeacherResp:
     properties:
-      code:
-        type: integer
       department:
         type: string
       id:
-        type: string
-      msg:
         type: string
       name:
         type: string
@@ -179,13 +167,9 @@ definitions:
     type: object
   dto.DeleteProposalResp:
     properties:
-      code:
-        type: integer
       deleted:
         type: boolean
       deletedAt:
-        type: string
-      msg:
         type: string
       operatorId:
         type: string
@@ -198,10 +182,6 @@ definitions:
         items:
           type: string
         type: array
-      code:
-        type: integer
-      msg:
-        type: string
     type: object
   dto.GetCourseCategoriesResp:
     properties:
@@ -209,30 +189,18 @@ definitions:
         items:
           type: string
         type: array
-      code:
-        type: integer
-      msg:
-        type: string
     type: object
   dto.GetCourseDepartmentsResp:
     properties:
-      code:
-        type: integer
       departments:
         items:
           type: string
         type: array
-      msg:
-        type: string
     type: object
   dto.GetCourseResp:
     properties:
-      code:
-        type: integer
       course:
         $ref: '#/definitions/dto.CourseVO'
-      msg:
-        type: string
     type: object
   dto.GetMyCommentsReq:
     properties:
@@ -243,32 +211,20 @@ definitions:
     type: object
   dto.GetMyCommentsResp:
     properties:
-      code:
-        type: integer
       comments:
         items:
           $ref: '#/definitions/dto.CommentVO'
         type: array
-      msg:
-        type: string
       total:
         type: integer
     type: object
   dto.GetProposalResp:
     properties:
-      code:
-        type: integer
-      msg:
-        type: string
       proposal:
         $ref: '#/definitions/dto.ProposalVO'
     type: object
   dto.GetProposalSuggestionsResp:
     properties:
-      code:
-        type: integer
-      msg:
-        type: string
       suggestions:
         items:
           $ref: '#/definitions/dto.ProposalSuggestionsVO'
@@ -276,21 +232,13 @@ definitions:
     type: object
   dto.GetSearchHistoriesResp:
     properties:
-      code:
-        type: integer
       histories:
         items:
           $ref: '#/definitions/dto.SearchHistoryVO'
         type: array
-      msg:
-        type: string
     type: object
   dto.GetSearchSuggestionsResp:
     properties:
-      code:
-        type: integer
-      msg:
-        type: string
       suggestions:
         items:
           $ref: '#/definitions/dto.SearchSuggestionsVO'
@@ -298,10 +246,6 @@ definitions:
     type: object
   dto.GetTeacherSuggestionsResp:
     properties:
-      code:
-        type: integer
-      msg:
-        type: string
       teachers:
         items:
           $ref: '#/definitions/dto.TeacherVO'
@@ -309,12 +253,8 @@ definitions:
     type: object
   dto.GetTotalCourseCommentsCountResp:
     properties:
-      code:
-        type: integer
       count:
         type: integer
-      msg:
-        type: string
     type: object
   dto.GrantAdminReq:
     properties:
@@ -324,31 +264,18 @@ definitions:
         type: string
     type: object
   dto.GrantAdminResp:
-    properties:
-      code:
-        type: integer
-      msg:
-        type: string
     type: object
   dto.IsAdminResp:
     properties:
-      code:
-        type: integer
       isAdmin:
         type: boolean
-      msg:
-        type: string
     type: object
   dto.ListCourseCommentsResp:
     properties:
-      code:
-        type: integer
       comments:
         items:
           $ref: '#/definitions/dto.CommentVO'
         type: array
-      msg:
-        type: string
       total:
         type: integer
     type: object
@@ -366,15 +293,11 @@ definitions:
     type: object
   dto.ListCoursesResp:
     properties:
-      code:
-        type: integer
       courses:
         description: 当前页的课程列表
         items:
           $ref: '#/definitions/dto.CourseVO'
         type: array
-      msg:
-        type: string
       page:
         type: integer
       pageSize:
@@ -385,10 +308,6 @@ definitions:
     type: object
   dto.ListProposalResp:
     properties:
-      code:
-        type: integer
-      msg:
-        type: string
       proposals:
         items:
           $ref: '#/definitions/dto.ProposalVO'
@@ -465,14 +384,10 @@ definitions:
     properties:
       accessToken:
         type: string
-      code:
-        type: integer
       expiresIn:
         type: integer
       isAdmin:
         type: boolean
-      msg:
-        type: string
       userId:
         type: string
     type: object
@@ -497,14 +412,10 @@ definitions:
     type: object
   dto.ToggleLikeResp:
     properties:
-      code:
-        type: integer
       like:
         type: boolean
       likeCnt:
         type: integer
-      msg:
-        type: string
     type: object
   dto.UpdateProposalReq:
     properties:
@@ -521,11 +432,352 @@ definitions:
     type: object
   dto.UpdateProposalResp:
     properties:
-      code:
-        type: integer
-      msg:
-        type: string
       proposalId:
+        type: string
+    type: object
+  handler.Response-dto_CreateCommentResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.CreateCommentResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_CreateProposalResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.CreateProposalResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_CreateTeacherResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.CreateTeacherResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_DeleteProposalResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.DeleteProposalResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetCourseCampusesResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetCourseCampusesResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetCourseCategoriesResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetCourseCategoriesResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetCourseDepartmentsResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetCourseDepartmentsResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetCourseResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetCourseResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetMyCommentsResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetMyCommentsResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetProposalResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetProposalResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetProposalSuggestionsResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetProposalSuggestionsResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetSearchHistoriesResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetSearchHistoriesResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetSearchSuggestionsResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetSearchSuggestionsResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetTeacherSuggestionsResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetTeacherSuggestionsResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetTotalCourseCommentsCountResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetTotalCourseCommentsCountResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GrantAdminResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GrantAdminResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_IsAdminResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.IsAdminResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_ListCourseCommentsResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.ListCourseCommentsResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_ListCoursesResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.ListCoursesResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_ListProposalResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.ListProposalResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_SignInResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.SignInResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_ToggleLikeResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.ToggleLikeResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_UpdateProposalResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.UpdateProposalResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
         type: string
     type: object
 info:
@@ -552,7 +804,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GrantAdminResp'
+            $ref: '#/definitions/handler.Response-dto_GrantAdminResp'
       summary: 授予管理员权限
       tags:
       - auth
@@ -565,7 +817,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.IsAdminResp'
+            $ref: '#/definitions/handler.Response-dto_IsAdminResp'
       summary: 是否管理员
       tags:
       - auth
@@ -586,7 +838,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.SignInResp'
+            $ref: '#/definitions/handler.Response-dto_SignInResp'
       summary: 登录
       tags:
       - auth
@@ -608,7 +860,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.CreateCommentResp'
+            $ref: '#/definitions/handler.Response-dto_CreateCommentResp'
       summary: 发布课程评论
       tags:
       - comment
@@ -630,7 +882,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GetMyCommentsResp'
+            $ref: '#/definitions/handler.Response-dto_GetMyCommentsResp'
       summary: 获取我的评论历史
       tags:
       - comment
@@ -659,7 +911,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.ListCourseCommentsResp'
+            $ref: '#/definitions/handler.Response-dto_ListCourseCommentsResp'
       summary: 分页获取课程评论
       tags:
       - comment
@@ -678,7 +930,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GetCourseResp'
+            $ref: '#/definitions/handler.Response-dto_GetCourseResp'
       summary: 获取课程信息
       tags:
       - course
@@ -697,7 +949,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GetCourseCampusesResp'
+            $ref: '#/definitions/handler.Response-dto_GetCourseCampusesResp'
       summary: 获取课程开课校区
       tags:
       - course
@@ -716,7 +968,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GetCourseCategoriesResp'
+            $ref: '#/definitions/handler.Response-dto_GetCourseCategoriesResp'
       summary: 获取课程分类
       tags:
       - course
@@ -735,7 +987,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GetCourseDepartmentsResp'
+            $ref: '#/definitions/handler.Response-dto_GetCourseDepartmentsResp'
       summary: 获取课程开课院系
       tags:
       - course
@@ -762,7 +1014,7 @@ paths:
         "200":
           description: 操作成功
           schema:
-            $ref: '#/definitions/dto.ToggleLikeResp'
+            $ref: '#/definitions/handler.Response-dto_ToggleLikeResp'
       summary: 点赞 / 取消点赞
       tags:
       - like
@@ -781,7 +1033,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GetProposalResp'
+            $ref: '#/definitions/handler.Response-dto_GetProposalResp'
       summary: 获取提案详情
       tags:
       - proposal
@@ -803,7 +1055,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.DeleteProposalResp'
+            $ref: '#/definitions/handler.Response-dto_DeleteProposalResp'
       summary: 删除提案
       tags:
       - proposal
@@ -830,7 +1082,7 @@ paths:
         "200":
           description: 更新成功响应
           schema:
-            $ref: '#/definitions/dto.UpdateProposalResp'
+            $ref: '#/definitions/handler.Response-dto_UpdateProposalResp'
       summary: 更新提案内容
       tags:
       - proposal
@@ -850,7 +1102,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.CreateProposalResp'
+            $ref: '#/definitions/handler.Response-dto_CreateProposalResp'
       summary: 新增提案
       tags:
       - proposal
@@ -874,7 +1126,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.ListProposalResp'
+            $ref: '#/definitions/handler.Response-dto_ListProposalResp'
       summary: 分页获取提案列表
       tags:
       - proposal
@@ -903,7 +1155,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GetProposalSuggestionsResp'
+            $ref: '#/definitions/handler.Response-dto_GetProposalSuggestionsResp'
       summary: 获取提案搜索建议
       tags:
       - proposal
@@ -925,7 +1177,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.ListCoursesResp'
+            $ref: '#/definitions/handler.Response-dto_ListCoursesResp'
       summary: 搜索课程列表
       tags:
       - courses
@@ -938,7 +1190,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GetSearchHistoriesResp'
+            $ref: '#/definitions/handler.Response-dto_GetSearchHistoriesResp'
       summary: 获取最近搜索历史
       tags:
       - search
@@ -963,7 +1215,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GetSearchSuggestionsResp'
+            $ref: '#/definitions/handler.Response-dto_GetSearchSuggestionsResp'
       summary: 获取搜索建议
       tags:
       - search
@@ -976,7 +1228,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GetTotalCourseCommentsCountResp'
+            $ref: '#/definitions/handler.Response-dto_GetTotalCourseCommentsCountResp'
       summary: 获取吐槽总数
       tags:
       - comment
@@ -998,7 +1250,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.CreateTeacherResp'
+            $ref: '#/definitions/handler.Response-dto_CreateTeacherResp'
       summary: 新建教师
       tags:
       - teacher
@@ -1017,7 +1269,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.GetTeacherSuggestionsResp'
+            $ref: '#/definitions/handler.Response-dto_GetTeacherSuggestionsResp'
       summary: 获取教师搜索建议
       tags:
       - teacher

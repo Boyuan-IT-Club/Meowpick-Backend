@@ -57,7 +57,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GrantAdminResp"
+                            "$ref": "#/definitions/handler.Response-dto_GrantAdminResp"
                         }
                     }
                 }
@@ -77,7 +77,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.IsAdminResp"
+                            "$ref": "#/definitions/handler.Response-dto_IsAdminResp"
                         }
                     }
                 }
@@ -110,7 +110,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.SignInResp"
+                            "$ref": "#/definitions/handler.Response-dto_SignInResp"
                         }
                     }
                 }
@@ -144,7 +144,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateCommentResp"
+                            "$ref": "#/definitions/handler.Response-dto_CreateCommentResp"
                         }
                     }
                 }
@@ -178,7 +178,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetMyCommentsResp"
+                            "$ref": "#/definitions/handler.Response-dto_GetMyCommentsResp"
                         }
                     }
                 }
@@ -221,7 +221,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.ListCourseCommentsResp"
+                            "$ref": "#/definitions/handler.Response-dto_ListCourseCommentsResp"
                         }
                     }
                 }
@@ -250,7 +250,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetCourseCampusesResp"
+                            "$ref": "#/definitions/handler.Response-dto_GetCourseCampusesResp"
                         }
                     }
                 }
@@ -279,7 +279,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetCourseCategoriesResp"
+                            "$ref": "#/definitions/handler.Response-dto_GetCourseCategoriesResp"
                         }
                     }
                 }
@@ -308,7 +308,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetCourseDepartmentsResp"
+                            "$ref": "#/definitions/handler.Response-dto_GetCourseDepartmentsResp"
                         }
                     }
                 }
@@ -337,7 +337,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetCourseResp"
+                            "$ref": "#/definitions/handler.Response-dto_GetCourseResp"
                         }
                     }
                 }
@@ -378,7 +378,7 @@ const docTemplate = `{
                     "200": {
                         "description": "操作成功",
                         "schema": {
-                            "$ref": "#/definitions/dto.ToggleLikeResp"
+                            "$ref": "#/definitions/handler.Response-dto_ToggleLikeResp"
                         }
                     }
                 }
@@ -409,7 +409,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateProposalResp"
+                            "$ref": "#/definitions/handler.Response-dto_CreateProposalResp"
                         }
                     }
                 }
@@ -445,7 +445,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.ListProposalResp"
+                            "$ref": "#/definitions/handler.Response-dto_ListProposalResp"
                         }
                     }
                 }
@@ -488,7 +488,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetProposalSuggestionsResp"
+                            "$ref": "#/definitions/handler.Response-dto_GetProposalSuggestionsResp"
                         }
                     }
                 }
@@ -517,7 +517,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetProposalResp"
+                            "$ref": "#/definitions/handler.Response-dto_GetProposalResp"
                         }
                     }
                 }
@@ -551,7 +551,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.DeleteProposalResp"
+                            "$ref": "#/definitions/handler.Response-dto_DeleteProposalResp"
                         }
                     }
                 }
@@ -592,7 +592,7 @@ const docTemplate = `{
                     "200": {
                         "description": "更新成功响应",
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateProposalResp"
+                            "$ref": "#/definitions/handler.Response-dto_UpdateProposalResp"
                         }
                     }
                 }
@@ -626,7 +626,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.ListCoursesResp"
+                            "$ref": "#/definitions/handler.Response-dto_ListCoursesResp"
                         }
                     }
                 }
@@ -646,7 +646,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetSearchHistoriesResp"
+                            "$ref": "#/definitions/handler.Response-dto_GetSearchHistoriesResp"
                         }
                     }
                 }
@@ -675,7 +675,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetSearchSuggestionsResp"
+                            "$ref": "#/definitions/handler.Response-dto_GetSearchSuggestionsResp"
                         }
                     }
                 }
@@ -695,7 +695,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetTotalCourseCommentsCountResp"
+                            "$ref": "#/definitions/handler.Response-dto_GetTotalCourseCommentsCountResp"
                         }
                     }
                 }
@@ -729,7 +729,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateTeacherResp"
+                            "$ref": "#/definitions/handler.Response-dto_CreateTeacherResp"
                         }
                     }
                 }
@@ -758,7 +758,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.GetTeacherSuggestionsResp"
+                            "$ref": "#/definitions/handler.Response-dto_GetTeacherSuggestionsResp"
                         }
                     }
                 }
@@ -883,9 +883,6 @@ const docTemplate = `{
                 "category": {
                     "type": "string"
                 },
-                "code": {
-                    "type": "integer"
-                },
                 "content": {
                     "type": "string"
                 },
@@ -906,9 +903,6 @@ const docTemplate = `{
                 },
                 "likeCnt": {
                     "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -956,12 +950,6 @@ const docTemplate = `{
         "dto.CreateProposalResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
-                },
                 "proposalId": {
                     "description": "提案ID",
                     "type": "string"
@@ -990,16 +978,10 @@ const docTemplate = `{
         "dto.CreateTeacherResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "department": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "string"
-                },
-                "msg": {
                     "type": "string"
                 },
                 "name": {
@@ -1013,16 +995,10 @@ const docTemplate = `{
         "dto.DeleteProposalResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "deleted": {
                     "type": "boolean"
                 },
                 "deletedAt": {
-                    "type": "string"
-                },
-                "msg": {
                     "type": "string"
                 },
                 "operatorId": {
@@ -1041,12 +1017,6 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "code": {
-                    "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
                 }
             }
         },
@@ -1058,43 +1028,25 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "code": {
-                    "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
                 }
             }
         },
         "dto.GetCourseDepartmentsResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "departments": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
-                },
-                "msg": {
-                    "type": "string"
                 }
             }
         },
         "dto.GetCourseResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "course": {
                     "$ref": "#/definitions/dto.CourseVO"
-                },
-                "msg": {
-                    "type": "string"
                 }
             }
         },
@@ -1112,17 +1064,11 @@ const docTemplate = `{
         "dto.GetMyCommentsResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "comments": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dto.CommentVO"
                     }
-                },
-                "msg": {
-                    "type": "string"
                 },
                 "total": {
                     "type": "integer"
@@ -1132,12 +1078,6 @@ const docTemplate = `{
         "dto.GetProposalResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
-                },
                 "proposal": {
                     "$ref": "#/definitions/dto.ProposalVO"
                 }
@@ -1146,12 +1086,6 @@ const docTemplate = `{
         "dto.GetProposalSuggestionsResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
-                },
                 "suggestions": {
                     "type": "array",
                     "items": {
@@ -1163,29 +1097,17 @@ const docTemplate = `{
         "dto.GetSearchHistoriesResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "histories": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dto.SearchHistoryVO"
                     }
-                },
-                "msg": {
-                    "type": "string"
                 }
             }
         },
         "dto.GetSearchSuggestionsResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
-                },
                 "suggestions": {
                     "type": "array",
                     "items": {
@@ -1197,12 +1119,6 @@ const docTemplate = `{
         "dto.GetTeacherSuggestionsResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
-                },
                 "teachers": {
                     "type": "array",
                     "items": {
@@ -1214,14 +1130,8 @@ const docTemplate = `{
         "dto.GetTotalCourseCommentsCountResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "count": {
                     "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
                 }
             }
         },
@@ -1237,44 +1147,24 @@ const docTemplate = `{
             }
         },
         "dto.GrantAdminResp": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
-                }
-            }
+            "type": "object"
         },
         "dto.IsAdminResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "isAdmin": {
                     "type": "boolean"
-                },
-                "msg": {
-                    "type": "string"
                 }
             }
         },
         "dto.ListCourseCommentsResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "comments": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dto.CommentVO"
                     }
-                },
-                "msg": {
-                    "type": "string"
                 },
                 "total": {
                     "type": "integer"
@@ -1302,18 +1192,12 @@ const docTemplate = `{
         "dto.ListCoursesResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "courses": {
                     "description": "当前页的课程列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dto.CourseVO"
                     }
-                },
-                "msg": {
-                    "type": "string"
                 },
                 "page": {
                     "type": "integer"
@@ -1330,12 +1214,6 @@ const docTemplate = `{
         "dto.ListProposalResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
-                },
                 "proposals": {
                     "type": "array",
                     "items": {
@@ -1450,17 +1328,11 @@ const docTemplate = `{
                 "accessToken": {
                     "type": "string"
                 },
-                "code": {
-                    "type": "integer"
-                },
                 "expiresIn": {
                     "type": "integer"
                 },
                 "isAdmin": {
                     "type": "boolean"
-                },
-                "msg": {
-                    "type": "string"
                 },
                 "userId": {
                     "type": "string"
@@ -1499,17 +1371,11 @@ const docTemplate = `{
         "dto.ToggleLikeResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "like": {
                     "type": "boolean"
                 },
                 "likeCnt": {
                     "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
                 }
             }
         },
@@ -1535,14 +1401,537 @@ const docTemplate = `{
         "dto.UpdateProposalResp": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "msg": {
-                    "type": "string"
-                },
                 "proposalId": {
                     "type": "string"
+                }
+            }
+        },
+        "handler.Response-dto_CreateCommentResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.CreateCommentResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_CreateProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.CreateProposalResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_CreateTeacherResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.CreateTeacherResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_DeleteProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.DeleteProposalResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetCourseCampusesResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetCourseCampusesResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetCourseCategoriesResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetCourseCategoriesResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetCourseDepartmentsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetCourseDepartmentsResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetCourseResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetCourseResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetMyCommentsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetMyCommentsResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetProposalResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetProposalSuggestionsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetProposalSuggestionsResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetSearchHistoriesResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetSearchHistoriesResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetSearchSuggestionsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetSearchSuggestionsResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetTeacherSuggestionsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetTeacherSuggestionsResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetTotalCourseCommentsCountResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetTotalCourseCommentsCountResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GrantAdminResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GrantAdminResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_IsAdminResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.IsAdminResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_ListCourseCommentsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ListCourseCommentsResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_ListCoursesResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ListCoursesResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_ListProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ListProposalResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_SignInResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.SignInResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_ToggleLikeResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ToggleLikeResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_UpdateProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.UpdateProposalResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
                 }
             }
         }
