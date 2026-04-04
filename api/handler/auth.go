@@ -28,7 +28,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param body body dto.SignInReq true "SignInReq"
-// @Success 200 {object} dto.SignInResp
+// @Success 200 {object} Response[dto.SignInResp]
 // @Router /api/auth/sign_in [post]
 func SignIn(c *gin.Context) {
 	var err error
@@ -52,7 +52,7 @@ func SignIn(c *gin.Context) {
 // @Description 判断当前用户是否具有管理员权限
 // @Tags auth
 // @Produce json
-// @Success 200 {object} dto.IsAdminResp
+// @Success 200 {object} Response[dto.IsAdminResp]
 // @Router /api/auth/is_admin [get]
 func IsAdmin(c *gin.Context) {
 	var err error
@@ -71,7 +71,7 @@ func IsAdmin(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param body body dto.GrantAdminReq true "GrantAdminReq"
-// @Success 200 {object} dto.GrantAdminResp
+// @Success 200 {object} Response[dto.GrantAdminResp]
 // @Router /api/auth/grant_admin [post]
 func GrantAdmin(c *gin.Context) {
 	var err error

@@ -29,7 +29,7 @@ import (
 // @Tags course
 // @Produce json
 // @Param courseId path string true "课程ID"
-// @Success 200 {object} dto.GetCourseResp
+// @Success 200 {object} Response[dto.GetCourseResp]
 // @Router /api/course/{courseId} [get]
 func GetCourse(c *gin.Context) {
 	var req dto.GetCourseReq
@@ -49,7 +49,7 @@ func GetCourse(c *gin.Context) {
 // @Tags course
 // @Produce json
 // @Param keyword query string true "课程名称关键词"
-// @Success 200 {object} dto.GetCourseDepartmentsResp
+// @Success 200 {object} Response[dto.GetCourseDepartmentsResp]
 // @Router /api/course/departs [get]
 func GetCourseDepartments(c *gin.Context) {
 	var req dto.GetCourseDepartmentsReq
@@ -72,7 +72,7 @@ func GetCourseDepartments(c *gin.Context) {
 // @Tags course
 // @Produce json
 // @Param keyword query string true "课程名称关键词"
-// @Success 200 {object} dto.GetCourseCategoriesResp
+// @Success 200 {object} Response[dto.GetCourseCategoriesResp]
 // @Router /api/course/categories [get]
 func GetCourseCategories(c *gin.Context) {
 	var req dto.GetCourseCategoriesReq
@@ -95,7 +95,7 @@ func GetCourseCategories(c *gin.Context) {
 // @Tags course
 // @Produce json
 // @Param keyword query string true "课程名称关键词"
-// @Success 200 {object} dto.GetCourseCampusesResp
+// @Success 200 {object} Response[dto.GetCourseCampusesResp]
 // @Router /api/course/campuses [get]
 func GetCourseCampuses(c *gin.Context) {
 	var req dto.GetCourseCampusesReq
@@ -119,7 +119,7 @@ func GetCourseCampuses(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param body body dto.ListCoursesReq true "ListCoursesReq"
-// @Success 200 {object} dto.ListCoursesResp
+// @Success 200 {object} Response[dto.ListCoursesResp]
 // @Router /api/search [post]
 func ListCourses(c *gin.Context) {
 	var req dto.ListCoursesReq

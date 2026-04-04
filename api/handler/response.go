@@ -26,6 +26,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Response 统一响应格式，仅用于 Swagger 文档生成
+type Response[T any] struct {
+	Code int    `json:"code" example:"0"`      // 业务代码, 0表示成功
+	Msg  string `json:"msg" example:"success"` // 提示信息
+	Data T      `json:"data"`                  // 实际业务数据
+}
+
 // PostProcess 处理http响应, resp要求指针或接口类型
 // 在日志中记录本次调用详情, 同时向响应头中注入符合b3规范的链路信息, 主要是trace_id
 // 最佳实践: 在Handler中调用业务处理, 处理结束后调用PostProcess

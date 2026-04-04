@@ -28,7 +28,7 @@ import (
 // @Tags proposal
 // @Accept json
 // @Param req body dto.CreateProposalReq true "创建提案的请求参数"
-// @success 200 {object} dto.CreateProposalResp
+// @success 200 {object} Response[dto.CreateProposalResp]
 // @Router /api/proposal/add [post]
 func CreateProposal(c *gin.Context) {
 	var req dto.CreateProposalReq
@@ -52,7 +52,7 @@ func CreateProposal(c *gin.Context) {
 // @Produce json
 // @Param page query int true "页码"
 // @Param pageSize query int true "每页数量"
-// @Success 200 {object} dto.ListProposalResp
+// @Success 200 {object} Response[dto.ListProposalResp]
 // @Router /api/proposal/list [get]
 func ListProposals(c *gin.Context) {
 	var req dto.ListProposalReq
@@ -75,7 +75,7 @@ func ListProposals(c *gin.Context) {
 // @Tags proposal
 // @Produce json
 // @Param id path string true "提案ID"
-// @Success 200 {object} dto.GetProposalResp
+// @Success 200 {object} Response[dto.GetProposalResp]
 // @Router /api/proposal/{proposalId} [get]
 func GetProposal(c *gin.Context) {
 	var req dto.GetProposalReq
@@ -103,7 +103,7 @@ func ApproveProposal(c *gin.Context) {
 // @Produce json
 // @Param proposalId path string true "提案唯一ID"
 // @Param body body dto.UpdateProposalReq true "更新参数（标题、内容）"
-// @Success 200 {object} dto.UpdateProposalResp "更新成功响应"
+// @Success 200 {object} Response[dto.UpdateProposalResp] "更新成功响应"
 // @Router /api/proposal/{proposalId}/update [post]
 func UpdateProposal(c *gin.Context) {
 	var req dto.UpdateProposalReq
@@ -130,7 +130,7 @@ func UpdateProposal(c *gin.Context) {
 // @Tags proposal
 // @Accept json
 // @Param proposalId path string true "提案ID"
-// @success 200 {object} dto.DeleteProposalResp
+// @success 200 {object} Response[dto.DeleteProposalResp]
 // @Router /api/proposal/{proposalId}/delete [POST]
 func DeleteProposal(c *gin.Context) {
 	var err error
@@ -157,7 +157,7 @@ func DeleteProposal(c *gin.Context) {
 // @Param keyword query string true "搜索关键词"
 // @Param page query int false "页码" default(0)
 // @Param pageSize query int false "每页数量" default(10)
-// @Success 200 {object} dto.GetProposalSuggestionsResp
+// @Success 200 {object} Response[dto.GetProposalSuggestionsResp]
 // @Router /api/proposal/suggest [post]
 func GetProposalSuggestions(c *gin.Context) {
 	var req dto.GetProposalSuggestionsReq

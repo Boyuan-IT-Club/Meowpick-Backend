@@ -27,7 +27,7 @@ import (
 // @Description 获取最近搜索历史
 // @Tags search
 // @Produce json
-// @Success 200 {object} dto.GetSearchHistoriesResp
+// @Success 200 {object} Response[dto.GetSearchHistoriesResp]
 // @Router /api/search/recent [get]
 func GetSearchHistories(c *gin.Context) {
 	var err error
@@ -49,7 +49,7 @@ func GetSearchHistories(c *gin.Context) {
 // @Tags search
 // @Produce json
 // @Param keyword query string true "搜索关键词"
-// @Success 200 {object} dto.GetSearchSuggestionsResp
+// @Success 200 {object} Response[dto.GetSearchSuggestionsResp]
 // @Router /api/search/suggest [get]
 func GetSearchSuggestions(c *gin.Context) {
 	var err error

@@ -29,7 +29,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param body body dto.CreateCommentReq true "CreateCommentReq"
-// @Success 200 {object} dto.CreateCommentResp
+// @Success 200 {object} Response[dto.CreateCommentResp]
 // @Router /api/comment/add [post]
 func CreateComment(c *gin.Context) {
 	var err error
@@ -54,7 +54,7 @@ func CreateComment(c *gin.Context) {
 // @Param courseId query int true "课程ID"
 // @Param page query int true "页码"
 // @Param pageSize query int true "每页数量"
-// @Success 200 {object} dto.ListCourseCommentsResp
+// @Success 200 {object} Response[dto.ListCourseCommentsResp]
 // @Router /api/comment/query [get]
 func ListCourseComments(c *gin.Context) {
 	var err error
@@ -76,7 +76,7 @@ func ListCourseComments(c *gin.Context) {
 // @Description 获取系统中所有课程评论的总数量
 // @Tags comment
 // @Produce json
-// @Success 200 {object} dto.GetTotalCourseCommentsCountResp
+// @Success 200 {object} Response[dto.GetTotalCourseCommentsCountResp]
 // @Router /api/search/total [get]
 func GetTotalCourseCommentsCount(c *gin.Context) {
 	var resp *dto.GetTotalCourseCommentsCountResp
@@ -95,7 +95,7 @@ func GetTotalCourseCommentsCount(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param body body dto.GetMyCommentsReq true "GetMyCommentsReq"
-// @Success 200 {object} dto.GetMyCommentsResp
+// @Success 200 {object} Response[dto.GetMyCommentsResp]
 // @Router /api/comment/history [post]
 func GetMyComments(c *gin.Context) {
 	var err error

@@ -15,8 +15,8 @@
 package dto
 
 type Resp struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
+	Code int    `json:"-"`
+	Msg  string `json:"-"`
 }
 
 func Success() *Resp {
