@@ -84,3 +84,14 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
             ${{ env.REGISTRY }}/${{ env.USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: SSH Remote Update
+        if: success()
+        uses: appleboy/ssh-action@master
+        with:
+          host: eagle233.top
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/repos/meowpick
+            make meowpick-update
