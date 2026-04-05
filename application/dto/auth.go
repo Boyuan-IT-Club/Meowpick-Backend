@@ -45,4 +45,5 @@ type GrantAdminReq struct {
 // GrantAdminResp 授予管理员权限的响应体
 type GrantAdminResp struct {
 	*Resp
+	IsAdmin bool `json:"isAdmin"` // 操作后的管理员状态
 }

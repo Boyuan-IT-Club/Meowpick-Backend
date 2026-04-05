@@ -160,10 +160,12 @@ func (s *ChangeLogService) getActionName(action int32) string {
 	case 1:
 		return "授予管理员权限"
 	case 2:
-		return "删除提案"
+		return "取消管理员权限"
 	case 3:
-		return "更新提案"
+		return "删除提案"
 	case 4:
+		return "更新提案"
+	case 5:
 		return "审核提案"
 	default:
 		return "未知操作"
