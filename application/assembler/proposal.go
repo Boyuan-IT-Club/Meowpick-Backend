@@ -50,7 +50,7 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 	var courseVO *dto.CourseVO
 	if db.Course != nil {
 		var err error
-		courseVO, err = a.CourseAssembler.ToCourseVO(ctx, db.Course)
+		courseVO, err = a.CourseAssembler.ToProposalCourseVO(ctx, db.Course)
 		if err != nil {
 			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseVO] error: %v", err)
 			return nil, err
@@ -129,7 +129,7 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 		active := likeStatusMap[db.ID] // 如果不存在则为false
 		var courseVO *dto.CourseVO
 		if db.Course != nil {
-			courseVO, err = a.CourseAssembler.ToCourseVO(ctx, db.Course)
+			courseVO, err = a.CourseAssembler.ToProposalCourseVO(ctx, db.Course)
 			if err != nil {
 				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseVO] error: %v", err)
 				return nil, err
@@ -158,12 +158,12 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 
 // ToProposalDB 单个ProposalVO转ProposalDB (VO to DB)
 func (a *ProposalAssembler) ToProposalDB(ctx context.Context, vo *dto.ProposalVO) (*model.Proposal, error) {
-	var courseDB *model.Course
+	var courseDB *model.ProposalCourse
 	if vo.Course != nil {
 		var err error
-		courseDB, err = a.CourseAssembler.ToCourseDB(ctx, vo.Course)
+		courseDB, err = a.CourseAssembler.ToProposalCourseDB(ctx, vo.Course)
 		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDB] error: %v", err)
+			logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseDB] error: %v", err)
 			return nil, err
 		}
 	}

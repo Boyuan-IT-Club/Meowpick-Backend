@@ -33,6 +33,9 @@ var _ ICourseAssembler = (*CourseAssembler)(nil)
 type ICourseAssembler interface {
 	ToCourseVO(ctx context.Context, db *model.Course) (*dto.CourseVO, error)
 	ToCourseDB(ctx context.Context, vo *dto.CourseVO) (*model.Course, error)
+	ToCourseDBDryRun(ctx context.Context, vo *dto.CourseVO) (*model.Course, error)
+	ToProposalCourseDB(ctx context.Context, vo *dto.CourseVO) (*model.ProposalCourse, error)
+	ToProposalCourseVO(ctx context.Context, db *model.ProposalCourse) (*dto.CourseVO, error)
 	ToCourseVOArray(ctx context.Context, dbs []*model.Course) ([]*dto.CourseVO, error)
 	ToCourseDBArray(ctx context.Context, vos []*dto.CourseVO) ([]*model.Course, error)
 	ToPaginatedCourses(cxt context.Context, dbs []*model.Course, total int64, pageParam *dto.PageParam) (*dto.PaginatedCourses, error)
@@ -118,29 +121,30 @@ func (a *CourseAssembler) ToCourseVO(ctx context.Context, db *model.Course) (*dt
 
 // ToCourseDB 单个CourseVO转CourseDB (VO to DB)
 func (a *CourseAssembler) ToCourseDB(ctx context.Context, vo *dto.CourseVO) (*model.Course, error) {
+	if vo == nil {
+		return nil, nil
+	}
 	// 将校区名称转换为ID
 	var campusIDs []int32
 	for _, campus := range vo.Campuses {
-		campusID := mapping.Data.AutoRegisterCampus(campus)
-		if campusID != 0 {
-			campusIDs = append(campusIDs, campusID)
-		} else {
-			logs.CtxWarnf(ctx, "[Mapping] [AutoRegisterCampus] failed to register campus %s", campus)
+		campusID := mapping.Data.GetCampusIDByName(campus)
+		if campusID == 0 {
+			campusID = mapping.Data.AutoRegisterCampus(campus)
 		}
+		campusIDs = append(campusIDs, campusID)
 	}
 
 	// 处理院系 - 自动注册不存在的院系
-	departmentID := mapping.Data.AutoRegisterDepartment(vo.Department)
+	departmentID := mapping.Data.GetDepartmentIDByName(vo.Department)
 	if departmentID == 0 {
-		logs.CtxWarnf(ctx, "[Mapping] [AutoRegisterDepartment] failed to register department %s", vo.Department)
+		departmentID = mapping.Data.AutoRegisterDepartment(vo.Department)
 	}
 
 	// 处理课程类别 - 自动注册不存在的类别
-	categoryID := mapping.Data.AutoRegisterCategory(vo.Category)
+	categoryID := mapping.Data.GetCategoryIDByName(vo.Category)
 	if categoryID == 0 {
-		logs.CtxWarnf(ctx, "[Mapping] [AutoRegisterCategory] failed to register category %s", vo.Category)
+		categoryID = mapping.Data.AutoRegisterCategory(vo.Category)
 	}
-
 	// 处理教师 - 自动创建不存在的教师
 	var teacherIDs []string
 	for _, teacher := range vo.Teachers {
@@ -165,14 +169,14 @@ func (a *CourseAssembler) ToCourseDB(ctx context.Context, vo *dto.CourseVO) (*mo
 				CreatedAt:  time.Unix(0, int64(now)),
 				UpdatedAt:  time.Unix(0, int64(now)),
 			}
-			
+
 			if err := a.TeacherRepo.Insert(ctx, newTeacher); err != nil {
 				logs.CtxErrorf(ctx, "[TeacherRepo] [Insert] error inserting teacher %s: %v", teacher.Name, err)
 				continue // 跳过这个教师
 			}
 			teacherID = newTeacher.ID
 		}
-		
+
 		teacherIDs = append(teacherIDs, teacherID)
 	}
 
@@ -184,6 +188,95 @@ func (a *CourseAssembler) ToCourseDB(ctx context.Context, vo *dto.CourseVO) (*mo
 		Campuses:   campusIDs,
 		Department: departmentID,
 		TeacherIDs: teacherIDs,
+	}, nil
+}
+
+// ToCourseDBDryRun CourseVO转CourseDB (VO to DB) - 不执行自动注册
+func (a *CourseAssembler) ToCourseDBDryRun(ctx context.Context, vo *dto.CourseVO) (*model.Course, error) {
+	// 将校区名称转换为ID
+	var campusIDs []int32
+	for _, campus := range vo.Campuses {
+		campusID := mapping.Data.GetCampusIDByName(campus)
+		if campusID != 0 {
+			campusIDs = append(campusIDs, campusID)
+		}
+	}
+
+	// 处理院系
+	departmentID := mapping.Data.GetDepartmentIDByName(vo.Department)
+
+	// 处理课程类别
+	categoryID := mapping.Data.GetCategoryIDByName(vo.Category)
+
+	// 处理教师
+	var teacherIDs []string
+	for _, teacher := range vo.Teachers {
+		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[TeacherRepo] [GetIDByName] error finding teacher %s: %v", teacher.Name, err)
+			continue
+		}
+		if existingTeacherID != "" {
+			teacherIDs = append(teacherIDs, existingTeacherID)
+		}
+	}
+
+	return &model.Course{
+		ID:         vo.ID,
+		Name:       vo.Name,
+		Code:       vo.Code,
+		Category:   categoryID,
+		Campuses:   campusIDs,
+		Department: departmentID,
+		TeacherIDs: teacherIDs,
+	}, nil
+}
+
+// ToProposalCourseDB CourseVO转ProposalCourse (VO to DB)
+func (a *CourseAssembler) ToProposalCourseDB(ctx context.Context, vo *dto.CourseVO) (*model.ProposalCourse, error) {
+	// 直接映射，不涉及自动注册和ID转换
+	var teachers []*model.ProposalTeacher
+	for _, t := range vo.Teachers {
+		teachers = append(teachers, &model.ProposalTeacher{
+			Name:       t.Name,
+			Title:      t.Title,
+			Department: t.Department,
+		})
+	}
+
+	return &model.ProposalCourse{
+		Name:       vo.Name,
+		Code:       vo.Code,
+		Teachers:   teachers,
+		Department: vo.Department,
+		Category:   vo.Category,
+		Campuses:   vo.Campuses,
+		Deleted:    false,
+	}, nil
+}
+
+// ToProposalCourseVO ProposalCourse转CourseVO (DB to VO)
+func (a *CourseAssembler) ToProposalCourseVO(ctx context.Context, db *model.ProposalCourse) (*dto.CourseVO, error) {
+	if db == nil {
+		return nil, nil
+	}
+	// 直接映射
+	var teachers []*dto.TeacherVO
+	for _, t := range db.Teachers {
+		teachers = append(teachers, &dto.TeacherVO{
+			Name:       t.Name,
+			Title:      t.Title,
+			Department: t.Department,
+		})
+	}
+
+	return &dto.CourseVO{
+		Name:       db.Name,
+		Code:       db.Code,
+		Category:   db.Category,
+		Campuses:   db.Campuses,
+		Department: db.Department,
+		Teachers:   teachers,
 	}, nil
 }
 

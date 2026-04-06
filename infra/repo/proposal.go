@@ -39,7 +39,7 @@ const (
 
 type IProposalRepo interface {
 	Insert(ctx context.Context, proposal *model.Proposal) error
-	IsCourseInExistingProposals(ctx context.Context, courseVO *model.Course) (bool, error)
+	IsCourseInExistingProposals(ctx context.Context, course *model.ProposalCourse) (bool, error)
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
@@ -65,16 +65,16 @@ func (r *ProposalRepo) Insert(ctx context.Context, proposal *model.Proposal) err
 }
 
 // IsCourseInExistingProposals 检查课程是否已经存在于现有提案中
-// 比较的字段包括: Name, Code, Department, Category, Campuses, TeacherIDs
-func (r *ProposalRepo) IsCourseInExistingProposals(ctx context.Context, courseDB *model.Course) (bool, error) {
+// 比较的字段包括: Name, Code, Department, Category, Campuses, Teachers
+func (r *ProposalRepo) IsCourseInExistingProposals(ctx context.Context, course *model.ProposalCourse) (bool, error) {
 	filter := bson.M{
-		consts.Name:       courseDB.Name,
-		consts.Code:       courseDB.Code,
-		consts.Department: courseDB.Department,
-		consts.Category:   courseDB.Category,
-		consts.Campuses:   courseDB.Campuses,
-		consts.TeacherIDs: courseDB.TeacherIDs,
-		consts.Deleted:    false, // 只检查未删除的提案
+		"course.name":       course.Name,
+		"course.code":       course.Code,
+		"course.department": course.Department,
+		"course.category":   course.Category,
+		"course.campuses":   course.Campuses,
+		"course.teachers":   course.Teachers,
+		consts.Deleted:      false, // 只检查未删除的提案
 	}
 
 	// 查询提案中是否已存在该课程
@@ -94,6 +94,11 @@ func (r *ProposalRepo) FindMany(ctx context.Context, param *dto.PageParam) ([]*m
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
+	}
+
+	// 如果不需要具体内容（param为nil），则直接返回总数
+	if param == nil {
+		return proposals, total, nil
 	}
 
 	if err = r.conn.Find(
@@ -119,6 +124,11 @@ func (r *ProposalRepo) FindManyByStatus(ctx context.Context, param *dto.PagePara
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
+	}
+
+	// 如果不需要具体内容（param为nil），则直接返回总数
+	if param == nil {
+		return proposals, total, nil
 	}
 
 	if err = r.conn.Find(
