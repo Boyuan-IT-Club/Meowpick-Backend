@@ -39,6 +39,7 @@ type IUserRepo interface {
 	Update(ctx context.Context, user *model.User) (err error)
 
 	FindByID(ctx context.Context, id string) (user *model.User, err error)
+	FindByIDs(ctx context.Context, ids []string) (users []*model.User, err error)
 	FindByOpenID(ctx context.Context, openId string) (user *model.User, err error)
 
 	IsAdminByID(ctx context.Context, id string) (isAdmin bool, err error)
@@ -120,4 +121,23 @@ func (r *UserRepo) IsAdminByID(ctx context.Context, id string) (bool, error) {
 		return false, monc.ErrNotFound
 	}
 	return user.Admin, nil
+}
+
+// FindByIDs 根据用户ID列表批量查询用户
+func (r *UserRepo) FindByIDs(ctx context.Context, ids []string) ([]*model.User, error) {
+	if len(ids) == 0 {
+		return []*model.User{}, nil
+	}
+	
+	users := []*model.User{}
+	filter := bson.M{
+		consts.ID: bson.M{"$in": ids},
+	}
+	
+	if err := r.conn.Find(ctx, &users, filter); err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [FindByIDs] error: %v", err)
+		return nil, err
+	}
+	
+	return users, nil
 }

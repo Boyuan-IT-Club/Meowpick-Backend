@@ -21,6 +21,7 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 const (
 	ErrChangeLogInsertFailed = 109000001
 	ErrChangeLogCvtFailed    = 109000002
+	ErrChangeLogFindFailed   = 109000003
 )
 
 func init() {
@@ -32,6 +33,11 @@ func init() {
 	code.Register(
 		ErrChangeLogCvtFailed,
 		"failed to convert changelog from {src} to {dst}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrChangeLogFindFailed,
+		"failed to find changelogs",
 		code.WithAffectStability(false),
 	)
 }

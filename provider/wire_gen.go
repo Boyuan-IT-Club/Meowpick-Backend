@@ -43,24 +43,27 @@ func NewProvider() (*Provider, error) {
 	userRepo := repo.NewUserRepo(configConfig)
 	changeLogRepo := repo.NewChangeLogRepo(configConfig)
 	changeLogAssembler := &assembler.ChangeLogAssembler{}
-	changeLogService := service.ChangeLogService{
+	proposalRepo := repo.NewProposalRepo(configConfig)
+	courseAssembler := &assembler.CourseAssembler{
+		CommentRepo: commentRepo,
+		TeacherRepo: teacherRepo,
+		CourseRepo:  courseRepo,
+	}
+	changeLogService := &service.ChangeLogService{
 		ChangeLogRepo:      changeLogRepo,
 		ChangeLogAssembler: changeLogAssembler,
 		UserRepo:           userRepo,
+		ProposalRepo:       proposalRepo,
+		CourseAssembler:    courseAssembler,
 	}
 	authService := service.AuthService{
 		UserRepo:         userRepo,
-		ChangeLogService: &changeLogService,
+		ChangeLogService: changeLogService,
 	}
 	likeCache := cache.NewLikeCache(configConfig)
 	likeService := service.LikeService{
 		LikeRepo:  likeRepo,
 		LikeCache: likeCache,
-	}
-	courseAssembler := &assembler.CourseAssembler{
-		CommentRepo: commentRepo,
-		TeacherRepo: teacherRepo,
-		CourseRepo:  courseRepo,
 	}
 	courseService := service.CourseService{
 		CourseRepo:      courseRepo,
@@ -77,7 +80,6 @@ func NewProvider() (*Provider, error) {
 		CourseRepo:  courseRepo,
 		TeacherRepo: teacherRepo,
 	}
-	proposalRepo := repo.NewProposalRepo(configConfig)
 	proposalAssembler := &assembler.ProposalAssembler{
 		CourseAssembler: courseAssembler,
 		LikeRepo:        likeRepo,
@@ -92,6 +94,13 @@ func NewProvider() (*Provider, error) {
 		UserRepo:          userRepo,
 		TeacherRepo:       teacherRepo,
 	}
+	serviceChangeLogService := service.ChangeLogService{
+		ChangeLogRepo:      changeLogRepo,
+		ChangeLogAssembler: changeLogAssembler,
+		UserRepo:           userRepo,
+		ProposalRepo:       proposalRepo,
+		CourseAssembler:    courseAssembler,
+	}
 	providerProvider := &Provider{
 		Config:               configConfig,
 		CommentService:       commentService,
@@ -102,7 +111,7 @@ func NewProvider() (*Provider, error) {
 		TeacherService:       teacherService,
 		SearchService:        searchService,
 		ProposalService:      proposalService,
-		ChangeLogService:     changeLogService,
+		ChangeLogService:     serviceChangeLogService,
 	}
 	return providerProvider, nil
 }

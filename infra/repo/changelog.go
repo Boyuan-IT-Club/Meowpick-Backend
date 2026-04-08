@@ -22,6 +22,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
 	"github.com/zeromicro/go-zero/core/stores/monc"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var _ IChangeLogRepo = (*ChangeLogRepo)(nil)
@@ -33,6 +34,7 @@ const (
 type IChangeLogRepo interface {
 	Insert(ctx context.Context, changelog *model.ChangeLog) error
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.ChangeLog, int64, error)
+	FindByProposalIDs(ctx context.Context, proposalIDs []string) ([]*model.ChangeLog, error)
 }
 
 type ChangeLogRepo struct {
@@ -69,4 +71,22 @@ func (r *ChangeLogRepo) FindMany(ctx context.Context, param *dto.PageParam) ([]*
 	}
 
 	return logs, total, nil
+}
+
+// FindByProposalIDs 根据提案ID列表查询相关的日志
+func (r *ChangeLogRepo) FindByProposalIDs(ctx context.Context, proposalIDs []string) ([]*model.ChangeLog, error) {
+	logs := []*model.ChangeLog{}
+	filter := map[string]interface{}{
+		"proposalId": map[string]interface{}{
+			"$in": proposalIDs,
+		},
+	}
+	
+	opts := options.Find().SetSort(page.DSort("updatedAt", -1))
+	
+	if err := r.conn.Find(ctx, &logs, filter, opts); err != nil {
+		return nil, err
+	}
+
+	return logs, nil
 }

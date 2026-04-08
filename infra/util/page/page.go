@@ -23,7 +23,7 @@ import (
 func FindPageOption(param dto.IPageParam) *options.FindOptions {
 	page, size := param.UnWrap()
 	ops := options.Find()
-	ops.SetSkip(page * size)
+	ops.SetSkip((page - 1) * size)
 	ops.SetLimit(size)
 
 	return ops

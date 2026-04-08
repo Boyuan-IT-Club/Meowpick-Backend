@@ -42,6 +42,7 @@ type IProposalRepo interface {
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
+	FindByIDs(ctx context.Context, proposalIDs []string) ([]*model.Proposal, error)
 	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
 	DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
 	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error)
@@ -215,4 +216,18 @@ func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, 
 	}
 	
 	return proposals, total, nil
+}
+
+// FindByIDs 根据提案ID列表批量查询提案
+func (r *ProposalRepo) FindByIDs(ctx context.Context, proposalIDs []string) ([]*model.Proposal, error) {
+	proposals := []*model.Proposal{}
+	filter := bson.M{
+		consts.ID: bson.M{"$in": proposalIDs},
+	}
+	
+	if err := r.conn.Find(ctx, &proposals, filter); err != nil {
+		return nil, err
+	}
+	
+	return proposals, nil
 }
