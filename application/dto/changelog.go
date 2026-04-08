@@ -46,29 +46,73 @@ type ChangeLogVO struct {
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
-// ListAdminLogsReq 查询管理员日志请求参数
-type ListAdminLogsReq struct {
-	PageParam *PageParam `json:"pageParam"`
+// ListProposalLogsGroupedReq 按提案聚合的日志列表请求参数
+type ListProposalLogsGroupedReq struct {
+	*PageParam
 }
 
-// ListAdminLogsResp 查询管理员日志响应
-type ListAdminLogsResp struct {
+// ListProposalLogsGroupedResp 按提案聚合的日志列表响应
+type ListProposalLogsGroupedResp struct {
 	*Resp
-	Total int64          `json:"total"`
-	Logs  []*AdminLogVO `json:"logs"`
+	Total     int64              `json:"total"`
+	Proposals []*ProposalLogVO   `json:"proposals"`
 }
 
-// AdminLogVO 管理员日志展示对象
-type AdminLogVO struct {
-	ID         string `json:"id"`
+// ProposalLogVO 提案日志展示对象
+type ProposalLogVO struct {
+	ProposalID  string          `json:"proposalId"`
+	Title       string          `json:"title"`
+	Content     string          `json:"content"`
+	Status      string          `json:"status"`
+	Course      *CourseVO       `json:"course"`
+	Creator     *CreatorVO      `json:"creator"`
+	AdminAction *AdminActionVO  `json:"adminAction,omitempty"`
+}
+
+// CreatorVO 创建者信息
+type CreatorVO struct {
+	CreatorID   string `json:"creatorId"`
+	CreatorName string `json:"creatorName"`
+	CreateTime  string `json:"createTime"`
+}
+
+// AdminActionVO 管理员操作信息
+type AdminActionVO struct {
 	AdminID    string `json:"adminId"`
 	AdminName  string `json:"adminName"`
-	Action     int32  `json:"action"`
-	ActionName string `json:"actionName"`
-	Content    string `json:"content"`
-	TargetType int32  `json:"targetType"`
-	TargetID   string `json:"targetId"`
-	IP         string `json:"ip"`
-	UserAgent  string `json:"userAgent"`
-	CreatedAt  string `json:"createdAt"`
+	Action     string `json:"action"` // approve/reject/delete
+	ActionTime string `json:"actionTime"`
+	Reason     string `json:"reason,omitempty"`
+}
+
+// ListProposalLogsTimelineReq 扁平化时间线日志请求参数
+type ListProposalLogsTimelineReq struct {
+	*PageParam
+}
+
+// ListProposalLogsTimelineResp 扁平化时间线日志响应
+type ListProposalLogsTimelineResp struct {
+	*Resp
+	Total int64                    `json:"total"`
+	Logs  []*ProposalTimelineLogVO `json:"logs"`
+}
+
+// ProposalTimelineLogVO 提案时间线日志展示对象
+type ProposalTimelineLogVO struct {
+	LogID            string                 `json:"logId"`
+	ProposalID       string                 `json:"proposalId,omitempty"`
+	ActionType       string                 `json:"actionType"` // CREATE/APPROVE/REJECT/DELETE/UPDATE/GRANT_ADMIN/REVOKE_ADMIN
+	OperatorID       string                 `json:"operatorId"`
+	OperatorName     string                 `json:"operatorName"`
+	ActionTime       string                 `json:"actionTime"`
+	ProposalSnapshot *ProposalSnapshotVO    `json:"proposalSnapshot,omitempty"`
+	Details          map[string]interface{} `json:"details,omitempty"`
+}
+
+// ProposalSnapshotVO 提案快照信息
+type ProposalSnapshotVO struct {
+	Title      string `json:"title"`
+	CourseName string `json:"courseName,omitempty"`
+	Department string `json:"department,omitempty"`
+	Category   string `json:"category,omitempty"`
 }
