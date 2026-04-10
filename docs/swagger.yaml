@@ -14,6 +14,20 @@
 
 basePath: /
 definitions:
+  dto.AdminActionVO:
+    properties:
+      action:
+        description: approve/reject/delete
+        type: string
+      actionTime:
+        type: string
+      adminId:
+        type: string
+      adminName:
+        type: string
+      reason:
+        type: string
+    type: object
   dto.CommentVO:
     properties:
       category:
@@ -165,6 +179,15 @@ definitions:
       title:
         type: string
     type: object
+  dto.CreatorVO:
+    properties:
+      createTime:
+        type: string
+      creatorId:
+        type: string
+      creatorName:
+        type: string
+    type: object
   dto.DeleteProposalResp:
     properties:
       deleted:
@@ -174,6 +197,15 @@ definitions:
       operatorId:
         type: string
       proposalId:
+        type: string
+    type: object
+  dto.FieldSuggestionVO:
+    properties:
+      id:
+        type: string
+      label:
+        type: string
+      value:
         type: string
     type: object
   dto.GetCourseCampusesResp:
@@ -214,6 +246,17 @@ definitions:
       comments:
         items:
           $ref: '#/definitions/dto.CommentVO'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.GetProposalFieldSuggestionsResp:
+    properties:
+      field:
+        type: string
+      suggestions:
+        items:
+          $ref: '#/definitions/dto.FieldSuggestionVO'
         type: array
       total:
         type: integer
@@ -264,6 +307,10 @@ definitions:
         type: string
     type: object
   dto.GrantAdminResp:
+    properties:
+      isAdmin:
+        description: 操作后的管理员状态
+        type: boolean
     type: object
   dto.IsAdminResp:
     properties:
@@ -306,6 +353,24 @@ definitions:
         description: 符合条件的总记录数
         type: integer
     type: object
+  dto.ListProposalLogsGroupedResp:
+    properties:
+      proposals:
+        items:
+          $ref: '#/definitions/dto.ProposalLogVO'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.ListProposalLogsTimelineResp:
+    properties:
+      logs:
+        items:
+          $ref: '#/definitions/dto.ProposalTimelineLogVO'
+        type: array
+      total:
+        type: integer
+    type: object
   dto.ListProposalResp:
     properties:
       proposals:
@@ -315,12 +380,61 @@ definitions:
       total:
         type: integer
     type: object
+  dto.ProposalLogVO:
+    properties:
+      adminAction:
+        $ref: '#/definitions/dto.AdminActionVO'
+      content:
+        type: string
+      course:
+        $ref: '#/definitions/dto.CourseVO'
+      creator:
+        $ref: '#/definitions/dto.CreatorVO'
+      proposalId:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  dto.ProposalSnapshotVO:
+    properties:
+      category:
+        type: string
+      courseName:
+        type: string
+      department:
+        type: string
+      title:
+        type: string
+    type: object
   dto.ProposalSuggestionsVO:
     properties:
       id:
         type: string
       title:
         type: string
+    type: object
+  dto.ProposalTimelineLogVO:
+    properties:
+      actionTime:
+        type: string
+      actionType:
+        description: CREATE/APPROVE/REJECT/DELETE/UPDATE/GRANT_ADMIN/REVOKE_ADMIN
+        type: string
+      details:
+        additionalProperties: true
+        type: object
+      logId:
+        type: string
+      operatorId:
+        type: string
+      operatorName:
+        type: string
+      proposalId:
+        type: string
+      proposalSnapshot:
+        $ref: '#/definitions/dto.ProposalSnapshotVO'
     type: object
   dto.ProposalVO:
     properties:
@@ -1110,6 +1224,40 @@ paths:
       summary: 新增提案
       tags:
       - proposal
+  /api/proposal/field-suggestions:
+    get:
+      description: 根据字段类型和关键词获取建议列表，支持学院、类别、校区、课程名称、课程代码、教师姓名
+      parameters:
+      - description: '字段类型: department/category/campus/courseName/courseCode/teacherName'
+        in: query
+        name: field
+        required: true
+        type: string
+      - description: 搜索关键词
+        in: query
+        name: keyword
+        required: true
+        type: string
+      - default: 0
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetProposalFieldSuggestionsResp'
+      summary: 获取提案字段建议
+      tags:
+      - proposal
   /api/proposal/list:
     get:
       description: 分页查询提案列表数据
@@ -1134,6 +1282,58 @@ paths:
       summary: 分页获取提案列表
       tags:
       - proposal
+  /api/proposal/logs/grouped:
+    get:
+      consumes:
+      - application/json
+      description: 以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ListProposalLogsGroupedResp'
+      summary: 按提案聚合的日志列表
+      tags:
+      - Admin
+  /api/proposal/logs/timeline:
+    get:
+      consumes:
+      - application/json
+      description: 一条记录代表一次独立动作的扁平化分页，严格按时间倒序排列
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ListProposalLogsTimelineResp'
+      summary: 扁平化时间线日志
+      tags:
+      - Admin
   /api/proposal/suggest:
     post:
       description: 根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表

@@ -415,6 +415,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/proposal/field-suggestions": {
+            "get": {
+                "description": "根据字段类型和关键词获取建议列表，支持学院、类别、校区、课程名称、课程代码、教师姓名",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "获取提案字段建议",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "字段类型: department/category/campus/courseName/courseCode/teacherName",
+                        "name": "field",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "搜索关键词",
+                        "name": "keyword",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetProposalFieldSuggestionsResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/proposal/list": {
             "get": {
                 "description": "分页查询提案列表数据",
@@ -446,6 +496,84 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/handler.Response-dto_ListProposalResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/proposal/logs/grouped": {
+            "get": {
+                "description": "以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "按提案聚合的日志列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ListProposalLogsGroupedResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/proposal/logs/timeline": {
+            "get": {
+                "description": "一条记录代表一次独立动作的扁平化分页，严格按时间倒序排列",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "扁平化时间线日志",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ListProposalLogsTimelineResp"
                         }
                     }
                 }
@@ -771,6 +899,27 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.AdminActionVO": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "description": "approve/reject/delete",
+                    "type": "string"
+                },
+                "actionTime": {
+                    "type": "string"
+                },
+                "adminId": {
+                    "type": "string"
+                },
+                "adminName": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.CommentVO": {
             "type": "object",
             "properties": {
@@ -997,6 +1146,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CreatorVO": {
+            "type": "object",
+            "properties": {
+                "createTime": {
+                    "type": "string"
+                },
+                "creatorId": {
+                    "type": "string"
+                },
+                "creatorName": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.DeleteProposalResp": {
             "type": "object",
             "properties": {
@@ -1010,6 +1173,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "proposalId": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.FieldSuggestionVO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "value": {
                     "type": "string"
                 }
             }
@@ -1073,6 +1250,23 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dto.CommentVO"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.GetProposalFieldSuggestionsResp": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string"
+                },
+                "suggestions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.FieldSuggestionVO"
                     }
                 },
                 "total": {
@@ -1152,7 +1346,13 @@ const docTemplate = `{
             }
         },
         "dto.GrantAdminResp": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "isAdmin": {
+                    "description": "操作后的管理员状态",
+                    "type": "boolean"
+                }
+            }
         },
         "dto.IsAdminResp": {
             "type": "object",
@@ -1216,6 +1416,34 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ListProposalLogsGroupedResp": {
+            "type": "object",
+            "properties": {
+                "proposals": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ProposalLogVO"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.ListProposalLogsTimelineResp": {
+            "type": "object",
+            "properties": {
+                "logs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ProposalTimelineLogVO"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.ListProposalResp": {
             "type": "object",
             "properties": {
@@ -1230,6 +1458,49 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ProposalLogVO": {
+            "type": "object",
+            "properties": {
+                "adminAction": {
+                    "$ref": "#/definitions/dto.AdminActionVO"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "course": {
+                    "$ref": "#/definitions/dto.CourseVO"
+                },
+                "creator": {
+                    "$ref": "#/definitions/dto.CreatorVO"
+                },
+                "proposalId": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ProposalSnapshotVO": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "courseName": {
+                    "type": "string"
+                },
+                "department": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.ProposalSuggestionsVO": {
             "type": "object",
             "properties": {
@@ -1238,6 +1509,37 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.ProposalTimelineLogVO": {
+            "type": "object",
+            "properties": {
+                "actionTime": {
+                    "type": "string"
+                },
+                "actionType": {
+                    "description": "CREATE/APPROVE/REJECT/DELETE/UPDATE/GRANT_ADMIN/REVOKE_ADMIN",
+                    "type": "string"
+                },
+                "details": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "logId": {
+                    "type": "string"
+                },
+                "operatorId": {
+                    "type": "string"
+                },
+                "operatorName": {
+                    "type": "string"
+                },
+                "proposalId": {
+                    "type": "string"
+                },
+                "proposalSnapshot": {
+                    "$ref": "#/definitions/dto.ProposalSnapshotVO"
                 }
             }
         },
