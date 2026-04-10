@@ -1039,7 +1039,11 @@ paths:
       - proposal
   /api/proposal/{proposalId}/approve:
     post:
+      description: 管理员审批提案
       responses: {}
+      summary: 审批提案
+      tags:
+      - proposal
   /api/proposal/{proposalId}/delete:
     post:
       consumes:

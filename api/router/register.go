@@ -77,6 +77,9 @@ func SetupRoutes() *gin.Engine {
 		proposalGroup.POST("/:proposalId/update", handler.UpdateProposal)
 		proposalGroup.POST("/:proposalId/delete", handler.DeleteProposal)
 		proposalGroup.POST("/suggest", handler.GetProposalSuggestions)
+		proposalGroup.GET("/field-suggestions", handler.GetProposalFieldSuggestions) // 获取提案字段建议
+		proposalGroup.GET("/logs/grouped", handler.ListProposalLogsGrouped)          // 按提案聚合的日志列表
+		proposalGroup.GET("/logs/timeline", handler.ListProposalLogsTimeline)        // 扁平化时间线日志
 	}
 
 	return router

@@ -90,6 +90,9 @@ func GetProposal(c *gin.Context) {
 }
 
 // ApproveProposal 审批提案
+// @Summary 审批提案
+// @Description 管理员审批提案
+// @Tags proposal
 // @router /api/proposal/{proposalId}/approve [POST]
 func ApproveProposal(c *gin.Context) {
 	// TODO: not implemented
@@ -171,5 +174,31 @@ func GetProposalSuggestions(c *gin.Context) {
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().ProposalService.GetProposalSuggestions(c, &req)
+	PostProcess(c, &req, resp, err)
+}
+
+// GetProposalFieldSuggestions godoc
+// @Summary 获取提案字段建议
+// @Description 根据字段类型和关键词获取建议列表，支持学院、类别、校区、课程名称、课程代码、教师姓名
+// @Tags proposal
+// @Produce json
+// @Param field query string true "字段类型: department/category/campus/courseName/courseCode/teacherName"
+// @Param keyword query string true "搜索关键词"
+// @Param page query int false "页码" default(0)
+// @Param pageSize query int false "每页数量" default(10)
+// @Success 200 {object} dto.GetProposalFieldSuggestionsResp
+// @Router /api/proposal/field-suggestions [get]
+func GetProposalFieldSuggestions(c *gin.Context) {
+	var req dto.GetProposalFieldSuggestionsReq
+	var resp *dto.GetProposalFieldSuggestionsResp
+	var err error
+
+	if err = c.ShouldBindQuery(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.GetProposalFieldSuggestions(c, &req)
 	PostProcess(c, &req, resp, err)
 }

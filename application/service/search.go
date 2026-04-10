@@ -56,7 +56,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 	tasks := []func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error){
 		// Courses
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			courses, err := s.CourseRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
+			courses, _, err := s.CourseRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
 			if err != nil {
 				logs.CtxErrorf(ctx, "[CourseRepo] [GetSuggestionsByName] error: %v", err)
 				return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
@@ -73,7 +73,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		},
 		// Teachers
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			teachers, err := s.TeacherRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
+			teachers, _, err := s.TeacherRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
 			if err != nil {
 				logs.CtxErrorf(ctx, "[TeacherRepo] [GetSuggestionsByName] error: %v", err)
 				return nil, errorx.WrapByCode(err, errno.ErrTeacherGetSuggestionsFailed,

@@ -118,3 +118,25 @@ type ProposalSuggestionsVO struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
 }
+
+// GetProposalFieldSuggestionsReq 获取提案字段建议请求
+type GetProposalFieldSuggestionsReq struct {
+	Field   string `form:"field" binding:"required"`   // 字段类型: department/category/campus/courseName/courseCode/teacherName
+	Keyword string `form:"keyword" binding:"required"`
+	*PageParam
+}
+
+// GetProposalFieldSuggestionsResp 获取提案字段建议响应
+type GetProposalFieldSuggestionsResp struct {
+	*Resp
+	Field       string                       `json:"field"`
+	Suggestions []*FieldSuggestionVO         `json:"suggestions"`
+	Total       int64                        `json:"total"`
+}
+
+// FieldSuggestionVO 字段建议视图对象
+type FieldSuggestionVO struct {
+	ID    string `json:"id,omitempty"`
+	Value string `json:"value"`
+	Label string `json:"label"`
+}

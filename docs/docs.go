@@ -525,6 +525,11 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/approve": {
             "post": {
+                "description": "管理员审批提案",
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "审批提案",
                 "responses": {}
             }
         },
