@@ -151,7 +151,7 @@ func (s *ChangeLogService) ListProposalLogsGrouped(ctx context.Context, req *dto
 
 	// 组装返回数据
 	proposalVOs := make([]*dto.ProposalLogVO, 0, len(proposals))
-	
+
 	// 收集所有需要查询的用户ID
 	userIDSet := make(map[string]bool)
 	for _, proposal := range proposals {
@@ -160,24 +160,24 @@ func (s *ChangeLogService) ListProposalLogsGrouped(ctx context.Context, req *dto
 	for _, log := range adminActionMap {
 		userIDSet[log.UserID] = true
 	}
-	
+
 	// 批量查询用户信息
 	userIDs := make([]string, 0, len(userIDSet))
 	for id := range userIDSet {
 		userIDs = append(userIDs, id)
 	}
-	
+
 	users, err := s.UserRepo.FindByIDs(ctx, userIDs)
 	if err != nil {
 		logs.CtxWarnf(ctx, "[UserRepo] [FindByIDs] error: %v", err)
 	}
-	
+
 	// 构建用户ID到用户信息的映射
 	userMap := make(map[string]*model.User)
 	for _, user := range users {
 		userMap[user.ID] = user
 	}
-	
+
 	for _, proposal := range proposals {
 		// 从映射中获取创建者信息
 		creatorName := ""
