@@ -15,8 +15,6 @@
 package handler
 
 import (
-	"strconv"
-
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
@@ -27,61 +25,51 @@ import (
 // ListProposalLogsGrouped 按提案聚合的日志列表
 // @Summary 按提案聚合的日志列表
 // @Description 以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息
-// @Tags Admin
+// @Tags ChangeLog
 // @Accept json
 // @Produce json
 // @Param page query int false "页码" default(1)
 // @Param pageSize query int false "每页数量" default(20)
-// @Success 200 {object} dto.ListProposalLogsGroupedResp
-// @Router /api/proposal/logs/grouped [get]
+// @Success 200 {object} Response[dto.ListProposalLogsGroupedResp]
+// @Router /api/changelog/proposal/grouped [get]
 func ListProposalLogsGrouped(c *gin.Context) {
 	var err error
+	var req dto.ListProposalLogsGroupedReq
 	var resp *dto.ListProposalLogsGroupedResp
 
-	// 解析分页参数
-	page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 64)
-	pageSize, _ := strconv.ParseInt(c.DefaultQuery("pageSize", "20"), 10, 64)
-
-	req := &dto.ListProposalLogsGroupedReq{
-		PageParam: &dto.PageParam{
-			Page:     page,
-			PageSize: pageSize,
-		},
+	if err = c.ShouldBindQuery(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
 	}
 
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
-	resp, err = provider.Get().ChangeLogService.ListProposalLogsGrouped(c, req)
-	PostProcess(c, req, resp, err)
+	resp, err = provider.Get().ChangeLogService.ListProposalLogsGrouped(c, &req)
+	PostProcess(c, &req, resp, err)
 }
 
 // ListProposalLogsTimeline 扁平化时间线日志
 // @Summary 扁平化时间线日志
 // @Description 一条记录代表一次独立动作的扁平化分页，严格按时间倒序排列
-// @Tags Admin
+// @Tags ChangeLog
 // @Accept json
 // @Produce json
 // @Param page query int false "页码" default(1)
 // @Param pageSize query int false "每页数量" default(20)
-// @Success 200 {object} dto.ListProposalLogsTimelineResp
-// @Router /api/proposal/logs/timeline [get]
+// @Success 200 {object} Response[dto.ListProposalLogsTimelineResp]
+// @Router /api/changelog/proposal/timeline [get]
 func ListProposalLogsTimeline(c *gin.Context) {
 	var err error
+	var req dto.ListProposalLogsTimelineReq
 	var resp *dto.ListProposalLogsTimelineResp
 
-	// 解析分页参数
-	page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 64)
-	pageSize, _ := strconv.ParseInt(c.DefaultQuery("pageSize", "20"), 10, 64)
-
-	req := &dto.ListProposalLogsTimelineReq{
-		PageParam: &dto.PageParam{
-			Page:     page,
-			PageSize: pageSize,
-		},
+	if err = c.ShouldBindQuery(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
 	}
 
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
-	resp, err = provider.Get().ChangeLogService.ListProposalLogsTimeline(c, req)
-	PostProcess(c, req, resp, err)
+	resp, err = provider.Get().ChangeLogService.ListProposalLogsTimeline(c, &req)
+	PostProcess(c, &req, resp, err)
 }
