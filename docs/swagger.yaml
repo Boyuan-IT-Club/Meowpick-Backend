@@ -820,6 +820,36 @@ definitions:
         example: success
         type: string
     type: object
+  handler.Response-dto_ListProposalLogsGroupedResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.ListProposalLogsGroupedResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_ListProposalLogsTimelineResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.ListProposalLogsTimelineResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
   handler.Response-dto_ListProposalResp:
     properties:
       code:
@@ -942,6 +972,58 @@ paths:
       summary: 登录
       tags:
       - auth
+  /api/changelog/proposal/grouped:
+    get:
+      consumes:
+      - application/json
+      description: 以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Response-dto_ListProposalLogsGroupedResp'
+      summary: 按提案聚合的日志列表
+      tags:
+      - ChangeLog
+  /api/changelog/proposal/timeline:
+    get:
+      consumes:
+      - application/json
+      description: 一条记录代表一次独立动作的扁平化分页，严格按时间倒序排列
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Response-dto_ListProposalLogsTimelineResp'
+      summary: 扁平化时间线日志
+      tags:
+      - ChangeLog
   /api/comment/add:
     post:
       consumes:
@@ -1268,58 +1350,6 @@ paths:
       summary: 分页获取提案列表
       tags:
       - proposal
-  /api/proposal/logs/grouped:
-    get:
-      consumes:
-      - application/json
-      description: 以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息
-      parameters:
-      - default: 1
-        description: 页码
-        in: query
-        name: page
-        type: integer
-      - default: 20
-        description: 每页数量
-        in: query
-        name: pageSize
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.ListProposalLogsGroupedResp'
-      summary: 按提案聚合的日志列表
-      tags:
-      - Admin
-  /api/proposal/logs/timeline:
-    get:
-      consumes:
-      - application/json
-      description: 一条记录代表一次独立动作的扁平化分页，严格按时间倒序排列
-      parameters:
-      - default: 1
-        description: 页码
-        in: query
-        name: page
-        type: integer
-      - default: 20
-        description: 每页数量
-        in: query
-        name: pageSize
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.ListProposalLogsTimelineResp'
-      summary: 扁平化时间线日志
-      tags:
-      - Admin
   /api/proposal/suggest:
     post:
       description: 根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表

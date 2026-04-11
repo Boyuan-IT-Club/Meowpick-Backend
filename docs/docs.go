@@ -102,6 +102,84 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/changelog/proposal/grouped": {
+            "get": {
+                "description": "以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ChangeLog"
+                ],
+                "summary": "按提案聚合的日志列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response-dto_ListProposalLogsGroupedResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/changelog/proposal/timeline": {
+            "get": {
+                "description": "一条记录代表一次独立动作的扁平化分页，严格按时间倒序排列",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ChangeLog"
+                ],
+                "summary": "扁平化时间线日志",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response-dto_ListProposalLogsTimelineResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/comment/add": {
             "post": {
                 "description": "用户对指定课程发布评论",
@@ -482,84 +560,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/handler.Response-dto_ListProposalResp"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/proposal/logs/grouped": {
-            "get": {
-                "description": "以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin"
-                ],
-                "summary": "按提案聚合的日志列表",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "页码",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 20,
-                        "description": "每页数量",
-                        "name": "pageSize",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ListProposalLogsGroupedResp"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/proposal/logs/timeline": {
-            "get": {
-                "description": "一条记录代表一次独立动作的扁平化分页，严格按时间倒序排列",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin"
-                ],
-                "summary": "扁平化时间线日志",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "页码",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 20,
-                        "description": "每页数量",
-                        "name": "pageSize",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ListProposalLogsTimelineResp"
                         }
                     }
                 }
@@ -2126,6 +2126,52 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/dto.ListCoursesResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_ListProposalLogsGroupedResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ListProposalLogsGroupedResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_ListProposalLogsTimelineResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ListProposalLogsTimelineResp"
                         }
                     ]
                 },
