@@ -51,7 +51,7 @@ func CreateComment(c *gin.Context) {
 // @Description 根据课程ID分页查询评论列表
 // @Tags comment
 // @Produce json
-// @Param courseId query int true "课程ID"
+// @Param courseId query string true "课程ID"
 // @Param page query int true "页码"
 // @Param pageSize query int true "每页数量"
 // @Success 200 {object} Response[dto.ListCourseCommentsResp]
