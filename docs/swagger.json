@@ -253,7 +253,7 @@
                 "summary": "分页获取课程评论",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "课程ID",
                         "name": "courseId",
                         "in": "query",
