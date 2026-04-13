@@ -42,6 +42,26 @@ const (
 	Content    = "content"
 )
 
+// 变更日志相关
+const (
+	TargetTypeUser     int32 = 1
+	TargetTypeProposal int32 = 2
+)
+
+const (
+	ActionTypeGrantAdmin      int32 = 1
+	ActionTypeRevokeAdmin     int32 = 2
+	ActionTypeDeleteProposal  int32 = 3
+	ActionTypeUpdateProposal  int32 = 4
+	ActionTypeApproveProposal int32 = 5
+	ActionTypeCreateProposal  int32 = 6
+)
+
+const (
+	UpdateSourceAdmin int32 = 1
+	UpdateSourceUser  int32 = 2
+)
+
 // 缓存相关
 const (
 	CacheSearchHistoryKeyPrefix = "meowpick:searchhistory:"
