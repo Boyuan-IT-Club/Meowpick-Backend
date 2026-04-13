@@ -115,3 +115,24 @@ const (
 	FieldCourseCode  = "courseCode"
 	FieldTeacherName = "teacherName"
 )
+
+// 变更记录目标类型
+const (
+	ChangeLogTargetTypeCourse   = "course"   // 课程
+	ChangeLogTargetTypeProposal = "proposal" // 提案
+	ChangeLogTargetTypeTeacher  = "teacher"  // 老师
+	ChangeLogTargetTypeUser     = "user"     // 用户
+)
+
+// 变更记录操作类型
+const (
+	ChangeLogActionCreate = "create" // 新增
+	ChangeLogActionUpdate = "update" // 修改
+	ChangeLogActionDelete = "delete" // 删除
+)
+
+// 变更记录来源类型
+const (
+	ChangeLogSourceManual = "manual" // 手动操作
+	ChangeLogSourceSystem = "system" // 系统自动
+)
