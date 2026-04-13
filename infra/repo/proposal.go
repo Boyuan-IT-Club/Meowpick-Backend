@@ -23,7 +23,6 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
