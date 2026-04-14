@@ -39,7 +39,7 @@ type IChangeLogRepo interface {
 	Insert(ctx context.Context, changelog *model.ChangeLog) error
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.ChangeLog, int64, error)
 	FindByProposalIDs(ctx context.Context, proposalIDs []string) ([]*model.ChangeLog, error)
-	FindChangeLogs(ctx context.Context, targetType int32, keyword string, param *dto.PageParam) ([]*model.ChangeLog, int64, error)
+	FindManyByTypeOrKeyword(ctx context.Context, targetType int32, keyword string, param *dto.PageParam) ([]*model.ChangeLog, int64, error)
 	FindByID(ctx context.Context, changeLogID string) (*model.ChangeLog, error)
 }
 
@@ -59,7 +59,7 @@ func (r *ChangeLogRepo) Insert(ctx context.Context, changelog *model.ChangeLog) 
 }
 
 // FindChangeLogs 分页查询变更记录
-func (r *ChangeLogRepo) FindChangeLogs(ctx context.Context, targetType int32, keyword string, param *dto.PageParam) ([]*model.ChangeLog, int64, error) {
+func (r *ChangeLogRepo) FindManyByTypeOrKeyword(ctx context.Context, targetType int32, keyword string, param *dto.PageParam) ([]*model.ChangeLog, int64, error) {
 	changeLogs := []*model.ChangeLog{}
 	// 查询条件
 	filter := bson.M{}

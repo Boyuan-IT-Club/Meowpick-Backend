@@ -87,13 +87,10 @@ func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChan
 	}
 
 	// 查询变更记录
-	changeLogs, total, err := s.ChangeLogRepo.FindChangeLogs(ctx, targetType, req.Keyword, req.PageParam)
+	changeLogs, total, err := s.ChangeLogRepo.FindManyByTypeOrKeyword(ctx, targetType, req.Keyword, req.PageParam)
 	if err != nil {
-		logs.CtxErrorf(ctx, "[ChangeLogRepo] [FindChangeLogs] error: %v, type: %s, keyword: %s", err, req.Type, req.Keyword)
-		return nil, errorx.WrapByCode(err, errno.ErrChangeLogFindFailed,
-			errorx.KV("key", "type"),
-			errorx.KV("value", req.Type),
-		)
+		logs.CtxErrorf(ctx, "[ChangeLogRepo] [FindManyByTypeOrKeyword] error: %v, type: %s, keyword: %s", err, req.Type, req.Keyword)
+		return nil, errorx.WrapByCode(err, errno.ErrChangeLogFindFailed)
 	}
 
 	// 转换为 VO
