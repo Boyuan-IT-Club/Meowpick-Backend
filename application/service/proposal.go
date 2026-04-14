@@ -469,3 +469,34 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 		Total:       total,
 	}, nil
 }
+
+// GetMyProposals 获取我的提案
+func (s *ProposalService) GetMyProposals(ctx context.Context, req *dto.GetMyProposalsReq) (*dto.GetMyProposalsResp, error) {
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 查询提案列表
+	proposals, total, err := s.ProposalRepo.FindManyByUserID(ctx, req.PageParam, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindManyByUserID] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
+	}
+
+	// 转换为VO
+	vos, err := s.ProposalAssembler.ToProposalVOArray(ctx, proposals, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVOArray] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
+			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
+	}
+
+	return &dto.GetMyProposalsResp{
+		Resp:      dto.Success(),
+		Total:     total,
+		Proposals: vos,
+	}, nil
+
+}

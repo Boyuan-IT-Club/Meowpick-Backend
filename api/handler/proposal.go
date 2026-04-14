@@ -202,3 +202,26 @@ func GetProposalFieldSuggestions(c *gin.Context) {
 	resp, err = provider.Get().ProposalService.GetProposalFieldSuggestions(c, &req)
 	PostProcess(c, &req, resp, err)
 }
+
+// GetMyProposals godoc
+// @Summary 获取我的提案
+// @Tags proposal
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Param status query string false "状态" Enums(pending,approved,rejected)
+// @Success 200 {object} Response[dto.GetMyProposalsResp]
+// @Router /api/proposal/history [get]
+func GetMyProposals(c *gin.Context) {
+	var req dto.GetMyProposalsReq
+	var resp *dto.GetMyProposalsResp
+	var err error
+
+	if err = c.ShouldBindQuery(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.GetMyProposals(c, &req)
+	PostProcess(c, &req, resp, err)
+}

@@ -231,3 +231,19 @@ func (r *ProposalRepo) FindByIDs(ctx context.Context, proposalIDs []string) ([]*
 	
 	return proposals, nil
 }
+
+// FindManyByUserID 根据用户ID批量获取提案
+func (r *ProposalRepo) FindManyByUserID(ctx context.Context, param *dto.PageParam, userId string) ([]*model.Proposal, int64, error) {
+	proposals := []*model.Proposal{}
+	filter := bson.M{consts.UserID: userId, consts.Deleted: bson.M{"$ne": true}}
+	total, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	if err = r.conn.Find(ctx, &proposals, filter,
+		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+	); err != nil {
+		return nil, 0, err
+	}
+	return proposals, total, nil
+}
