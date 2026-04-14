@@ -543,6 +543,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/proposal/history": {
+            "get": {
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "获取我的提案",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "pending",
+                            "approved",
+                            "rejected"
+                        ],
+                        "type": "string",
+                        "description": "状态",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response-dto_GetMyProposalsResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/proposal/list": {
             "get": {
                 "description": "分页查询提案列表数据",
@@ -1257,6 +1300,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.GetMyProposalsResp": {
+            "type": "object",
+            "properties": {
+                "proposals": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ProposalVO"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.GetProposalFieldSuggestionsResp": {
             "type": "object",
             "properties": {
@@ -1910,6 +1967,29 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/dto.GetMyCommentsResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_GetMyProposalsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.GetMyProposalsResp"
                         }
                     ]
                 },

@@ -250,6 +250,15 @@ definitions:
       total:
         type: integer
     type: object
+  dto.GetMyProposalsResp:
+    properties:
+      proposals:
+        items:
+          $ref: '#/definitions/dto.ProposalVO'
+        type: array
+      total:
+        type: integer
+    type: object
   dto.GetProposalFieldSuggestionsResp:
     properties:
       field:
@@ -678,6 +687,21 @@ definitions:
       data:
         allOf:
         - $ref: '#/definitions/dto.GetMyCommentsResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_GetMyProposalsResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.GetMyProposalsResp'
         description: 实际业务数据
       msg:
         description: 提示信息
@@ -1338,6 +1362,35 @@ paths:
           schema:
             $ref: '#/definitions/dto.GetProposalFieldSuggestionsResp'
       summary: 获取提案字段建议
+      tags:
+      - proposal
+  /api/proposal/history:
+    get:
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 状态
+        enum:
+        - pending
+        - approved
+        - rejected
+        in: query
+        name: status
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Response-dto_GetMyProposalsResp'
+      summary: 获取我的提案
       tags:
       - proposal
   /api/proposal/list:
