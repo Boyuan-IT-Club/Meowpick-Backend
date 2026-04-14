@@ -16,12 +16,16 @@ package repo
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/page"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/zeromicro/go-zero/core/stores/monc"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -35,6 +39,8 @@ type IChangeLogRepo interface {
 	Insert(ctx context.Context, changelog *model.ChangeLog) error
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.ChangeLog, int64, error)
 	FindByProposalIDs(ctx context.Context, proposalIDs []string) ([]*model.ChangeLog, error)
+	FindManyByTypeOrKeyword(ctx context.Context, targetType int32, keyword string, param *dto.PageParam) ([]*model.ChangeLog, int64, error)
+	FindByID(ctx context.Context, changeLogID string) (*model.ChangeLog, error)
 }
 
 type ChangeLogRepo struct {
@@ -52,15 +58,60 @@ func (r *ChangeLogRepo) Insert(ctx context.Context, changelog *model.ChangeLog) 
 	return err
 }
 
+// FindChangeLogs 分页查询变更记录
+func (r *ChangeLogRepo) FindManyByTypeOrKeyword(ctx context.Context, targetType int32, keyword string, param *dto.PageParam) ([]*model.ChangeLog, int64, error) {
+	changeLogs := []*model.ChangeLog{}
+	// 查询条件
+	filter := bson.M{}
+
+	if targetType > 0 {
+		filter[consts.TargetType] = targetType
+	}
+
+	if keyword != "" {
+		regex := primitive.Regex{Pattern: keyword, Options: "i"}
+		filter[consts.Content] = regex
+	}
+
+	total, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 分页查询
+	if err = r.conn.Find(
+		ctx,
+		&changeLogs,
+		filter,
+		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+	); err != nil {
+		return nil, 0, err
+	}
+
+	return changeLogs, total, nil
+}
+
+// FindByID 根据 ID 查询变更记录
+func (r *ChangeLogRepo) FindByID(ctx context.Context, changeLogID string) (*model.ChangeLog, error) {
+	changelog := model.ChangeLog{}
+	if err := r.conn.FindOneNoCache(ctx, &changelog, bson.M{consts.ID: changeLogID}, nil); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &changelog, nil
+}
+
 // FindMany 分页查询所有变更日志
 func (r *ChangeLogRepo) FindMany(ctx context.Context, param *dto.PageParam) ([]*model.ChangeLog, int64, error) {
 	logs := []*model.ChangeLog{}
 	filter := make(map[string]interface{})
-	
+
 	// 构建查询选项，按时间倒序排序
 	opts := page.FindPageOption(param)
 	opts.SetSort(page.DSort("updatedAt", -1))
-	
+
 	if err := r.conn.Find(ctx, &logs, filter, opts); err != nil {
 		return nil, 0, err
 	}
@@ -81,9 +132,9 @@ func (r *ChangeLogRepo) FindByProposalIDs(ctx context.Context, proposalIDs []str
 			"$in": proposalIDs,
 		},
 	}
-	
+
 	opts := options.Find().SetSort(page.DSort("updatedAt", -1))
-	
+
 	if err := r.conn.Find(ctx, &logs, filter, opts); err != nil {
 		return nil, err
 	}

@@ -22,6 +22,31 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ListChangeLogs godoc
+// @Summary 分页查询变更记录
+// @Description 按目标类型+ID分页查询变更记录
+// @Tags changelog
+// @Accept json
+// @Produce json
+// @Param req body dto.ListChangeLogReq true "查询参数"
+// @Success 200 {object} Response[dto.ListChangelogResp]
+// @Router /api/changelog/list [post]
+func ListChangeLogs(c *gin.Context) {
+	var req dto.ListChangeLogReq
+	var resp *dto.ListChangeLogResp
+	var err error
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ChangeLogService.ListChangeLogs(c, &req)
+	PostProcess(c, &req, resp, err)
+}
+
 // ListProposalLogsGrouped 按提案聚合的日志列表
 // @Summary 按提案聚合的日志列表
 // @Description 以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息

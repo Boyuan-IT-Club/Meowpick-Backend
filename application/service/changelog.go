@@ -34,6 +34,7 @@ import (
 var _ IChangeLogService = (*ChangeLogService)(nil)
 
 type IChangeLogService interface {
+	ListChangeLogs(ctx context.Context, req *dto.ListChangeLogReq) (*dto.ListChangeLogResp, error)
 	CreateChangeLog(ctx context.Context, req *dto.CreateChangeLogReq) (*dto.CreateChangeLogResp, error)
 	ListProposalLogsGrouped(ctx context.Context, req *dto.ListProposalLogsGroupedReq) (*dto.ListProposalLogsGroupedResp, error)
 	ListProposalLogsTimeline(ctx context.Context, req *dto.ListProposalLogsTimelineReq) (*dto.ListProposalLogsTimelineResp, error)
@@ -51,6 +52,70 @@ var ChangeLogServiceSet = wire.NewSet(
 	wire.Struct(new(ChangeLogService), "*"),
 	wire.Bind(new(IChangeLogService), new(*ChangeLogService)),
 )
+
+// ListChangeLogs 分页查询变更记录
+func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChangeLogReq) (*dto.ListChangeLogResp, error) {
+	// 鉴权
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	// 管理员权限检查
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
+		return nil, errorx.New(errno.ErrUserNotAdmin,
+			errorx.KV("id", userId))
+	}
+	if !isAdmin {
+		return nil, errorx.New(errno.ErrUserNotAdmin,
+			errorx.KV("id", userId),
+			errorx.KV("msg", "only admin can view changelogs"))
+	}
+
+	// 类型转换
+	var targetType int32
+	if req.Type != "" {
+		targetType = mapping.Data.GetChangeLogTargetTypeIDByName(req.Type)
+		if targetType == 0 {
+			return nil, errorx.New(errno.ErrChangeLogTargetTypeInvalid,
+				errorx.KV("key", "type"),
+				errorx.KV("value", req.Type),
+			)
+		}
+	}
+
+	// 查询变更记录
+	changeLogs, total, err := s.ChangeLogRepo.FindManyByTypeOrKeyword(ctx, targetType, req.Keyword, req.PageParam)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ChangeLogRepo] [FindManyByTypeOrKeyword] error: %v, type: %s, keyword: %s", err, req.Type, req.Keyword)
+		return nil, errorx.WrapByCode(err, errno.ErrChangeLogFindFailed)
+	}
+
+	// 转换为 VO
+	vos := make([]*dto.ChangeLogVO, len(changeLogs))
+	for i, cl := range changeLogs {
+		vos[i] = &dto.ChangeLogVO{
+			ID:           cl.ID,
+			TargetID:     cl.TargetID,
+			TargetType:   cl.TargetType,
+			Action:       cl.Action,
+			Content:      cl.Content,
+			UserID:       cl.UserID,
+			UpdateSource: cl.UpdateSource,
+			ProposalID:   cl.ProposalID,
+			UpdatedAt:    cl.UpdatedAt,
+		}
+	}
+
+	// 构造 resp
+	return &dto.ListChangeLogResp{
+		Resp:       dto.Success(),
+		Total:      total,
+		ChangeLogs: vos,
+	}, nil
+}
 
 // CreateChangeLog 添加一个新的变更日志
 func (s *ChangeLogService) CreateChangeLog(ctx context.Context, req *dto.CreateChangeLogReq) (*dto.CreateChangeLogResp, error) {
