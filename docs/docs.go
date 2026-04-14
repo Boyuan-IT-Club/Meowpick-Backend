@@ -116,6 +116,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/changelog/list": {
+            "post": {
+                "description": "按目标类型+ID分页查询变更记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "changelog"
+                ],
+                "summary": "分页查询变更记录",
+                "parameters": [
+                    {
+                        "description": "查询参数",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ListChangeLogsReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response-dto_ListChangeLogsResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/changelog/proposal/grouped": {
             "get": {
                 "description": "以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息",
@@ -963,6 +997,38 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ChangeLogVO": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "integer"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "proposalId": {
+                    "type": "string"
+                },
+                "targetId": {
+                    "type": "string"
+                },
+                "targetType": {
+                    "type": "integer"
+                },
+                "updateSource": {
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.CommentVO": {
             "type": "object",
             "properties": {
@@ -1416,6 +1482,43 @@ const docTemplate = `{
             "properties": {
                 "isAdmin": {
                     "type": "boolean"
+                }
+            }
+        },
+        "dto.ListChangeLogsReq": {
+            "type": "object",
+            "properties": {
+                "keyword": {
+                    "type": "string"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "course",
+                        "proposal",
+                        "teacher",
+                        "user"
+                    ]
+                }
+            }
+        },
+        "dto.ListChangeLogsResp": {
+            "type": "object",
+            "properties": {
+                "changeLogs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ChangeLogVO"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -2174,6 +2277,29 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/dto.IsAdminResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_ListChangeLogsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ListChangeLogsResp"
                         }
                     ]
                 },

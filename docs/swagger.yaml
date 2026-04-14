@@ -28,6 +28,27 @@ definitions:
       reason:
         type: string
     type: object
+  dto.ChangeLogVO:
+    properties:
+      action:
+        type: integer
+      content:
+        type: string
+      id:
+        type: string
+      proposalId:
+        type: string
+      targetId:
+        type: string
+      targetType:
+        type: integer
+      updateSource:
+        type: integer
+      updatedAt:
+        type: string
+      userId:
+        type: string
+    type: object
   dto.CommentVO:
     properties:
       category:
@@ -325,6 +346,31 @@ definitions:
     properties:
       isAdmin:
         type: boolean
+    type: object
+  dto.ListChangeLogsReq:
+    properties:
+      keyword:
+        type: string
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      type:
+        enum:
+        - course
+        - proposal
+        - teacher
+        - user
+        type: string
+    type: object
+  dto.ListChangeLogsResp:
+    properties:
+      changeLogs:
+        items:
+          $ref: '#/definitions/dto.ChangeLogVO'
+        type: array
+      total:
+        type: integer
     type: object
   dto.ListCourseCommentsResp:
     properties:
@@ -828,6 +874,21 @@ definitions:
         example: success
         type: string
     type: object
+  handler.Response-dto_ListChangeLogsResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.ListChangeLogsResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
   handler.Response-dto_ListCourseCommentsResp:
     properties:
       code:
@@ -1010,6 +1071,28 @@ paths:
       summary: 登录
       tags:
       - auth
+  /api/changelog/list:
+    post:
+      consumes:
+      - application/json
+      description: 按目标类型+ID分页查询变更记录
+      parameters:
+      - description: 查询参数
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ListChangeLogsReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Response-dto_ListChangeLogsResp'
+      summary: 分页查询变更记录
+      tags:
+      - changelog
   /api/changelog/proposal/grouped:
     get:
       consumes:
