@@ -89,14 +89,14 @@ func GetProposal(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
-// ApproveProposal 审批提案
+// ApproveProposal godoc
 // @Summary 审批提案
 // @Description 通过提案并创建课程，或拒绝提案
 // @Tags proposal
 // @Produce json
 // @Param proposalId path string true "提案ID"
-// @Success 200 {object} dto.ToggleProposalResp
-// @Router /api/proposal/{proposalId}/approve [POST]
+// @Success 200 {object} Response[dto.ToggleProposalResp]
+// @Router /api/proposal/{proposalId}/approve [post]
 func ApproveProposal(c *gin.Context) {
 	var req dto.ToggleProposalReq
 	var resp *dto.ToggleProposalResp
