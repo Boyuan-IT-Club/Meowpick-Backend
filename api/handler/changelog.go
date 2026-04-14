@@ -28,12 +28,12 @@ import (
 // @Tags changelog
 // @Accept json
 // @Produce json
-// @Param req body dto.ListChangeLogReq true "查询参数"
-// @Success 200 {object} Response[dto.ListChangelogResp]
+// @Param req body dto.ListChangeLogsReq true "查询参数"
+// @Success 200 {object} Response[dto.ListChangeLogsResp]
 // @Router /api/changelog/list [post]
 func ListChangeLogs(c *gin.Context) {
-	var req dto.ListChangeLogReq
-	var resp *dto.ListChangeLogResp
+	var req dto.ListChangeLogsReq
+	var resp *dto.ListChangeLogsResp
 	var err error
 
 	if err = c.ShouldBindJSON(&req); err != nil {

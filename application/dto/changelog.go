@@ -16,8 +16,8 @@ package dto
 
 import "time"
 
-// ListChangeLogReq 变更记录列表查询请求
-type ListChangeLogReq struct {
+// ListChangeLogsReq 变更记录列表查询请求
+type ListChangeLogsReq struct {
 	Type    string `json:"type" binding:"omitempty,oneof=course proposal teacher user"`
 	Keyword string `json:"keyword"`
 	*PageParam
@@ -58,8 +58,8 @@ type ListProposalLogsGroupedReq struct {
 	*PageParam
 }
 
-// ListChangeLogResp 变更记录列表响应
-type ListChangeLogResp struct {
+// ListChangeLogsResp 变更记录列表响应
+type ListChangeLogsResp struct {
 	*Resp      `json:",inline"`
 	Total      int64          `json:"total"`
 	ChangeLogs []*ChangeLogVO `json:"changeLogs"`

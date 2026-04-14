@@ -86,6 +86,7 @@ func SetupRoutes() *gin.Engine {
 	{
 		changeLogGroup.GET("/proposal/grouped", handler.ListProposalLogsGrouped)   // 按提案聚合的日志列表
 		changeLogGroup.GET("/proposal/timeline", handler.ListProposalLogsTimeline) // 扁平化时间线日志
+		changeLogGroup.GET("/list", handler.ListChangeLogs)
 	}
 
 	return router

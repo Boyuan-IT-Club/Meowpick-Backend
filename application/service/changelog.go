@@ -34,7 +34,7 @@ import (
 var _ IChangeLogService = (*ChangeLogService)(nil)
 
 type IChangeLogService interface {
-	ListChangeLogs(ctx context.Context, req *dto.ListChangeLogReq) (*dto.ListChangeLogResp, error)
+	ListChangeLogs(ctx context.Context, req *dto.ListChangeLogsReq) (*dto.ListChangeLogsResp, error)
 	CreateChangeLog(ctx context.Context, req *dto.CreateChangeLogReq) (*dto.CreateChangeLogResp, error)
 	ListProposalLogsGrouped(ctx context.Context, req *dto.ListProposalLogsGroupedReq) (*dto.ListProposalLogsGroupedResp, error)
 	ListProposalLogsTimeline(ctx context.Context, req *dto.ListProposalLogsTimelineReq) (*dto.ListProposalLogsTimelineResp, error)
@@ -54,7 +54,7 @@ var ChangeLogServiceSet = wire.NewSet(
 )
 
 // ListChangeLogs 分页查询变更记录
-func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChangeLogReq) (*dto.ListChangeLogResp, error) {
+func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChangeLogsReq) (*dto.ListChangeLogsResp, error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
@@ -110,7 +110,7 @@ func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChan
 	}
 
 	// 构造 resp
-	return &dto.ListChangeLogResp{
+	return &dto.ListChangeLogsResp{
 		Resp:       dto.Success(),
 		Total:      total,
 		ChangeLogs: vos,
