@@ -54,6 +54,18 @@ func (c *MappingCache) GetCodeByKey(ctx context.Context, mappingType model.Mappi
 	return int32(code), true, nil
 }
 
+func (c *MappingCache) GetNameByCode(ctx context.Context, mappingType model.MappingType, code int32) (string, bool, error) {
+	key := fmt.Sprintf("mapping:name:%d:%d", mappingType, code)
+	val, err := c.cache.GetCtx(ctx, key)
+	if err != nil {
+		return "", false, err
+	}
+	if val == "" {
+		return "", false, nil
+	}
+	return val, true, nil
+}
+
 func (c *MappingCache) SetCodeByKey(ctx context.Context, mappingType model.MappingType, name string, code int32, ttl time.Duration) error {
 	key := fmt.Sprintf("mapping:code:%d:%s", mappingType, name)
 	return c.cache.SetexCtx(ctx, key, strconv.FormatInt(int64(code), 10), int(ttl.Seconds()))
@@ -65,6 +77,7 @@ func (c *MappingCache) SetNameByKey(ctx context.Context, mappingType model.Mappi
 }
 
 func (c *MappingCache) Invalidate(ctx context.Context, mappingType model.MappingType) error {
-	// 目前无需实现具体的失效逻辑
-	return nil
+	listKey := fmt.Sprintf("mapping:list:%d", mappingType)
+	_, err := c.cache.DelCtx(ctx, listKey)
+	return err
 }

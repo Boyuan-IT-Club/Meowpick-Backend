@@ -110,6 +110,11 @@ type MappingDependencies struct {
 }
 
 func (d *StaticData) InitWithDependencies(deps *MappingDependencies) {
+	if deps == nil {
+		logs.Errorf("[Mapping] dependencies is nil")
+		return
+	}
+
 	d.mappingRepo = deps.MappingRepo
 	d.mappingCache = deps.MappingCache
 

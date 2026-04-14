@@ -592,28 +592,48 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 			return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
 		}
 
-		// 2. 将 CourseVO 转换为 CourseDB，此时会执行自动注册
-		course, err := s.CourseAssembler.ToCourseDB(ctx, courseVO)
+		// 第一层防重：先进行 DryRun 转换，再检查课程是否已存在
+		dryRunCourse, err := s.CourseAssembler.ToCourseDBDryRun(ctx, courseVO)
 		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDB] error: %v", err)
+			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRun] error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
 		}
-
-		if course == nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDB] course is nil")
+		if dryRunCourse == nil {
+			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRun] course is nil")
 			return nil, errorx.New(errno.ErrCourseCvtFailed)
 		}
 
-		// 3. 设置课程基础信息并插入
-		course.ID = primitive.NewObjectID().Hex()
-		course.CreatedAt = time.Now()
-		course.UpdatedAt = time.Now()
-		course.Deleted = false
-
-		err = s.CourseRepo.Insert(ctx, course)
+		courseExists, err := s.CourseRepo.IsCourseInExistingCourses(ctx, dryRunCourse)
 		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseRepo] [Insert] error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed, errorx.KV("name", course.Name))
+			logs.CtxErrorf(ctx, "[CourseRepo] [IsCourseInExistingCourses] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed)
+		}
+		if courseExists {
+			logs.CtxInfof(ctx, "[ProposalService] [ApproveProposal] course already exists, skip create, proposalId: %s", req.ProposalID)
+		} else {
+			// 2. 将 CourseVO 转换为 CourseDB，此时会执行自动注册
+			course, err := s.CourseAssembler.ToCourseDB(ctx, courseVO)
+			if err != nil {
+				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDB] error: %v", err)
+				return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
+			}
+
+			if course == nil {
+				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDB] course is nil")
+				return nil, errorx.New(errno.ErrCourseCvtFailed)
+			}
+
+			// 3. 设置课程基础信息并插入
+			course.ID = primitive.NewObjectID().Hex()
+			course.CreatedAt = time.Now()
+			course.UpdatedAt = time.Now()
+			course.Deleted = false
+
+			err = s.CourseRepo.Insert(ctx, course)
+			if err != nil {
+				logs.CtxErrorf(ctx, "[CourseRepo] [Insert] error: %v", err)
+				return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed, errorx.KV("name", course.Name))
+			}
 		}
 	}
 

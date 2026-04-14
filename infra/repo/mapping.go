@@ -16,6 +16,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
@@ -25,7 +26,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var _ IMappingRepo = (*MappingRepo)(nil)
+var (
+	_             IMappingRepo = (*MappingRepo)(nil)
+	ErrNilMapping              = errors.New("mapping is nil")
+)
 
 const (
 	MappingCollectionName = "mapping"
@@ -57,6 +61,9 @@ func (r *MappingRepo) GetIDByName(ctx context.Context, mType model.MappingType, 
 	var m model.Mapping
 	err := r.conn.FindOne(ctx, cacheKey, &m, bson.M{"type": mType, "name": name})
 	if err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return 0, nil
+		}
 		return 0, err
 	}
 
@@ -68,6 +75,9 @@ func (r *MappingRepo) FindByNameAndType(ctx context.Context, name string, mType 
 	var m model.Mapping
 	err := r.conn.FindOneNoCache(ctx, &m, bson.M{"name": name, "type": mType})
 	if err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &m, nil
@@ -102,6 +112,9 @@ func (r *MappingRepo) FindAllByType(ctx context.Context, mType model.MappingType
 
 // Insert 插入映射数据（通常由管理员在后台或初始化时操作）
 func (r *MappingRepo) Insert(ctx context.Context, mapping *model.Mapping) error {
+	if mapping == nil {
+		return ErrNilMapping
+	}
 	_, err := r.conn.InsertOneNoCache(ctx, mapping)
 	return err
 }
