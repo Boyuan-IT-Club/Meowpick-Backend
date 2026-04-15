@@ -102,11 +102,9 @@ var InfraSet = wire.NewSet(
 var AllProvider = wire.NewSet(
 	ApplicationSet,
 	InfraSet,
-	// 初始化映射工具类
-	InitMapping,
 )
 
-// InitMapping 初始化映射工具类的Wire绑定函数
+// InitMapping 初始化映射工具类的依赖
 func InitMapping(mappingRepo *repo.MappingRepo, mappingCache *cache.MappingCache) {
 	deps := &mapping.MappingDependencies{
 		MappingRepo:  mappingRepo,
