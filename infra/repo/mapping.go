@@ -115,6 +115,8 @@ func (r *MappingRepo) Insert(ctx context.Context, mapping *model.Mapping) error 
 	if mapping == nil {
 		return ErrNilMapping
 	}
-	_, err := r.conn.InsertOneNoCache(ctx, mapping)
+
+	cacheKey := fmt.Sprintf("%s%d:%s", MappingCacheKeyPrefix, mapping.Type, mapping.Name)
+	_, err := r.conn.InsertOne(ctx, cacheKey, mapping)
 	return err
 }

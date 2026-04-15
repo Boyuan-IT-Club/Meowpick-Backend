@@ -352,6 +352,11 @@ func (d *StaticData) autoRegisterMapping(name string, mappingType model.MappingT
 	}
 
 	// 4. 需要创建新的映射
+	if d.mappingRepo == nil {
+		logs.Errorf("[Mapping] mappingRepo is nil, cannot auto register mapping for type %d, name %s", mappingType, name)
+		return 0
+	}
+
 	maxCode, err := d.mappingRepo.FindMaxCodeByType(ctx, mappingType)
 	if err != nil {
 		logs.Errorf("[Mapping] Failed to find max code for type %d: %v", mappingType, err)
