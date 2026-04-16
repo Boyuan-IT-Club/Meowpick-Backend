@@ -122,16 +122,24 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 
 	// 1. 构建数据库模型
 	now := time.Now()
-	proposal := &model.Proposal{
+	proposalVO := &dto.ProposalVO{
 		ID:        primitive.NewObjectID().Hex(),
 		UserID:    userId,
 		Title:     req.Title,
 		Content:   req.Content,
+		Status:    consts.ProposalStatusPending,
 		Deleted:   false,
-		Status:    mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending),
-		Course:    course,
+		Course:    req.Course,
 		CreatedAt: now,
 		UpdatedAt: now,
+	}
+
+	proposal, err := s.ProposalAssembler.ToProposalDB(ctx, proposalVO)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalDB] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
+			errorx.KV("src", "proposal vo"), errorx.KV("dst", "database proposal"),
+		)
 	}
 
 	// 2. 保存提案到数据库
@@ -148,14 +156,16 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 			errorx.KV("src", "database proposal"), errorx.KV("dst", "proposal vo"))
 	}
 
-	_, _ = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
+	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
 		TargetID:     proposal.ID,
 		TargetType:   consts.TargetTypeProposal,
 		Action:       consts.ActionTypeCreateProposal,
 		Content:      "创建提案",
 		UpdateSource: consts.UpdateSourceUser,
 		ProposalID:   proposal.ID,
-	})
+	}); err != nil {
+		logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", err, proposal.ID)
+	}
 
 	return &dto.CreateProposalResp{
 		Resp:       dto.Success(),
@@ -291,14 +301,16 @@ func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeletePro
 	if proposal.UserID != userId {
 		updateSource = consts.UpdateSourceAdmin
 	}
-	_, _ = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
+	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
 		TargetID:     proposalId,
 		TargetType:   consts.TargetTypeProposal,
 		Action:       consts.ActionTypeDeleteProposal,
 		Content:      "删除提案",
 		UpdateSource: updateSource,
 		ProposalID:   proposalId,
-	})
+	}); err != nil {
+		logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", err, proposalId)
+	}
 
 	return &dto.DeleteProposalResp{
 		Resp:       dto.Success(),
@@ -346,14 +358,16 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
 	}
 
-	_, _ = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
+	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
 		TargetID:     proposal.ID,
 		TargetType:   consts.TargetTypeProposal,
 		Action:       consts.ActionTypeUpdateProposal,
 		Content:      "更新提案",
 		UpdateSource: consts.UpdateSourceUser,
 		ProposalID:   proposal.ID,
-	})
+	}); err != nil {
+		logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", err, proposal.ID)
+	}
 
 	return &dto.UpdateProposalResp{
 		Resp:       dto.Success(),
@@ -649,14 +663,16 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	}
 
 	// 获取剩余待处理提案数量
-	_, _ = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
+	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
 		TargetID:     req.ProposalID,
 		TargetType:   consts.TargetTypeProposal,
 		Action:       consts.ActionTypeApproveProposal,
 		Content:      "审批提案：通过",
 		UpdateSource: consts.UpdateSourceAdmin,
 		ProposalID:   req.ProposalID,
-	})
+	}); err != nil {
+		logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", err, req.ProposalID)
+	}
 
 	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
 	_, pendingCount, err := s.ProposalRepo.FindManyByStatus(ctx, nil, pendingStatusID)

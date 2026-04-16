@@ -16,7 +16,6 @@ package repo
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
@@ -26,10 +25,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var (
-	_             IMappingRepo = (*MappingRepo)(nil)
-	ErrNilMapping              = errors.New("mapping is nil")
-)
+var _ IMappingRepo = (*MappingRepo)(nil)
 
 const (
 	MappingCollectionName = "mapping"
@@ -112,10 +108,6 @@ func (r *MappingRepo) FindAllByType(ctx context.Context, mType model.MappingType
 
 // Insert 插入映射数据（通常由管理员在后台或初始化时操作）
 func (r *MappingRepo) Insert(ctx context.Context, mapping *model.Mapping) error {
-	if mapping == nil {
-		return ErrNilMapping
-	}
-
 	cacheKey := fmt.Sprintf("%s%d:%s", MappingCacheKeyPrefix, mapping.Type, mapping.Name)
 	_, err := r.conn.InsertOne(ctx, cacheKey, mapping)
 	return err

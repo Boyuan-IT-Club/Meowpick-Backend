@@ -119,7 +119,7 @@ func (a *CourseAssembler) ToCourseVO(ctx context.Context, db *model.Course) (*dt
 	}, nil
 }
 
-// ToCourseDB 单个CourseVO转CourseDB (VO to DB)
+// ToCourseDB 单个CourseVO转CourseDB (VO to DB)(会执行自动注册)
 func (a *CourseAssembler) ToCourseDB(ctx context.Context, vo *dto.CourseVO) (*model.Course, error) {
 	if vo == nil {
 		return nil, nil

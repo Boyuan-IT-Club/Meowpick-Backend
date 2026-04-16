@@ -68,13 +68,13 @@ func (r *ProposalRepo) Insert(ctx context.Context, proposal *model.Proposal) err
 // 比较的字段包括: Name, Code, Department, Category, Campuses, Teachers
 func (r *ProposalRepo) IsCourseInExistingProposals(ctx context.Context, course *model.ProposalCourse) (bool, error) {
 	filter := bson.M{
-		"course.name":       course.Name,
-		"course.code":       course.Code,
-		"course.department": course.Department,
-		"course.category":   course.Category,
-		"course.campuses":   course.Campuses,
-		"course.teachers":   course.Teachers,
-		consts.Deleted:      false, // 只检查未删除的提案
+		consts.PathCourseName:       course.Name,
+		consts.PathCourseCode:       course.Code,
+		consts.PathCourseDepartment: course.Department,
+		consts.PathCourseCategory:   course.Category,
+		consts.PathCourseCampuses:   course.Campuses,
+		consts.PathCourseTeachers:   course.Teachers,
+		consts.Deleted:              false, // 只检查未删除的提案
 	}
 
 	// 查询提案中是否已存在该课程
