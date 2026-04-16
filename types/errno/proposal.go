@@ -36,7 +36,6 @@ const (
 	ErrProposalInvalidField                = 108000015
 	ErrProposalIDRequired                  = 108000016
 	ErrProposalAlreadyProcessed            = 108000017
-	ErrUserPermissionDenied                = 108000018
 )
 
 func init() {
@@ -123,11 +122,6 @@ func init() {
 	code.Register(
 		ErrProposalAlreadyProcessed,
 		"proposal already processed: {key}: {value}",
-		code.WithAffectStability(false),
-	)
-	code.Register(
-		ErrUserPermissionDenied,
-		"user permission denied: {userId}",
 		code.WithAffectStability(false),
 	)
 }
