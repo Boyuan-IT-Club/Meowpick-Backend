@@ -16,7 +16,6 @@ package repo
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
