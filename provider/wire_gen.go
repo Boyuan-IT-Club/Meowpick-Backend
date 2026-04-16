@@ -26,11 +26,6 @@ func NewProvider() (*Provider, error) {
 	likeRepo := repo.NewLikeRepo(configConfig)
 	courseRepo := repo.NewCourseRepo(configConfig)
 	teacherRepo := repo.NewTeacherRepo(configConfig)
-	mappingRepo := repo.NewMappingRepo(configConfig)
-	mappingCache := cache.NewMappingCache(configConfig)
-
-	// 初始化映射依赖
-	InitMapping(mappingRepo, mappingCache)
 	commentAssembler := &assembler.CommentAssembler{
 		LikeRepo:    likeRepo,
 		CourseRepo:  courseRepo,
@@ -98,6 +93,7 @@ func NewProvider() (*Provider, error) {
 		LikeCache:         likeCache,
 		UserRepo:          userRepo,
 		TeacherRepo:       teacherRepo,
+		ChangeLogService:  changeLogService,
 	}
 	serviceChangeLogService := service.ChangeLogService{
 		ChangeLogRepo:      changeLogRepo,
@@ -106,6 +102,8 @@ func NewProvider() (*Provider, error) {
 		ProposalRepo:       proposalRepo,
 		CourseAssembler:    courseAssembler,
 	}
+	mappingRepo := repo.NewMappingRepo(configConfig)
+	mappingCache := cache.NewMappingCache(configConfig)
 	providerProvider := &Provider{
 		Config:               configConfig,
 		CommentService:       commentService,
