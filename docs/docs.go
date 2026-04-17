@@ -730,12 +730,31 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/approve": {
             "post": {
-                "description": "管理员审批提案",
+                "description": "通过提案并创建课程，或拒绝提案",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "proposal"
                 ],
                 "summary": "审批提案",
-                "responses": {}
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "提案ID",
+                        "name": "proposalId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response-dto_ToggleProposalResp"
+                        }
+                    }
+                }
             }
         },
         "/api/proposal/{proposalId}/delete": {
@@ -1213,6 +1232,14 @@ const docTemplate = `{
         "dto.CreateProposalResp": {
             "type": "object",
             "properties": {
+                "proposal": {
+                    "description": "提案详情",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ProposalVO"
+                        }
+                    ]
+                },
                 "proposalId": {
                     "description": "提案ID",
                     "type": "string"
@@ -1846,6 +1873,17 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ToggleProposalResp": {
+            "type": "object",
+            "properties": {
+                "proposal": {
+                    "type": "boolean"
+                },
+                "proposalCnt": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.UpdateProposalReq": {
             "type": "object",
             "required": [
@@ -2461,6 +2499,29 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/dto.ToggleLikeResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_ToggleProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ToggleProposalResp"
                         }
                     ]
                 },

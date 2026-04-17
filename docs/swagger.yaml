@@ -172,6 +172,10 @@ definitions:
     type: object
   dto.CreateProposalResp:
     properties:
+      proposal:
+        allOf:
+        - $ref: '#/definitions/dto.ProposalVO'
+        description: 提案详情
       proposalId:
         description: 提案ID
         type: string
@@ -586,6 +590,13 @@ definitions:
       likeCnt:
         type: integer
     type: object
+  dto.ToggleProposalResp:
+    properties:
+      proposal:
+        type: boolean
+      proposalCnt:
+        type: integer
+    type: object
   dto.UpdateProposalReq:
     properties:
       content:
@@ -994,6 +1005,21 @@ definitions:
         example: success
         type: string
     type: object
+  handler.Response-dto_ToggleProposalResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.ToggleProposalResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
   handler.Response-dto_UpdateProposalResp:
     properties:
       code:
@@ -1342,8 +1368,20 @@ paths:
       - proposal
   /api/proposal/{proposalId}/approve:
     post:
-      description: 管理员审批提案
-      responses: {}
+      description: 通过提案并创建课程，或拒绝提案
+      parameters:
+      - description: 提案ID
+        in: path
+        name: proposalId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Response-dto_ToggleProposalResp'
       summary: 审批提案
       tags:
       - proposal
