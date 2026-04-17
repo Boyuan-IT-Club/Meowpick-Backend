@@ -216,16 +216,16 @@ func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, 
 		{consts.Status, 1},
 		{consts.CreatedAt, -1},
 	}
-
+	
 	if err := r.conn.Find(ctx, &proposals, filter, page.FindPageOption(param).SetSort(sort)); err != nil {
 		return nil, 0, err
 	}
-
+	
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
-
+	
 	return proposals, total, nil
 }
 
