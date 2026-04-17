@@ -42,6 +42,35 @@ const (
 	Content    = "content"
 )
 
+const (
+	PathCourseName       = "course.name"
+	PathCourseCode       = "course.code"
+	PathCourseDepartment = "course.department"
+	PathCourseCategory   = "course.category"
+	PathCourseCampuses   = "course.campuses"
+	PathCourseTeachers   = "course.teachers"
+)
+
+// 变更日志相关
+const (
+	TargetTypeUser     int32 = 1
+	TargetTypeProposal int32 = 2
+)
+
+const (
+	ActionTypeGrantAdmin      int32 = 1
+	ActionTypeRevokeAdmin     int32 = 2
+	ActionTypeDeleteProposal  int32 = 3
+	ActionTypeUpdateProposal  int32 = 4
+	ActionTypeApproveProposal int32 = 5
+	ActionTypeCreateProposal  int32 = 6
+)
+
+const (
+	UpdateSourceAdmin int32 = 1
+	UpdateSourceUser  int32 = 2
+)
+
 // 缓存相关
 const (
 	CacheSearchHistoryKeyPrefix = "meowpick:searchhistory:"
@@ -96,43 +125,4 @@ const (
 const (
 	LikeTargetTypeComment  = "comment"
 	LikeTargetTypeProposal = "proposal"
-)
-
-// 搜索建议类型相关
-const (
-	SuggestionTargetTypeCourse     = "course"
-	SuggestionTargetTypeTeacher    = "teacher"
-	SuggestionTargetTypeDepartment = "department"
-	SuggestionTargetTypeCategory   = "category"
-)
-
-// 提案字段类型相关
-const (
-	FieldDepartment  = "department"
-	FieldCategory    = "category"
-	FieldCampus      = "campus"
-	FieldCourseName  = "courseName"
-	FieldCourseCode  = "courseCode"
-	FieldTeacherName = "teacherName"
-)
-
-// 变更记录目标类型
-const (
-	ChangeLogTargetTypeCourse   = "course"   // 课程
-	ChangeLogTargetTypeProposal = "proposal" // 提案
-	ChangeLogTargetTypeTeacher  = "teacher"  // 老师
-	ChangeLogTargetTypeUser     = "user"     // 用户
-)
-
-// 变更记录操作类型
-const (
-	ChangeLogActionCreate = "create" // 新增
-	ChangeLogActionUpdate = "update" // 修改
-	ChangeLogActionDelete = "delete" // 删除
-)
-
-// 变更记录来源类型
-const (
-	ChangeLogSourceManual = "manual" // 手动操作
-	ChangeLogSourceSystem = "system" // 系统自动
 )

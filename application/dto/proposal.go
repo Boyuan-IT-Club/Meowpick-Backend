@@ -26,7 +26,8 @@ type CreateProposalReq struct {
 // CreateProposalResp 新增投票响应
 type CreateProposalResp struct {
 	*Resp
-	ProposalID string `json:"proposalId"` // 提案ID
+	ProposalID string      `json:"proposalId"` // 提案ID
+	Proposal   *ProposalVO `json:"proposal"`   // 提案详情
 }
 
 type ProposalVO struct {

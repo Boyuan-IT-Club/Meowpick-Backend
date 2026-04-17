@@ -206,7 +206,7 @@ func (s *ChangeLogService) ListProposalLogsGrouped(ctx context.Context, req *dto
 	// 构建提案ID到管理员操作的映射
 	adminActionMap := make(map[string]*model.ChangeLog)
 	for _, log := range adminLogs {
-		if log.ProposalID != "" {
+		if log.ProposalID != "" && log.UpdateSource == consts.UpdateSourceAdmin {
 			// 只保留最新的管理员操作
 			if existing, ok := adminActionMap[log.ProposalID]; !ok || log.UpdatedAt.After(existing.UpdatedAt) {
 				adminActionMap[log.ProposalID] = log
@@ -256,9 +256,9 @@ func (s *ChangeLogService) ListProposalLogsGrouped(ctx context.Context, req *dto
 		// 转换课程信息
 		var courseVO *dto.CourseVO
 		if proposal.Course != nil {
-			courseVO, err = s.CourseAssembler.ToCourseVO(ctx, proposal.Course)
+			courseVO, err = s.CourseAssembler.ToProposalCourseVO(ctx, proposal.Course)
 			if err != nil {
-				logs.CtxWarnf(ctx, "[CourseAssembler] [ToCourseVO] error: %v", err)
+				logs.CtxWarnf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v", err)
 			}
 		}
 
@@ -418,8 +418,8 @@ func (s *ChangeLogService) ListProposalLogsTimeline(ctx context.Context, req *dt
 				}
 				if proposal.Course != nil {
 					snapshot.CourseName = proposal.Course.Name
-					snapshot.Department = s.getDepartmentName(proposal.Course.Department)
-					snapshot.Category = s.getCategoryName(proposal.Course.Category)
+					snapshot.Department = proposal.Course.Department
+					snapshot.Category = proposal.Course.Category
 				}
 				timelineLog.ProposalSnapshot = snapshot
 			}
@@ -459,11 +459,13 @@ func (s *ChangeLogService) getProposalStatusName(status int32) string {
 // getActionTypeName 获取操作类型名称
 func (s *ChangeLogService) getActionTypeName(action int32) string {
 	switch action {
-	case 3:
+	case consts.ActionTypeCreateProposal:
+		return "create"
+	case consts.ActionTypeDeleteProposal:
 		return "delete"
-	case 4:
+	case consts.ActionTypeUpdateProposal:
 		return "update"
-	case 5:
+	case consts.ActionTypeApproveProposal:
 		return "approve"
 	default:
 		return "unknown"
@@ -473,16 +475,18 @@ func (s *ChangeLogService) getActionTypeName(action int32) string {
 // getTimelineActionType 获取时间线操作类型
 func (s *ChangeLogService) getTimelineActionType(action int32) string {
 	switch action {
-	case 1:
+	case consts.ActionTypeGrantAdmin:
 		return "GRANT_ADMIN"
-	case 2:
+	case consts.ActionTypeRevokeAdmin:
 		return "REVOKE_ADMIN"
-	case 3:
+	case consts.ActionTypeDeleteProposal:
 		return "DELETE"
-	case 4:
+	case consts.ActionTypeUpdateProposal:
 		return "UPDATE"
-	case 5:
+	case consts.ActionTypeApproveProposal:
 		return "APPROVE"
+	case consts.ActionTypeCreateProposal:
+		return "CREATE"
 	default:
 		return "UNKNOWN"
 	}
