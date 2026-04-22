@@ -41,6 +41,7 @@ type IProposalRepo interface {
 	IsCourseInExistingProposals(ctx context.Context, course *model.ProposalCourse) (bool, error)
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
+	FindManyByFilter(ctx context.Context, req *dto.FilterProposalReq, statuses []int32) ([]*model.Proposal, int64, error)
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
 	FindByIDs(ctx context.Context, proposalIDs []string) ([]*model.Proposal, error)
 	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
@@ -74,10 +75,9 @@ func (r *ProposalRepo) IsCourseInExistingProposals(ctx context.Context, course *
 		consts.PathCourseCategory:   course.Category,
 		consts.PathCourseCampuses:   course.Campuses,
 		consts.PathCourseTeachers:   course.Teachers,
-		consts.Deleted:              false, // 只检查未删除的提案
+		consts.Deleted:              false,
 	}
 
-	// 查询提案中是否已存在该课程
 	count, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return false, err
@@ -96,7 +96,6 @@ func (r *ProposalRepo) FindMany(ctx context.Context, param *dto.PageParam) ([]*m
 		return nil, 0, err
 	}
 
-	// 如果不需要具体内容（param为nil），则直接返回总数
 	if param == nil {
 		return proposals, total, nil
 	}
@@ -136,6 +135,43 @@ func (r *ProposalRepo) FindManyByStatus(ctx context.Context, param *dto.PagePara
 		&proposals,
 		filter,
 		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+	); err != nil {
+		return nil, 0, err
+	}
+
+	return proposals, total, nil
+}
+
+// FindManyByFilter 按多个字段筛选提案
+func (r *ProposalRepo) FindManyByFilter(ctx context.Context, req *dto.FilterProposalReq, statuses []int32) ([]*model.Proposal, int64, error) {
+	proposals := []*model.Proposal{}
+	filter := bson.M{
+		consts.Deleted:            bson.M{"$ne": true},
+		consts.Status:             bson.M{"$in": statuses},
+		consts.PathCourseCampuses: bson.M{"$in": req.Campuses},
+	}
+
+	if req.Department != "" {
+		filter[consts.PathCourseDepartment] = req.Department
+	}
+	if req.Category != "" {
+		filter[consts.PathCourseCategory] = req.Category
+	}
+
+	total, err := r.conn.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if req.PageParam == nil {
+		return proposals, total, nil
+	}
+
+	if err = r.conn.Find(
+		ctx,
+		&proposals,
+		filter,
+		page.FindPageOption(req.PageParam).SetSort(page.DSort(consts.CreatedAt, -1)),
 	); err != nil {
 		return nil, 0, err
 	}
@@ -216,16 +252,16 @@ func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, 
 		{consts.Status, 1},
 		{consts.CreatedAt, -1},
 	}
-	
+
 	if err := r.conn.Find(ctx, &proposals, filter, page.FindPageOption(param).SetSort(sort)); err != nil {
 		return nil, 0, err
 	}
-	
+
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	return proposals, total, nil
 }
 
