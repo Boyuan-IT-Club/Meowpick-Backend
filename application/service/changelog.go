@@ -254,7 +254,7 @@ func (s *ChangeLogService) ListProposalLogsGrouped(ctx context.Context, req *dto
 		}
 
 		// 转换课程信息
-		var courseVO *dto.CourseVO
+		var courseVO *dto.ProposalCourseVO
 		if proposal.Course != nil {
 			courseVO, err = s.CourseAssembler.ToProposalCourseVO(ctx, proposal.Course)
 			if err != nil {
