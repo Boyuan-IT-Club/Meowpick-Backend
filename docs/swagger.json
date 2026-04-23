@@ -1201,7 +1201,7 @@
                     "type": "string"
                 },
                 "course": {
-                    "$ref": "#/definitions/dto.CourseVO"
+                    "$ref": "#/definitions/dto.ProposalCourseVO"
                 },
                 "title": {
                     "type": "string"
@@ -1624,6 +1624,38 @@
                 }
             }
         },
+        "dto.ProposalCourseVO": {
+            "type": "object",
+            "properties": {
+                "campuses": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "category": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "department": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "teachers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TeacherVO"
+                    }
+                }
+            }
+        },
         "dto.ProposalLogVO": {
             "type": "object",
             "properties": {
@@ -1634,7 +1666,7 @@
                     "type": "string"
                 },
                 "course": {
-                    "$ref": "#/definitions/dto.CourseVO"
+                    "$ref": "#/definitions/dto.ProposalCourseVO"
                 },
                 "creator": {
                     "$ref": "#/definitions/dto.CreatorVO"
@@ -1716,7 +1748,7 @@
                     "type": "string"
                 },
                 "course": {
-                    "$ref": "#/definitions/dto.CourseVO"
+                    "$ref": "#/definitions/dto.ProposalCourseVO"
                 },
                 "createdAt": {
                     "type": "string"
@@ -1875,7 +1907,7 @@
                     "type": "string"
                 },
                 "course": {
-                    "$ref": "#/definitions/dto.CourseVO"
+                    "$ref": "#/definitions/dto.ProposalCourseVO"
                 },
                 "title": {
                     "type": "string"
