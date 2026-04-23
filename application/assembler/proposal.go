@@ -47,12 +47,12 @@ var ProposalAssemblerSet = wire.NewSet(
 
 // ToProposalVO 单个ProposalDB转ProposalVO (DB to VO)
 func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal, userId string) (*dto.ProposalVO, error) {
-	var courseVO *dto.CourseVO
+	var courseVO *dto.ProposalCourseVO
 	if db.Course != nil {
 		var err error
 		courseVO, err = a.CourseAssembler.ToProposalCourseVO(ctx, db.Course)
 		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseVO] error: %v", err)
+			logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v", err)
 			return nil, err
 		}
 	}
@@ -127,11 +127,11 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 		// 从批量查询结果中获取点赞信息
 		likeCnt := likeCntMap[db.ID]   // 如果不存在则为0
 		active := likeStatusMap[db.ID] // 如果不存在则为false
-		var courseVO *dto.CourseVO
+		var courseVO *dto.ProposalCourseVO
 		if db.Course != nil {
 			courseVO, err = a.CourseAssembler.ToProposalCourseVO(ctx, db.Course)
 			if err != nil {
-				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseVO] error: %v", err)
+				logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v", err)
 				return nil, err
 			}
 		}

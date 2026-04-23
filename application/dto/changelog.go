@@ -74,13 +74,13 @@ type ListProposalLogsGroupedResp struct {
 
 // ProposalLogVO 提案日志展示对象
 type ProposalLogVO struct {
-	ProposalID  string         `json:"proposalId"`
-	Title       string         `json:"title"`
-	Content     string         `json:"content"`
-	Status      string         `json:"status"`
-	Course      *CourseVO      `json:"course"`
-	Creator     *CreatorVO     `json:"creator"`
-	AdminAction *AdminActionVO `json:"adminAction,omitempty"`
+	ProposalID  string              `json:"proposalId"`
+	Title       string              `json:"title"`
+	Content     string              `json:"content"`
+	Status      string              `json:"status"`
+	Course      *ProposalCourseVO   `json:"course"`
+	Creator     *CreatorVO          `json:"creator"`
+	AdminAction *AdminActionVO      `json:"adminAction,omitempty"`
 }
 
 // CreatorVO 创建者信息

@@ -92,10 +92,10 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 	}
 
 	// 检查是否已经存在相同的课程 (DryRun转换，不执行自动注册)
-	courseDBDryRun, err := s.CourseAssembler.ToCourseDBDryRun(ctx, req.Course)
+	courseDBDryRun, err := s.CourseAssembler.ToCourseDBDryRunFromProposalCourse(ctx, req.Course)
 	if err != nil {
 		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed,
-			errorx.KV("src", "course vo"), errorx.KV("dst", "course model dryrun"),
+			errorx.KV("src", "proposal course vo"), errorx.KV("dst", "course model dryrun"),
 		)
 	}
 
@@ -599,7 +599,7 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 			logs.CtxErrorf(ctx, "[ProposalService] [ApproveProposal] proposal course is nil, proposalId: %s", req.ProposalID)
 			return nil, errorx.New(errno.ErrCourseCvtFailed, errorx.KV("proposalId", req.ProposalID))
 		}
-		// 1. 将 ProposalCourse 转换为 CourseVO
+		// 1. 将 ProposalCourse 转换为 ProposalCourseVO
 		courseVO, err := s.CourseAssembler.ToProposalCourseVO(ctx, proposal.Course)
 		if err != nil {
 			logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v", err)
@@ -607,13 +607,13 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		}
 
 		// 第一层防重：先进行 DryRun 转换，再检查课程是否已存在
-		dryRunCourse, err := s.CourseAssembler.ToCourseDBDryRun(ctx, courseVO)
+		dryRunCourse, err := s.CourseAssembler.ToCourseDBDryRunFromProposalCourse(ctx, courseVO)
 		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRun] error: %v", err)
+			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
 		}
 		if dryRunCourse == nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRun] course is nil")
+			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] course is nil")
 			return nil, errorx.New(errno.ErrCourseCvtFailed)
 		}
 
@@ -625,10 +625,10 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		if courseExists {
 			logs.CtxInfof(ctx, "[ProposalService] [ApproveProposal] course already exists, skip create, proposalId: %s", req.ProposalID)
 		} else {
-			// 2. 将 CourseVO 转换为 CourseDB，此时会执行自动注册
-			course, err := s.CourseAssembler.ToCourseDB(ctx, courseVO)
+			// 2. 将 ProposalCourseVO 转换为 CourseDB，此时会执行自动注册
+			course, err := s.CourseAssembler.ToCourseDBFromProposalCourse(ctx, courseVO)
 			if err != nil {
-				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDB] error: %v", err)
+				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBFromProposalCourse] error: %v", err)
 				return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
 			}
 

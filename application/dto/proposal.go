@@ -16,11 +16,22 @@ package dto
 
 import "time"
 
+// ProposalCourseVO 提案中的课程信息
+type ProposalCourseVO struct {
+	ID         string        `json:"id,omitempty"`
+	Name       string        `json:"name"`
+	Code       string        `json:"code"`
+	Category   string        `json:"category"`
+	Campuses   []string      `json:"campuses"`
+	Department string        `json:"department"`
+	Teachers   []*TeacherVO  `json:"teachers"`
+}
+
 // CreateProposalReq 新增投票请求参数
 type CreateProposalReq struct {
-	Title   string    `json:"title" binding:"required"`
-	Content string    `json:"content" binding:"required"`
-	Course  *CourseVO `json:"course" binding:"required"`
+	Title   string            `json:"title" binding:"required"`
+	Content string            `json:"content" binding:"required"`
+	Course  *ProposalCourseVO `json:"course" binding:"required"`
 }
 
 // CreateProposalResp 新增投票响应
@@ -31,16 +42,16 @@ type CreateProposalResp struct {
 }
 
 type ProposalVO struct {
-	ID      string `json:"id"`
-	UserID  string `json:"userId"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
-	Status  string `json:"status"` // pending / approved / rejected
-	Deleted bool   `json:"deleted"`
+	ID      string            `json:"id"`
+	UserID  string            `json:"userId"`
+	Title   string            `json:"title"`
+	Content string            `json:"content"`
+	Status  string            `json:"status"` // pending / approved / rejected
+	Deleted bool              `json:"deleted"`
 	*LikeVO
-	Course    *CourseVO `json:"course"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Course    *ProposalCourseVO `json:"course"`
+	CreatedAt time.Time         `json:"createdAt"`
+	UpdatedAt time.Time         `json:"updatedAt"`
 }
 
 // ListProposalReq 对应 /api/proposal/list 的请求体（分页）
@@ -89,10 +100,10 @@ type DeleteProposalResp struct {
 
 // UpdateProposalReq 更新提案请求参数
 type UpdateProposalReq struct {
-	ProposalID string    `json:"-"`
-	Title      string    `json:"title" binding:"required"`
-	Content    string    `json:"content" binding:"required"`
-	Course     *CourseVO `json:"course" binding:"required"`
+	ProposalID string            `json:"-"`
+	Title      string            `json:"title" binding:"required"`
+	Content    string            `json:"content" binding:"required"`
+	Course     *ProposalCourseVO `json:"course" binding:"required"`
 }
 
 // UpdateProposalResp 更新提案响应参数
