@@ -96,6 +96,5 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY
-            cd ~/repos/meowpick
+            cd ~/repos/test/meowpick
             make meowpick-update
