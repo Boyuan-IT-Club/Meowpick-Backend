@@ -243,12 +243,30 @@ func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterPr
 		statuses = append(statuses, statusID)
 	}
 
-	if len(statuses) == 0 {
-		return nil, errorx.New(errno.ErrProposalGetStatusFailed,
-			errorx.KV("key", consts.Status),
-			errorx.KV("value", strings.Join(req.Statuses, ",")),
-		)
+	campuses := make([]string, 0, len(req.Campuses))
+	for _, campusName := range req.Campuses {
+		campusName = strings.TrimSpace(campusName)
+		if campusName == "" {
+			continue
+		}
+
+		valid := false
+		for _, validCampusName := range mapping.CampusesMap {
+			if validCampusName == campusName {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return nil, errorx.New(errno.ErrProposalGetStatusFailed,
+				errorx.KV("key", consts.Campuses),
+				errorx.KV("value", campusName),
+			)
+		}
+		campuses = append(campuses, campusName)
 	}
+
+	req.Campuses = campuses
 
 	proposals, total, err := s.ProposalRepo.FindManyByFilter(ctx, req, statuses)
 	if err != nil {

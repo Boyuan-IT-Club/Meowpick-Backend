@@ -96,10 +96,6 @@ func (r *ProposalRepo) FindMany(ctx context.Context, param *dto.PageParam) ([]*m
 		return nil, 0, err
 	}
 
-	if param == nil {
-		return proposals, total, nil
-	}
-
 	if err = r.conn.Find(
 		ctx,
 		&proposals,
@@ -125,11 +121,6 @@ func (r *ProposalRepo) FindManyByStatus(ctx context.Context, param *dto.PagePara
 		return nil, 0, err
 	}
 
-	// 如果不需要具体内容（param为nil），则直接返回总数
-	if param == nil {
-		return proposals, total, nil
-	}
-
 	if err = r.conn.Find(
 		ctx,
 		&proposals,
@@ -146,9 +137,14 @@ func (r *ProposalRepo) FindManyByStatus(ctx context.Context, param *dto.PagePara
 func (r *ProposalRepo) FindManyByFilter(ctx context.Context, req *dto.FilterProposalReq, statuses []int32) ([]*model.Proposal, int64, error) {
 	proposals := []*model.Proposal{}
 	filter := bson.M{
-		consts.Deleted:            bson.M{"$ne": true},
-		consts.Status:             bson.M{"$in": statuses},
-		consts.PathCourseCampuses: bson.M{"$in": req.Campuses},
+		consts.Deleted: bson.M{"$ne": true},
+	}
+
+	if len(statuses) > 0 {
+		filter[consts.Status] = bson.M{"$in": statuses}
+	}
+	if len(req.Campuses) > 0 {
+		filter[consts.PathCourseCampuses] = bson.M{"$in": req.Campuses}
 	}
 
 	if req.Department != "" {
@@ -161,10 +157,6 @@ func (r *ProposalRepo) FindManyByFilter(ctx context.Context, req *dto.FilterProp
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
-	}
-
-	if req.PageParam == nil {
-		return proposals, total, nil
 	}
 
 	if err = r.conn.Find(
