@@ -28,6 +28,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	typesMapping "github.com/Boyuan-IT-Club/Meowpick-Backend/types/mapping"
 
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
@@ -251,7 +252,7 @@ func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterPr
 		}
 
 		valid := false
-		for _, validCampusName := range mapping.CampusesMap {
+		for _, validCampusName := range typesMapping.CampusesMap {
 			if validCampusName == campusName {
 				valid = true
 				break
