@@ -1506,6 +1506,54 @@ paths:
       summary: 获取提案字段建议
       tags:
       - proposal
+  /api/proposal/filter:
+    get:
+      description: 基于提案状态、校区、开课院系、课程分类筛选 proposal 表中的提案
+      parameters:
+      - collectionFormat: multi
+        description: 提案状态，可多选
+        in: query
+        items:
+          type: string
+        name: status
+        required: true
+        type: array
+      - collectionFormat: multi
+        description: 校区，可多选
+        in: query
+        items:
+          type: string
+        name: campus
+        required: true
+        type: array
+      - description: 开课院系，精确匹配
+        in: query
+        name: department
+        type: string
+      - description: 课程分类，精确匹配
+        in: query
+        name: category
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Response-dto_ListProposalResp'
+      summary: 分页筛选提案列表
+      tags:
+      - proposal
   /api/proposal/history:
     get:
       parameters:
