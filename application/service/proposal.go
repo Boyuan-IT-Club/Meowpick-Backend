@@ -28,6 +28,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
+	typesMapping "github.com/Boyuan-IT-Club/Meowpick-Backend/types/mapping"
 
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
@@ -40,6 +41,7 @@ var _ IProposalService = (*ProposalService)(nil)
 type IProposalService interface {
 	CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
+	FilterProposals(ctx context.Context, req *dto.FilterProposalReq) (*dto.ListProposalResp, error)
 	GetProposal(ctx context.Context, req *dto.GetProposalReq) (*dto.GetProposalResp, error)
 	DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (*dto.DeleteProposalResp, error)
 	UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error)
@@ -204,6 +206,75 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 	}
 
 	// 转换为VO
+	vos, err := s.ProposalAssembler.ToProposalVOArray(ctx, proposals, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVOArray] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
+			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
+	}
+
+	return &dto.ListProposalResp{
+		Resp:      dto.Success(),
+		Total:     total,
+		Proposals: vos,
+	}, nil
+}
+
+// FilterProposals 分页筛选提案列表
+func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterProposalReq) (*dto.ListProposalResp, error) {
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	statuses := make([]int32, 0, len(req.Statuses))
+	for _, statusName := range req.Statuses {
+		statusName = strings.TrimSpace(statusName)
+		if statusName == "" {
+			continue
+		}
+
+		statusID := mapping.Data.GetProposalStatusIDByName(statusName)
+		if statusID == 0 {
+			return nil, errorx.New(errno.ErrProposalGetStatusFailed,
+				errorx.KV("key", consts.Status),
+				errorx.KV("value", statusName),
+			)
+		}
+		statuses = append(statuses, statusID)
+	}
+
+	campuses := make([]string, 0, len(req.Campuses))
+	for _, campusName := range req.Campuses {
+		campusName = strings.TrimSpace(campusName)
+		if campusName == "" {
+			continue
+		}
+
+		valid := false
+		for _, validCampusName := range typesMapping.CampusesMap {
+			if validCampusName == campusName {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return nil, errorx.New(errno.ErrProposalGetStatusFailed,
+				errorx.KV("key", consts.Campuses),
+				errorx.KV("value", campusName),
+			)
+		}
+		campuses = append(campuses, campusName)
+	}
+
+	req.Campuses = campuses
+
+	proposals, total, err := s.ProposalRepo.FindManyByFilter(ctx, req, statuses)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindManyByFilter] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
+	}
+
 	vos, err := s.ProposalAssembler.ToProposalVOArray(ctx, proposals, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVOArray] error: %v", err)

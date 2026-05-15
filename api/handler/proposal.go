@@ -69,6 +69,34 @@ func ListProposals(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
+// FilterProposals godoc
+// @Summary 分页筛选提案列表
+// @Description 基于提案状态、校区、开课院系、课程分类筛选 proposal 表中的提案
+// @Tags proposal
+// @Produce json
+// @Param status query []string true "提案状态，可多选" collectionFormat(multi)
+// @Param campus query []string true "校区，可多选" collectionFormat(multi)
+// @Param department query string false "开课院系，精确匹配"
+// @Param category query string false "课程分类，精确匹配"
+// @Param page query int false "页码" default(1)
+// @Param pageSize query int false "每页数量" default(10)
+// @Success 200 {object} Response[dto.ListProposalResp]
+// @Router /api/proposal/filter [get]
+func FilterProposals(c *gin.Context) {
+	var req dto.FilterProposalReq
+	var resp *dto.ListProposalResp
+	var err error
+
+	if err = c.ShouldBindQuery(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.FilterProposals(c, &req)
+	PostProcess(c, &req, resp, err)
+}
+
 // GetProposal 获取提案详情
 // @Summary 获取提案详情
 // @Description 根据提案ID查询提案完整信息

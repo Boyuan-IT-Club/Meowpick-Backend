@@ -73,6 +73,7 @@ func SetupRoutes() *gin.Engine {
 	{
 		proposalGroup.POST("/add", handler.CreateProposal)
 		proposalGroup.GET("/list", handler.ListProposals)
+		proposalGroup.GET("/filter", handler.FilterProposals)
 		proposalGroup.GET("/:proposalId", handler.GetProposal)
 		proposalGroup.POST("/:proposalId/update", handler.UpdateProposal)
 		proposalGroup.POST("/:proposalId/delete", handler.DeleteProposal)

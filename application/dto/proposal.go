@@ -60,6 +60,15 @@ type ListProposalReq struct {
 	*PageParam
 }
 
+// FilterProposalReq 对应 /api/proposal/filter 的请求参数（分页筛选）
+type FilterProposalReq struct {
+	Statuses   []string `form:"status" binding:"required"`
+	Campuses   []string `form:"campus" binding:"required"`
+	Department string   `form:"department"`
+	Category   string   `form:"category"`
+	*PageParam
+}
+
 // ListProposalResp 对应 /api/proposal/list 的响应体
 type ListProposalResp struct {
 	*Resp
@@ -132,7 +141,7 @@ type ProposalSuggestionsVO struct {
 
 // GetProposalFieldSuggestionsReq 获取提案字段建议请求
 type GetProposalFieldSuggestionsReq struct {
-	Field   string `form:"field" binding:"required"`   // 字段类型: department/category/campus/courseName/courseCode/teacherName
+	Field   string `form:"field" binding:"required"` // 字段类型: department/category/campus/courseName/courseCode/teacherName
 	Keyword string `form:"keyword" binding:"required"`
 	*PageParam
 }
@@ -140,9 +149,9 @@ type GetProposalFieldSuggestionsReq struct {
 // GetProposalFieldSuggestionsResp 获取提案字段建议响应
 type GetProposalFieldSuggestionsResp struct {
 	*Resp
-	Field       string                       `json:"field"`
-	Suggestions []*FieldSuggestionVO         `json:"suggestions"`
-	Total       int64                        `json:"total"`
+	Field       string               `json:"field"`
+	Suggestions []*FieldSuggestionVO `json:"suggestions"`
+	Total       int64                `json:"total"`
 }
 
 // FieldSuggestionVO 字段建议视图对象
