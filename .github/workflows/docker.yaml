@@ -92,7 +92,7 @@ jobs:
       - name: SSH Remote Update
         uses: appleboy/ssh-action@master
         with:
-          host: eagle233.top
+          host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
