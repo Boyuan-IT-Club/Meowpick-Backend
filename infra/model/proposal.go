@@ -43,6 +43,5 @@ type ProposalCourse struct {
 
 type ProposalTeacher struct {
 	Name       string `bson:"name"           json:"name"`
-	Title      string `bson:"title"          json:"title"`
 	Department string `bson:"department"     json:"department"`
 }
