@@ -139,7 +139,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "ChangeLog"
+                    "changeLog"
                 ],
                 "summary": "按提案聚合的日志列表",
                 "parameters": [
@@ -178,7 +178,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "ChangeLog"
+                    "changeLog"
                 ],
                 "summary": "扁平化时间线日志",
                 "parameters": [
@@ -886,7 +886,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "courses"
+                    "course"
                 ],
                 "summary": "搜索课程列表",
                 "parameters": [
