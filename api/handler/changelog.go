@@ -50,7 +50,7 @@ func ListChangeLogs(c *gin.Context) {
 // ListProposalLogsGrouped 按提案聚合的日志列表
 // @Summary 按提案聚合的日志列表
 // @Description 以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息
-// @Tags ChangeLog
+// @Tags changeLog
 // @Accept json
 // @Produce json
 // @Param page query int false "页码" default(1)
@@ -76,7 +76,7 @@ func ListProposalLogsGrouped(c *gin.Context) {
 // ListProposalLogsTimeline 扁平化时间线日志
 // @Summary 扁平化时间线日志
 // @Description 一条记录代表一次独立动作的扁平化分页，严格按时间倒序排列
-// @Tags ChangeLog
+// @Tags changeLog
 // @Accept json
 // @Produce json
 // @Param page query int false "页码" default(1)

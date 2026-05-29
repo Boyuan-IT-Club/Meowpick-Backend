@@ -115,7 +115,7 @@ func GetCourseCampuses(c *gin.Context) {
 // ListCourses godoc
 // @Summary 搜索课程列表
 // @Description 搜索课程列表
-// @Tags courses
+// @Tags course
 // @Accept json
 // @Produce json
 // @Param body body dto.ListCoursesReq true "ListCoursesReq"

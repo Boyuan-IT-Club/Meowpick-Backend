@@ -361,7 +361,6 @@ func (a *CourseAssembler) ToProposalCourseDB(ctx context.Context, vo *dto.Propos
 	for _, t := range vo.Teachers {
 		teachers = append(teachers, &model.ProposalTeacher{
 			Name:       t.Name,
-			Title:      t.Title,
 			Department: t.Department,
 		})
 	}
@@ -387,7 +386,6 @@ func (a *CourseAssembler) ToProposalCourseVO(ctx context.Context, db *model.Prop
 	for _, t := range db.Teachers {
 		teachers = append(teachers, &dto.TeacherVO{
 			Name:       t.Name,
-			Title:      t.Title,
 			Department: t.Department,
 		})
 	}
