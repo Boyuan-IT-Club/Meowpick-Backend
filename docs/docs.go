@@ -829,7 +829,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/delete": {
             "post": {
-                "description": "根据提案ID软删除提案（标记为已删除状态）",
+                "description": "根据提案ID软删除提案（标记为已删除状态）,只对状态为pending和rejected的进行处理",
                 "consumes": [
                     "application/json"
                 ],
