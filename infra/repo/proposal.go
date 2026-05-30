@@ -43,9 +43,11 @@ type IProposalRepo interface {
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
 	FindManyByFilter(ctx context.Context, req *dto.FilterProposalReq, statuses []int32) ([]*model.Proposal, int64, error)
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
+	FindByIDIncludeDeleted(ctx context.Context, proposalID string) (*model.Proposal, error)
 	FindByIDs(ctx context.Context, proposalIDs []string) ([]*model.Proposal, error)
 	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
 	DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
+	RestoreProposal(ctx context.Context, proposalId string) error
 	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error)
 }
@@ -184,6 +186,19 @@ func (r *ProposalRepo) FindByID(ctx context.Context, proposalID string) (*model.
 	return &proposal, nil
 }
 
+// FindByIDIncludeDeleted 根据提案ID查询单个提案（包含已删除的）
+func (r *ProposalRepo) FindByIDIncludeDeleted(ctx context.Context, proposalID string) (*model.Proposal, error) {
+	proposal := model.Proposal{}
+	if err := r.conn.FindOneNoCache(ctx, &proposal,
+		bson.M{consts.ID: proposalID}, nil); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &proposal, nil
+}
+
 // DeleteProposal 删除单个提案
 func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalId string, operatorId string) error {
 	// 查找未删除的提案
@@ -300,4 +315,25 @@ func (r *ProposalRepo) FindManyByUserID(ctx context.Context, param *dto.PagePara
 		return nil, 0, err
 	}
 	return proposals, total, nil
+}
+
+// RestoreProposal 恢复已删除的提案（将deleted设为false，清空deletedAt）
+func (r *ProposalRepo) RestoreProposal(ctx context.Context, proposalId string) error {
+	filter := bson.M{
+		consts.ID: proposalId,
+		consts.Deleted: true,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			consts.Deleted:   false,
+			consts.UpdatedAt: time.Now(),
+		},
+		"$unset": bson.M{
+			consts.DeletedAt: "",
+		},
+	}
+
+	key := fmt.Sprintf("proposal:%s", proposalId)
+	_, err := r.conn.UpdateOne(ctx, key, filter, update)
+	return err
 }

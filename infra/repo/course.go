@@ -17,6 +17,7 @@ package repo
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
@@ -49,6 +50,8 @@ type ICourseRepo interface {
 	GetSuggestionsByCode(ctx context.Context, code string, param *dto.PageParam) ([]*model.Course, int64, error)
 
 	IsCourseInExistingCourses(ctx context.Context, vo *model.Course) (bool, error)
+	FindByNameAndCode(ctx context.Context, name, code string) ([]*model.Course, error)
+	SoftDeleteByID(ctx context.Context, courseID string) error
 	Insert(ctx context.Context, course *model.Course) error
 }
 
@@ -262,4 +265,31 @@ func (r *CourseRepo) IsCourseInExistingCourses(ctx context.Context, vo *model.Co
 	}
 
 	return count > 0, nil
+}
+
+// FindByNameAndCode 根据课程名称和代码查找未删除的课程
+func (r *CourseRepo) FindByNameAndCode(ctx context.Context, name, code string) ([]*model.Course, error) {
+	courses := []*model.Course{}
+	filter := bson.M{
+		consts.Name:    name,
+		consts.Code:    code,
+		consts.Deleted: bson.M{"$ne": true},
+	}
+	if err := r.conn.Find(ctx, &courses, filter); err != nil {
+		return nil, err
+	}
+	return courses, nil
+}
+
+// SoftDeleteByID 软删除课程（设置deleted为true）
+func (r *CourseRepo) SoftDeleteByID(ctx context.Context, courseID string) error {
+	filter := bson.M{consts.ID: courseID}
+	update := bson.M{
+		"$set": bson.M{
+			consts.Deleted:   true,
+			consts.UpdatedAt: time.Now(),
+		},
+	}
+	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	return err
 }

@@ -95,6 +95,16 @@ type ToggleProposalResp struct {
 	*Resp
 }
 
+type RevokeProposalReq struct {
+	ProposalID string `json:"-"`              // 从 URL path 获取
+	ActionType string `json:"actionType"` // "approve" | "reject" | "delete"
+}
+
+type RevokeProposalResp struct {
+	*Resp
+	ProposalID string `json:"proposalId"`
+}
+
 type DeleteProposalReq struct {
 	ProposalID string `json:"proposalId"`
 }

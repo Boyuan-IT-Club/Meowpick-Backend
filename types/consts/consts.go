@@ -64,6 +64,9 @@ const (
 	ActionTypeUpdateProposal  int32 = 4
 	ActionTypeApproveProposal int32 = 5
 	ActionTypeCreateProposal  int32 = 6
+	ActionTypeRevokeApproveProposal int32 = 7
+	ActionTypeRevokeRejectProposal  int32 = 8
+	ActionTypeRevokeDeleteProposal  int32 = 9
 )
 
 const (
@@ -143,6 +146,13 @@ const (
 	FieldCourseName  = "courseName"
 	FieldCourseCode  = "courseCode"
 	FieldTeacherName = "teacherName"
+)
+
+// 撤回操作类型
+const (
+	RevokeActionApprove = "approve" // 撤回通过
+	RevokeActionReject   = "reject"  // 撤回拒绝
+	RevokeActionDelete   = "delete"  // 撤回删除
 )
 
 // 变更记录目标类型
