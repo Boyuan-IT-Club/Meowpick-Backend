@@ -360,6 +360,14 @@ func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeletePro
 		}
 	}
 
+	// 状态检查：只有待审核和已拒绝状态的提案才允许删除
+	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
+	if proposal.Status == approvedStatusID {
+		logs.CtxInfof(ctx, "[DeleteProposal] cannot delete approved proposal, proposalId: %s, status: %d", proposalId, proposal.Status)
+		return nil, errorx.New(errno.ErrProposalCannotDeleteApproved,
+			errorx.KV("status", typesMapping.ProposalStatusMap[proposal.Status]))
+	}
+
 	//执行删除提案
 	err = s.ProposalRepo.DeleteProposal(ctx, proposalId, userId)
 	if err != nil {
