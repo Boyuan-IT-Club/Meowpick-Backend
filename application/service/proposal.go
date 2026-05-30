@@ -755,7 +755,7 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	}
 
 	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
-	_, pendingCount, err := s.ProposalRepo.FindManyByStatus(ctx, nil, pendingStatusID)
+	_, pendingCount, err := s.ProposalRepo.FindManyByStatus(ctx, &dto.PageParam{Page: 1, PageSize: 1}, pendingStatusID)
 	if err != nil {
 		logs.CtxWarnf(ctx, "[ProposalRepo] [FindManyByStatus] error: %v", err)
 	}
@@ -952,7 +952,7 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 	}
 
 	return &dto.RevokeProposalResp{
-		Resp:        dto.Success(),
-		ProposalID:  req.ProposalID,
+		Resp:       dto.Success(),
+		ProposalID: req.ProposalID,
 	}, nil
 }
