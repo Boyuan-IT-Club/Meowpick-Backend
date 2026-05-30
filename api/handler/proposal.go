@@ -168,7 +168,7 @@ func UpdateProposal(c *gin.Context) {
 
 // DeleteProposal godoc
 // @Summary 删除提案
-// @Description 根据提案ID软删除提案（标记为已删除状态）
+// @Description 根据提案ID软删除提案（标记为已删除状态）,只对状态为pending和rejected的进行处理
 // @Tags proposal
 // @Accept json
 // @Param proposalId path string true "提案ID"
