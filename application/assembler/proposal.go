@@ -60,11 +60,15 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 	// 获得点赞目标类型
 	targetType := mapping.Data.GetLikeTargetTypeIDByName(consts.LikeTargetTypeProposal)
 
-	// 获取点赞信息
-	likeCnt, err := a.LikeRepo.CountByTarget(ctx, db.ID, targetType)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[LikeRepo] [CountByID] error: %v", err)
-		return nil, err
+	// 优先使用 proposal 文档上的 likeCnt，若为 0 则回退到实时查询
+	likeCnt := db.LikeCnt
+	if likeCnt == 0 {
+		count, err := a.LikeRepo.CountByTarget(ctx, db.ID, targetType)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[LikeRepo] [CountByID] error: %v", err)
+			return nil, err
+		}
+		likeCnt = count
 	}
 
 	// 这里的userId是查看评论的用户
@@ -107,11 +111,23 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 	// 获得点赞目标类型
 	targetType := mapping.Data.GetLikeTargetTypeIDByName(consts.LikeTargetTypeProposal)
 
-	// 批量获取点赞数
-	likeCntMap, err := a.LikeRepo.CountByTargets(ctx, ids, targetType)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[LikeRepo] [CountByTargets] error: %v", err)
-		return nil, err
+	// 收集 likeCnt 为 0 的 proposal IDs，需要实时查询
+	zeroLikeIDs := make([]string, 0)
+	for _, db := range dbs {
+		if db.LikeCnt == 0 {
+			zeroLikeIDs = append(zeroLikeIDs, db.ID)
+		}
+	}
+
+	// 批量获取需要实时查询的点赞数
+	likeCntMap := make(map[string]int64)
+	if len(zeroLikeIDs) > 0 {
+		cntMap, err := a.LikeRepo.CountByTargets(ctx, zeroLikeIDs, targetType)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[LikeRepo] [CountByTargets] error: %v", err)
+			return nil, err
+		}
+		likeCntMap = cntMap
 	}
 
 	// 批量获取点赞状态
@@ -124,8 +140,11 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 	// 构建结果
 	vos := make([]*dto.ProposalVO, 0, len(dbs))
 	for _, db := range dbs {
-		// 从批量查询结果中获取点赞信息
-		likeCnt := likeCntMap[db.ID]   // 如果不存在则为0
+		// 优先使用 proposal 文档的 likeCnt，若为 0 则从实时查询结果中获取
+		likeCnt := db.LikeCnt
+		if likeCnt == 0 {
+			likeCnt = likeCntMap[db.ID] // 如果不存在则为0
+		}
 		active := likeStatusMap[db.ID] // 如果不存在则为false
 		var courseVO *dto.ProposalCourseVO
 		if db.Course != nil {

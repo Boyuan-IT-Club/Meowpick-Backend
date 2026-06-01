@@ -26,6 +26,7 @@ type Proposal struct {
 	Deleted   bool            `bson:"deleted"             json:"deleted"`             // 删除标记
 	DeletedAt time.Time       `bson:"deletedAt,omitempty" json:"deletedAt,omitempty"` // 删除时间
 	Status    int32           `bson:"status"              json:"status"`              // 提案的状态，1: 待审核，2: 通过，3: 拒绝
+	LikeCnt   int64           `bson:"likeCnt"             json:"likeCnt"`             // 点赞数
 	Course    *ProposalCourse `bson:"course"              json:"course"`              // 课程信息，包含教师的ID（未创建不需要ID）
 	CreatedAt time.Time       `bson:"createdAt"           json:"createdAt"`
 	UpdatedAt time.Time       `bson:"updatedAt"           json:"updatedAt"`
