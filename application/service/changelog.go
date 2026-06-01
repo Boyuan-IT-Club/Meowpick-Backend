@@ -467,6 +467,8 @@ func (s *ChangeLogService) getActionTypeName(action int32) string {
 		return "update"
 	case consts.ActionTypeApproveProposal:
 		return "approve"
+	case consts.ActionTypeRejectProposal:
+		return "reject"
 	default:
 		return "unknown"
 	}
@@ -485,6 +487,8 @@ func (s *ChangeLogService) getTimelineActionType(action int32) string {
 		return "UPDATE"
 	case consts.ActionTypeApproveProposal:
 		return "APPROVE"
+	case consts.ActionTypeRejectProposal:
+		return "REJECT"
 	case consts.ActionTypeCreateProposal:
 		return "CREATE"
 	default:

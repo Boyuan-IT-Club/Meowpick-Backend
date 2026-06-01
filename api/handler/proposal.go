@@ -163,6 +163,31 @@ func RevokeProposal(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
+// RejectProposal godoc
+// @Summary 拒绝提案
+// @Description 管理员操作：将状态为 pending（待审核）的提案变更为 rejected（已拒绝）
+// @Description 使用场景：课程提案审核流程中，管理员认为提案不符合要求，驳回该提案
+// @Description 注意事项：
+// @Description - 仅管理员可操作（需先调用 /api/auth/is_admin 确认权限）
+// @Description - 仅状态为 pending 的提案可以拒绝，已 approved/rejected 的提案无法再次操作
+// @Description - 拒绝后不会创建课程记录，仅更新提案状态
+// @Tags proposal
+// @Produce json
+// @Param proposalId path string true "提案ID"
+// @Success 200 {object} Response[dto.RejectProposalResp]
+// @Router /api/proposal/{proposalId}/reject [post]
+func RejectProposal(c *gin.Context) {
+	var req dto.RejectProposalReq
+	var resp *dto.RejectProposalResp
+	var err error
+
+	req.ProposalID = c.Param(consts.CtxProposalID)
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.RejectProposal(c, &req)
+	PostProcess(c, &req, resp, err)
+}
+
 // UpdateProposal 更新提案接口
 // @Summary 更新提案内容
 // @Description 根据提案ID修改提案的标题和内容

@@ -85,6 +85,16 @@ type GetProposalResp struct {
 	Proposal *ProposalVO `json:"proposal"`
 }
 
+type RejectProposalReq struct {
+	ProposalID string `json:"proposalId"`
+}
+
+type RejectProposalResp struct {
+	*Resp
+	Proposal    bool  `json:"proposal"`
+	ProposalCnt int64 `json:"proposalCnt"`
+}
+
 type ToggleProposalReq struct {
 	ProposalID string `json:"proposalID"`
 }

@@ -49,6 +49,7 @@ type IProposalService interface {
 	GetProposalFieldSuggestions(ctx context.Context, req *dto.GetProposalFieldSuggestionsReq) (*dto.GetProposalFieldSuggestionsResp, error)
 	ApproveProposal(ctx context.Context, req *dto.ToggleProposalReq) (*dto.ToggleProposalResp, error)
 	RevokeProposal(ctx context.Context, req *dto.RevokeProposalReq) (*dto.RevokeProposalResp, error)
+	RejectProposal(ctx context.Context, req *dto.RejectProposalReq) (*dto.RejectProposalResp, error)
 }
 
 type ProposalService struct {
@@ -954,5 +955,78 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 	return &dto.RevokeProposalResp{
 		Resp:       dto.Success(),
 		ProposalID: req.ProposalID,
+	}, nil
+}
+
+// RejectProposal 拒绝提案，将状态从 pending 改为 rejected
+func (s *ProposalService) RejectProposal(ctx context.Context, req *dto.RejectProposalReq) (*dto.RejectProposalResp, error) {
+	userId, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userId == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
+		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+	}
+	if !isAdmin {
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+	}
+
+	if req.ProposalID == "" {
+		return nil, errorx.New(errno.ErrProposalIDRequired, errorx.KV("key", consts.ReqProposalID))
+	}
+
+	proposal, err := s.ProposalRepo.FindByID(ctx, req.ProposalID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, req.ProposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+	if proposal == nil {
+		logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", req.ProposalID)
+		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
+	}
+
+	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
+	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
+	rejectedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
+	if proposal.Status != pendingStatusID {
+		return nil, errorx.New(errno.ErrProposalAlreadyProcessed, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
+	}
+	if proposal.Status == approvedStatusID || proposal.Status == rejectedStatusID {
+		return nil, errorx.New(errno.ErrProposalAlreadyProcessed, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
+	}
+
+	newStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
+	updated, err := s.ProposalRepo.UpdateStatusByID(ctx, req.ProposalID, newStatusID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusByID] error: %v, proposalId: %s", err, req.ProposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+	if !updated {
+		return nil, errorx.New(errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+
+	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
+		TargetID:     req.ProposalID,
+		TargetType:   consts.TargetTypeProposal,
+		Action:       consts.ActionTypeRejectProposal,
+		Content:      "审批提案：拒绝",
+		UpdateSource: consts.UpdateSourceAdmin,
+		ProposalID:   req.ProposalID,
+	}); err != nil {
+		logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", err, req.ProposalID)
+	}
+
+	_, pendingCount, err := s.ProposalRepo.FindManyByStatus(ctx, nil, pendingStatusID)
+	if err != nil {
+		logs.CtxWarnf(ctx, "[ProposalRepo] [FindManyByStatus] error: %v", err)
+	}
+
+	return &dto.RejectProposalResp{
+		Resp:        dto.Success(),
+		Proposal:    true,
+		ProposalCnt: pendingCount,
 	}, nil
 }

@@ -52,6 +52,11 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
+	// 确保分页参数有默认值
+	if req.PageParam == nil {
+		req.PageParam = &dto.PageParam{Page: 1, PageSize: 10}
+	}
+
 	// 创建任务列表
 	tasks := []func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error){
 		// Courses
