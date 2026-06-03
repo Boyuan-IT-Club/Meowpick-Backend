@@ -91,8 +91,8 @@ type RejectProposalReq struct {
 
 type RejectProposalResp struct {
 	*Resp
-	Proposal    bool  `json:"proposal"`
-	ProposalCnt int64 `json:"proposalCnt"`
+	Rejected    bool  `json:"rejected"`
+	PendingCount int64 `json:"pendingCount"`
 }
 
 type ToggleProposalReq struct {

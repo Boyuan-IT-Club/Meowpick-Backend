@@ -762,10 +762,10 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	}
 
 	// 返回成功响应
-	return &dto.ToggleProposalResp{
-		Resp:        dto.Success(),
-		Proposal:    true,
-		ProposalCnt: pendingCount,
+	return &dto.RejectProposalResp{
+		Resp:         dto.Success(),
+		Rejected:     true,
+		PendingCount: pendingCount,
 	}, nil
 }
 
@@ -989,16 +989,12 @@ func (s *ProposalService) RejectProposal(ctx context.Context, req *dto.RejectPro
 	}
 
 	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
-	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
 	rejectedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
 	if proposal.Status != pendingStatusID {
 		return nil, errorx.New(errno.ErrProposalAlreadyProcessed, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
 	}
-	if proposal.Status == approvedStatusID || proposal.Status == rejectedStatusID {
-		return nil, errorx.New(errno.ErrProposalAlreadyProcessed, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
-	}
 
-	newStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
+	newStatusID := rejectedStatusID
 	updated, err := s.ProposalRepo.UpdateStatusByID(ctx, req.ProposalID, newStatusID)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusByID] error: %v, proposalId: %s", err, req.ProposalID)
@@ -1025,8 +1021,8 @@ func (s *ProposalService) RejectProposal(ctx context.Context, req *dto.RejectPro
 	}
 
 	return &dto.RejectProposalResp{
-		Resp:        dto.Success(),
-		Proposal:    true,
-		ProposalCnt: pendingCount,
+		Resp:         dto.Success(),
+		Rejected:     true,
+		PendingCount: pendingCount,
 	}, nil
 }
