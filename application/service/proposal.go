@@ -762,10 +762,10 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	}
 
 	// 返回成功响应
-	return &dto.RejectProposalResp{
-		Resp:         dto.Success(),
-		Rejected:     true,
-		PendingCount: pendingCount,
+	return &dto.ToggleProposalResp{
+		Resp:        dto.Success(),
+		Proposal:    true,
+		ProposalCnt: pendingCount,
 	}, nil
 }
 
