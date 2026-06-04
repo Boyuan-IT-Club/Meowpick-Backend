@@ -42,16 +42,17 @@ type CreateProposalResp struct {
 }
 
 type ProposalVO struct {
-	ID      string            `json:"id"`
-	UserID  string            `json:"userId"`
-	Title   string            `json:"title"`
-	Content string            `json:"content"`
-	Status  string            `json:"status"` // pending / approved / rejected
-	Deleted bool              `json:"deleted"`
+	ID           string            `json:"id"`
+	UserID       string            `json:"userId"`
+	Title        string            `json:"title"`
+	Content      string            `json:"content"`
+	Status       string            `json:"status"` // pending / approved / rejected
+	Deleted      bool              `json:"deleted"`
+	RejectReason string            `json:"rejectReason"` // 拒绝理由
 	*LikeVO
-	Course    *ProposalCourseVO `json:"course"`
-	CreatedAt time.Time         `json:"createdAt"`
-	UpdatedAt time.Time         `json:"updatedAt"`
+	Course       *ProposalCourseVO `json:"course"`
+	CreatedAt    time.Time         `json:"createdAt"`
+	UpdatedAt    time.Time         `json:"updatedAt"`
 }
 
 // ListProposalReq 对应 /api/proposal/list 的请求体（分页）
@@ -87,6 +88,7 @@ type GetProposalResp struct {
 
 type RejectProposalReq struct {
 	ProposalID string `json:"proposalId"`
+	Reason     string `json:"reason"`
 }
 
 type RejectProposalResp struct {

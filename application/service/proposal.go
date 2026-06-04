@@ -995,20 +995,25 @@ func (s *ProposalService) RejectProposal(ctx context.Context, req *dto.RejectPro
 	}
 
 	newStatusID := rejectedStatusID
-	updated, err := s.ProposalRepo.UpdateStatusByID(ctx, req.ProposalID, newStatusID)
+	updated, err := s.ProposalRepo.UpdateStatusAndReasonByID(ctx, req.ProposalID, newStatusID, req.Reason)
 	if err != nil {
-		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusByID] error: %v, proposalId: %s", err, req.ProposalID)
+		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusAndReasonByID] error: %v, proposalId: %s", err, req.ProposalID)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
 	}
 	if !updated {
 		return nil, errorx.New(errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
 	}
 
+	content := "审批提案：拒绝"
+	if req.Reason != "" {
+		content = req.Reason
+	}
+
 	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
 		TargetID:     req.ProposalID,
 		TargetType:   consts.TargetTypeProposal,
 		Action:       consts.ActionTypeRejectProposal,
-		Content:      "审批提案：拒绝",
+		Content:      content,
 		UpdateSource: consts.UpdateSourceAdmin,
 		ProposalID:   req.ProposalID,
 	}); err != nil {

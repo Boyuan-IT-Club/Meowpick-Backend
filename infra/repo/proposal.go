@@ -51,6 +51,7 @@ type IProposalRepo interface {
 	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error)
 	IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error
+	UpdateStatusAndReasonByID(ctx context.Context, proposalID string, statusID int32, rejectReason string) (bool, error)
 }
 
 type ProposalRepo struct {
@@ -298,6 +299,20 @@ func (r *ProposalRepo) UpdateStatusByID(ctx context.Context, proposalID string, 
 	}
 
 	// 检查是否更新了文档
+	updated := result.ModifiedCount > 0
+	return updated, nil
+}
+
+// UpdateStatusAndReasonByID 根据提案ID更新提案状态和拒绝理由
+func (r *ProposalRepo) UpdateStatusAndReasonByID(ctx context.Context, proposalID string, statusID int32, rejectReason string) (bool, error) {
+	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}
+	update := bson.M{"$set": bson.M{consts.Status: statusID, "rejectReason": rejectReason, consts.UpdatedAt: time.Now()}}
+
+	result, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	if err != nil {
+		return false, err
+	}
+
 	updated := result.ModifiedCount > 0
 	return updated, nil
 }
