@@ -856,6 +856,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/proposal/{proposalId}/revoke": {
+            "post": {
+                "description": "管理员撤回提案的通过/拒绝/删除操作",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "撤回提案操作",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "提案ID",
+                        "name": "proposalId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "撤回操作类型",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RevokeProposalReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response-dto_RevokeProposalResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/proposal/{proposalId}/update": {
             "post": {
                 "description": "根据提案ID修改提案的标题和内容",
@@ -1871,6 +1909,23 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.RevokeProposalReq": {
+            "type": "object",
+            "properties": {
+                "actionType": {
+                    "description": "\"approve\" | \"reject\" | \"delete\"",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RevokeProposalResp": {
+            "type": "object",
+            "properties": {
+                "proposalId": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.SearchHistoryVO": {
             "type": "object",
             "properties": {
@@ -2555,6 +2610,29 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/dto.ListProposalResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_RevokeProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.RevokeProposalResp"
                         }
                     ]
                 },
