@@ -897,6 +897,9 @@ const docTemplate = `{
         "/api/proposal/{proposalId}/reject": {
             "post": {
                 "description": "管理员操作：将状态为 pending（待审核）的提案变更为 rejected（已拒绝）\n使用场景：课程提案审核流程中，管理员认为提案不符合要求，驳回该提案\n注意事项：\n- 仅管理员可操作（需先调用 /api/auth/is_admin 确认权限）\n- 仅状态为 pending 的提案可以拒绝，已 approved/rejected 的提案无法再次操作\n- 拒绝后不会创建课程记录，仅更新提案状态",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -911,6 +914,15 @@ const docTemplate = `{
                         "name": "proposalId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "拒绝参数（可选理由）",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RejectProposalReq"
+                        }
                     }
                 ],
                 "responses": {
@@ -1923,6 +1935,10 @@ const docTemplate = `{
                 "likeCnt": {
                     "type": "integer"
                 },
+                "rejectReason": {
+                    "description": "拒绝理由",
+                    "type": "string"
+                },
                 "status": {
                     "description": "pending / approved / rejected",
                     "type": "string"
@@ -1955,14 +1971,25 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.RejectProposalReq": {
+            "type": "object",
+            "properties": {
+                "proposalId": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.RejectProposalResp": {
             "type": "object",
             "properties": {
-                "proposal": {
-                    "type": "boolean"
-                },
-                "proposalCnt": {
+                "pendingCount": {
                     "type": "integer"
+                },
+                "rejected": {
+                    "type": "boolean"
                 }
             }
         },

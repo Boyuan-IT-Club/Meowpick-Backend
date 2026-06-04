@@ -172,8 +172,10 @@ func RevokeProposal(c *gin.Context) {
 // @Description - 仅状态为 pending 的提案可以拒绝，已 approved/rejected 的提案无法再次操作
 // @Description - 拒绝后不会创建课程记录，仅更新提案状态
 // @Tags proposal
+// @Accept json
 // @Produce json
 // @Param proposalId path string true "提案ID"
+// @Param body body dto.RejectProposalReq true "拒绝参数（可选理由）"
 // @Success 200 {object} Response[dto.RejectProposalResp]
 // @Router /api/proposal/{proposalId}/reject [post]
 func RejectProposal(c *gin.Context) {
@@ -181,6 +183,10 @@ func RejectProposal(c *gin.Context) {
 	var resp *dto.RejectProposalResp
 	var err error
 
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
 	req.ProposalID = c.Param(consts.CtxProposalID)
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 

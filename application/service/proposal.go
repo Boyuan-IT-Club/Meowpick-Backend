@@ -968,7 +968,7 @@ func (s *ProposalService) RejectProposal(ctx context.Context, req *dto.RejectPro
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed, errorx.KV("userId", userId))
 	}
 	if !isAdmin {
 		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
