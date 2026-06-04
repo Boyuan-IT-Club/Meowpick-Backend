@@ -72,91 +72,72 @@ func makeResponse(resp any) map[string]any {
 	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
 		return nil
 	}
-	// 构建返回数据
 	v = v.Elem()
 
-	// 构建基础响应（假设 Code/Msg 存在并可取）
 	response := map[string]any{
 		"code": v.FieldByName("Code").Int(),
 		"msg":  v.FieldByName("Msg").String(),
 	}
 
 	data := make(map[string]any)
-
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Type().Field(i)
-		// 跳过顶层的 Code/Msg 字段（已经放到 response 里）
-		if field.Name == "Code" || field.Name == "Msg" {
-			continue
-		}
-
-		fv := v.Field(i) // reflect.Value
-		ft := field.Type // reflect.Type
-		// 先处理 struct 或 *struct（展开内层字段到 data）
-		if (fv.Kind() == reflect.Ptr && ft.Elem().Kind() == reflect.Struct) ||
-			(fv.Kind() == reflect.Struct && ft.Kind() == reflect.Struct) {
-
-			var inner reflect.Value
-			var innerType reflect.Type
-
-			if fv.Kind() == reflect.Ptr {
-				// 指针指向 struct：若为 nil 则使用零值 struct，以便也能展开零值字段
-				if fv.IsNil() {
-					innerType = ft.Elem()
-					inner = reflect.Zero(innerType)
-				} else {
-					inner = fv.Elem()
-					innerType = inner.Type()
-				}
-			} else { // 直接 struct 值
-				inner = fv
-				innerType = inner.Type()
-			}
-
-			for j := 0; j < inner.NumField(); j++ {
-				f := innerType.Field(j)
-
-				// 跳过可能来自 Resp 的 Code/Msg 字段
-				if f.Name == "Code" || f.Name == "Msg" {
-					continue
-				}
-
-				tag := f.Tag.Get("json")
-				if tag == "" || tag == "-" {
-					continue
-				}
-				key := strings.Split(tag, ",")[0]
-				if key == "" {
-					continue
-				}
-
-				// 即使是零值也要展示，所以直接取 Interface()
-				val := inner.Field(j).Interface()
-
-				// 不覆盖已存在 key（先到先得）
-				if _, exists := data[key]; !exists {
-					data[key] = val
-				}
-			}
-			continue
-		}
-
-		// 普通非 struct 字段 —— 即使是零值也展示
-		jsonTag := field.Tag.Get("json")
-		if jsonTag == "" || jsonTag == "-" {
-			continue
-		}
-		key := strings.Split(jsonTag, ",")[0]
-		if key == "" {
-			continue
-		}
-
-		data[key] = fv.Interface()
-	}
+	flattenStruct(v, data)
 
 	if len(data) > 0 {
 		response["data"] = data
 	}
 
 	return response
+}
+
+// flattenStruct 递归展开 struct 的字段到 data 中
+// 对于嵌入的 struct/*struct（无 json tag），递归展开其字段
+// 对于带 json tag 的 struct/*struct，作为一个整体存入 data
+func flattenStruct(v reflect.Value, data map[string]any) {
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+
+		if field.Name == "Code" || field.Name == "Msg" {
+			continue
+		}
+
+		fv := v.Field(i)
+		ft := field.Type
+		jsonTag := field.Tag.Get("json")
+		hasExplicitTag := jsonTag != "" && jsonTag != "-"
+
+		isStruct := (fv.Kind() == reflect.Struct) ||
+			(fv.Kind() == reflect.Ptr && ft.Elem().Kind() == reflect.Struct)
+
+		if !hasExplicitTag && isStruct {
+			var inner reflect.Value
+			if fv.Kind() == reflect.Ptr {
+				if fv.IsNil() {
+					inner = reflect.Zero(ft.Elem())
+				} else {
+					inner = fv.Elem()
+				}
+			} else {
+				inner = fv
+			}
+			// 无 json tag 的嵌入 struct，递归展开其字段
+			flattenStruct(inner, data)
+			continue
+		}
+
+		// 有显式 json tag，或者非 struct 类型
+		if !hasExplicitTag {
+			continue
+		}
+
+		key := strings.Split(jsonTag, ",")[0]
+		if key == "" || key == "-" {
+			continue
+		}
+
+		if _, exists := data[key]; !exists {
+			data[key] = fv.Interface()
+		}
+	}
 }

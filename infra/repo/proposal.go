@@ -50,6 +50,7 @@ type IProposalRepo interface {
 	RestoreProposal(ctx context.Context, proposalId string) error
 	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error)
+	IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error
 }
 
 type ProposalRepo struct {
@@ -335,5 +336,12 @@ func (r *ProposalRepo) RestoreProposal(ctx context.Context, proposalId string) e
 
 	key := fmt.Sprintf("proposal:%s", proposalId)
 	_, err := r.conn.UpdateOne(ctx, key, filter, update)
+	return err
+}
+
+func (r *ProposalRepo) IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error {
+	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}
+	update := bson.M{"$inc": bson.M{"likeCnt": delta}, "$set": bson.M{consts.UpdatedAt: time.Now()}}
+	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
 	return err
 }
