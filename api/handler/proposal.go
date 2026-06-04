@@ -137,6 +137,32 @@ func ApproveProposal(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
+// RevokeProposal godoc
+// @Summary 撤回提案操作
+// @Description 管理员撤回提案的通过/拒绝/删除操作
+// @Tags proposal
+// @Accept json
+// @Param proposalId path string true "提案ID"
+// @Param req body dto.RevokeProposalReq true "撤回操作类型"
+// @Success 200 {object} Response[dto.RevokeProposalResp]
+// @Router /api/proposal/{proposalId}/revoke [post]
+func RevokeProposal(c *gin.Context) {
+	var req dto.RevokeProposalReq
+	var resp *dto.RevokeProposalResp
+	var err error
+
+	req.ProposalID = c.Param(consts.CtxProposalID)
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.RevokeProposal(c, &req)
+	PostProcess(c, &req, resp, err)
+}
+
 // UpdateProposal 更新提案接口
 // @Summary 更新提案内容
 // @Description 根据提案ID修改提案的标题和内容
