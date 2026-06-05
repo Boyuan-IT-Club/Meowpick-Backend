@@ -552,6 +552,13 @@ definitions:
       reason:
         type: string
     type: object
+  dto.RejectProposalResp:
+    properties:
+      pendingCount:
+        type: integer
+      rejected:
+        type: boolean
+    type: object
   dto.RevokeProposalReq:
     properties:
       actionType:
@@ -562,13 +569,6 @@ definitions:
     properties:
       proposalId:
         type: string
-    type: object
-  dto.RejectProposalResp:
-    properties:
-      pendingCount:
-        type: integer
-      rejected:
-        type: boolean
     type: object
   dto.SearchHistoryVO:
     properties:
@@ -1024,21 +1024,6 @@ definitions:
         example: success
         type: string
     type: object
-  handler.Response-dto_RevokeProposalResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.RevokeProposalResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
   handler.Response-dto_RejectProposalResp:
     properties:
       code:
@@ -1048,6 +1033,21 @@ definitions:
       data:
         allOf:
         - $ref: '#/definitions/dto.RejectProposalResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
+  handler.Response-dto_RevokeProposalResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.RevokeProposalResp'
         description: 实际业务数据
       msg:
         description: 提示信息
@@ -1483,31 +1483,6 @@ paths:
       summary: 删除提案
       tags:
       - proposal
-  /api/proposal/{proposalId}/revoke:
-    post:
-      consumes:
-      - application/json
-      description: 管理员撤回提案的通过/拒绝/删除操作
-      parameters:
-      - description: 提案ID
-        in: path
-        name: proposalId
-        required: true
-        type: string
-      - description: 撤回操作类型
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RevokeProposalReq'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_RevokeProposalResp'
-      summary: 撤回提案操作
-      tags:
-      - proposal
   /api/proposal/{proposalId}/reject:
     post:
       consumes:
@@ -1539,6 +1514,31 @@ paths:
           schema:
             $ref: '#/definitions/handler.Response-dto_RejectProposalResp'
       summary: 拒绝提案
+      tags:
+      - proposal
+  /api/proposal/{proposalId}/revoke:
+    post:
+      consumes:
+      - application/json
+      description: 管理员撤回提案的通过/拒绝/删除操作
+      parameters:
+      - description: 提案ID
+        in: path
+        name: proposalId
+        required: true
+        type: string
+      - description: 撤回操作类型
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RevokeProposalReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Response-dto_RevokeProposalResp'
+      summary: 撤回提案操作
       tags:
       - proposal
   /api/proposal/{proposalId}/update:

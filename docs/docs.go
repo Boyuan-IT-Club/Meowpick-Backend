@@ -856,44 +856,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/proposal/{proposalId}/revoke": {
-            "post": {
-                "description": "管理员撤回提案的通过/拒绝/删除操作",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "proposal"
-                ],
-                "summary": "撤回提案操作",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "提案ID",
-                        "name": "proposalId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "撤回操作类型",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.RevokeProposalReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Response-dto_RevokeProposalResp"
-                        }
-                    }
-                }
-            }
-        },
         "/api/proposal/{proposalId}/reject": {
             "post": {
                 "description": "管理员操作：将状态为 pending（待审核）的提案变更为 rejected（已拒绝）\n使用场景：课程提案审核流程中，管理员认为提案不符合要求，驳回该提案\n注意事项：\n- 仅管理员可操作（需先调用 /api/auth/is_admin 确认权限）\n- 仅状态为 pending 的提案可以拒绝，已 approved/rejected 的提案无法再次操作\n- 拒绝后不会创建课程记录，仅更新提案状态",
@@ -930,6 +892,44 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/handler.Response-dto_RejectProposalResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/proposal/{proposalId}/revoke": {
+            "post": {
+                "description": "管理员撤回提案的通过/拒绝/删除操作",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "撤回提案操作",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "提案ID",
+                        "name": "proposalId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "撤回操作类型",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RevokeProposalReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response-dto_RevokeProposalResp"
                         }
                     }
                 }
@@ -1954,23 +1954,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.RevokeProposalReq": {
-            "type": "object",
-            "properties": {
-                "actionType": {
-                    "description": "\"approve\" | \"reject\" | \"delete\"",
-                    "type": "string"
-                }
-            }
-        },
-        "dto.RevokeProposalResp": {
-            "type": "object",
-            "properties": {
-                "proposalId": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.RejectProposalReq": {
             "type": "object",
             "properties": {
@@ -1990,6 +1973,23 @@ const docTemplate = `{
                 },
                 "rejected": {
                     "type": "boolean"
+                }
+            }
+        },
+        "dto.RevokeProposalReq": {
+            "type": "object",
+            "properties": {
+                "actionType": {
+                    "description": "\"approve\" | \"reject\" | \"delete\"",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RevokeProposalResp": {
+            "type": "object",
+            "properties": {
+                "proposalId": {
+                    "type": "string"
                 }
             }
         },
@@ -2687,29 +2687,6 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.Response-dto_RevokeProposalResp": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "description": "业务代码, 0表示成功",
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "description": "实际业务数据",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/dto.RevokeProposalResp"
-                        }
-                    ]
-                },
-                "msg": {
-                    "description": "提示信息",
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
         "handler.Response-dto_RejectProposalResp": {
             "type": "object",
             "properties": {
@@ -2723,6 +2700,29 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/dto.RejectProposalResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_RevokeProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.RevokeProposalResp"
                         }
                     ]
                 },
