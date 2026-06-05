@@ -894,6 +894,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/proposal/{proposalId}/reject": {
+            "post": {
+                "description": "管理员操作：将状态为 pending（待审核）的提案变更为 rejected（已拒绝）\n使用场景：课程提案审核流程中，管理员认为提案不符合要求，驳回该提案\n注意事项：\n- 仅管理员可操作（需先调用 /api/auth/is_admin 确认权限）\n- 仅状态为 pending 的提案可以拒绝，已 approved/rejected 的提案无法再次操作\n- 拒绝后不会创建课程记录，仅更新提案状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposal"
+                ],
+                "summary": "拒绝提案",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "提案ID",
+                        "name": "proposalId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "拒绝参数（可选理由）",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RejectProposalReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response-dto_RejectProposalResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/proposal/{proposalId}/update": {
             "post": {
                 "description": "根据提案ID修改提案的标题和内容",
@@ -1894,6 +1935,10 @@ const docTemplate = `{
                 "likeCnt": {
                     "type": "integer"
                 },
+                "rejectReason": {
+                    "description": "拒绝理由",
+                    "type": "string"
+                },
                 "status": {
                     "description": "pending / approved / rejected",
                     "type": "string"
@@ -1923,6 +1968,28 @@ const docTemplate = `{
             "properties": {
                 "proposalId": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.RejectProposalReq": {
+            "type": "object",
+            "properties": {
+                "proposalId": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RejectProposalResp": {
+            "type": "object",
+            "properties": {
+                "pendingCount": {
+                    "type": "integer"
+                },
+                "rejected": {
+                    "type": "boolean"
                 }
             }
         },
@@ -2633,6 +2700,29 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/dto.RevokeProposalResp"
+                        }
+                    ]
+                },
+                "msg": {
+                    "description": "提示信息",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "handler.Response-dto_RejectProposalResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "业务代码, 0表示成功",
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "实际业务数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.RejectProposalResp"
                         }
                     ]
                 },

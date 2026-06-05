@@ -36,6 +36,9 @@ type IPageParam interface {
 }
 
 func (p *PageParam) UnWrap() (int64, int64) {
+	if p == nil {
+		return 1, 10
+	}
 	if p.Page < 1 {
 		p.Page = 1
 	}

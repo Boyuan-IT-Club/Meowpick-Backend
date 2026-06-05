@@ -532,6 +532,9 @@ definitions:
         type: boolean
       likeCnt:
         type: integer
+      rejectReason:
+        description: 拒绝理由
+        type: string
       status:
         description: pending / approved / rejected
         type: string
@@ -540,6 +543,13 @@ definitions:
       updatedAt:
         type: string
       userId:
+        type: string
+    type: object
+  dto.RejectProposalReq:
+    properties:
+      proposalId:
+        type: string
+      reason:
         type: string
     type: object
   dto.RevokeProposalReq:
@@ -552,6 +562,13 @@ definitions:
     properties:
       proposalId:
         type: string
+    type: object
+  dto.RejectProposalResp:
+    properties:
+      pendingCount:
+        type: integer
+      rejected:
+        type: boolean
     type: object
   dto.SearchHistoryVO:
     properties:
@@ -1022,6 +1039,21 @@ definitions:
         example: success
         type: string
     type: object
+  handler.Response-dto_RejectProposalResp:
+    properties:
+      code:
+        description: 业务代码, 0表示成功
+        example: 0
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/dto.RejectProposalResp'
+        description: 实际业务数据
+      msg:
+        description: 提示信息
+        example: success
+        type: string
+    type: object
   handler.Response-dto_SignInResp:
     properties:
       code:
@@ -1474,6 +1506,39 @@ paths:
           schema:
             $ref: '#/definitions/handler.Response-dto_RevokeProposalResp'
       summary: 撤回提案操作
+      tags:
+      - proposal
+  /api/proposal/{proposalId}/reject:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        管理员操作：将状态为 pending（待审核）的提案变更为 rejected（已拒绝）
+        使用场景：课程提案审核流程中，管理员认为提案不符合要求，驳回该提案
+        注意事项：
+        - 仅管理员可操作（需先调用 /api/auth/is_admin 确认权限）
+        - 仅状态为 pending 的提案可以拒绝，已 approved/rejected 的提案无法再次操作
+        - 拒绝后不会创建课程记录，仅更新提案状态
+      parameters:
+      - description: 提案ID
+        in: path
+        name: proposalId
+        required: true
+        type: string
+      - description: 拒绝参数（可选理由）
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RejectProposalReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Response-dto_RejectProposalResp'
+      summary: 拒绝提案
       tags:
       - proposal
   /api/proposal/{proposalId}/update:

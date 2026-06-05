@@ -79,13 +79,14 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 	}
 
 	return &dto.ProposalVO{
-		ID:      db.ID,
-		UserID:  db.UserID,
-		Title:   db.Title,
-		Content: db.Content,
-		Course:  courseVO,
-		Status:  mapping.Data.GetProposalStatusNameByID(db.Status),
-		Deleted: db.Deleted,
+		ID:           db.ID,
+		UserID:       db.UserID,
+		Title:        db.Title,
+		Content:      db.Content,
+		Course:       courseVO,
+		Status:       mapping.Data.GetProposalStatusNameByID(db.Status),
+		Deleted:      db.Deleted,
+		RejectReason: db.RejectReason,
 		LikeVO: &dto.LikeVO{
 			Like:    active,
 			LikeCnt: likeCnt,
@@ -155,12 +156,13 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 			}
 		}
 		proposalVO := &dto.ProposalVO{
-			ID:      db.ID,
-			Content: db.Content,
-			Title:   db.Title,
-			UserID:  db.UserID,
-			Status:  mapping.Data.GetProposalStatusNameByID(db.Status),
-			Deleted: db.Deleted,
+			ID:           db.ID,
+			Content:      db.Content,
+			Title:        db.Title,
+			UserID:       db.UserID,
+			Status:       mapping.Data.GetProposalStatusNameByID(db.Status),
+			Deleted:      db.Deleted,
+			RejectReason: db.RejectReason,
 			LikeVO: &dto.LikeVO{
 				Like:    active,
 				LikeCnt: likeCnt,
@@ -188,15 +190,16 @@ func (a *ProposalAssembler) ToProposalDB(ctx context.Context, vo *dto.ProposalVO
 	}
 
 	return &model.Proposal{
-		ID:        vo.ID,
-		UserID:    vo.UserID,
-		Title:     vo.Title,
-		Content:   vo.Content,
-		Course:    courseDB,
-		Status:    mapping.Data.GetProposalStatusIDByName(vo.Status),
-		Deleted:   vo.Deleted,
-		CreatedAt: vo.CreatedAt,
-		UpdatedAt: vo.UpdatedAt,
+		ID:           vo.ID,
+		UserID:       vo.UserID,
+		Title:        vo.Title,
+		Content:      vo.Content,
+		Course:       courseDB,
+		Status:       mapping.Data.GetProposalStatusIDByName(vo.Status),
+		Deleted:      vo.Deleted,
+		RejectReason: vo.RejectReason,
+		CreatedAt:    vo.CreatedAt,
+		UpdatedAt:    vo.UpdatedAt,
 	}, nil
 }
 

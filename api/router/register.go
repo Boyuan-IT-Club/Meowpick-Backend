@@ -82,6 +82,7 @@ func SetupRoutes() *gin.Engine {
 		proposalGroup.GET("/field-suggestions", handler.GetProposalFieldSuggestions) // 获取提案字段建议
 		proposalGroup.POST("/:proposalId/approve", handler.ApproveProposal)
 		proposalGroup.POST("/:proposalId/revoke", handler.RevokeProposal)
+		proposalGroup.POST("/:proposalId/reject", handler.RejectProposal)
 	}
 
 	// ChangeLogApi
