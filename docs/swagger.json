@@ -2210,13 +2210,17 @@
         },
         "dto.ToggleLikeReq": {
             "type": "object",
+            "required": [
+                "targetType"
+            ],
             "properties": {
-                "targetId": {
-                    "type": "string"
-                },
                 "targetType": {
-                    "description": "1: \"proposal\"，2: \"comment\"",
-                    "type": "string"
+                    "description": "点赞对象类型：proposal/comment",
+                    "type": "string",
+                    "enum": [
+                        "proposal",
+                        "comment"
+                    ]
                 }
             }
         },

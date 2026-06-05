@@ -15,8 +15,8 @@
 package dto
 
 type ToggleLikeReq struct {
-	TargetID   string `json:"targetId"`
-	TargetType string `json:"targetType"` // 1: "proposal"，2: "comment"
+	TargetID   string `json:"-" swaggerignore:"true"`                                 // 从 URL path 获取
+	TargetType string `json:"targetType" binding:"required" enums:"proposal,comment"` // 点赞对象类型：proposal/comment
 }
 
 type ToggleLikeResp struct {
