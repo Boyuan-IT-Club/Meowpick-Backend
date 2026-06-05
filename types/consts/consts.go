@@ -67,6 +67,7 @@ const (
 	ActionTypeRevokeApproveProposal int32 = 7
 	ActionTypeRevokeRejectProposal  int32 = 8
 	ActionTypeRevokeDeleteProposal  int32 = 9
+	ActionTypeRejectProposal        int32 = 10
 )
 
 const (
