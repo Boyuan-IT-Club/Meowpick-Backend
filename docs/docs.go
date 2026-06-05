@@ -126,7 +126,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "changelog"
+                    "changeLog"
                 ],
                 "summary": "分页查询变更记录",
                 "parameters": [

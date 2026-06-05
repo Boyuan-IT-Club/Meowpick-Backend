@@ -1197,7 +1197,7 @@ paths:
             $ref: '#/definitions/handler.Response-dto_ListChangeLogsResp'
       summary: 分页查询变更记录
       tags:
-      - changelog
+      - changeLog
   /api/changelog/proposal/grouped:
     get:
       consumes:
