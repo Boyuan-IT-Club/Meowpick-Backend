@@ -15,19 +15,19 @@
 // @title Meowpick Backend API
 // @version 1.0
 // @description 选课猫后端接口文档
-// @BasePath /
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description 输入格式：Bearer {token}
+// @servers.url /
+// @securitydefinitions.bearerauth Bearer
 package main
 
 import (
+	"net/http"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/router"
-	_ "github.com/Boyuan-IT-Club/Meowpick-Backend/docs"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/docs"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
+	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -36,7 +36,10 @@ func main() {
 	provider.Init()
 	r := router.SetupRoutes()
 	setLogLevel()
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/openapi.json", func(c *gin.Context) {
+		c.Data(http.StatusOK, "application/json; charset=utf-8", []byte(docs.SwaggerInfo.ReadDoc()))
+	})
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/openapi.json")))
 
 	err := r.Run(":8080")
 	if err != nil {

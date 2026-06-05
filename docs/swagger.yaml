@@ -1,1313 +1,1322 @@
-# Copyright 2026 Boyuan-IT-Club
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-basePath: /
-definitions:
-  dto.AdminActionVO:
-    properties:
-      action:
-        description: approve/reject/delete
-        type: string
-      actionTime:
-        type: string
-      adminId:
-        type: string
-      adminName:
-        type: string
-      reason:
-        type: string
-    type: object
-  dto.ChangeLogVO:
-    properties:
-      action:
-        type: integer
-      content:
-        type: string
-      id:
-        type: string
-      proposalId:
-        type: string
-      targetId:
-        type: string
-      targetType:
-        type: integer
-      updateSource:
-        type: integer
-      updatedAt:
-        type: string
-      userId:
-        type: string
-    type: object
-  dto.CommentVO:
-    properties:
-      category:
-        type: string
-      content:
-        type: string
-      courseId:
-        type: string
-      createdAt:
-        type: string
-      department:
-        type: string
-      id:
-        type: string
-      like:
-        type: boolean
-      likeCnt:
-        type: integer
-      name:
-        type: string
-      tags:
-        items:
+components:
+  schemas:
+    dto.AdminActionVO:
+      properties:
+        action:
+          description: approve/reject/delete
           type: string
-        type: array
-      teachers:
-        description: 这里还是直接返回教师名字+职称组合后的字符串列表
-        items:
+        actionTime:
           type: string
-        type: array
-      updatedAt:
-        type: string
-      userId:
-        type: string
-    type: object
-  dto.CourseVO:
-    properties:
-      campuses:
-        items:
+        adminId:
           type: string
-        type: array
-      category:
-        type: string
-      code:
-        type: string
-      department:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      tagCount:
-        additionalProperties:
-          format: int64
+        adminName:
+          type: string
+        reason:
+          type: string
+      type: object
+    dto.ChangeLogVO:
+      properties:
+        action:
           type: integer
-        type: object
-      teachers:
-        items:
-          $ref: '#/definitions/dto.TeacherVO'
-        type: array
-    type: object
-  dto.CreateCommentReq:
-    properties:
-      content:
-        type: string
-      courseId:
-        type: string
-      tags:
-        items:
+        content:
           type: string
-        type: array
-    required:
-    - content
-    - courseId
-    type: object
-  dto.CreateCommentResp:
-    properties:
-      category:
-        type: string
-      content:
-        type: string
-      courseId:
-        type: string
-      createdAt:
-        type: string
-      department:
-        type: string
-      id:
-        type: string
-      like:
-        type: boolean
-      likeCnt:
-        type: integer
-      name:
-        type: string
-      tags:
-        items:
+        id:
           type: string
-        type: array
-      teachers:
-        description: 这里还是直接返回教师名字+职称组合后的字符串列表
-        items:
+        proposalId:
           type: string
-        type: array
-      updatedAt:
-        type: string
-      userId:
-        type: string
-    type: object
-  dto.CreateProposalReq:
-    properties:
-      content:
-        type: string
-      course:
-        $ref: '#/definitions/dto.ProposalCourseVO'
-      title:
-        type: string
-    required:
-    - content
-    - course
-    - title
-    type: object
-  dto.CreateProposalResp:
-    properties:
-      proposal:
-        allOf:
-        - $ref: '#/definitions/dto.ProposalVO'
-        description: 提案详情
-      proposalId:
-        description: 提案ID
-        type: string
-    type: object
-  dto.CreateTeacherReq:
-    properties:
-      department:
-        type: string
-      name:
-        type: string
-      title:
-        type: string
-    required:
-    - department
-    - name
-    - title
-    type: object
-  dto.CreateTeacherResp:
-    properties:
-      department:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      title:
-        type: string
-    type: object
-  dto.CreatorVO:
-    properties:
-      createTime:
-        type: string
-      creatorId:
-        type: string
-      creatorName:
-        type: string
-    type: object
-  dto.DeleteProposalResp:
-    properties:
-      deleted:
-        type: boolean
-      deletedAt:
-        type: string
-      operatorId:
-        type: string
-      proposalId:
-        type: string
-    type: object
-  dto.FieldSuggestionVO:
-    properties:
-      id:
-        type: string
-      label:
-        type: string
-      value:
-        type: string
-    type: object
-  dto.GetCourseCampusesResp:
-    properties:
-      campuses:
-        items:
+        targetId:
           type: string
-        type: array
-    type: object
-  dto.GetCourseCategoriesResp:
-    properties:
-      categories:
-        items:
+        targetType:
+          type: integer
+        updateSource:
+          type: integer
+        updatedAt:
           type: string
-        type: array
-    type: object
-  dto.GetCourseDepartmentsResp:
-    properties:
-      departments:
-        items:
+        userId:
           type: string
-        type: array
-    type: object
-  dto.GetCourseResp:
-    properties:
-      course:
-        $ref: '#/definitions/dto.CourseVO'
-    type: object
-  dto.GetMyCommentsReq:
-    properties:
-      page:
-        type: integer
-      pageSize:
-        type: integer
-    type: object
-  dto.GetMyCommentsResp:
-    properties:
-      comments:
-        items:
-          $ref: '#/definitions/dto.CommentVO'
-        type: array
-      total:
-        type: integer
-    type: object
-  dto.GetMyProposalsResp:
-    properties:
-      proposals:
-        items:
-          $ref: '#/definitions/dto.ProposalVO'
-        type: array
-      total:
-        type: integer
-    type: object
-  dto.GetProposalFieldSuggestionsResp:
-    properties:
-      field:
-        type: string
-      suggestions:
-        items:
-          $ref: '#/definitions/dto.FieldSuggestionVO'
-        type: array
-      total:
-        type: integer
-    type: object
-  dto.GetProposalResp:
-    properties:
-      proposal:
-        $ref: '#/definitions/dto.ProposalVO'
-    type: object
-  dto.GetProposalSuggestionsResp:
-    properties:
-      suggestions:
-        items:
-          $ref: '#/definitions/dto.ProposalSuggestionsVO'
-        type: array
-    type: object
-  dto.GetSearchHistoriesResp:
-    properties:
-      histories:
-        items:
-          $ref: '#/definitions/dto.SearchHistoryVO'
-        type: array
-    type: object
-  dto.GetSearchSuggestionsResp:
-    properties:
-      suggestions:
-        items:
-          $ref: '#/definitions/dto.SearchSuggestionsVO'
-        type: array
-    type: object
-  dto.GetTeacherSuggestionsResp:
-    properties:
-      teachers:
-        items:
-          $ref: '#/definitions/dto.TeacherVO'
-        type: array
-    type: object
-  dto.GetTotalCourseCommentsCountResp:
-    properties:
-      count:
-        type: integer
-    type: object
-  dto.GrantAdminReq:
-    properties:
-      userId:
-        type: string
-      verifyCode:
-        type: string
-    type: object
-  dto.GrantAdminResp:
-    properties:
-      isAdmin:
-        description: 操作后的管理员状态
-        type: boolean
-    type: object
-  dto.IsAdminResp:
-    properties:
-      isAdmin:
-        type: boolean
-    type: object
-  dto.ListChangeLogsReq:
-    properties:
-      keyword:
-        type: string
-      page:
-        type: integer
-      pageSize:
-        type: integer
-      type:
-        enum:
-        - course
-        - proposal
-        - teacher
-        - user
-        type: string
-    type: object
-  dto.ListChangeLogsResp:
-    properties:
-      changeLogs:
-        items:
-          $ref: '#/definitions/dto.ChangeLogVO'
-        type: array
-      total:
-        type: integer
-    type: object
-  dto.ListCourseCommentsResp:
-    properties:
-      comments:
-        items:
-          $ref: '#/definitions/dto.CommentVO'
-        type: array
-      total:
-        type: integer
-    type: object
-  dto.ListCoursesReq:
-    properties:
-      keyword:
-        type: string
-      page:
-        type: integer
-      pageSize:
-        type: integer
-      type:
-        description: teacher or course
-        type: string
-    type: object
-  dto.ListCoursesResp:
-    properties:
-      courses:
-        description: 当前页的课程列表
-        items:
-          $ref: '#/definitions/dto.CourseVO'
-        type: array
-      page:
-        type: integer
-      pageSize:
-        type: integer
-      total:
-        description: 符合条件的总记录数
-        type: integer
-    type: object
-  dto.ListProposalLogsGroupedResp:
-    properties:
-      proposals:
-        items:
-          $ref: '#/definitions/dto.ProposalLogVO'
-        type: array
-      total:
-        type: integer
-    type: object
-  dto.ListProposalLogsTimelineResp:
-    properties:
-      logs:
-        items:
-          $ref: '#/definitions/dto.ProposalTimelineLogVO'
-        type: array
-      total:
-        type: integer
-    type: object
-  dto.ListProposalResp:
-    properties:
-      proposals:
-        items:
-          $ref: '#/definitions/dto.ProposalVO'
-        type: array
-      total:
-        type: integer
-    type: object
-  dto.ProposalCourseVO:
-    properties:
-      campuses:
-        items:
+      type: object
+    dto.CommentVO:
+      properties:
+        category:
           type: string
-        type: array
-      category:
-        type: string
-      code:
-        type: string
-      department:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      teachers:
-        items:
-          $ref: '#/definitions/dto.TeacherVO'
-        type: array
-    type: object
-  dto.ProposalLogVO:
-    properties:
-      adminAction:
-        $ref: '#/definitions/dto.AdminActionVO'
-      content:
-        type: string
-      course:
-        $ref: '#/definitions/dto.ProposalCourseVO'
-      creator:
-        $ref: '#/definitions/dto.CreatorVO'
-      proposalId:
-        type: string
-      status:
-        type: string
-      title:
-        type: string
-    type: object
-  dto.ProposalSnapshotVO:
-    properties:
-      category:
-        type: string
-      courseName:
-        type: string
-      department:
-        type: string
-      title:
-        type: string
-    type: object
-  dto.ProposalSuggestionsVO:
-    properties:
-      id:
-        type: string
-      title:
-        type: string
-    type: object
-  dto.ProposalTimelineLogVO:
-    properties:
-      actionTime:
-        type: string
-      actionType:
-        description: CREATE/APPROVE/REJECT/DELETE/UPDATE/GRANT_ADMIN/REVOKE_ADMIN
-        type: string
-      details:
-        additionalProperties: true
-        type: object
-      logId:
-        type: string
-      operatorId:
-        type: string
-      operatorName:
-        type: string
-      proposalId:
-        type: string
-      proposalSnapshot:
-        $ref: '#/definitions/dto.ProposalSnapshotVO'
-    type: object
-  dto.ProposalVO:
-    properties:
-      content:
-        type: string
-      course:
-        $ref: '#/definitions/dto.ProposalCourseVO'
-      createdAt:
-        type: string
-      deleted:
-        type: boolean
-      id:
-        type: string
-      like:
-        type: boolean
-      likeCnt:
-        type: integer
-      rejectReason:
-        description: 拒绝理由
-        type: string
-      status:
-        description: pending / approved / rejected
-        type: string
-      title:
-        type: string
-      updatedAt:
-        type: string
-      userId:
-        type: string
-    type: object
-  dto.RejectProposalReq:
-    properties:
-      proposalId:
-        type: string
-      reason:
-        type: string
-    type: object
-  dto.RejectProposalResp:
-    properties:
-      pendingCount:
-        type: integer
-      rejected:
-        type: boolean
-    type: object
-  dto.RevokeProposalReq:
-    properties:
-      actionType:
-        description: '"approve" | "reject" | "delete"'
-        type: string
-    type: object
-  dto.RevokeProposalResp:
-    properties:
-      proposalId:
-        type: string
-    type: object
-  dto.SearchHistoryVO:
-    properties:
-      createdAt:
-        type: string
-      id:
-        type: string
-      query:
-        type: string
-    type: object
-  dto.SearchSuggestionsVO:
-    properties:
-      name:
-        type: string
-      type:
-        type: string
-    type: object
-  dto.SignInReq:
-    properties:
-      authId:
-        description: 微信开放平台ID
-        type: string
-      authType:
-        description: 认证类型(wechat/phone等)
-        type: string
-      verifyCode:
-        description: res.code
-        type: string
-    required:
-    - authId
-    - authType
-    - verifyCode
-    type: object
-  dto.SignInResp:
-    properties:
-      accessToken:
-        type: string
-      expiresIn:
-        type: integer
-      isAdmin:
-        type: boolean
-      userId:
-        type: string
-    type: object
-  dto.TeacherVO:
-    properties:
-      department:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      title:
-        type: string
-    type: object
-  dto.ToggleLikeReq:
-    properties:
-      targetType:
-        description: 点赞对象类型：proposal/comment
-        enum:
-        - proposal
-        - comment
-        type: string
-    required:
-    - targetType
-    type: object
-  dto.ToggleLikeResp:
-    properties:
-      like:
-        type: boolean
-      likeCnt:
-        type: integer
-    type: object
-  dto.ToggleProposalResp:
-    properties:
-      proposal:
-        type: boolean
-      proposalCnt:
-        type: integer
-    type: object
-  dto.UpdateProposalReq:
-    properties:
-      content:
-        type: string
-      course:
-        $ref: '#/definitions/dto.ProposalCourseVO'
-      title:
-        type: string
-    required:
-    - content
-    - course
-    - title
-    type: object
-  dto.UpdateProposalResp:
-    properties:
-      proposalId:
-        type: string
-    type: object
-  handler.Response-dto_CreateCommentResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.CreateCommentResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_CreateProposalResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.CreateProposalResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_CreateTeacherResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.CreateTeacherResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_DeleteProposalResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.DeleteProposalResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetCourseCampusesResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetCourseCampusesResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetCourseCategoriesResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetCourseCategoriesResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetCourseDepartmentsResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetCourseDepartmentsResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetCourseResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetCourseResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetMyCommentsResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetMyCommentsResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetMyProposalsResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetMyProposalsResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetProposalResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetProposalResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetProposalSuggestionsResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetProposalSuggestionsResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetSearchHistoriesResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetSearchHistoriesResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetSearchSuggestionsResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetSearchSuggestionsResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetTeacherSuggestionsResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetTeacherSuggestionsResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GetTotalCourseCommentsCountResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GetTotalCourseCommentsCountResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_GrantAdminResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.GrantAdminResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_IsAdminResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.IsAdminResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_ListChangeLogsResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.ListChangeLogsResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_ListCourseCommentsResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.ListCourseCommentsResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_ListCoursesResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.ListCoursesResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_ListProposalLogsGroupedResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.ListProposalLogsGroupedResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_ListProposalLogsTimelineResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.ListProposalLogsTimelineResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_ListProposalResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.ListProposalResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_RejectProposalResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.RejectProposalResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_RevokeProposalResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.RevokeProposalResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_SignInResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.SignInResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_ToggleLikeResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.ToggleLikeResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_ToggleProposalResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.ToggleProposalResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
-  handler.Response-dto_UpdateProposalResp:
-    properties:
-      code:
-        description: 业务代码, 0表示成功
-        example: 0
-        type: integer
-      data:
-        allOf:
-        - $ref: '#/definitions/dto.UpdateProposalResp'
-        description: 实际业务数据
-      msg:
-        description: 提示信息
-        example: success
-        type: string
-    type: object
+        content:
+          type: string
+        courseId:
+          type: string
+        createdAt:
+          type: string
+        department:
+          type: string
+        id:
+          type: string
+        like:
+          type: boolean
+        likeCnt:
+          type: integer
+        name:
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        teachers:
+          description: 这里还是直接返回教师名字+职称组合后的字符串列表
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        updatedAt:
+          type: string
+        userId:
+          type: string
+      type: object
+    dto.CourseVO:
+      properties:
+        campuses:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        category:
+          type: string
+        code:
+          type: string
+        department:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        tagCount:
+          additionalProperties:
+            type: integer
+          type: object
+        teachers:
+          items:
+            $ref: '#/components/schemas/dto.TeacherVO'
+          type: array
+          uniqueItems: false
+      type: object
+    dto.CreateCommentReq:
+      properties:
+        content:
+          type: string
+        courseId:
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      required:
+      - content
+      - courseId
+      type: object
+    dto.CreateCommentResp:
+      description: 实际业务数据
+      properties:
+        category:
+          type: string
+        content:
+          type: string
+        courseId:
+          type: string
+        createdAt:
+          type: string
+        department:
+          type: string
+        id:
+          type: string
+        like:
+          type: boolean
+        likeCnt:
+          type: integer
+        name:
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        teachers:
+          description: 这里还是直接返回教师名字+职称组合后的字符串列表
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        updatedAt:
+          type: string
+        userId:
+          type: string
+      type: object
+    dto.CreateProposalReq:
+      properties:
+        content:
+          type: string
+        course:
+          $ref: '#/components/schemas/dto.ProposalCourseVO'
+        title:
+          type: string
+      required:
+      - content
+      - course
+      - title
+      type: object
+    dto.CreateProposalResp:
+      description: 实际业务数据
+      properties:
+        proposal:
+          $ref: '#/components/schemas/dto.ProposalVO'
+        proposalId:
+          description: 提案ID
+          type: string
+      type: object
+    dto.CreateTeacherReq:
+      properties:
+        department:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+      required:
+      - department
+      - name
+      - title
+      type: object
+    dto.CreateTeacherResp:
+      description: 实际业务数据
+      properties:
+        department:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+      type: object
+    dto.CreatorVO:
+      properties:
+        createTime:
+          type: string
+        creatorId:
+          type: string
+        creatorName:
+          type: string
+      type: object
+    dto.DeleteProposalResp:
+      description: 实际业务数据
+      properties:
+        deleted:
+          type: boolean
+        deletedAt:
+          type: string
+        operatorId:
+          type: string
+        proposalId:
+          type: string
+      type: object
+    dto.FieldSuggestionVO:
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+      type: object
+    dto.GetCourseCampusesResp:
+      description: 实际业务数据
+      properties:
+        campuses:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    dto.GetCourseCategoriesResp:
+      description: 实际业务数据
+      properties:
+        categories:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    dto.GetCourseDepartmentsResp:
+      description: 实际业务数据
+      properties:
+        departments:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    dto.GetCourseResp:
+      description: 实际业务数据
+      properties:
+        course:
+          $ref: '#/components/schemas/dto.CourseVO'
+      type: object
+    dto.GetMyCommentsReq:
+      properties:
+        page:
+          form: page
+          type: integer
+        pageSize:
+          form: pageSize
+          type: integer
+      type: object
+    dto.GetMyCommentsResp:
+      description: 实际业务数据
+      properties:
+        comments:
+          items:
+            $ref: '#/components/schemas/dto.CommentVO'
+          type: array
+          uniqueItems: false
+        total:
+          type: integer
+      type: object
+    dto.GetMyProposalsResp:
+      description: 实际业务数据
+      properties:
+        proposals:
+          items:
+            $ref: '#/components/schemas/dto.ProposalVO'
+          type: array
+          uniqueItems: false
+        total:
+          type: integer
+      type: object
+    dto.GetProposalFieldSuggestionsResp:
+      properties:
+        field:
+          type: string
+        suggestions:
+          items:
+            $ref: '#/components/schemas/dto.FieldSuggestionVO'
+          type: array
+          uniqueItems: false
+        total:
+          type: integer
+      type: object
+    dto.GetProposalResp:
+      description: 实际业务数据
+      properties:
+        proposal:
+          $ref: '#/components/schemas/dto.ProposalVO'
+      type: object
+    dto.GetProposalSuggestionsResp:
+      description: 实际业务数据
+      properties:
+        suggestions:
+          items:
+            $ref: '#/components/schemas/dto.ProposalSuggestionsVO'
+          type: array
+          uniqueItems: false
+      type: object
+    dto.GetSearchHistoriesResp:
+      description: 实际业务数据
+      properties:
+        histories:
+          items:
+            $ref: '#/components/schemas/dto.SearchHistoryVO'
+          type: array
+          uniqueItems: false
+      type: object
+    dto.GetSearchSuggestionsResp:
+      description: 实际业务数据
+      properties:
+        suggestions:
+          items:
+            $ref: '#/components/schemas/dto.SearchSuggestionsVO'
+          type: array
+          uniqueItems: false
+      type: object
+    dto.GetTeacherSuggestionsResp:
+      description: 实际业务数据
+      properties:
+        teachers:
+          items:
+            $ref: '#/components/schemas/dto.TeacherVO'
+          type: array
+          uniqueItems: false
+      type: object
+    dto.GetTotalCourseCommentsCountResp:
+      description: 实际业务数据
+      properties:
+        count:
+          type: integer
+      type: object
+    dto.GrantAdminReq:
+      properties:
+        userId:
+          type: string
+        verifyCode:
+          type: string
+      type: object
+    dto.GrantAdminResp:
+      description: 实际业务数据
+      properties:
+        isAdmin:
+          description: 操作后的管理员状态
+          type: boolean
+      type: object
+    dto.IsAdminResp:
+      description: 实际业务数据
+      properties:
+        isAdmin:
+          type: boolean
+      type: object
+    dto.ListChangeLogsReq:
+      properties:
+        keyword:
+          type: string
+        page:
+          form: page
+          type: integer
+        pageSize:
+          form: pageSize
+          type: integer
+        type:
+          enum:
+          - course
+          - proposal
+          - teacher
+          - user
+          type: string
+      type: object
+    dto.ListChangeLogsResp:
+      description: 实际业务数据
+      properties:
+        changeLogs:
+          items:
+            $ref: '#/components/schemas/dto.ChangeLogVO'
+          type: array
+          uniqueItems: false
+        total:
+          type: integer
+      type: object
+    dto.ListCourseCommentsResp:
+      description: 实际业务数据
+      properties:
+        comments:
+          items:
+            $ref: '#/components/schemas/dto.CommentVO'
+          type: array
+          uniqueItems: false
+        total:
+          type: integer
+      type: object
+    dto.ListCoursesReq:
+      properties:
+        page:
+          form: page
+          type: integer
+        pageSize:
+          form: pageSize
+          type: integer
+      type: object
+    dto.ListCoursesResp:
+      description: 实际业务数据
+      properties:
+        courses:
+          description: 当前页的课程列表
+          items:
+            $ref: '#/components/schemas/dto.CourseVO'
+          type: array
+          uniqueItems: false
+        page:
+          form: page
+          type: integer
+        pageSize:
+          form: pageSize
+          type: integer
+        total:
+          description: 符合条件的总记录数
+          type: integer
+      type: object
+    dto.ListProposalLogsGroupedResp:
+      description: 实际业务数据
+      properties:
+        proposals:
+          items:
+            $ref: '#/components/schemas/dto.ProposalLogVO'
+          type: array
+          uniqueItems: false
+        total:
+          type: integer
+      type: object
+    dto.ListProposalLogsTimelineResp:
+      description: 实际业务数据
+      properties:
+        logs:
+          items:
+            $ref: '#/components/schemas/dto.ProposalTimelineLogVO'
+          type: array
+          uniqueItems: false
+        total:
+          type: integer
+      type: object
+    dto.ListProposalResp:
+      description: 实际业务数据
+      properties:
+        proposals:
+          items:
+            $ref: '#/components/schemas/dto.ProposalVO'
+          type: array
+          uniqueItems: false
+        total:
+          type: integer
+      type: object
+    dto.ProposalCourseVO:
+      properties:
+        campuses:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        category:
+          type: string
+        code:
+          type: string
+        department:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        teachers:
+          items:
+            $ref: '#/components/schemas/dto.TeacherVO'
+          type: array
+          uniqueItems: false
+      type: object
+    dto.ProposalLogVO:
+      properties:
+        adminAction:
+          $ref: '#/components/schemas/dto.AdminActionVO'
+        content:
+          type: string
+        course:
+          $ref: '#/components/schemas/dto.ProposalCourseVO'
+        creator:
+          $ref: '#/components/schemas/dto.CreatorVO'
+        proposalId:
+          type: string
+        status:
+          type: string
+        title:
+          type: string
+      type: object
+    dto.ProposalSnapshotVO:
+      properties:
+        category:
+          type: string
+        courseName:
+          type: string
+        department:
+          type: string
+        title:
+          type: string
+      type: object
+    dto.ProposalSuggestionsVO:
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+      type: object
+    dto.ProposalTimelineLogVO:
+      properties:
+        actionTime:
+          type: string
+        actionType:
+          description: CREATE/APPROVE/REJECT/DELETE/UPDATE/GRANT_ADMIN/REVOKE_ADMIN
+          type: string
+        details:
+          additionalProperties: {}
+          type: object
+        logId:
+          type: string
+        operatorId:
+          type: string
+        operatorName:
+          type: string
+        proposalId:
+          type: string
+        proposalSnapshot:
+          $ref: '#/components/schemas/dto.ProposalSnapshotVO'
+      type: object
+    dto.ProposalVO:
+      description: 提案详情
+      properties:
+        content:
+          type: string
+        course:
+          $ref: '#/components/schemas/dto.ProposalCourseVO'
+        createdAt:
+          type: string
+        deleted:
+          type: boolean
+        id:
+          type: string
+        like:
+          type: boolean
+        likeCnt:
+          type: integer
+        rejectReason:
+          description: 拒绝理由
+          type: string
+        status:
+          description: pending / approved / rejected
+          type: string
+        title:
+          type: string
+        updatedAt:
+          type: string
+        userId:
+          type: string
+      type: object
+    dto.RejectProposalReq:
+      properties:
+        proposalId:
+          type: string
+        reason:
+          type: string
+      type: object
+    dto.RejectProposalResp:
+      description: 实际业务数据
+      properties:
+        pendingCount:
+          type: integer
+        rejected:
+          type: boolean
+      type: object
+    dto.RevokeProposalReq:
+      properties:
+        actionType:
+          description: '"approve" | "reject" | "delete"'
+          type: string
+      type: object
+    dto.RevokeProposalResp:
+      description: 实际业务数据
+      properties:
+        proposalId:
+          type: string
+      type: object
+    dto.SearchHistoryVO:
+      properties:
+        createdAt:
+          type: string
+        id:
+          type: string
+        query:
+          type: string
+      type: object
+    dto.SearchSuggestionsVO:
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+      type: object
+    dto.SignInReq:
+      properties:
+        authId:
+          description: 微信开放平台ID
+          type: string
+        authType:
+          description: 认证类型(wechat/phone等)
+          type: string
+        verifyCode:
+          description: res.code
+          type: string
+      required:
+      - authId
+      - authType
+      - verifyCode
+      type: object
+    dto.SignInResp:
+      description: 实际业务数据
+      properties:
+        accessToken:
+          type: string
+        expiresIn:
+          type: integer
+        isAdmin:
+          type: boolean
+        userId:
+          type: string
+      type: object
+    dto.TeacherVO:
+      properties:
+        department:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+      type: object
+    dto.ToggleLikeReq:
+      properties:
+        targetType:
+          description: 点赞对象类型：proposal/comment
+          enum:
+          - proposal
+          - comment
+          type: string
+      required:
+      - targetType
+      type: object
+    dto.ToggleLikeResp:
+      description: 实际业务数据
+      properties:
+        like:
+          type: boolean
+        likeCnt:
+          type: integer
+      type: object
+    dto.ToggleProposalResp:
+      description: 实际业务数据
+      properties:
+        proposal:
+          type: boolean
+        proposalCnt:
+          type: integer
+      type: object
+    dto.UpdateProposalReq:
+      properties:
+        content:
+          type: string
+        course:
+          $ref: '#/components/schemas/dto.ProposalCourseVO'
+        title:
+          type: string
+      required:
+      - content
+      - course
+      - title
+      type: object
+    dto.UpdateProposalResp:
+      description: 实际业务数据
+      properties:
+        proposalId:
+          type: string
+      type: object
+    handler.Response-dto_CreateCommentResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.CreateCommentResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_CreateProposalResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.CreateProposalResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_CreateTeacherResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.CreateTeacherResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_DeleteProposalResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.DeleteProposalResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetCourseCampusesResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetCourseCampusesResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetCourseCategoriesResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetCourseCategoriesResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetCourseDepartmentsResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetCourseDepartmentsResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetCourseResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetCourseResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetMyCommentsResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetMyCommentsResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetMyProposalsResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetMyProposalsResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetProposalResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetProposalResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetProposalSuggestionsResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetProposalSuggestionsResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetSearchHistoriesResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetSearchHistoriesResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetSearchSuggestionsResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetSearchSuggestionsResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetTeacherSuggestionsResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetTeacherSuggestionsResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GetTotalCourseCommentsCountResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GetTotalCourseCommentsCountResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_GrantAdminResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.GrantAdminResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_IsAdminResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.IsAdminResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_ListChangeLogsResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.ListChangeLogsResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_ListCourseCommentsResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.ListCourseCommentsResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_ListCoursesResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.ListCoursesResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_ListProposalLogsGroupedResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.ListProposalLogsGroupedResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_ListProposalLogsTimelineResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.ListProposalLogsTimelineResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_ListProposalResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.ListProposalResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_RejectProposalResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.RejectProposalResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_RevokeProposalResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.RevokeProposalResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_SignInResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.SignInResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_ToggleLikeResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.ToggleLikeResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_ToggleProposalResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.ToggleProposalResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_UpdateProposalResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.UpdateProposalResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+  securitySchemes:
+    Bearer:
+      scheme: bearer
+      type: http
+externalDocs:
+  description: ""
+  url: ""
 info:
-  contact: {}
   description: 选课猫后端接口文档
   title: Meowpick Backend API
   version: "1.0"
+openapi: 3.1.0
 paths:
   /api/auth/grant_admin:
     post:
-      consumes:
-      - application/json
       description: 授予指定用户管理员权限
-      parameters:
-      - description: GrantAdminReq
-        in: body
-        name: body
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.GrantAdminReq'
+                description: GrantAdminReq
+                summary: body
+        description: GrantAdminReq
         required: true
-        schema:
-          $ref: '#/definitions/dto.GrantAdminReq'
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GrantAdminResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GrantAdminResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 授予管理员权限
       tags:
       - auth
   /api/auth/is_admin:
     get:
       description: 判断当前用户是否具有管理员权限
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_IsAdminResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_IsAdminResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 是否管理员
       tags:
       - auth
   /api/auth/sign_in:
     post:
-      consumes:
-      - application/json
-      parameters:
-      - description: SignInReq
-        in: body
-        name: body
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.SignInReq'
+                description: SignInReq
+                summary: body
+        description: SignInReq
         required: true
-        schema:
-          $ref: '#/definitions/dto.SignInReq'
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_SignInResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_SignInResp'
       summary: 登录
       tags:
       - auth
   /api/changelog/list:
     post:
-      consumes:
-      - application/json
       description: 按目标类型+ID分页查询变更记录
-      parameters:
-      - description: 查询参数
-        in: body
-        name: req
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.ListChangeLogsReq'
+                description: 查询参数
+                summary: req
+        description: 查询参数
         required: true
-        schema:
-          $ref: '#/definitions/dto.ListChangeLogsReq'
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_ListChangeLogsResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_ListChangeLogsResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 分页查询变更记录
       tags:
       - changeLog
   /api/changelog/proposal/grouped:
     get:
-      consumes:
-      - application/json
       description: 以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息
       parameters:
-      - default: 1
-        description: 页码
+      - description: 页码
         in: query
         name: page
-        type: integer
-      - default: 20
-        description: 每页数量
+        schema:
+          default: 1
+          type: integer
+      - description: 每页数量
         in: query
         name: pageSize
-        type: integer
-      produces:
-      - application/json
+        schema:
+          default: 20
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_ListProposalLogsGroupedResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_ListProposalLogsGroupedResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 按提案聚合的日志列表
       tags:
       - changeLog
   /api/changelog/proposal/timeline:
     get:
-      consumes:
-      - application/json
       description: 一条记录代表一次独立动作的扁平化分页，严格按时间倒序排列
       parameters:
-      - default: 1
-        description: 页码
+      - description: 页码
         in: query
         name: page
-        type: integer
-      - default: 20
-        description: 每页数量
+        schema:
+          default: 1
+          type: integer
+      - description: 每页数量
         in: query
         name: pageSize
-        type: integer
-      produces:
-      - application/json
+        schema:
+          default: 20
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_ListProposalLogsTimelineResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_ListProposalLogsTimelineResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 扁平化时间线日志
       tags:
       - changeLog
   /api/comment/add:
     post:
-      consumes:
-      - application/json
       description: 用户对指定课程发布评论
-      parameters:
-      - description: CreateCommentReq
-        in: body
-        name: body
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.CreateCommentReq'
+                description: CreateCommentReq
+                summary: body
+        description: CreateCommentReq
         required: true
-        schema:
-          $ref: '#/definitions/dto.CreateCommentReq'
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_CreateCommentResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_CreateCommentResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 发布课程评论
       tags:
       - comment
   /api/comment/history:
     post:
-      consumes:
-      - application/json
       description: 分页获取当前用户发布过的评论
-      parameters:
-      - description: GetMyCommentsReq
-        in: body
-        name: body
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.GetMyCommentsReq'
+                description: GetMyCommentsReq
+                summary: body
+        description: GetMyCommentsReq
         required: true
-        schema:
-          $ref: '#/definitions/dto.GetMyCommentsReq'
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetMyCommentsResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetMyCommentsResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取我的评论历史
       tags:
       - comment
@@ -1319,26 +1328,29 @@ paths:
         in: query
         name: courseId
         required: true
-        type: string
+        schema:
+          type: string
       - description: 页码
         in: query
         name: page
         required: true
-        type: integer
+        schema:
+          type: integer
       - description: 每页数量
         in: query
         name: pageSize
         required: true
-        type: integer
-      produces:
-      - application/json
+        schema:
+          type: integer
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_ListCourseCommentsResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_ListCourseCommentsResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 分页获取课程评论
       tags:
       - comment
@@ -1350,16 +1362,17 @@ paths:
         in: path
         name: courseId
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetCourseResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetCourseResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取课程信息
       tags:
       - course
@@ -1371,16 +1384,17 @@ paths:
         in: query
         name: keyword
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetCourseCampusesResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetCourseCampusesResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取课程开课校区
       tags:
       - course
@@ -1392,16 +1406,17 @@ paths:
         in: query
         name: keyword
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetCourseCategoriesResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetCourseCategoriesResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取课程分类
       tags:
       - course
@@ -1413,45 +1428,50 @@ paths:
         in: query
         name: keyword
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetCourseDepartmentsResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetCourseDepartmentsResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取课程开课院系
       tags:
       - course
   /api/like/{likeId}:
     post:
-      consumes:
-      - application/json
       description: 对指定目标（提案或评论）进行点赞或取消点赞操作；若已点赞则取消，未点赞则新增
       parameters:
       - description: 目标ID（提案ID或评论ID）
         in: path
         name: likeId
         required: true
-        type: string
-      - description: 点赞请求参数
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/dto.ToggleLikeReq'
-      produces:
-      - application/json
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.ToggleLikeReq'
+                description: 点赞请求参数
+                summary: body
+        description: 点赞请求参数
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_ToggleLikeResp'
           description: 操作成功
-          schema:
-            $ref: '#/definitions/handler.Response-dto_ToggleLikeResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 点赞 / 取消点赞
       tags:
       - like
@@ -1463,16 +1483,17 @@ paths:
         in: path
         name: id
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetProposalResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetProposalResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取提案详情
       tags:
       - proposal
@@ -1484,44 +1505,49 @@ paths:
         in: path
         name: proposalId
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_ToggleProposalResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_ToggleProposalResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 审批提案
       tags:
       - proposal
   /api/proposal/{proposalId}/delete:
     post:
-      consumes:
-      - application/json
       description: 根据提案ID软删除提案（标记为已删除状态）,只对状态为pending和rejected的进行处理
       parameters:
       - description: 提案ID
         in: path
         name: proposalId
         required: true
-        type: string
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_DeleteProposalResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_DeleteProposalResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 删除提案
       tags:
       - proposal
   /api/proposal/{proposalId}/reject:
     post:
-      consumes:
-      - application/json
       description: |-
         管理员操作：将状态为 pending（待审核）的提案变更为 rejected（已拒绝）
         使用场景：课程提案审核流程中，管理员认为提案不符合要求，驳回该提案
@@ -1534,100 +1560,120 @@ paths:
         in: path
         name: proposalId
         required: true
-        type: string
-      - description: 拒绝参数（可选理由）
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/dto.RejectProposalReq'
-      produces:
-      - application/json
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.RejectProposalReq'
+                description: 拒绝参数（可选理由）
+                summary: body
+        description: 拒绝参数（可选理由）
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_RejectProposalResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_RejectProposalResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 拒绝提案
       tags:
       - proposal
   /api/proposal/{proposalId}/revoke:
     post:
-      consumes:
-      - application/json
       description: 管理员撤回提案的通过/拒绝/删除操作
       parameters:
       - description: 提案ID
         in: path
         name: proposalId
         required: true
-        type: string
-      - description: 撤回操作类型
-        in: body
-        name: req
-        required: true
         schema:
-          $ref: '#/definitions/dto.RevokeProposalReq'
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.RevokeProposalReq'
+                description: 撤回操作类型
+                summary: req
+        description: 撤回操作类型
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_RevokeProposalResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_RevokeProposalResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 撤回提案操作
       tags:
       - proposal
   /api/proposal/{proposalId}/update:
     post:
-      consumes:
-      - application/json
       description: 根据提案ID修改提案的标题和内容
       parameters:
       - description: 提案唯一ID
         in: path
         name: proposalId
         required: true
-        type: string
-      - description: 更新参数（标题、内容）
-        in: body
-        name: body
-        required: true
         schema:
-          $ref: '#/definitions/dto.UpdateProposalReq'
-      produces:
-      - application/json
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.UpdateProposalReq'
+                description: 更新参数（标题、内容）
+                summary: body
+        description: 更新参数（标题、内容）
+        required: true
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_UpdateProposalResp'
           description: 更新成功响应
-          schema:
-            $ref: '#/definitions/handler.Response-dto_UpdateProposalResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 更新提案内容
       tags:
       - proposal
   /api/proposal/add:
     post:
-      consumes:
-      - application/json
       description: 创建一个新的提案
-      parameters:
-      - description: 创建提案的请求参数
-        in: body
-        name: req
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.CreateProposalReq'
+                description: 创建提案的请求参数
+                summary: req
+        description: 创建提案的请求参数
         required: true
-        schema:
-          $ref: '#/definitions/dto.CreateProposalReq'
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_CreateProposalResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_CreateProposalResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 新增提案
       tags:
       - proposal
@@ -1639,31 +1685,35 @@ paths:
         in: query
         name: field
         required: true
-        type: string
+        schema:
+          type: string
       - description: 搜索关键词
         in: query
         name: keyword
         required: true
-        type: string
-      - default: 0
-        description: 页码
+        schema:
+          type: string
+      - description: 页码
         in: query
         name: page
-        type: integer
-      - default: 10
-        description: 每页数量
+        schema:
+          default: 0
+          type: integer
+      - description: 每页数量
         in: query
         name: pageSize
-        type: integer
-      produces:
-      - application/json
+        schema:
+          default: 10
+          type: integer
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dto.GetProposalFieldSuggestionsResp'
           description: OK
-          schema:
-            $ref: '#/definitions/dto.GetProposalFieldSuggestionsResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取提案字段建议
       tags:
       - proposal
@@ -1671,80 +1721,91 @@ paths:
     get:
       description: 基于提案状态、校区、开课院系、课程分类筛选 proposal 表中的提案
       parameters:
-      - collectionFormat: multi
-        description: 提案状态，可多选
+      - description: 提案状态，可多选
         in: query
-        items:
-          type: string
         name: status
         required: true
-        type: array
-      - collectionFormat: multi
-        description: 校区，可多选
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - description: 校区，可多选
         in: query
-        items:
-          type: string
         name: campus
         required: true
-        type: array
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
       - description: 开课院系，精确匹配
         in: query
         name: department
-        type: string
+        schema:
+          type: string
       - description: 课程分类，精确匹配
         in: query
         name: category
-        type: string
-      - default: 1
-        description: 页码
+        schema:
+          type: string
+      - description: 页码
         in: query
         name: page
-        type: integer
-      - default: 10
-        description: 每页数量
+        schema:
+          default: 1
+          type: integer
+      - description: 每页数量
         in: query
         name: pageSize
-        type: integer
-      produces:
-      - application/json
+        schema:
+          default: 10
+          type: integer
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_ListProposalResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_ListProposalResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 分页筛选提案列表
       tags:
       - proposal
   /api/proposal/history:
     get:
       parameters:
-      - default: 1
-        description: 页码
+      - description: 页码
         in: query
         name: page
-        type: integer
-      - default: 10
-        description: 每页数量
+        schema:
+          default: 1
+          type: integer
+      - description: 每页数量
         in: query
         name: pageSize
-        type: integer
+        schema:
+          default: 10
+          type: integer
       - description: 状态
-        enum:
-        - pending
-        - approved
-        - rejected
         in: query
         name: status
-        type: string
+        schema:
+          enum:
+          - pending
+          - approved
+          - rejected
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetMyProposalsResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetMyProposalsResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取我的提案
       tags:
       - proposal
@@ -1756,21 +1817,23 @@ paths:
         in: query
         name: page
         required: true
-        type: integer
+        schema:
+          type: integer
       - description: 每页数量
         in: query
         name: pageSize
         required: true
-        type: integer
-      produces:
-      - application/json
+        schema:
+          type: integer
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_ListProposalResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_ListProposalResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 分页获取提案列表
       tags:
       - proposal
@@ -1782,65 +1845,70 @@ paths:
         in: query
         name: keyword
         required: true
-        type: string
-      - default: 0
-        description: 页码
+        schema:
+          type: string
+      - description: 页码
         in: query
         name: page
-        type: integer
-      - default: 10
-        description: 每页数量
+        schema:
+          default: 0
+          type: integer
+      - description: 每页数量
         in: query
         name: pageSize
-        type: integer
-      produces:
-      - application/json
+        schema:
+          default: 10
+          type: integer
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetProposalSuggestionsResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetProposalSuggestionsResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取提案搜索建议
       tags:
       - proposal
   /api/search:
     post:
-      consumes:
-      - application/json
       description: 搜索课程列表
-      parameters:
-      - description: ListCoursesReq
-        in: body
-        name: body
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.ListCoursesReq'
+                description: ListCoursesReq
+                summary: body
+        description: ListCoursesReq
         required: true
-        schema:
-          $ref: '#/definitions/dto.ListCoursesReq'
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_ListCoursesResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_ListCoursesResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 搜索课程列表
       tags:
       - course
   /api/search/recent:
     get:
       description: 获取最近搜索历史
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetSearchHistoriesResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetSearchHistoriesResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取最近搜索历史
       tags:
       - search
@@ -1858,55 +1926,58 @@ paths:
         in: query
         name: keyword
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetSearchSuggestionsResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetSearchSuggestionsResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取搜索建议
       tags:
       - search
   /api/search/total:
     get:
       description: 获取系统中所有课程评论的总数量
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetTotalCourseCommentsCountResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetTotalCourseCommentsCountResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取吐槽总数
       tags:
       - comment
   /api/teacher/add:
     post:
-      consumes:
-      - application/json
       description: 新建教师
-      parameters:
-      - description: CreateTeacherReq
-        in: body
-        name: body
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.CreateTeacherReq'
+                description: CreateTeacherReq
+                summary: body
+        description: CreateTeacherReq
         required: true
-        schema:
-          $ref: '#/definitions/dto.CreateTeacherReq'
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_CreateTeacherResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_CreateTeacherResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 新建教师
       tags:
       - teacher
@@ -1918,23 +1989,19 @@ paths:
         in: query
         name: keyword
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_GetTeacherSuggestionsResp'
           description: OK
-          schema:
-            $ref: '#/definitions/handler.Response-dto_GetTeacherSuggestionsResp'
       security:
-      - BearerAuth: []
+      - Bearer: []
       summary: 获取教师搜索建议
       tags:
       - teacher
-securityDefinitions:
-  BearerAuth:
-    description: 输入格式：Bearer {token}
-    in: header
-    name: Authorization
-    type: apiKey
-swagger: "2.0"
+servers:
+- url: /

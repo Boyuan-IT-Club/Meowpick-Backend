@@ -29,7 +29,7 @@ import (
 // @Accept json
 // @Param req body dto.CreateProposalReq true "创建提案的请求参数"
 // @success 200 {object} Response[dto.CreateProposalResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/add [post]
 func CreateProposal(c *gin.Context) {
 	var req dto.CreateProposalReq
@@ -54,7 +54,7 @@ func CreateProposal(c *gin.Context) {
 // @Param page query int true "页码"
 // @Param pageSize query int true "每页数量"
 // @Success 200 {object} Response[dto.ListProposalResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/list [get]
 func ListProposals(c *gin.Context) {
 	var req dto.ListProposalReq
@@ -83,7 +83,7 @@ func ListProposals(c *gin.Context) {
 // @Param page query int false "页码" default(1)
 // @Param pageSize query int false "每页数量" default(10)
 // @Success 200 {object} Response[dto.ListProposalResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/filter [get]
 func FilterProposals(c *gin.Context) {
 	var req dto.FilterProposalReq
@@ -107,7 +107,7 @@ func FilterProposals(c *gin.Context) {
 // @Produce json
 // @Param id path string true "提案ID"
 // @Success 200 {object} Response[dto.GetProposalResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/{proposalId} [get]
 func GetProposal(c *gin.Context) {
 	var req dto.GetProposalReq
@@ -128,7 +128,7 @@ func GetProposal(c *gin.Context) {
 // @Produce json
 // @Param proposalId path string true "提案ID"
 // @Success 200 {object} Response[dto.ToggleProposalResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/{proposalId}/approve [post]
 func ApproveProposal(c *gin.Context) {
 	var req dto.ToggleProposalReq
@@ -150,7 +150,7 @@ func ApproveProposal(c *gin.Context) {
 // @Param proposalId path string true "提案ID"
 // @Param req body dto.RevokeProposalReq true "撤回操作类型"
 // @Success 200 {object} Response[dto.RevokeProposalResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/{proposalId}/revoke [post]
 func RevokeProposal(c *gin.Context) {
 	var req dto.RevokeProposalReq
@@ -183,7 +183,7 @@ func RevokeProposal(c *gin.Context) {
 // @Param proposalId path string true "提案ID"
 // @Param body body dto.RejectProposalReq true "拒绝参数（可选理由）"
 // @Success 200 {object} Response[dto.RejectProposalResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/{proposalId}/reject [post]
 func RejectProposal(c *gin.Context) {
 	var req dto.RejectProposalReq
@@ -210,7 +210,7 @@ func RejectProposal(c *gin.Context) {
 // @Param proposalId path string true "提案唯一ID"
 // @Param body body dto.UpdateProposalReq true "更新参数（标题、内容）"
 // @Success 200 {object} Response[dto.UpdateProposalResp] "更新成功响应"
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/{proposalId}/update [post]
 func UpdateProposal(c *gin.Context) {
 	var req dto.UpdateProposalReq
@@ -238,7 +238,7 @@ func UpdateProposal(c *gin.Context) {
 // @Accept json
 // @Param proposalId path string true "提案ID"
 // @success 200 {object} Response[dto.DeleteProposalResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/{proposalId}/delete [POST]
 func DeleteProposal(c *gin.Context) {
 	var err error
@@ -266,7 +266,7 @@ func DeleteProposal(c *gin.Context) {
 // @Param page query int false "页码" default(0)
 // @Param pageSize query int false "每页数量" default(10)
 // @Success 200 {object} Response[dto.GetProposalSuggestionsResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/suggest [post]
 func GetProposalSuggestions(c *gin.Context) {
 	var req dto.GetProposalSuggestionsReq
@@ -293,7 +293,7 @@ func GetProposalSuggestions(c *gin.Context) {
 // @Param page query int false "页码" default(0)
 // @Param pageSize query int false "每页数量" default(10)
 // @Success 200 {object} dto.GetProposalFieldSuggestionsResp
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/field-suggestions [get]
 func GetProposalFieldSuggestions(c *gin.Context) {
 	var req dto.GetProposalFieldSuggestionsReq
@@ -317,7 +317,7 @@ func GetProposalFieldSuggestions(c *gin.Context) {
 // @Param pageSize query int false "每页数量" default(10)
 // @Param status query string false "状态" Enums(pending,approved,rejected)
 // @Success 200 {object} Response[dto.GetMyProposalsResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/proposal/history [get]
 func GetMyProposals(c *gin.Context) {
 	var req dto.GetMyProposalsReq

@@ -31,7 +31,7 @@ import (
 // @Param likeId path string true "目标ID（提案ID或评论ID）"
 // @Param body body dto.ToggleLikeReq true "点赞请求参数"
 // @Success 200 {object} Response[dto.ToggleLikeResp] "操作成功"
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/like/{likeId} [post]
 func ToggleLike(c *gin.Context) {
 	var req dto.ToggleLikeReq

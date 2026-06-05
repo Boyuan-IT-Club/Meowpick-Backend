@@ -12,7 +12,8 @@ wire:
 swagger:
 	@echo "Generating swagger..."
 	swag init \
+		--v3.1 \
 		--parseDependency \
 		--parseInternal \
 		--output docs
-
+	perl -0pi -e 's/"bearerauth":/"Bearer":/g; s/\bbearerauth:/Bearer:/g' docs/docs.go docs/swagger.json docs/swagger.yaml

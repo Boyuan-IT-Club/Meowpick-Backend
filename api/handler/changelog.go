@@ -30,7 +30,7 @@ import (
 // @Produce json
 // @Param req body dto.ListChangeLogsReq true "查询参数"
 // @Success 200 {object} Response[dto.ListChangeLogsResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/changelog/list [post]
 func ListChangeLogs(c *gin.Context) {
 	var req dto.ListChangeLogsReq
@@ -57,7 +57,7 @@ func ListChangeLogs(c *gin.Context) {
 // @Param page query int false "页码" default(1)
 // @Param pageSize query int false "每页数量" default(20)
 // @Success 200 {object} Response[dto.ListProposalLogsGroupedResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/changelog/proposal/grouped [get]
 func ListProposalLogsGrouped(c *gin.Context) {
 	var err error
@@ -84,7 +84,7 @@ func ListProposalLogsGrouped(c *gin.Context) {
 // @Param page query int false "页码" default(1)
 // @Param pageSize query int false "每页数量" default(20)
 // @Success 200 {object} Response[dto.ListProposalLogsTimelineResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/changelog/proposal/timeline [get]
 func ListProposalLogsTimeline(c *gin.Context) {
 	var err error

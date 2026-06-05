@@ -30,7 +30,7 @@ import (
 // @Produce json
 // @Param body body dto.CreateCommentReq true "CreateCommentReq"
 // @Success 200 {object} Response[dto.CreateCommentResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/comment/add [post]
 func CreateComment(c *gin.Context) {
 	var err error
@@ -56,7 +56,7 @@ func CreateComment(c *gin.Context) {
 // @Param page query int true "页码"
 // @Param pageSize query int true "每页数量"
 // @Success 200 {object} Response[dto.ListCourseCommentsResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/comment/query [get]
 func ListCourseComments(c *gin.Context) {
 	var err error
@@ -79,7 +79,7 @@ func ListCourseComments(c *gin.Context) {
 // @Tags comment
 // @Produce json
 // @Success 200 {object} Response[dto.GetTotalCourseCommentsCountResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/search/total [get]
 func GetTotalCourseCommentsCount(c *gin.Context) {
 	var resp *dto.GetTotalCourseCommentsCountResp
@@ -99,7 +99,7 @@ func GetTotalCourseCommentsCount(c *gin.Context) {
 // @Produce json
 // @Param body body dto.GetMyCommentsReq true "GetMyCommentsReq"
 // @Success 200 {object} Response[dto.GetMyCommentsResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/comment/history [post]
 func GetMyComments(c *gin.Context) {
 	var err error

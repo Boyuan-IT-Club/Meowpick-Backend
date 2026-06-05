@@ -53,7 +53,7 @@ func SignIn(c *gin.Context) {
 // @Tags auth
 // @Produce json
 // @Success 200 {object} Response[dto.IsAdminResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/auth/is_admin [get]
 func IsAdmin(c *gin.Context) {
 	var err error
@@ -73,7 +73,7 @@ func IsAdmin(c *gin.Context) {
 // @Produce json
 // @Param body body dto.GrantAdminReq true "GrantAdminReq"
 // @Success 200 {object} Response[dto.GrantAdminResp]
-// @Security BearerAuth
+// @Security Bearer
 // @Router /api/auth/grant_admin [post]
 func GrantAdmin(c *gin.Context) {
 	var err error

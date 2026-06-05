@@ -47,8 +47,9 @@ jobs:
 
       - name: Install tools
         run: |
-          go install github.com/swaggo/swag/cmd/swag@latest
           go install github.com/google/addlicense@latest
+          go install github.com/swaggo/swag/v2/cmd/swag@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       # 2. 生成代码
       - name: Generate Swagger and License
