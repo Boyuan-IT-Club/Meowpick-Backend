@@ -31,6 +31,11 @@ const docTemplate = `{
     "paths": {
         "/api/auth/grant_admin": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "授予指定用户管理员权限",
                 "consumes": [
                     "application/json"
@@ -65,6 +70,11 @@ const docTemplate = `{
         },
         "/api/auth/is_admin": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "判断当前用户是否具有管理员权限",
                 "produces": [
                     "application/json"
@@ -118,6 +128,11 @@ const docTemplate = `{
         },
         "/api/changelog/list": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "按目标类型+ID分页查询变更记录",
                 "consumes": [
                     "application/json"
@@ -152,6 +167,11 @@ const docTemplate = `{
         },
         "/api/changelog/proposal/grouped": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息",
                 "consumes": [
                     "application/json"
@@ -191,6 +211,11 @@ const docTemplate = `{
         },
         "/api/changelog/proposal/timeline": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "一条记录代表一次独立动作的扁平化分页，严格按时间倒序排列",
                 "consumes": [
                     "application/json"
@@ -230,6 +255,11 @@ const docTemplate = `{
         },
         "/api/comment/add": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "用户对指定课程发布评论",
                 "consumes": [
                     "application/json"
@@ -264,6 +294,11 @@ const docTemplate = `{
         },
         "/api/comment/history": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "分页获取当前用户发布过的评论",
                 "consumes": [
                     "application/json"
@@ -298,6 +333,11 @@ const docTemplate = `{
         },
         "/api/comment/query": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "根据课程ID分页查询评论列表",
                 "produces": [
                     "application/json"
@@ -341,6 +381,11 @@ const docTemplate = `{
         },
         "/api/course/campuses": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "根据课程名字获取课程开课校区",
                 "produces": [
                     "application/json"
@@ -370,6 +415,11 @@ const docTemplate = `{
         },
         "/api/course/categories": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "根据课程名字获取课程分类",
                 "produces": [
                     "application/json"
@@ -399,6 +449,11 @@ const docTemplate = `{
         },
         "/api/course/departs": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "根据课程名字获取课程开课院系",
                 "produces": [
                     "application/json"
@@ -428,6 +483,11 @@ const docTemplate = `{
         },
         "/api/course/{courseId}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "获取课程信息",
                 "produces": [
                     "application/json"
@@ -457,6 +517,11 @@ const docTemplate = `{
         },
         "/api/like/{likeId}": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "对指定目标（提案或评论）进行点赞或取消点赞操作；若已点赞则取消，未点赞则新增",
                 "consumes": [
                     "application/json"
@@ -498,6 +563,11 @@ const docTemplate = `{
         },
         "/api/proposal/add": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "创建一个新的提案",
                 "consumes": [
                     "application/json"
@@ -529,6 +599,11 @@ const docTemplate = `{
         },
         "/api/proposal/field-suggestions": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "根据字段类型和关键词获取建议列表，支持学院、类别、校区、课程名称、课程代码、教师姓名",
                 "produces": [
                     "application/json"
@@ -579,6 +654,11 @@ const docTemplate = `{
         },
         "/api/proposal/filter": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "基于提案状态、校区、开课院系、课程分类筛选 proposal 表中的提案",
                 "produces": [
                     "application/json"
@@ -649,6 +729,11 @@ const docTemplate = `{
         },
         "/api/proposal/history": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "tags": [
                     "proposal"
                 ],
@@ -692,6 +777,11 @@ const docTemplate = `{
         },
         "/api/proposal/list": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "分页查询提案列表数据",
                 "produces": [
                     "application/json"
@@ -728,6 +818,11 @@ const docTemplate = `{
         },
         "/api/proposal/suggest": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表",
                 "produces": [
                     "application/json"
@@ -771,6 +866,11 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "根据提案ID查询提案完整信息",
                 "produces": [
                     "application/json"
@@ -800,6 +900,11 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/approve": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "通过提案并创建课程，或拒绝提案",
                 "produces": [
                     "application/json"
@@ -829,6 +934,11 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/delete": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "根据提案ID软删除提案（标记为已删除状态）,只对状态为pending和rejected的进行处理",
                 "consumes": [
                     "application/json"
@@ -858,6 +968,11 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/reject": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "管理员操作：将状态为 pending（待审核）的提案变更为 rejected（已拒绝）\n使用场景：课程提案审核流程中，管理员认为提案不符合要求，驳回该提案\n注意事项：\n- 仅管理员可操作（需先调用 /api/auth/is_admin 确认权限）\n- 仅状态为 pending 的提案可以拒绝，已 approved/rejected 的提案无法再次操作\n- 拒绝后不会创建课程记录，仅更新提案状态",
                 "consumes": [
                     "application/json"
@@ -899,6 +1014,11 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/revoke": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "管理员撤回提案的通过/拒绝/删除操作",
                 "consumes": [
                     "application/json"
@@ -937,6 +1057,11 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/update": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "根据提案ID修改提案的标题和内容",
                 "consumes": [
                     "application/json"
@@ -978,6 +1103,11 @@ const docTemplate = `{
         },
         "/api/search": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "搜索课程列表",
                 "consumes": [
                     "application/json"
@@ -1012,6 +1142,11 @@ const docTemplate = `{
         },
         "/api/search/recent": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "获取最近搜索历史",
                 "produces": [
                     "application/json"
@@ -1032,6 +1167,11 @@ const docTemplate = `{
         },
         "/api/search/suggest": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "根据关键词获取搜索建议\n根据 type 不同执行不同的搜索逻辑：\n- course：模糊分页搜索课程\n- teacher：精确分页搜索教师开设的课程\n- category：精确分页搜索该类别下的课程\n- department：精确分页搜索该开课院系下的课程",
                 "produces": [
                     "application/json"
@@ -1061,6 +1201,11 @@ const docTemplate = `{
         },
         "/api/search/total": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "获取系统中所有课程评论的总数量",
                 "produces": [
                     "application/json"
@@ -1081,6 +1226,11 @@ const docTemplate = `{
         },
         "/api/teacher/add": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "新建教师",
                 "consumes": [
                     "application/json"
@@ -1115,6 +1265,11 @@ const docTemplate = `{
         },
         "/api/teacher/suggest": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "根据关键词获取教师搜索建议",
                 "produces": [
                     "application/json"
@@ -2824,6 +2979,14 @@ const docTemplate = `{
                     "example": "success"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "输入格式：Bearer {token}",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

@@ -28,6 +28,7 @@ import (
 // @Tags search
 // @Produce json
 // @Success 200 {object} Response[dto.GetSearchHistoriesResp]
+// @Security BearerAuth
 // @Router /api/search/recent [get]
 func GetSearchHistories(c *gin.Context) {
 	var err error
@@ -50,6 +51,7 @@ func GetSearchHistories(c *gin.Context) {
 // @Produce json
 // @Param keyword query string true "搜索关键词"
 // @Success 200 {object} Response[dto.GetSearchSuggestionsResp]
+// @Security BearerAuth
 // @Router /api/search/suggest [get]
 func GetSearchSuggestions(c *gin.Context) {
 	var err error

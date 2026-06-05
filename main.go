@@ -16,6 +16,10 @@
 // @version 1.0
 // @description 选课猫后端接口文档
 // @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description 输入格式：Bearer {token}
 package main
 
 import (

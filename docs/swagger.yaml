@@ -1139,6 +1139,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GrantAdminResp'
+      security:
+      - BearerAuth: []
       summary: 授予管理员权限
       tags:
       - auth
@@ -1152,6 +1154,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_IsAdminResp'
+      security:
+      - BearerAuth: []
       summary: 是否管理员
       tags:
       - auth
@@ -1195,6 +1199,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_ListChangeLogsResp'
+      security:
+      - BearerAuth: []
       summary: 分页查询变更记录
       tags:
       - changeLog
@@ -1221,6 +1227,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_ListProposalLogsGroupedResp'
+      security:
+      - BearerAuth: []
       summary: 按提案聚合的日志列表
       tags:
       - changeLog
@@ -1247,6 +1255,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_ListProposalLogsTimelineResp'
+      security:
+      - BearerAuth: []
       summary: 扁平化时间线日志
       tags:
       - changeLog
@@ -1269,6 +1279,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_CreateCommentResp'
+      security:
+      - BearerAuth: []
       summary: 发布课程评论
       tags:
       - comment
@@ -1291,6 +1303,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetMyCommentsResp'
+      security:
+      - BearerAuth: []
       summary: 获取我的评论历史
       tags:
       - comment
@@ -1320,6 +1334,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_ListCourseCommentsResp'
+      security:
+      - BearerAuth: []
       summary: 分页获取课程评论
       tags:
       - comment
@@ -1339,6 +1355,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetCourseResp'
+      security:
+      - BearerAuth: []
       summary: 获取课程信息
       tags:
       - course
@@ -1358,6 +1376,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetCourseCampusesResp'
+      security:
+      - BearerAuth: []
       summary: 获取课程开课校区
       tags:
       - course
@@ -1377,6 +1397,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetCourseCategoriesResp'
+      security:
+      - BearerAuth: []
       summary: 获取课程分类
       tags:
       - course
@@ -1396,6 +1418,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetCourseDepartmentsResp'
+      security:
+      - BearerAuth: []
       summary: 获取课程开课院系
       tags:
       - course
@@ -1423,6 +1447,8 @@ paths:
           description: 操作成功
           schema:
             $ref: '#/definitions/handler.Response-dto_ToggleLikeResp'
+      security:
+      - BearerAuth: []
       summary: 点赞 / 取消点赞
       tags:
       - like
@@ -1442,6 +1468,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetProposalResp'
+      security:
+      - BearerAuth: []
       summary: 获取提案详情
       tags:
       - proposal
@@ -1461,6 +1489,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_ToggleProposalResp'
+      security:
+      - BearerAuth: []
       summary: 审批提案
       tags:
       - proposal
@@ -1480,6 +1510,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_DeleteProposalResp'
+      security:
+      - BearerAuth: []
       summary: 删除提案
       tags:
       - proposal
@@ -1513,6 +1545,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_RejectProposalResp'
+      security:
+      - BearerAuth: []
       summary: 拒绝提案
       tags:
       - proposal
@@ -1538,6 +1572,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_RevokeProposalResp'
+      security:
+      - BearerAuth: []
       summary: 撤回提案操作
       tags:
       - proposal
@@ -1565,6 +1601,8 @@ paths:
           description: 更新成功响应
           schema:
             $ref: '#/definitions/handler.Response-dto_UpdateProposalResp'
+      security:
+      - BearerAuth: []
       summary: 更新提案内容
       tags:
       - proposal
@@ -1585,6 +1623,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_CreateProposalResp'
+      security:
+      - BearerAuth: []
       summary: 新增提案
       tags:
       - proposal
@@ -1619,6 +1659,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/dto.GetProposalFieldSuggestionsResp'
+      security:
+      - BearerAuth: []
       summary: 获取提案字段建议
       tags:
       - proposal
@@ -1667,6 +1709,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_ListProposalResp'
+      security:
+      - BearerAuth: []
       summary: 分页筛选提案列表
       tags:
       - proposal
@@ -1696,6 +1740,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetMyProposalsResp'
+      security:
+      - BearerAuth: []
       summary: 获取我的提案
       tags:
       - proposal
@@ -1720,6 +1766,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_ListProposalResp'
+      security:
+      - BearerAuth: []
       summary: 分页获取提案列表
       tags:
       - proposal
@@ -1749,6 +1797,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetProposalSuggestionsResp'
+      security:
+      - BearerAuth: []
       summary: 获取提案搜索建议
       tags:
       - proposal
@@ -1771,6 +1821,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_ListCoursesResp'
+      security:
+      - BearerAuth: []
       summary: 搜索课程列表
       tags:
       - course
@@ -1784,6 +1836,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetSearchHistoriesResp'
+      security:
+      - BearerAuth: []
       summary: 获取最近搜索历史
       tags:
       - search
@@ -1809,6 +1863,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetSearchSuggestionsResp'
+      security:
+      - BearerAuth: []
       summary: 获取搜索建议
       tags:
       - search
@@ -1822,6 +1878,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetTotalCourseCommentsCountResp'
+      security:
+      - BearerAuth: []
       summary: 获取吐槽总数
       tags:
       - comment
@@ -1844,6 +1902,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_CreateTeacherResp'
+      security:
+      - BearerAuth: []
       summary: 新建教师
       tags:
       - teacher
@@ -1863,7 +1923,15 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handler.Response-dto_GetTeacherSuggestionsResp'
+      security:
+      - BearerAuth: []
       summary: 获取教师搜索建议
       tags:
       - teacher
+securityDefinitions:
+  BearerAuth:
+    description: 输入格式：Bearer {token}
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

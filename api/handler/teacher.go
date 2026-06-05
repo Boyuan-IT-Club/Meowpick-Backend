@@ -30,6 +30,7 @@ import (
 // @Produce json
 // @Param body body dto.CreateTeacherReq true "CreateTeacherReq"
 // @Success 200 {object} Response[dto.CreateTeacherResp]
+// @Security BearerAuth
 // @Router /api/teacher/add [post]
 func CreateTeacher(c *gin.Context) {
 	var req *dto.CreateTeacherReq
@@ -53,6 +54,7 @@ func CreateTeacher(c *gin.Context) {
 // @Produce json
 // @Param keyword query string true "搜索关键词"
 // @Success 200 {object} Response[dto.GetTeacherSuggestionsResp]
+// @Security BearerAuth
 // @Router /api/teacher/suggest [get]
 func GetTeacherSuggestions(c *gin.Context) {
 	var req *dto.GetTeacherSuggestionsReq

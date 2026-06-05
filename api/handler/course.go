@@ -30,6 +30,7 @@ import (
 // @Produce json
 // @Param courseId path string true "课程ID"
 // @Success 200 {object} Response[dto.GetCourseResp]
+// @Security BearerAuth
 // @Router /api/course/{courseId} [get]
 func GetCourse(c *gin.Context) {
 	var req dto.GetCourseReq
@@ -50,6 +51,7 @@ func GetCourse(c *gin.Context) {
 // @Produce json
 // @Param keyword query string true "课程名称关键词"
 // @Success 200 {object} Response[dto.GetCourseDepartmentsResp]
+// @Security BearerAuth
 // @Router /api/course/departs [get]
 func GetCourseDepartments(c *gin.Context) {
 	var req dto.GetCourseDepartmentsReq
@@ -73,6 +75,7 @@ func GetCourseDepartments(c *gin.Context) {
 // @Produce json
 // @Param keyword query string true "课程名称关键词"
 // @Success 200 {object} Response[dto.GetCourseCategoriesResp]
+// @Security BearerAuth
 // @Router /api/course/categories [get]
 func GetCourseCategories(c *gin.Context) {
 	var req dto.GetCourseCategoriesReq
@@ -96,6 +99,7 @@ func GetCourseCategories(c *gin.Context) {
 // @Produce json
 // @Param keyword query string true "课程名称关键词"
 // @Success 200 {object} Response[dto.GetCourseCampusesResp]
+// @Security BearerAuth
 // @Router /api/course/campuses [get]
 func GetCourseCampuses(c *gin.Context) {
 	var req dto.GetCourseCampusesReq
@@ -120,6 +124,7 @@ func GetCourseCampuses(c *gin.Context) {
 // @Produce json
 // @Param body body dto.ListCoursesReq true "ListCoursesReq"
 // @Success 200 {object} Response[dto.ListCoursesResp]
+// @Security BearerAuth
 // @Router /api/search [post]
 func ListCourses(c *gin.Context) {
 	var req dto.ListCoursesReq
