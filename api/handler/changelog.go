@@ -25,7 +25,7 @@ import (
 // ListChangeLogs godoc
 // @Summary 分页查询变更记录
 // @Description 按目标类型+ID分页查询变更记录
-// @Tags changelog
+// @Tags changeLog
 // @Accept json
 // @Produce json
 // @Param req body dto.ListChangeLogsReq true "查询参数"
