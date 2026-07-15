@@ -23,7 +23,6 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
@@ -40,15 +39,11 @@ var _ IProposalService = (*ProposalService)(nil)
 
 type IProposalService interface {
 	CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error)
-	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
 	FilterProposals(ctx context.Context, req *dto.FilterProposalReq) (*dto.ListProposalResp, error)
 	GetProposal(ctx context.Context, req *dto.GetProposalReq) (*dto.GetProposalResp, error)
-	DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (*dto.DeleteProposalResp, error)
-	UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error)
 	GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.GetProposalSuggestionsResp, error)
 	GetProposalFieldSuggestions(ctx context.Context, req *dto.GetProposalFieldSuggestionsReq) (*dto.GetProposalFieldSuggestionsResp, error)
 	ApproveProposal(ctx context.Context, req *dto.ToggleProposalReq) (*dto.ToggleProposalResp, error)
-	RevokeProposal(ctx context.Context, req *dto.RevokeProposalReq) (*dto.RevokeProposalResp, error)
 	RejectProposal(ctx context.Context, req *dto.RejectProposalReq) (*dto.RejectProposalResp, error)
 }
 
@@ -178,50 +173,6 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 	}, nil
 }
 
-// ListProposals 分页查询不同状态的提案，用于投票列表或管理端审核
-func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error) {
-	// 鉴权
-	userId, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userId == "" {
-		return nil, errorx.New(errno.ErrUserNotLogin)
-	}
-
-	// 获得状态
-	status := mapping.Data.GetProposalStatusIDByName(req.Status)
-
-	// 获得提案
-	var err error
-	var total int64
-	var proposals []*model.Proposal
-	if status == 0 { // 获取所有
-		proposals, total, err = s.ProposalRepo.FindMany(ctx, req.PageParam)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [FindMany] error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
-		}
-	} else { // 获取指定状态
-		proposals, total, err = s.ProposalRepo.FindManyByStatus(ctx, req.PageParam, status)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [FindManyByStatus] error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
-		}
-	}
-
-	// 转换为VO
-	vos, err := s.ProposalAssembler.ToProposalVOArray(ctx, proposals, userId)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVOArray] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
-			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
-	}
-
-	return &dto.ListProposalResp{
-		Resp:      dto.Success(),
-		Total:     total,
-		Proposals: vos,
-	}, nil
-}
-
 // FilterProposals 分页筛选提案列表
 func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterProposalReq) (*dto.ListProposalResp, error) {
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
@@ -325,143 +276,20 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 	}, nil
 }
 
-// DeleteProposal 删除提案
-func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (*dto.DeleteProposalResp, error) {
-	// 鉴权
-	userId, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userId == "" {
-		return nil, errorx.New(errno.ErrUserNotLogin)
-	}
-
-	proposalId := req.ProposalID
-
-	// 检查提案是否存在
-	proposal, err := s.ProposalRepo.FindByID(ctx, proposalId)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, proposalId)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
-	}
-	if proposal == nil {
-		logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", proposalId)
-		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", proposalId))
-	}
-
-	//权限检查：非管理员只能删除自己的提案
-	if proposal.UserID != userId {
-		// 查询用户是否是管理员
-		isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[UserRepo] [GetByID] error: %v, userId: %s", err, userId)
-			return nil, errorx.New(errno.ErrUserNotAdmin,
-				errorx.KV("id", userId))
-		}
-
-		if !isAdmin {
-			return nil, errorx.New(errno.ErrUserNotOwner,
-				errorx.KV("id", userId))
-		}
-	}
-
-	// 状态检查：只有待审核和已拒绝状态的提案才允许删除
-	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
-	if proposal.Status == approvedStatusID {
-		logs.CtxInfof(ctx, "[DeleteProposal] cannot delete approved proposal, proposalId: %s, status: %d", proposalId, proposal.Status)
-		return nil, errorx.New(errno.ErrProposalCannotDeleteApproved,
-			errorx.KV("status", typesMapping.ProposalStatusMap[proposal.Status]))
-	}
-
-	//执行删除提案
-	err = s.ProposalRepo.DeleteProposal(ctx, proposalId, userId)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[ProposalRepo] [Delete] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalDeleteFailed,
-			errorx.KV("proposal_id", proposalId))
-	}
-
-	updateSource := consts.UpdateSourceUser
-	if proposal.UserID != userId {
-		updateSource = consts.UpdateSourceAdmin
-	}
-	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
-		TargetID:     proposalId,
-		TargetType:   consts.TargetTypeProposal,
-		Action:       consts.ActionTypeDeleteProposal,
-		Content:      "删除提案",
-		UpdateSource: updateSource,
-		ProposalID:   proposalId,
-	}); err != nil {
-		logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", err, proposalId)
-	}
-
-	return &dto.DeleteProposalResp{
-		Resp:       dto.Success(),
-		ProposalID: req.ProposalID,
-		DeletedAt:  time.Now(),
-		OperatorID: userId,
-		Deleted:    true,
-	}, nil
-}
-
-// UpdateProposal 更新提案
-func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error) {
-	// 鉴权
-	userId, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userId == "" {
-		return nil, errorx.New(errno.ErrUserNotLogin)
-	}
-
-	//查询提案
-	proposal, err := s.ProposalRepo.FindByID(ctx, req.ProposalID)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, req.ProposalID)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
-	}
-	if proposal == nil {
-		logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", req.ProposalID)
-		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
-	}
-
-	// 更新提案字段
-	proposal.Title = req.Title
-	proposal.Content = req.Content
-	courseModel, err := s.CourseAssembler.ToProposalCourseDB(ctx, req.Course)
-	if err != nil {
-		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed,
-			errorx.KV("src", "course vo"), errorx.KV("dst", "proposal course model"),
-		)
-	}
-	proposal.Course = courseModel
-	proposal.UpdatedAt = time.Now()
-
-	// 执行更新
-	if err = s.ProposalRepo.UpdateProposal(ctx, proposal); err != nil {
-		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateProposal] error: %v, proposalId: %s", err, req.ProposalID)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
-	}
-
-	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
-		TargetID:     proposal.ID,
-		TargetType:   consts.TargetTypeProposal,
-		Action:       consts.ActionTypeUpdateProposal,
-		Content:      "更新提案",
-		UpdateSource: consts.UpdateSourceUser,
-		ProposalID:   proposal.ID,
-	}); err != nil {
-		logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", err, proposal.ID)
-	}
-
-	return &dto.UpdateProposalResp{
-		Resp:       dto.Success(),
-		ProposalID: proposal.ID,
-	}, nil
-}
-
 // GetProposalSuggestions 获取提案搜索建议
 func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.GetProposalSuggestionsResp, error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
+		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+	}
+	if !isAdmin {
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
 	}
 
 	// 查询提案建议
@@ -493,6 +321,14 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
+		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+	}
+	if !isAdmin {
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
 	}
 
 	suggestions := []*dto.FieldSuggestionVO{}
@@ -604,37 +440,6 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 	}, nil
 }
 
-// GetMyProposals 获取我的提案
-func (s *ProposalService) GetMyProposals(ctx context.Context, req *dto.GetMyProposalsReq) (*dto.GetMyProposalsResp, error) {
-	userId, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userId == "" {
-		return nil, errorx.New(errno.ErrUserNotLogin)
-	}
-
-	// 查询提案列表
-	proposals, total, err := s.ProposalRepo.FindManyByUserID(ctx, req.PageParam, userId)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[ProposalRepo] [FindManyByUserID] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed,
-			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
-	}
-
-	// 转换为VO
-	vos, err := s.ProposalAssembler.ToProposalVOArray(ctx, proposals, userId)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVOArray] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
-			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
-	}
-
-	return &dto.GetMyProposalsResp{
-		Resp:      dto.Success(),
-		Total:     total,
-		Proposals: vos,
-	}, nil
-
-}
-
 // ApproveProposal 审批提案
 func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.ToggleProposalReq) (*dto.ToggleProposalResp, error) {
 	// 鉴权
@@ -643,6 +448,7 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 	// 检查用户是否为管理员
+	// 鲁棒性处理存在代码重复
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
@@ -667,68 +473,60 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
 	}
 
-	// 检查当前状态，不允许重复审批
-	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
-	rejectedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
-	if proposal.Status == approvedStatusID || proposal.Status == rejectedStatusID {
+	// 检查当前状态，只允许 pending 状态的提案通过审批
+	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
+	if proposal.Status != pendingStatusID {
 		return nil, errorx.New(errno.ErrProposalAlreadyProcessed, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
 	}
 
 	// 如果提案通过，同时创建对应的课程
-	if req.ProposalID != "" { // 这里的逻辑改为先创建课程再改状态，保证一致性
-		if proposal.Course == nil {
-			logs.CtxErrorf(ctx, "[ProposalService] [ApproveProposal] proposal course is nil, proposalId: %s", req.ProposalID)
-			return nil, errorx.New(errno.ErrCourseCvtFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-		// 1. 将 ProposalCourse 转换为 ProposalCourseVO
-		courseVO, err := s.CourseAssembler.ToProposalCourseVO(ctx, proposal.Course)
+	if req.Course == nil {
+		logs.CtxErrorf(ctx, "[ProposalService] [ApproveProposal] request course is nil, proposalId: %s", req.ProposalID)
+		return nil, errorx.New(errno.ErrCourseCvtFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+	courseVO := req.Course // 指针浅拷贝，二者指向同一个对象
+
+	// 第一层防重：先进行 DryRun 转换，再检查课程是否已存在
+	dryRunCourse, err := s.CourseAssembler.ToCourseDBDryRunFromProposalCourse(ctx, courseVO)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
+	}
+	if dryRunCourse == nil {
+		logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] course is nil")
+		return nil, errorx.New(errno.ErrCourseCvtFailed)
+	}
+
+	courseExists, err := s.CourseRepo.IsCourseInExistingCourses(ctx, dryRunCourse)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CourseRepo] [IsCourseInExistingCourses] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed)
+	}
+	if courseExists {
+		logs.CtxInfof(ctx, "[ProposalService] [ApproveProposal] course already exists, skip create, proposalId: %s", req.ProposalID)
+	} else {
+		// 2. 将 ProposalCourseVO 转换为 CourseDB，此时会执行自动注册
+		course, err := s.CourseAssembler.ToCourseDBFromProposalCourse(ctx, courseVO)
 		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v", err)
+			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBFromProposalCourse] error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
 		}
 
-		// 第一层防重：先进行 DryRun 转换，再检查课程是否已存在
-		dryRunCourse, err := s.CourseAssembler.ToCourseDBDryRunFromProposalCourse(ctx, courseVO)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
-		}
-		if dryRunCourse == nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] course is nil")
+		if course == nil {
+			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDB] course is nil")
 			return nil, errorx.New(errno.ErrCourseCvtFailed)
 		}
 
-		courseExists, err := s.CourseRepo.IsCourseInExistingCourses(ctx, dryRunCourse)
+		// 3. 设置课程基础信息并插入
+		course.ID = primitive.NewObjectID().Hex()
+		course.CreatedAt = time.Now()
+		course.UpdatedAt = time.Now()
+		course.Deleted = false
+
+		err = s.CourseRepo.Insert(ctx, course)
 		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseRepo] [IsCourseInExistingCourses] error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed)
-		}
-		if courseExists {
-			logs.CtxInfof(ctx, "[ProposalService] [ApproveProposal] course already exists, skip create, proposalId: %s", req.ProposalID)
-		} else {
-			// 2. 将 ProposalCourseVO 转换为 CourseDB，此时会执行自动注册
-			course, err := s.CourseAssembler.ToCourseDBFromProposalCourse(ctx, courseVO)
-			if err != nil {
-				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBFromProposalCourse] error: %v", err)
-				return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
-			}
-
-			if course == nil {
-				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDB] course is nil")
-				return nil, errorx.New(errno.ErrCourseCvtFailed)
-			}
-
-			// 3. 设置课程基础信息并插入
-			course.ID = primitive.NewObjectID().Hex()
-			course.CreatedAt = time.Now()
-			course.UpdatedAt = time.Now()
-			course.Deleted = false
-
-			err = s.CourseRepo.Insert(ctx, course)
-			if err != nil {
-				logs.CtxErrorf(ctx, "[CourseRepo] [Insert] error: %v", err)
-				return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed, errorx.KV("name", course.Name))
-			}
+			logs.CtxErrorf(ctx, "[CourseRepo] [Insert] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed, errorx.KV("name", course.Name))
 		}
 	}
 
@@ -755,7 +553,6 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", err, req.ProposalID)
 	}
 
-	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
 	_, pendingCount, err := s.ProposalRepo.FindManyByStatus(ctx, &dto.PageParam{Page: 1, PageSize: 1}, pendingStatusID)
 	if err != nil {
 		logs.CtxWarnf(ctx, "[ProposalRepo] [FindManyByStatus] error: %v", err)
@@ -766,195 +563,6 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		Resp:        dto.Success(),
 		Proposal:    true,
 		ProposalCnt: pendingCount,
-	}, nil
-}
-
-// RevokeProposal 撤回提案操作（通过/拒绝/删除）
-func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokeProposalReq) (*dto.RevokeProposalResp, error) {
-	// 鉴权
-	userId, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userId == "" {
-		return nil, errorx.New(errno.ErrUserNotLogin)
-	}
-
-	// 检查用户是否为管理员
-	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
-	}
-	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
-	}
-
-	// 验证提案ID
-	if req.ProposalID == "" {
-		return nil, errorx.New(errno.ErrProposalIDRequired, errorx.KV("key", consts.ReqProposalID))
-	}
-
-	// 根据操作类型查询提案
-	var proposal *model.Proposal
-	if req.ActionType == consts.RevokeActionDelete {
-		// 撤回删除需要查询被软删除的提案
-		proposal, err = s.ProposalRepo.FindByIDIncludeDeleted(ctx, req.ProposalID)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [FindByIDIncludeDeleted] error: %v, proposalId: %s", err, req.ProposalID)
-			return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-	} else {
-		proposal, err = s.ProposalRepo.FindByID(ctx, req.ProposalID)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, req.ProposalID)
-			return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-	}
-	if proposal == nil {
-		logs.CtxWarnf(ctx, "[ProposalRepo] proposal not found, proposalId: %s", req.ProposalID)
-		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
-	}
-
-	// 获取状态ID
-	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
-	rejectedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
-	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
-
-	switch req.ActionType {
-	case consts.RevokeActionApprove:
-		// 撤回已通过的提案
-		if proposal.Status != approvedStatusID {
-			return nil, errorx.New(errno.ErrProposalStatusNotApproved, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 查找提案对应的课程
-		if proposal.Course != nil {
-			courseVO, cvtErr := s.CourseAssembler.ToProposalCourseVO(ctx, proposal.Course)
-			if cvtErr != nil {
-				logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v", cvtErr)
-				return nil, errorx.WrapByCode(cvtErr, errno.ErrCourseCvtFailed)
-			}
-
-			dryRunCourse, cvtErr := s.CourseAssembler.ToCourseDBDryRunFromProposalCourse(ctx, courseVO)
-			if cvtErr != nil {
-				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] error: %v", cvtErr)
-				return nil, errorx.WrapByCode(cvtErr, errno.ErrCourseCvtFailed)
-			}
-
-			courses, findErr := s.CourseRepo.FindByNameAndCode(ctx, dryRunCourse.Name, dryRunCourse.Code)
-			if findErr != nil {
-				logs.CtxErrorf(ctx, "[CourseRepo] [FindByNameAndCode] error: %v, name: %s, code: %s", findErr, dryRunCourse.Name, dryRunCourse.Code)
-				return nil, errorx.WrapByCode(findErr, errno.ErrCourseNotFoundCannotRevoke)
-			}
-
-			// 精确匹配课程
-			var matchedCourse *model.Course
-			for _, c := range courses {
-				if c.Department == dryRunCourse.Department &&
-					c.Category == dryRunCourse.Category &&
-					len(c.Campuses) == len(dryRunCourse.Campuses) {
-					campusMatch := true
-					for i, campus := range c.Campuses {
-						if i < len(dryRunCourse.Campuses) && campus != dryRunCourse.Campuses[i] {
-							campusMatch = false
-							break
-						}
-					}
-					if campusMatch {
-						matchedCourse = c
-						break
-					}
-				}
-			}
-
-			if matchedCourse != nil {
-				// 软删除课程
-				if delErr := s.CourseRepo.SoftDeleteByID(ctx, matchedCourse.ID); delErr != nil {
-					logs.CtxErrorf(ctx, "[CourseRepo] [SoftDeleteByID] error: %v, courseId: %s", delErr, matchedCourse.ID)
-					return nil, errorx.WrapByCode(delErr, errno.ErrProposalUpdateFailed, errorx.KV("courseId", matchedCourse.ID))
-				}
-			}
-		}
-
-		// 更新提案状态为待审核
-		updated, updateErr := s.ProposalRepo.UpdateStatusByID(ctx, req.ProposalID, pendingStatusID)
-		if updateErr != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusByID] error: %v, proposalId: %s", updateErr, req.ProposalID)
-			return nil, errorx.WrapByCode(updateErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-		if !updated {
-			return nil, errorx.New(errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 记录变更日志
-		if _, logErr := s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
-			TargetID:     req.ProposalID,
-			TargetType:   consts.TargetTypeProposal,
-			Action:       consts.ActionTypeRevokeApproveProposal,
-			Content:      "撤回提案审批：通过→待审核",
-			UpdateSource: consts.UpdateSourceAdmin,
-			ProposalID:   req.ProposalID,
-		}); logErr != nil {
-			logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", logErr, req.ProposalID)
-		}
-
-	case consts.RevokeActionReject:
-		// 撤回已拒绝的提案
-		if proposal.Status != rejectedStatusID {
-			return nil, errorx.New(errno.ErrProposalStatusNotRejected, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 更新提案状态为待审核
-		updated, updateErr := s.ProposalRepo.UpdateStatusByID(ctx, req.ProposalID, pendingStatusID)
-		if updateErr != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusByID] error: %v, proposalId: %s", updateErr, req.ProposalID)
-			return nil, errorx.WrapByCode(updateErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-		if !updated {
-			return nil, errorx.New(errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 记录变更日志
-		if _, logErr := s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
-			TargetID:     req.ProposalID,
-			TargetType:   consts.TargetTypeProposal,
-			Action:       consts.ActionTypeRevokeRejectProposal,
-			Content:      "撤回提案审批：拒绝→待审核",
-			UpdateSource: consts.UpdateSourceAdmin,
-			ProposalID:   req.ProposalID,
-		}); logErr != nil {
-			logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", logErr, req.ProposalID)
-		}
-
-	case consts.RevokeActionDelete:
-		// 撤回已删除的提案
-		if !proposal.Deleted {
-			return nil, errorx.New(errno.ErrProposalNotDeleted, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 恢复提案
-		if restoreErr := s.ProposalRepo.RestoreProposal(ctx, req.ProposalID); restoreErr != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [RestoreProposal] error: %v, proposalId: %s", restoreErr, req.ProposalID)
-			return nil, errorx.WrapByCode(restoreErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 记录变更日志
-		if _, logErr := s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
-			TargetID:     req.ProposalID,
-			TargetType:   consts.TargetTypeProposal,
-			Action:       consts.ActionTypeRevokeDeleteProposal,
-			Content:      "撤回删除提案",
-			UpdateSource: consts.UpdateSourceAdmin,
-			ProposalID:   req.ProposalID,
-		}); logErr != nil {
-			logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", logErr, req.ProposalID)
-		}
-
-	default:
-		return nil, errorx.New(errno.ErrRevokeActionTypeInvalid, errorx.KV("actionType", req.ActionType))
-	}
-
-	return &dto.RevokeProposalResp{
-		Resp:       dto.Success(),
-		ProposalID: req.ProposalID,
 	}, nil
 }
 
@@ -995,7 +603,7 @@ func (s *ProposalService) RejectProposal(ctx context.Context, req *dto.RejectPro
 	}
 
 	newStatusID := rejectedStatusID
-	updated, err := s.ProposalRepo.UpdateStatusAndReasonByID(ctx, req.ProposalID, newStatusID, req.Reason)
+	updated, err := s.ProposalRepo.UpdateStatusAndReasonByID(ctx, req.ProposalID, newStatusID, "")
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusAndReasonByID] error: %v, proposalId: %s", err, req.ProposalID)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
@@ -1005,9 +613,6 @@ func (s *ProposalService) RejectProposal(ctx context.Context, req *dto.RejectPro
 	}
 
 	content := "审批提案：拒绝"
-	if req.Reason != "" {
-		content = req.Reason
-	}
 
 	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
 		TargetID:     req.ProposalID,

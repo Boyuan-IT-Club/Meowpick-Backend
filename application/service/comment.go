@@ -32,6 +32,7 @@ import (
 
 var _ ICommentService = (*CommentService)(nil)
 
+// 接口
 type ICommentService interface {
 	CreateComment(ctx context.Context, req *dto.CreateCommentReq) (*dto.CreateCommentResp, error)
 
@@ -40,12 +41,14 @@ type ICommentService interface {
 	GetCourseComments(ctx context.Context, req *dto.ListCourseCommentsReq) (*dto.ListCourseCommentsResp, error)
 }
 
+// 实现
 type CommentService struct {
 	CommentRepo      *repo.CommentRepo
 	CommentCache     *cache.CommentCache
 	CommentAssembler *assembler.CommentAssembler
 }
 
+// 绑定
 var CommentServiceSet = wire.NewSet(
 	wire.Struct(new(CommentService), "*"),
 	wire.Bind(new(ICommentService), new(*CommentService)),

@@ -37,12 +37,14 @@ type IsAdminResp struct {
 }
 
 // GrantAdminReq 授予管理员权限的请求体
+// Danger
 type GrantAdminReq struct {
 	UserID     string `json:"userId"`
 	VerifyCode string `json:"verifyCode"`
 }
 
 // GrantAdminResp 授予管理员权限的响应体
+// Danger
 type GrantAdminResp struct {
 	*Resp
 	IsAdmin bool `json:"isAdmin"` // 操作后的管理员状态

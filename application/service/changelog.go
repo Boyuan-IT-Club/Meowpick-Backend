@@ -461,8 +461,6 @@ func (s *ChangeLogService) getActionTypeName(action int32) string {
 	switch action {
 	case consts.ActionTypeCreateProposal:
 		return "create"
-	case consts.ActionTypeDeleteProposal:
-		return "delete"
 	case consts.ActionTypeUpdateProposal:
 		return "update"
 	case consts.ActionTypeApproveProposal:
@@ -481,8 +479,6 @@ func (s *ChangeLogService) getTimelineActionType(action int32) string {
 		return "GRANT_ADMIN"
 	case consts.ActionTypeRevokeAdmin:
 		return "REVOKE_ADMIN"
-	case consts.ActionTypeDeleteProposal:
-		return "DELETE"
 	case consts.ActionTypeUpdateProposal:
 		return "UPDATE"
 	case consts.ActionTypeApproveProposal:

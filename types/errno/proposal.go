@@ -30,20 +30,11 @@ const (
 	ErrProposalCourseFoundInCourses        = 108000009
 	ErrProposalCreateFailed                = 108000010
 	ErrProposalNotFound                    = 108000011
-	ErrProposalDeleteFailed                = 108000012
 	ErrProposalUpdateFailed                = 108000013
 	ErrProposalGetSuggestionsFailed        = 108000014
 	ErrProposalInvalidField                = 108000015
 	ErrProposalIDRequired                  = 108000016
 	ErrProposalAlreadyProcessed            = 108000017
-	ErrProposalCannotDeleteApproved        = 108000018
-	ErrProposalStatusNotApproved           = 108000019
-	ErrProposalStatusNotRejected            = 108000020
-	ErrProposalNotDeleted                   = 108000021
-	ErrCourseModifiedCannotRevoke           = 108000022
-	ErrCourseNotFoundCannotRevoke           = 108000023
-	ErrProposalAlreadyPending              = 108000024
-	ErrRevokeActionTypeInvalid              = 108000025
 )
 
 func init() {
@@ -103,11 +94,6 @@ func init() {
 		code.WithAffectStability(false),
 	)
 	code.Register(
-		ErrProposalDeleteFailed,
-		"failed to delete proposal: {proposal_id}",
-		code.WithAffectStability(false),
-	)
-	code.Register(
 		ErrProposalUpdateFailed,
 		"failed to update proposal: {proposalId}",
 		code.WithAffectStability(false),
@@ -130,46 +116,6 @@ func init() {
 	code.Register(
 		ErrProposalAlreadyProcessed,
 		"proposal already processed: {key}: {value}",
-		code.WithAffectStability(false),
-	)
-	code.Register(
-		ErrProposalCannotDeleteApproved,
-		"cannot delete approved proposal: {status}",
-		code.WithAffectStability(false),
-	)
-	code.Register(
-		ErrProposalStatusNotApproved,
-		"proposal status is not approved cannot revoke approve",
-		code.WithAffectStability(false),
-	)
-	code.Register(
-		ErrProposalStatusNotRejected,
-		"proposal status is not rejected cannot revoke reject",
-		code.WithAffectStability(false),
-	)
-	code.Register(
-		ErrProposalNotDeleted,
-		"proposal is not deleted cannot revoke delete",
-		code.WithAffectStability(false),
-	)
-	code.Register(
-		ErrCourseModifiedCannotRevoke,
-		"course has been modified cannot revoke approve",
-		code.WithAffectStability(false),
-	)
-	code.Register(
-		ErrCourseNotFoundCannotRevoke,
-		"course not found cannot revoke approve",
-		code.WithAffectStability(false),
-	)
-	code.Register(
-		ErrProposalAlreadyPending,
-		"proposal is already pending",
-		code.WithAffectStability(false),
-	)
-	code.Register(
-		ErrRevokeActionTypeInvalid,
-		"invalid revoke action type: {actionType}",
 		code.WithAffectStability(false),
 	)
 }

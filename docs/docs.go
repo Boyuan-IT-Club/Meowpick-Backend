@@ -297,6 +297,10 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "required": [
+                    "department",
+                    "name"
+                ],
                 "type": "object"
             },
             "dto.CreatorVO": {
@@ -308,24 +312,6 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "creatorName": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "dto.DeleteProposalResp": {
-                "description": "实际业务数据",
-                "properties": {
-                    "deleted": {
-                        "type": "boolean"
-                    },
-                    "deletedAt": {
-                        "type": "string"
-                    },
-                    "operatorId": {
-                        "type": "string"
-                    },
-                    "proposalId": {
                         "type": "string"
                     }
                 },
@@ -412,22 +398,6 @@ const docTemplate = `{
                     "comments": {
                         "items": {
                             "$ref": "#/components/schemas/dto.CommentVO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "total": {
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "dto.GetMyProposalsResp": {
-                "description": "实际业务数据",
-                "properties": {
-                    "proposals": {
-                        "items": {
-                            "$ref": "#/components/schemas/dto.ProposalVO"
                         },
                         "type": "array",
                         "uniqueItems": false
@@ -706,6 +676,7 @@ const docTemplate = `{
                         "items": {
                             "type": "string"
                         },
+                        "minItems": 1,
                         "type": "array",
                         "uniqueItems": false
                     },
@@ -728,10 +699,18 @@ const docTemplate = `{
                         "items": {
                             "$ref": "#/components/schemas/dto.TeacherVO"
                         },
+                        "minItems": 1,
                         "type": "array",
                         "uniqueItems": false
                     }
                 },
+                "required": [
+                    "campuses",
+                    "category",
+                    "department",
+                    "name",
+                    "teachers"
+                ],
                 "type": "object"
             },
             "dto.ProposalLogVO": {
@@ -863,17 +842,6 @@ const docTemplate = `{
                 },
                 "type": "object"
             },
-            "dto.RejectProposalReq": {
-                "properties": {
-                    "proposalId": {
-                        "type": "string"
-                    },
-                    "reason": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "dto.RejectProposalResp": {
                 "description": "实际业务数据",
                 "properties": {
@@ -882,24 +850,6 @@ const docTemplate = `{
                     },
                     "rejected": {
                         "type": "boolean"
-                    }
-                },
-                "type": "object"
-            },
-            "dto.RevokeProposalReq": {
-                "properties": {
-                    "actionType": {
-                        "description": "\"approve\" | \"reject\" | \"delete\"",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "dto.RevokeProposalResp": {
-                "description": "实际业务数据",
-                "properties": {
-                    "proposalId": {
-                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -984,6 +934,10 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "required": [
+                    "department",
+                    "name"
+                ],
                 "type": "object"
             },
             "dto.ToggleLikeReq": {
@@ -1014,6 +968,17 @@ const docTemplate = `{
                 },
                 "type": "object"
             },
+            "dto.ToggleProposalReq": {
+                "properties": {
+                    "course": {
+                        "$ref": "#/components/schemas/dto.ProposalCourseVO"
+                    }
+                },
+                "required": [
+                    "course"
+                ],
+                "type": "object"
+            },
             "dto.ToggleProposalResp": {
                 "description": "实际业务数据",
                 "properties": {
@@ -1022,34 +987,6 @@ const docTemplate = `{
                     },
                     "proposalCnt": {
                         "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "dto.UpdateProposalReq": {
-                "properties": {
-                    "content": {
-                        "type": "string"
-                    },
-                    "course": {
-                        "$ref": "#/components/schemas/dto.ProposalCourseVO"
-                    },
-                    "title": {
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "content",
-                    "course",
-                    "title"
-                ],
-                "type": "object"
-            },
-            "dto.UpdateProposalResp": {
-                "description": "实际业务数据",
-                "properties": {
-                    "proposalId": {
-                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1099,24 +1036,6 @@ const docTemplate = `{
                     },
                     "data": {
                         "$ref": "#/components/schemas/dto.CreateTeacherResp"
-                    },
-                    "msg": {
-                        "description": "提示信息",
-                        "example": "success",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "handler.Response-dto_DeleteProposalResp": {
-                "properties": {
-                    "code": {
-                        "description": "业务代码, 0表示成功",
-                        "example": 0,
-                        "type": "integer"
-                    },
-                    "data": {
-                        "$ref": "#/components/schemas/dto.DeleteProposalResp"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1207,24 +1126,6 @@ const docTemplate = `{
                     },
                     "data": {
                         "$ref": "#/components/schemas/dto.GetMyCommentsResp"
-                    },
-                    "msg": {
-                        "description": "提示信息",
-                        "example": "success",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "handler.Response-dto_GetMyProposalsResp": {
-                "properties": {
-                    "code": {
-                        "description": "业务代码, 0表示成功",
-                        "example": 0,
-                        "type": "integer"
-                    },
-                    "data": {
-                        "$ref": "#/components/schemas/dto.GetMyProposalsResp"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1504,24 +1405,6 @@ const docTemplate = `{
                 },
                 "type": "object"
             },
-            "handler.Response-dto_RevokeProposalResp": {
-                "properties": {
-                    "code": {
-                        "description": "业务代码, 0表示成功",
-                        "example": 0,
-                        "type": "integer"
-                    },
-                    "data": {
-                        "$ref": "#/components/schemas/dto.RevokeProposalResp"
-                    },
-                    "msg": {
-                        "description": "提示信息",
-                        "example": "success",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "handler.Response-dto_SignInResp": {
                 "properties": {
                     "code": {
@@ -1567,24 +1450,6 @@ const docTemplate = `{
                     },
                     "data": {
                         "$ref": "#/components/schemas/dto.ToggleProposalResp"
-                    },
-                    "msg": {
-                        "description": "提示信息",
-                        "example": "success",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "handler.Response-dto_UpdateProposalResp": {
-                "properties": {
-                    "code": {
-                        "description": "业务代码, 0表示成功",
-                        "example": 0,
-                        "type": "integer"
-                    },
-                    "data": {
-                        "$ref": "#/components/schemas/dto.UpdateProposalResp"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -2101,7 +1966,7 @@ const docTemplate = `{
                 ]
             }
         },
-        "/api/course/departs": {
+        "/api/course/departments": {
             "get": {
                 "description": "根据课程名字获取课程开课院系",
                 "parameters": [
@@ -2234,7 +2099,7 @@ const docTemplate = `{
         },
         "/api/proposal/add": {
             "post": {
-                "description": "创建一个新的提案",
+                "description": "创建一个新的提案\n提案创建完成后，管理员能够通过分页筛选接口从提案列表中获取提案",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -2344,13 +2209,12 @@ const docTemplate = `{
         },
         "/api/proposal/filter": {
             "get": {
-                "description": "基于提案状态、校区、开课院系、课程分类筛选 proposal 表中的提案",
+                "description": "基于提案状态、校区、开课院系、课程分类筛选 proposal 表中的提案\n原本的提案列表接口 /list 已被整合进本接口，**所有发往 /list 的前端请求需要改向此处**\n(可筛选的) 提案列表功能不对用户开放，仅管理员可见",
                 "parameters": [
                     {
                         "description": "提案状态，可多选",
                         "in": "query",
                         "name": "status",
-                        "required": true,
                         "schema": {
                             "items": {
                                 "type": "string"
@@ -2363,7 +2227,6 @@ const docTemplate = `{
                         "description": "校区，可多选",
                         "in": "query",
                         "name": "campus",
-                        "required": true,
                         "schema": {
                             "items": {
                                 "type": "string"
@@ -2430,110 +2293,6 @@ const docTemplate = `{
                 ]
             }
         },
-        "/api/proposal/history": {
-            "get": {
-                "parameters": [
-                    {
-                        "description": "页码",
-                        "in": "query",
-                        "name": "page",
-                        "schema": {
-                            "default": 1,
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "description": "每页数量",
-                        "in": "query",
-                        "name": "pageSize",
-                        "schema": {
-                            "default": 10,
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "description": "状态",
-                        "in": "query",
-                        "name": "status",
-                        "schema": {
-                            "enum": [
-                                "pending",
-                                "approved",
-                                "rejected"
-                            ],
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/handler.Response-dto_GetMyProposalsResp"
-                                }
-                            }
-                        },
-                        "description": "OK"
-                    }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "summary": "获取我的提案",
-                "tags": [
-                    "proposal"
-                ]
-            }
-        },
-        "/api/proposal/list": {
-            "get": {
-                "description": "分页查询提案列表数据",
-                "parameters": [
-                    {
-                        "description": "页码",
-                        "in": "query",
-                        "name": "page",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "description": "每页数量",
-                        "in": "query",
-                        "name": "pageSize",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/handler.Response-dto_ListProposalResp"
-                                }
-                            }
-                        },
-                        "description": "OK"
-                    }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "summary": "分页获取提案列表",
-                "tags": [
-                    "proposal"
-                ]
-            }
-        },
         "/api/proposal/suggest": {
             "post": {
                 "description": "根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表",
@@ -2591,7 +2350,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}": {
             "get": {
-                "description": "根据提案ID查询提案完整信息",
+                "description": "根据提案ID查询提案完整信息（如果筛选接口**执意**返回所有信息，那这个接口也可以删）",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -2628,7 +2387,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/approve": {
             "post": {
-                "description": "通过提案并创建课程，或拒绝提案",
+                "description": "管理员通过提案并创建课程，创建的课程是经管理员修改后的版本\n原始提案将被标注为 Approved 并重新写入数据库，方便追溯",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -2640,6 +2399,26 @@ const docTemplate = `{
                         }
                     }
                 ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/dto.ToggleProposalReq",
+                                        "summary": "req",
+                                        "description": "审批通过参数"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "审批通过参数",
+                    "required": true
+                },
                 "responses": {
                     "200": {
                         "content": {
@@ -2663,52 +2442,6 @@ const docTemplate = `{
                 ]
             }
         },
-        "/api/proposal/{proposalId}/delete": {
-            "post": {
-                "description": "根据提案ID软删除提案（标记为已删除状态）,只对状态为pending和rejected的进行处理",
-                "parameters": [
-                    {
-                        "description": "提案ID",
-                        "in": "path",
-                        "name": "proposalId",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/handler.Response-dto_DeleteProposalResp"
-                                }
-                            }
-                        },
-                        "description": "OK"
-                    }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "summary": "删除提案",
-                "tags": [
-                    "proposal"
-                ]
-            }
-        },
         "/api/proposal/{proposalId}/reject": {
             "post": {
                 "description": "管理员操作：将状态为 pending（待审核）的提案变更为 rejected（已拒绝）\n使用场景：课程提案审核流程中，管理员认为提案不符合要求，驳回该提案\n注意事项：\n- 仅管理员可操作（需先调用 /api/auth/is_admin 确认权限）\n- 仅状态为 pending 的提案可以拒绝，已 approved/rejected 的提案无法再次操作\n- 拒绝后不会创建课程记录，仅更新提案状态",
@@ -2723,26 +2456,6 @@ const docTemplate = `{
                         }
                     }
                 ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.RejectProposalReq",
-                                        "summary": "body",
-                                        "description": "拒绝参数（可选理由）"
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    "description": "拒绝参数（可选理由）",
-                    "required": true
-                },
                 "responses": {
                     "200": {
                         "content": {
@@ -2761,120 +2474,6 @@ const docTemplate = `{
                     }
                 ],
                 "summary": "拒绝提案",
-                "tags": [
-                    "proposal"
-                ]
-            }
-        },
-        "/api/proposal/{proposalId}/revoke": {
-            "post": {
-                "description": "管理员撤回提案的通过/拒绝/删除操作",
-                "parameters": [
-                    {
-                        "description": "提案ID",
-                        "in": "path",
-                        "name": "proposalId",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.RevokeProposalReq",
-                                        "summary": "req",
-                                        "description": "撤回操作类型"
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    "description": "撤回操作类型",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/handler.Response-dto_RevokeProposalResp"
-                                }
-                            }
-                        },
-                        "description": "OK"
-                    }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "summary": "撤回提案操作",
-                "tags": [
-                    "proposal"
-                ]
-            }
-        },
-        "/api/proposal/{proposalId}/update": {
-            "post": {
-                "description": "根据提案ID修改提案的标题和内容",
-                "parameters": [
-                    {
-                        "description": "提案唯一ID",
-                        "in": "path",
-                        "name": "proposalId",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.UpdateProposalReq",
-                                        "summary": "body",
-                                        "description": "更新参数（标题、内容）"
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    "description": "更新参数（标题、内容）",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/handler.Response-dto_UpdateProposalResp"
-                                }
-                            }
-                        },
-                        "description": "更新成功响应"
-                    }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "summary": "更新提案内容",
                 "tags": [
                     "proposal"
                 ]

@@ -34,16 +34,19 @@ import (
 // @Router /api/comment/add [post]
 func CreateComment(c *gin.Context) {
 	var err error
+	// 定义请求体与响应体
 	var req dto.CreateCommentReq
 	var resp *dto.CreateCommentResp
-
+	// 解析请求体 + 错误处理
 	if err = c.ShouldBindJSON(&req); err != nil {
 		PostProcess(c, &req, nil, err)
 		return
 	}
+	// 注入当前用户 ID 到上下文
 	c.Set(consts.CtxUserID, token.GetUserID(c))
-
+	// 调用评论服务创建评论
 	resp, err = provider.Get().CommentService.CreateComment(c, &req)
+	// 统一处理响应结果
 	PostProcess(c, &req, resp, err)
 }
 

@@ -37,9 +37,9 @@ type CreateTeacherResp struct {
 
 type TeacherVO struct {
 	ID         string `json:"id"`
-	Name       string `json:"name"`
+	Name       string `json:"name" binding:"required"`
 	Title      string `json:"title"`
-	Department string `json:"department"`
+	Department string `json:"department" binding:"required"`
 }
 
 type GetTeacherSuggestionsReq struct {

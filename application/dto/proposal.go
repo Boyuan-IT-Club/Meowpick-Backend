@@ -18,13 +18,13 @@ import "time"
 
 // ProposalCourseVO 提案中的课程信息
 type ProposalCourseVO struct {
-	ID         string        `json:"id,omitempty"`
-	Name       string        `json:"name"`
-	Code       string        `json:"code"`
-	Category   string        `json:"category"`
-	Campuses   []string      `json:"campuses"`
-	Department string        `json:"department"`
-	Teachers   []*TeacherVO  `json:"teachers"`
+	ID         string       `json:"id,omitempty"`
+	Name       string       `json:"name" binding:"required"`
+	Code       string       `json:"code"`
+	Category   string       `json:"category" binding:"required"`
+	Campuses   []string     `json:"campuses" binding:"required,min=1"`
+	Department string       `json:"department" binding:"required"`
+	Teachers   []*TeacherVO `json:"teachers" binding:"required,min=1,dive"`
 }
 
 // CreateProposalReq 新增投票请求参数
@@ -42,35 +42,29 @@ type CreateProposalResp struct {
 }
 
 type ProposalVO struct {
-	ID           string            `json:"id"`
-	UserID       string            `json:"userId"`
-	Title        string            `json:"title"`
-	Content      string            `json:"content"`
-	Status       string            `json:"status"` // pending / approved / rejected
-	Deleted      bool              `json:"deleted"`
-	RejectReason string            `json:"rejectReason"` // 拒绝理由
+	ID           string `json:"id"`
+	UserID       string `json:"userId"`
+	Title        string `json:"title"`
+	Content      string `json:"content"`
+	Status       string `json:"status"` // pending / approved / rejected
+	Deleted      bool   `json:"deleted"`
+	RejectReason string `json:"rejectReason"` // 拒绝理由
 	*LikeVO
-	Course       *ProposalCourseVO `json:"course"`
-	CreatedAt    time.Time         `json:"createdAt"`
-	UpdatedAt    time.Time         `json:"updatedAt"`
-}
-
-// ListProposalReq 对应 /api/proposal/list 的请求体（分页）
-type ListProposalReq struct {
-	Status string `json:"status"` // pending / approved / rejected / 空则为全部
-	*PageParam
+	Course    *ProposalCourseVO `json:"course"`
+	CreatedAt time.Time         `json:"createdAt"`
+	UpdatedAt time.Time         `json:"updatedAt"`
 }
 
 // FilterProposalReq 对应 /api/proposal/filter 的请求参数（分页筛选）
 type FilterProposalReq struct {
-	Statuses   []string `form:"status" binding:"required"`
-	Campuses   []string `form:"campus" binding:"required"`
+	Statuses   []string `form:"status"`
+	Campuses   []string `form:"campus"`
 	Department string   `form:"department"`
 	Category   string   `form:"category"`
 	*PageParam
 }
 
-// ListProposalResp 对应 /api/proposal/list 的响应体
+// ListProposalResp 提案列表响应体
 type ListProposalResp struct {
 	*Resp
 	Total     int64         `json:"total"`
@@ -87,60 +81,24 @@ type GetProposalResp struct {
 }
 
 type RejectProposalReq struct {
-	ProposalID string `json:"proposalId"`
-	Reason     string `json:"reason"`
+	ProposalID string `json:"-"`
 }
 
 type RejectProposalResp struct {
 	*Resp
-	Rejected    bool  `json:"rejected"`
+	Rejected     bool  `json:"rejected"`
 	PendingCount int64 `json:"pendingCount"`
 }
 
 type ToggleProposalReq struct {
-	ProposalID string `json:"proposalID"`
+	ProposalID string            `json:"-"`
+	Course     *ProposalCourseVO `json:"course" binding:"required"`
 }
 
 type ToggleProposalResp struct {
 	Proposal    bool  `json:"proposal"`
 	ProposalCnt int64 `json:"proposalCnt"`
 	*Resp
-}
-
-type RevokeProposalReq struct {
-	ProposalID string `json:"-"`              // 从 URL path 获取
-	ActionType string `json:"actionType"` // "approve" | "reject" | "delete"
-}
-
-type RevokeProposalResp struct {
-	*Resp
-	ProposalID string `json:"proposalId"`
-}
-
-type DeleteProposalReq struct {
-	ProposalID string `json:"proposalId"`
-}
-
-type DeleteProposalResp struct {
-	*Resp
-	ProposalID string    `json:"proposalId"`
-	DeletedAt  time.Time `json:"deletedAt"`
-	OperatorID string    `json:"operatorId"`
-	Deleted    bool      `json:"deleted"`
-}
-
-// UpdateProposalReq 更新提案请求参数
-type UpdateProposalReq struct {
-	ProposalID string            `json:"-"`
-	Title      string            `json:"title" binding:"required"`
-	Content    string            `json:"content" binding:"required"`
-	Course     *ProposalCourseVO `json:"course" binding:"required"`
-}
-
-// UpdateProposalResp 更新提案响应参数
-type UpdateProposalResp struct {
-	*Resp      `json:",inline"`
-	ProposalID string `json:"proposalId"`
 }
 
 // GetProposalSuggestionsReq 获取提案搜索建议请求
@@ -181,16 +139,4 @@ type FieldSuggestionVO struct {
 	ID    string `json:"id,omitempty"`
 	Value string `json:"value"`
 	Label string `json:"label"`
-}
-
-// GetMyProposalsReq 获取我的提案请求
-type GetMyProposalsReq struct {
-	*PageParam
-}
-
-// GetMyProposalsResp 获取我的提案响应
-type GetMyProposalsResp struct {
-	*Resp
-	Total     int64         `json:"total"`
-	Proposals []*ProposalVO `json:"proposals"`
 }

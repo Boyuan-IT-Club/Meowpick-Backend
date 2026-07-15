@@ -14,6 +14,7 @@
 
 package router
 
+// 在这里进行分类 api 注册并把 api 与 handler 函数绑定
 import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/api/handler"
 	"github.com/gin-gonic/gin"
@@ -72,16 +73,11 @@ func SetupRoutes() *gin.Engine {
 	proposalGroup := router.Group("/api/proposal")
 	{
 		proposalGroup.POST("/add", handler.CreateProposal)
-		proposalGroup.GET("/list", handler.ListProposals)
 		proposalGroup.GET("/filter", handler.FilterProposals)
 		proposalGroup.GET("/:proposalId", handler.GetProposal)
-		proposalGroup.POST("/:proposalId/update", handler.UpdateProposal)
-		proposalGroup.POST("/:proposalId/delete", handler.DeleteProposal)
 		proposalGroup.POST("/suggest", handler.GetProposalSuggestions)
-		proposalGroup.GET("/history", handler.GetMyProposals)
 		proposalGroup.GET("/field-suggestions", handler.GetProposalFieldSuggestions) // 获取提案字段建议
 		proposalGroup.POST("/:proposalId/approve", handler.ApproveProposal)
-		proposalGroup.POST("/:proposalId/revoke", handler.RevokeProposal)
 		proposalGroup.POST("/:proposalId/reject", handler.RejectProposal)
 	}
 
