@@ -338,10 +338,10 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 
 	suggestions := []*dto.FieldSuggestionVO{}
