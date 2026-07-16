@@ -257,10 +257,10 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 
 	// 查询提案详情
