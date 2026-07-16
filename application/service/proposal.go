@@ -179,6 +179,14 @@ func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterPr
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
+		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+	}
+	if !isAdmin {
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+	}
 
 	statuses := make([]int32, 0, len(req.Statuses))
 	for _, statusName := range req.Statuses {
@@ -248,6 +256,14 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
+		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+	}
+	if !isAdmin {
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
 	}
 
 	// 查询提案详情
