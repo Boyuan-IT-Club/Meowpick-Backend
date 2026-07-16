@@ -80,10 +80,10 @@ func FilterProposals(c *gin.Context) {
 
 // GetProposal 获取提案详情
 // @Summary 获取提案详情
-// @Description 根据提案ID查询提案完整信息（如果筛选接口**执意**返回所有信息，那这个接口也可以删）
+// @Description 根据提案ID查询提案完整信息
 // @Tags proposal
 // @Produce json
-// @Param id path string true "提案ID"
+// @Param proposalId path string true "提案ID"
 // @Success 200 {object} Response[dto.GetProposalResp]
 // @Security Bearer
 // @Router /api/proposal/{proposalId} [get]
