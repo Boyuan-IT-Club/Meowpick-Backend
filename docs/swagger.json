@@ -2336,7 +2336,7 @@
         },
         "/api/proposal/{proposalId}": {
             "get": {
-                "description": "根据提案ID查询提案完整信息（如果筛选接口**执意**返回所有信息，那这个接口也可以删）",
+                "description": "根据提案ID查询提案完整信息",
                 "parameters": [
                     {
                         "description": "提案ID",
