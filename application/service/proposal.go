@@ -179,10 +179,11 @@ func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterPr
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 	}
 	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 
 	statuses := make([]int32, 0, len(req.Statuses))
@@ -257,10 +258,11 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 	}
 	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 
 	// 查询提案详情
@@ -299,10 +301,11 @@ func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.G
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 	}
 	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 
 	// 查询提案建议
@@ -338,10 +341,11 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 	}
 	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 
 	suggestions := []*dto.FieldSuggestionVO{}
@@ -465,10 +469,11 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.WrapByCode(err, errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 	}
 	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 	// 验证提案ID
 	if req.ProposalID == "" {
@@ -589,10 +594,11 @@ func (s *ProposalService) RejectProposal(ctx context.Context, req *dto.RejectPro
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed, errorx.KV("userId", userId))
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 	}
 	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("userId", userId))
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 
 	if req.ProposalID == "" {

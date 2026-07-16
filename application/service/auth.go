@@ -179,7 +179,8 @@ func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (r
 		)
 	}
 	if targetUser == nil {
-		return nil, errorx.New(errno.ErrUserFindFailed, errorx.KV("userId", req.UserID))
+		return nil, errorx.New(errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID))
 	}
 
 	// 获取当前管理员状态

@@ -65,8 +65,8 @@ func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChan
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
-		return nil, errorx.New(errno.ErrUserNotAdmin,
-			errorx.KV("id", userId))
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 	}
 	if !isAdmin {
 		return nil, errorx.New(errno.ErrUserNotAdmin,
@@ -169,10 +169,11 @@ func (s *ChangeLogService) ListProposalLogsGrouped(ctx context.Context, req *dto
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 	}
 	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserNotAdmin)
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 
 	// 设置默认分页参数
@@ -316,10 +317,11 @@ func (s *ChangeLogService) ListProposalLogsTimeline(ctx context.Context, req *dt
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [IsAdminByID] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
 	}
 	if !isAdmin {
-		return nil, errorx.New(errno.ErrUserNotAdmin)
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", userId))
 	}
 
 	// 设置默认分页参数
