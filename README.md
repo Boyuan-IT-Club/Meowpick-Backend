@@ -90,7 +90,7 @@
 - `GET /api/search/suggest` - 获取搜索建议
 
 ### 点赞接口
-- `POST /api/action/like/:id` - 为评论点赞
+- `POST /api/like/:likeId` - 为评论点赞/取消点赞
 
 ### 课程接口
 - `GET /api/course/:courseId` - 获取特定课程详情

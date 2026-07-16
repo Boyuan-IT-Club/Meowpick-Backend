@@ -97,7 +97,7 @@ func TestData_GetLikeTargetTypeNameByID(t *testing.T) {
 		id       int32
 		expected string
 	}{
-		{"提案类型", 1, "proposal"},
+		{"原提案类型已下线", 1, "未知点赞目标类型"},
 		{"评论类型", 2, "comment"},
 		{"不存在的类型", 999, "未知点赞目标类型"},
 	}

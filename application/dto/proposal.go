@@ -42,17 +42,16 @@ type CreateProposalResp struct {
 }
 
 type ProposalVO struct {
-	ID           string `json:"id"`
-	UserID       string `json:"userId"`
-	Title        string `json:"title"`
-	Content      string `json:"content"`
-	Status       string `json:"status"` // pending / approved / rejected
-	Deleted      bool   `json:"deleted"`
-	RejectReason string `json:"rejectReason"` // 拒绝理由
-	*LikeVO
-	Course    *ProposalCourseVO `json:"course"`
-	CreatedAt time.Time         `json:"createdAt"`
-	UpdatedAt time.Time         `json:"updatedAt"`
+	ID           string            `json:"id"`
+	UserID       string            `json:"userId"`
+	Title        string            `json:"title"`
+	Content      string            `json:"content"`
+	Status       string            `json:"status"` // pending / approved / rejected
+	Deleted      bool              `json:"deleted"`
+	RejectReason string            `json:"rejectReason"` // 拒绝理由
+	Course       *ProposalCourseVO `json:"course"`
+	CreatedAt    time.Time         `json:"createdAt"`
+	UpdatedAt    time.Time         `json:"updatedAt"`
 }
 
 // FilterProposalReq 对应 /api/proposal/filter 的请求参数（分页筛选）

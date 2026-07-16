@@ -22,6 +22,7 @@ const (
 	ErrLikeToggleFailed    = 102000001
 	ErrLikeCountFailed     = 102000002
 	ErrLikeGetStatusFailed = 102000003
+	ErrLikeInvalidTarget   = 102000004
 )
 
 func init() {
@@ -38,6 +39,11 @@ func init() {
 	code.Register(
 		ErrLikeGetStatusFailed,
 		"failed to get like status by {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrLikeInvalidTarget,
+		"invalid like target type: {targetType}",
 		code.WithAffectStability(false),
 	)
 }

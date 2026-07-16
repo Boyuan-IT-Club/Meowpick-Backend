@@ -62,9 +62,8 @@ func NewProvider() (*Provider, error) {
 	}
 	likeCache := cache.NewLikeCache(configConfig)
 	likeService := service.LikeService{
-		LikeRepo:     likeRepo,
-		LikeCache:    likeCache,
-		ProposalRepo: proposalRepo,
+		LikeRepo:  likeRepo,
+		LikeCache: likeCache,
 	}
 	courseService := service.CourseService{
 		CourseRepo:      courseRepo,
@@ -83,15 +82,12 @@ func NewProvider() (*Provider, error) {
 	}
 	proposalAssembler := &assembler.ProposalAssembler{
 		CourseAssembler: courseAssembler,
-		LikeRepo:        likeRepo,
 	}
 	proposalService := service.ProposalService{
 		CourseRepo:        courseRepo,
 		CourseAssembler:   courseAssembler,
 		ProposalRepo:      proposalRepo,
 		ProposalAssembler: proposalAssembler,
-		LikeRepo:          likeRepo,
-		LikeCache:         likeCache,
 		UserRepo:          userRepo,
 		TeacherRepo:       teacherRepo,
 		ChangeLogService:  changeLogService,

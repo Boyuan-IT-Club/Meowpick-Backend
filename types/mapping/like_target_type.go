@@ -17,6 +17,5 @@ package mapping
 import "github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 
 var LikeTargetTypeMap = map[int32]string{
-	1: consts.LikeTargetTypeProposal,
 	2: consts.LikeTargetTypeComment,
 }

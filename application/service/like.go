@@ -35,9 +35,8 @@ type ILikeService interface {
 }
 
 type LikeService struct {
-	LikeRepo     *repo.LikeRepo
-	LikeCache    *cache.LikeCache
-	ProposalRepo *repo.ProposalRepo
+	LikeRepo  *repo.LikeRepo
+	LikeCache *cache.LikeCache
 }
 
 var LikeServiceSet = wire.NewSet(
@@ -54,6 +53,9 @@ func (s *LikeService) ToggleLike(ctx context.Context, req *dto.ToggleLikeReq) (r
 	}
 
 	// 获得目标
+	if req.TargetType != consts.LikeTargetTypeComment {
+		return nil, errorx.New(errno.ErrLikeInvalidTarget, errorx.KV("targetType", req.TargetType))
+	}
 	targetType := mapping.Data.GetLikeTargetTypeIDByName(req.TargetType)
 
 	// 点赞或取消点赞目标
@@ -75,17 +77,6 @@ func (s *LikeService) ToggleLike(ctx context.Context, req *dto.ToggleLikeReq) (r
 		logs.CtxWarnf(ctx, "[LikeRepo] [CountByID] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrLikeCountFailed,
 			errorx.KV("key", consts.ReqTargetID), errorx.KV("value", req.TargetID))
-	}
-
-	// 同步更新 proposal 文档的 likeCnt
-	if req.TargetType == consts.LikeTargetTypeProposal {
-		delta := int64(1)
-		if !active {
-			delta = int64(-1)
-		}
-		if err := s.ProposalRepo.IncrementLikeCnt(ctx, req.TargetID, delta); err != nil {
-			logs.CtxWarnf(ctx, "[ProposalRepo] [IncrementLikeCnt] error: %v", err)
-		}
 	}
 
 	return &dto.ToggleLikeResp{

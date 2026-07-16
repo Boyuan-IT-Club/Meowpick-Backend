@@ -15,7 +15,9 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -24,6 +26,7 @@ import (
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 // Response 统一响应格式，仅用于 Swagger 文档生成
@@ -53,6 +56,12 @@ func PostProcess(c *gin.Context, req, resp any, err error) {
 			"msg":  se.Msg(),
 			"data": nil,
 		})
+	} else if isClientRequestError(err) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": http.StatusBadRequest,
+			"msg":  err.Error(),
+			"data": nil,
+		})
 	} else {
 		// 其他非 errorx 错误，500
 		logs.CtxErrorf(c, "[PostProcess] internal error, err=%v", err)
@@ -62,6 +71,25 @@ func PostProcess(c *gin.Context, req, resp any, err error) {
 			"data": nil,
 		})
 	}
+}
+
+func isClientRequestError(err error) bool {
+	if errors.Is(err, io.EOF) {
+		return true
+	}
+
+	var syntaxErr *json.SyntaxError
+	if errors.As(err, &syntaxErr) {
+		return true
+	}
+
+	var typeErr *json.UnmarshalTypeError
+	if errors.As(err, &typeErr) {
+		return true
+	}
+
+	var validationErrs validator.ValidationErrors
+	return errors.As(err, &validationErrs)
 }
 
 // makeResponse 通过反射构造嵌套格式的响应体

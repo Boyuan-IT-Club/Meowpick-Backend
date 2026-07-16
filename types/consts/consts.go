@@ -123,8 +123,7 @@ const (
 
 // 点赞目标类型相关
 const (
-	LikeTargetTypeComment  = "comment"
-	LikeTargetTypeProposal = "proposal"
+	LikeTargetTypeComment = "comment"
 )
 
 // 搜索建议类型相关

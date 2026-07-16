@@ -816,12 +816,6 @@ const docTemplate = `{
                     "id": {
                         "type": "string"
                     },
-                    "like": {
-                        "type": "boolean"
-                    },
-                    "likeCnt": {
-                        "type": "integer"
-                    },
                     "rejectReason": {
                         "description": "拒绝理由",
                         "type": "string"
@@ -943,9 +937,8 @@ const docTemplate = `{
             "dto.ToggleLikeReq": {
                 "properties": {
                     "targetType": {
-                        "description": "点赞对象类型：proposal/comment",
+                        "description": "点赞对象类型：comment",
                         "enum": [
-                            "proposal",
                             "comment"
                         ],
                         "type": "string"
@@ -2042,10 +2035,10 @@ const docTemplate = `{
         },
         "/api/like/{likeId}": {
             "post": {
-                "description": "对指定目标（提案或评论）进行点赞或取消点赞操作；若已点赞则取消，未点赞则新增",
+                "description": "对指定评论进行点赞或取消点赞操作；若已点赞则取消，未点赞则新增",
                 "parameters": [
                     {
-                        "description": "目标ID（提案ID或评论ID）",
+                        "description": "评论ID",
                         "in": "path",
                         "name": "likeId",
                         "required": true,

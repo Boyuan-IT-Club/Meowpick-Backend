@@ -22,7 +22,6 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
@@ -52,8 +51,6 @@ type ProposalService struct {
 	CourseAssembler   *assembler.CourseAssembler
 	ProposalRepo      *repo.ProposalRepo
 	ProposalAssembler *assembler.ProposalAssembler
-	LikeRepo          *repo.LikeRepo
-	LikeCache         *cache.LikeCache
 	UserRepo          *repo.UserRepo
 	TeacherRepo       *repo.TeacherRepo
 	ChangeLogService  IChangeLogService
@@ -147,7 +144,7 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		return nil, errorx.WrapByCode(err, errno.ErrProposalCreateFailed, errorx.KV("name", req.Course.Name))
 	}
 
-	// 3. 转换为 VO (包含点赞信息)
+	// 3. 转换为 VO
 	vo, err := s.ProposalAssembler.ToProposalVO(ctx, proposal, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVO] error: %v", err)

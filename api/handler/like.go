@@ -24,11 +24,11 @@ import (
 
 // ToggleLike godoc
 // @Summary 点赞 / 取消点赞
-// @Description 对指定目标（提案或评论）进行点赞或取消点赞操作；若已点赞则取消，未点赞则新增
+// @Description 对指定评论进行点赞或取消点赞操作；若已点赞则取消，未点赞则新增
 // @Tags like
 // @Accept json
 // @Produce json
-// @Param likeId path string true "目标ID（提案ID或评论ID）"
+// @Param likeId path string true "评论ID"
 // @Param body body dto.ToggleLikeReq true "点赞请求参数"
 // @Success 200 {object} Response[dto.ToggleLikeResp] "操作成功"
 // @Security Bearer

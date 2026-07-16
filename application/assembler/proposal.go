@@ -19,9 +19,7 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
 )
@@ -37,7 +35,6 @@ type IProposalAssembler interface {
 
 type ProposalAssembler struct {
 	CourseAssembler *CourseAssembler
-	LikeRepo        *repo.LikeRepo
 }
 
 var ProposalAssemblerSet = wire.NewSet(
@@ -57,27 +54,6 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 		}
 	}
 
-	// 获得点赞目标类型
-	targetType := mapping.Data.GetLikeTargetTypeIDByName(consts.LikeTargetTypeProposal)
-
-	// 优先使用 proposal 文档上的 likeCnt，若为 0 则回退到实时查询
-	likeCnt := db.LikeCnt
-	if likeCnt == 0 {
-		count, err := a.LikeRepo.CountByTarget(ctx, db.ID, targetType)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[LikeRepo] [CountByID] error: %v", err)
-			return nil, err
-		}
-		likeCnt = count
-	}
-
-	// 这里的userId是查看评论的用户
-	active, err := a.LikeRepo.IsLike(ctx, userId, db.ID, targetType)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[LikeRepo] [IsLike] error: %v", err)
-		return nil, err
-	}
-
 	return &dto.ProposalVO{
 		ID:           db.ID,
 		UserID:       db.UserID,
@@ -87,12 +63,8 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 		Status:       mapping.Data.GetProposalStatusNameByID(db.Status),
 		Deleted:      db.Deleted,
 		RejectReason: db.RejectReason,
-		LikeVO: &dto.LikeVO{
-			Like:    active,
-			LikeCnt: likeCnt,
-		},
-		CreatedAt: db.CreatedAt,
-		UpdatedAt: db.UpdatedAt,
+		CreatedAt:    db.CreatedAt,
+		UpdatedAt:    db.UpdatedAt,
 	}, nil
 }
 
@@ -103,52 +75,12 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 		return []*dto.ProposalVO{}, nil
 	}
 
-	// 提取所有 proposalIds
-	ids := make([]string, len(dbs))
-	for i, db := range dbs {
-		ids[i] = db.ID
-	}
-
-	// 获得点赞目标类型
-	targetType := mapping.Data.GetLikeTargetTypeIDByName(consts.LikeTargetTypeProposal)
-
-	// 收集 likeCnt 为 0 的 proposal IDs，需要实时查询
-	zeroLikeIDs := make([]string, 0)
-	for _, db := range dbs {
-		if db.LikeCnt == 0 {
-			zeroLikeIDs = append(zeroLikeIDs, db.ID)
-		}
-	}
-
-	// 批量获取需要实时查询的点赞数
-	likeCntMap := make(map[string]int64)
-	if len(zeroLikeIDs) > 0 {
-		cntMap, err := a.LikeRepo.CountByTargets(ctx, zeroLikeIDs, targetType)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[LikeRepo] [CountByTargets] error: %v", err)
-			return nil, err
-		}
-		likeCntMap = cntMap
-	}
-
-	// 批量获取点赞状态
-	likeStatusMap, err := a.LikeRepo.GetLikesByUserIDAndTargets(ctx, userId, ids, targetType)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[LikeRepo] [GetLikesByUserIDAndTargets] error: %v", err)
-		return nil, err
-	}
-
 	// 构建结果
 	vos := make([]*dto.ProposalVO, 0, len(dbs))
 	for _, db := range dbs {
-		// 优先使用 proposal 文档的 likeCnt，若为 0 则从实时查询结果中获取
-		likeCnt := db.LikeCnt
-		if likeCnt == 0 {
-			likeCnt = likeCntMap[db.ID] // 如果不存在则为0
-		}
-		active := likeStatusMap[db.ID] // 如果不存在则为false
 		var courseVO *dto.ProposalCourseVO
 		if db.Course != nil {
+			var err error
 			courseVO, err = a.CourseAssembler.ToProposalCourseVO(ctx, db.Course)
 			if err != nil {
 				logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v", err)
@@ -163,13 +95,9 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 			Status:       mapping.Data.GetProposalStatusNameByID(db.Status),
 			Deleted:      db.Deleted,
 			RejectReason: db.RejectReason,
-			LikeVO: &dto.LikeVO{
-				Like:    active,
-				LikeCnt: likeCnt,
-			},
-			Course:    courseVO,
-			CreatedAt: db.CreatedAt,
-			UpdatedAt: db.UpdatedAt,
+			Course:       courseVO,
+			CreatedAt:    db.CreatedAt,
+			UpdatedAt:    db.UpdatedAt,
 		}
 		vos = append(vos, proposalVO)
 	}

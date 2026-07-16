@@ -45,7 +45,6 @@ type IProposalRepo interface {
 	FindByIDs(ctx context.Context, proposalIDs []string) ([]*model.Proposal, error)
 	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error)
-	IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error
 	UpdateStatusAndReasonByID(ctx context.Context, proposalID string, statusID int32, rejectReason string) (bool, error)
 }
 
@@ -248,11 +247,4 @@ func (r *ProposalRepo) UpdateStatusAndReasonByID(ctx context.Context, proposalID
 
 	updated := result.ModifiedCount > 0
 	return updated, nil
-}
-
-func (r *ProposalRepo) IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error {
-	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}
-	update := bson.M{"$inc": bson.M{"likeCnt": delta}, "$set": bson.M{consts.UpdatedAt: time.Now()}}
-	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
-	return err
 }
