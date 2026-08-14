@@ -86,6 +86,8 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 		Course:       courseVO,
 		Status:       mapping.Data.GetProposalStatusNameByID(db.Status),
 		Deleted:      db.Deleted,
+		ShowUsername: db.ShowUsername,
+		Contribution: db.Contribution,
 		RejectReason: db.RejectReason,
 		LikeVO: &dto.LikeVO{
 			Like:    active,
@@ -165,6 +167,8 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 			Status:       mapping.Data.GetProposalStatusNameByID(db.Status),
 			Deleted:      db.Deleted,
 			RejectReason: db.RejectReason,
+			ShowUsername: db.ShowUsername,
+			Contribution: db.Contribution,
 			LikeVO: &dto.LikeVO{
 				Like:    active,
 				LikeCnt: likeCnt,
@@ -193,6 +197,10 @@ func (a *ProposalAssembler) ToProposalDB(ctx context.Context, vo *dto.ProposalVO
 		}
 	}
 
+	if vo.Contribution < 0 {
+		vo.Contribution = 0
+	}
+
 	return &model.Proposal{
 		ID:           vo.ID,
 		UserID:       vo.UserID,
@@ -204,6 +212,8 @@ func (a *ProposalAssembler) ToProposalDB(ctx context.Context, vo *dto.ProposalVO
 		ShowUsername: vo.ShowUsername,
 		Contribution: vo.Contribution,
 		RejectReason: vo.RejectReason,
+		ShowUsername: vo.ShowUsername,
+		Contribution: vo.Contribution,
 		CreatedAt:    vo.CreatedAt,
 		UpdatedAt:    vo.UpdatedAt,
 	}, nil

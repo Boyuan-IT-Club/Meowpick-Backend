@@ -245,6 +245,18 @@ func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterPr
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
+	// 角色判断：查询失败则按普通用户处理
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
+	if err != nil {
+		isAdmin = false
+	}
+
+	// 角色数据范围控制
+	if !isAdmin {
+		// 普通用户：强制状态为已通过，忽略前端传入
+		req.Statuses = []string{consts.ProposalStatusApproved}
+	}
+
 	statuses := make([]int32, 0, len(req.Statuses))
 	for _, statusName := range req.Statuses {
 		statusName = strings.TrimSpace(statusName)
@@ -298,6 +310,15 @@ func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterPr
 		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVOArray] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
 			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
+	}
+
+	//贡献值权限过滤：仅创建者可见自己的 Contribution
+	for _, vo := range vos {
+		if vo.UserID != userId {
+			// 若非创建者则将contribution置-1表示不显示
+			vo.Contribution = -1
+		}
+		// 若创建者是自己，保留原值（由 Assembler 填充）
 	}
 
 	return &dto.ListProposalResp{

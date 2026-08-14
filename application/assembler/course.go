@@ -363,6 +363,8 @@ func (a *CourseAssembler) ToProposalCourseDB(ctx context.Context, vo *dto.Propos
 		teachers = append(teachers, &model.ProposalTeacher{
 			Name:       t.Name,
 			Department: t.Department,
+			Title:      t.Title,
+			TeacherID:  t.ID,
 		})
 	}
 
@@ -388,6 +390,8 @@ func (a *CourseAssembler) ToProposalCourseVO(ctx context.Context, db *model.Prop
 		teachers = append(teachers, &dto.TeacherVO{
 			Name:       t.Name,
 			Department: t.Department,
+			Title:      t.Title,
+			ID:         t.TeacherID,
 		})
 	}
 
