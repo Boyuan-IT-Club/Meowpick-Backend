@@ -77,6 +77,22 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
+	// 校验校区合法性
+	if req.Course != nil {
+		for _, campusName := range req.Course.Campuses {
+			campusName = strings.TrimSpace(campusName)
+			if campusName == "" {
+				continue
+			}
+			if mapping.Data.GetCampusIDByName(campusName) == 0 {
+				return nil, errorx.New(errno.ErrProposalInvalidCampus,
+					errorx.KV("key", consts.Campuses),
+					errorx.KV("value", campusName),
+				)
+			}
+		}
+	}
+
 	// 转换为 proposalCourseModel，不执行自动注册
 	req.Course.ID = primitive.NewObjectID().Hex()
 	course, err := s.CourseAssembler.ToProposalCourseDB(ctx, req.Course)

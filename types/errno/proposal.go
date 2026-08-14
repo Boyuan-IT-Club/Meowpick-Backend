@@ -38,12 +38,13 @@ const (
 	ErrProposalAlreadyProcessed            = 108000017
 	ErrProposalCannotDeleteApproved        = 108000018
 	ErrProposalStatusNotApproved           = 108000019
-	ErrProposalStatusNotRejected            = 108000020
-	ErrProposalNotDeleted                   = 108000021
-	ErrCourseModifiedCannotRevoke           = 108000022
-	ErrCourseNotFoundCannotRevoke           = 108000023
+	ErrProposalStatusNotRejected           = 108000020
+	ErrProposalNotDeleted                  = 108000021
+	ErrCourseModifiedCannotRevoke          = 108000022
+	ErrCourseNotFoundCannotRevoke          = 108000023
 	ErrProposalAlreadyPending              = 108000024
-	ErrRevokeActionTypeInvalid              = 108000025
+	ErrRevokeActionTypeInvalid             = 108000025
+	ErrProposalInvalidCampus               = 108000026
 )
 
 func init() {
@@ -170,6 +171,11 @@ func init() {
 	code.Register(
 		ErrRevokeActionTypeInvalid,
 		"invalid revoke action type: {actionType}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalInvalidCampus,
+		"invalid campus: {key}: {value}",
 		code.WithAffectStability(false),
 	)
 }
