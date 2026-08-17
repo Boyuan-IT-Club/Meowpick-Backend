@@ -43,6 +43,7 @@ type IUserRepo interface {
 	FindByOpenID(ctx context.Context, openId string) (user *model.User, err error)
 
 	IsAdminByID(ctx context.Context, id string) (isAdmin bool, err error)
+	IncrementContribution(ctx context.Context, id string, delta int64) error
 }
 
 type UserRepo struct {
@@ -121,6 +122,16 @@ func (r *UserRepo) IsAdminByID(ctx context.Context, id string) (bool, error) {
 		return false, monc.ErrNotFound
 	}
 	return user.Admin, nil
+}
+
+// IncrementContribution 原子增减用户贡献值（delta 可为负，用于撤回时扣减）
+func (r *UserRepo) IncrementContribution(ctx context.Context, id string, delta int64) error {
+	filter := bson.M{consts.ID: id}
+	update := bson.M{
+		"$inc": bson.M{consts.UserContribution: delta},
+	}
+	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	return err
 }
 
 // FindByIDs 根据用户ID列表批量查询用户

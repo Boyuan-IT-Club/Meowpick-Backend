@@ -52,8 +52,10 @@ type ICourseRepo interface {
 	IsCourseInExistingCourses(ctx context.Context, vo *model.Course) (bool, error)
 	FindByNameAndCode(ctx context.Context, name, code string) ([]*model.Course, error)
 	FindByProposalID(ctx context.Context, proposalID string) (*model.Course, error)
+	FindByProposalIDIncludeDeleted(ctx context.Context, proposalID string) (*model.Course, error)
 	SoftDeleteByID(ctx context.Context, courseID string) error
 	Insert(ctx context.Context, course *model.Course) error
+	UpdateCourse(ctx context.Context, course *model.Course) error
 }
 
 type CourseRepo struct {
@@ -304,6 +306,38 @@ func (r *CourseRepo) SoftDeleteByID(ctx context.Context, courseID string) error 
 		"$set": bson.M{
 			consts.Deleted:   true,
 			consts.UpdatedAt: time.Now(),
+		},
+	}
+	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	return err
+}
+
+// FindByProposalIDIncludeDeleted 根据来源提案ID查询关联的正式课程（包含已软删除的课程），用于审批恢复与贡献值重算
+func (r *CourseRepo) FindByProposalIDIncludeDeleted(ctx context.Context, proposalID string) (*model.Course, error) {
+	course := &model.Course{}
+	if err := r.conn.FindOneNoCache(ctx, course, bson.M{consts.ProposalID: proposalID}); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return course, nil
+}
+
+// UpdateCourse 用新的课程信息更新课程并恢复（deleted翻转为false），用于撤回后重新审批
+func (r *CourseRepo) UpdateCourse(ctx context.Context, course *model.Course) error {
+	filter := bson.M{consts.ID: course.ID}
+	update := bson.M{
+		"$set": bson.M{
+			consts.Name:       course.Name,
+			consts.Code:       course.Code,
+			consts.TeacherIDs: course.TeacherIDs,
+			consts.Department: course.Department,
+			consts.Category:   course.Category,
+			consts.Campuses:   course.Campuses,
+			consts.Deleted:    false,
+			consts.ProposalID: course.ProposalID,
+			consts.UpdatedAt:  time.Now(),
 		},
 	}
 	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)

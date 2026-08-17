@@ -214,6 +214,11 @@ func (a *CourseAssembler) ToCourseDBDryRun(ctx context.Context, vo *dto.CourseVO
 	// 处理教师
 	var teacherIDs []string
 	for _, teacher := range vo.Teachers {
+		// 已有正式教师ID，直接复用
+		if teacher.ID != "" {
+			teacherIDs = append(teacherIDs, teacher.ID)
+			continue
+		}
 		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
 		if err != nil {
 			logs.CtxErrorf(ctx, "[TeacherRepo] [GetIDByName] error finding teacher %s: %v", teacher.Name, err)
@@ -258,6 +263,11 @@ func (a *CourseAssembler) ToCourseDBDryRunFromProposalCourse(ctx context.Context
 	// 处理教师
 	var teacherIDs []string
 	for _, teacher := range vo.Teachers {
+		// 已有正式教师ID，直接复用
+		if teacher.ID != "" {
+			teacherIDs = append(teacherIDs, teacher.ID)
+			continue
+		}
 		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
 		if err != nil {
 			logs.CtxErrorf(ctx, "[TeacherRepo] [GetIDByName] error finding teacher %s: %v", teacher.Name, err)
@@ -306,9 +316,15 @@ func (a *CourseAssembler) ToCourseDBFromProposalCourse(ctx context.Context, vo *
 		categoryID = mapping.Data.AutoRegisterCategory(vo.Category)
 	}
 
-	// 处理教师 - 自动创建不存在的教师
+	// 处理教师 - 已有ID直接复用，否则按姓名匹配，匹配不到则创建新教师
 	var teacherIDs []string
 	for _, teacher := range vo.Teachers {
+		// 用户从建议列表选择的已有教师，直接复用其ID
+		if teacher.ID != "" {
+			teacherIDs = append(teacherIDs, teacher.ID)
+			continue
+		}
+
 		// 检查教师是否已存在
 		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
 		if err != nil {
@@ -363,6 +379,8 @@ func (a *CourseAssembler) ToProposalCourseDB(ctx context.Context, vo *dto.Propos
 		teachers = append(teachers, &model.ProposalTeacher{
 			Name:       t.Name,
 			Department: t.Department,
+			Title:      t.Title,
+			TeacherID:  t.ID,
 		})
 	}
 
@@ -388,6 +406,8 @@ func (a *CourseAssembler) ToProposalCourseVO(ctx context.Context, db *model.Prop
 		teachers = append(teachers, &dto.TeacherVO{
 			Name:       t.Name,
 			Department: t.Department,
+			Title:      t.Title,
+			ID:         t.TeacherID,
 		})
 	}
 
