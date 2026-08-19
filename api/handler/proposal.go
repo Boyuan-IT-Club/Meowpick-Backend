@@ -312,10 +312,11 @@ func GetProposalFieldSuggestions(c *gin.Context) {
 
 // GetMyProposals godoc
 // @Summary 获取我的提案
+// @Description 获取当前用户的所有提案（包括所有状态和已删除的提案），updatedAt 字段即为提案最新审批时间；已通过提案会附带关联的正式课程 finalCourse（课程查询失败或已删除时为空）
 // @Tags proposal
+// @Produce json
 // @Param page query int false "页码" default(1)
 // @Param pageSize query int false "每页数量" default(10)
-// @Param status query string false "状态" Enums(pending,approved,rejected)
 // @Success 200 {object} Response[dto.GetMyProposalsResp]
 // @Security Bearer
 // @Router /api/proposal/history [get]

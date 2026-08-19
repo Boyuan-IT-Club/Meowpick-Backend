@@ -40,6 +40,7 @@ const (
 	Count      = "count"
 	TargetType = "targetType"
 	Content    = "content"
+	ProposalID = "proposalId"
 )
 
 const (

@@ -49,8 +49,11 @@ type ProposalVO struct {
 	Status       string            `json:"status"` // pending / approved / rejected
 	Deleted      bool              `json:"deleted"`
 	RejectReason string            `json:"rejectReason"` // 拒绝理由
-	*LikeVO
+	*LikeVO                        // 前端暂时忽略
 	Course       *ProposalCourseVO `json:"course"`
+	FinalCourse  *ProposalCourseVO `json:"finalCourse,omitempty"`  // 管理员最终确认的课程（新增）
+	ShowUsername bool              `json:"showUsername"`           // 是否展示用户名
+	Contribution int64             `json:"contribution,omitempty"` // 贡献值信息（新增）
 	CreatedAt    time.Time         `json:"createdAt"`
 	UpdatedAt    time.Time         `json:"updatedAt"`
 }

@@ -317,10 +317,10 @@ func (r *ProposalRepo) UpdateStatusAndReasonByID(ctx context.Context, proposalID
 	return updated, nil
 }
 
-// FindManyByUserID 根据用户ID批量获取提案
+// FindManyByUserID 根据用户ID批量获取提案（包含所有状态和已删除的提案）
 func (r *ProposalRepo) FindManyByUserID(ctx context.Context, param *dto.PageParam, userId string) ([]*model.Proposal, int64, error) {
 	proposals := []*model.Proposal{}
-	filter := bson.M{consts.UserID: userId, consts.Deleted: bson.M{"$ne": true}}
+	filter := bson.M{consts.UserID: userId}
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err

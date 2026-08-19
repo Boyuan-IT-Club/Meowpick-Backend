@@ -19,14 +19,16 @@ import (
 )
 
 type User struct {
-	ID            string    `bson:"_id,omitempty"         json:"id"`
-	Username      string    `bson:"username"              json:"username"`
-	OpenID        string    `bson:"openId"  json:"openId"`
-	Avatar        string    `bson:"avatar,omitempty"      json:"avatar,omitempty"`
-	Email         string    `bson:"email,omitempty"       json:"email,omitempty"`
-	EmailVerified bool      `bson:"emailVerified"         json:"emailVerified"`
-	Ban           bool      `bson:"ban"                   json:"ban"`
-	Admin         bool      `bson:"admin"                 json:"admin"`
-	CreatedAt     time.Time `bson:"createdAt"             json:"createdAt"`
-	UpdatedAt     time.Time `bson:"updatedAt"             json:"updatedAt"`
+	ID                string    `bson:"_id,omitempty"               json:"id"`
+	Username          string    `bson:"username"                    json:"username"`
+	OpenID            string    `bson:"openId"                      json:"openId"`
+	Avatar            string    `bson:"avatar,omitempty"            json:"avatar,omitempty"`
+	Email             string    `bson:"email,omitempty"             json:"email,omitempty"`
+	EmailVerified     bool      `bson:"emailVerified"               json:"emailVerified"`
+	Ban               bool      `bson:"ban"                         json:"ban"`
+	Admin             bool      `bson:"admin"                       json:"admin"`
+	Contribution      int64     `bson:"contributionPoints"          json:"contributionPoints"`              // 贡献值总分
+	CreatedAt         time.Time `bson:"createdAt"                   json:"createdAt"`
+	UpdatedAt         time.Time `bson:"updatedAt"                   json:"updatedAt"`
+	UsernameUpdatedAt time.Time `bson:"usernameUpdatedAt,omitempty" json:"usernameUpdatedAt,omitempty"` // 昵称最近修改时间
 }

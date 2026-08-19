@@ -315,7 +315,7 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	// 查询提案详情
+	// 1. 查询提案详情（默认查询未删除的提案）
 	proposalId := req.ProposalID
 	proposal, err := s.ProposalRepo.FindByID(ctx, proposalId)
 	if err != nil {
@@ -323,11 +323,19 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", proposalId))
 	}
 	if proposal == nil {
-		logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", proposalId)
-		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", proposalId))
+		// 未删除的提案不存在，尝试查询已删除的提案（仅提案创建者本人可见，避免泄露他人已删除提案的存在性）
+		proposal, err = s.ProposalRepo.FindByIDIncludeDeleted(ctx, proposalId)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[ProposalRepo] [FindByIDIncludeDeleted] error: %v, proposalId: %s", err, proposalId)
+			return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", proposalId))
+		}
+		if proposal == nil || proposal.UserID != userId {
+			logs.CtxWarnf(ctx, "[ProposalRepo] [FindByID] proposal not found, proposalId: %s", proposalId)
+			return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", proposalId))
+		}
 	}
 
-	// 转换为VO
+	// 2. 转换为VO（附带当前用户的点赞状态）
 	vo, err := s.ProposalAssembler.ToProposalVO(ctx, proposal, userId)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVO] error: %v, proposalId: %s", err, proposalId)
@@ -335,6 +343,40 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 			errorx.KV("src", "database proposal"), errorx.KV("dst", "proposal vo"))
 	}
 
+	// 3. 贡献值权限过滤：仅提案创建者本人可见，其他用户置为 -1
+	isCreator := proposal.UserID == userId
+	if !isCreator {
+		vo.Contribution = -1
+	}
+
+	// 4. 填充最终课程信息：仅提案状态为已通过，且当前用户为提案创建者或管理员时可见
+	if vo.Status == consts.ProposalStatusApproved {
+		isAdmin := false
+		if !isCreator {
+			isAdmin, err = s.UserRepo.IsAdminByID(ctx, userId)
+			if err != nil {
+				// 管理员查询失败不影响主流程，按非管理员处理
+				logs.CtxWarnf(ctx, "[UserRepo] [IsAdminByID] error: %v, userId: %s", err, userId)
+				isAdmin = false
+			}
+		}
+		if isCreator || isAdmin {
+			course, err := s.CourseRepo.FindByProposalID(ctx, proposal.ID)
+			if err != nil {
+				// 查询失败不影响主流程，FinalCourse 保持为空
+				logs.CtxWarnf(ctx, "[CourseRepo] [FindByProposalID] error: %v, proposalId: %s", err, proposal.ID)
+			} else if course != nil {
+				finalCourse, err := s.CourseAssembler.ToProposalCourseVOFromCourse(ctx, course)
+				if err != nil {
+					logs.CtxWarnf(ctx, "[CourseAssembler] [ToProposalCourseVOFromCourse] error: %v, proposalId: %s", err, proposal.ID)
+				} else {
+					vo.FinalCourse = finalCourse
+				}
+			}
+		}
+	}
+
+	// 5. 返回提案详情
 	return &dto.GetProposalResp{
 		Resp:     dto.Success(),
 		Proposal: vo,
@@ -643,6 +685,32 @@ func (s *ProposalService) GetMyProposals(ctx context.Context, req *dto.GetMyProp
 			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
 	}
 
+	// 为已通过提案附加关联的正式课程信息（通过课程的来源提案ID关联）
+	for _, vo := range vos {
+		if vo.Status != consts.ProposalStatusApproved {
+			continue
+		}
+
+		// 根据提案 ID 查询关联的正式课程（仅返回未删除的课程）
+		course, err := s.CourseRepo.FindByProposalID(ctx, vo.ID)
+		if err != nil {
+			// 查询失败不影响主流程，FinalCourse 保持为空
+			logs.CtxWarnf(ctx, "[CourseRepo] [FindByProposalID] error: %v, proposalId: %s", err, vo.ID)
+			continue
+		}
+		if course == nil {
+			// 课程不存在或已被删除，FinalCourse 保持为空
+			continue
+		}
+
+		finalCourse, err := s.CourseAssembler.ToProposalCourseVOFromCourse(ctx, course)
+		if err != nil {
+			logs.CtxWarnf(ctx, "[CourseAssembler] [ToProposalCourseVOFromCourse] error: %v, proposalId: %s", err, vo.ID)
+			continue
+		}
+		vo.FinalCourse = finalCourse
+	}
+
 	return &dto.GetMyProposalsResp{
 		Resp:      dto.Success(),
 		Total:     total,
@@ -734,8 +802,9 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 				return nil, errorx.New(errno.ErrCourseCvtFailed)
 			}
 
-			// 3. 设置课程基础信息并插入
+			// 3. 设置课程基础信息并插入（ProposalID 记录来源提案，供后续查询关联课程）
 			course.ID = primitive.NewObjectID().Hex()
+			course.ProposalID = req.ProposalID
 			course.CreatedAt = time.Now()
 			course.UpdatedAt = time.Now()
 			course.Deleted = false
