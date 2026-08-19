@@ -45,10 +45,11 @@ type IProposalRepo interface {
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
 	FindByIDIncludeDeleted(ctx context.Context, proposalID string) (*model.Proposal, error)
 	FindByIDs(ctx context.Context, proposalIDs []string) ([]*model.Proposal, error)
+	CountByUserToday(ctx context.Context, userId string) (int64, error)
 	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
 	DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
 	RestoreProposal(ctx context.Context, proposalId string) error
-	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error)
+	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam, statusID int32) ([]*model.Proposal, int64, error)
 	UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error)
 	IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error
 	UpdateStatusAndReasonByID(ctx context.Context, proposalID string, statusID int32, rejectReason string) (bool, error)
@@ -251,15 +252,15 @@ func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Propo
 	return err
 }
 
-// GetSuggestionsByTitle 根据提案标题模糊分页查询提案
-func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error) {
+// GetSuggestionsByTitle 根据提案标题模糊分页查询指定状态的提案
+func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam, statusID int32) ([]*model.Proposal, int64, error) {
 	proposals := []*model.Proposal{}
 	filter := bson.M{
 		"title":        bson.M{"$regex": primitive.Regex{Pattern: title, Options: "i"}},
+		consts.Status:  statusID,
 		consts.Deleted: bson.M{"$ne": true},
 	}
 	sort := bson.D{
-		{consts.Status, 1},
 		{consts.CreatedAt, -1},
 	}
 
@@ -334,10 +335,26 @@ func (r *ProposalRepo) FindManyByUserID(ctx context.Context, param *dto.PagePara
 	return proposals, total, nil
 }
 
+// CountByUserToday 按中国时区（UTC+8）自然日统计用户今日创建的提案数
+func (r *ProposalRepo) CountByUserToday(ctx context.Context, userId string) (int64, error) {
+	loc := time.FixedZone("CST", 8*3600) // 中国时区 UTC+8
+	now := time.Now().In(loc)
+	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+
+	filter := bson.M{
+		consts.UserID: userId,
+		consts.CreatedAt: bson.M{
+			"$gte": dayStart,
+			"$lt":  dayStart.Add(24 * time.Hour),
+		},
+	}
+	return r.conn.CountDocuments(ctx, filter)
+}
+
 // RestoreProposal 恢复已删除的提案（将deleted设为false，清空deletedAt）
 func (r *ProposalRepo) RestoreProposal(ctx context.Context, proposalId string) error {
 	filter := bson.M{
-		consts.ID: proposalId,
+		consts.ID:      proposalId,
 		consts.Deleted: true,
 	}
 	update := bson.M{

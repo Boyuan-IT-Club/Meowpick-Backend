@@ -45,6 +45,7 @@ const (
 	ErrProposalAlreadyPending              = 108000024
 	ErrRevokeActionTypeInvalid             = 108000025
 	ErrProposalInvalidCampus               = 108000026
+	ErrDailyProposalLimitReached           = 108000027
 )
 
 func init() {
@@ -176,6 +177,11 @@ func init() {
 	code.Register(
 		ErrProposalInvalidCampus,
 		"invalid campus: {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrDailyProposalLimitReached,
+		"daily proposal limit reached: {limit}",
 		code.WithAffectStability(false),
 	)
 }
