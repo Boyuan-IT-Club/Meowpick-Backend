@@ -298,7 +298,7 @@ func (a *CourseAssembler) ToCourseDBFromProposalCourse(ctx context.Context, vo *
 		categoryID = mapping.Data.AutoRegisterCategory(vo.Category)
 	}
 
-	// 处理教师 - 已有ID直接复用，否则按姓名匹配，匹配不到则创建新教师
+	// 处理教师 - 已有ID直接复用；无ID视为用户手动输入的新教师，直接创建
 	var teacherIDs []string
 	for _, teacher := range vo.Teachers {
 		// 用户从建议列表选择的已有教师，直接复用其ID
@@ -307,36 +307,22 @@ func (a *CourseAssembler) ToCourseDBFromProposalCourse(ctx context.Context, vo *
 			continue
 		}
 
-		// 检查教师是否已存在
-		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[TeacherRepo] [GetIDByName] error finding teacher %s: %v", teacher.Name, err)
+		// 无ID：视为新教师，直接创建
+		now := primitive.NewDateTimeFromTime(time.Now())
+		newTeacher := &model.Teacher{
+			ID:         primitive.NewObjectID().Hex(),
+			Name:       teacher.Name,
+			Title:      teacher.Title,
+			Department: mapping.Data.AutoRegisterDepartment(teacher.Department),
+			CreatedAt:  time.Unix(0, int64(now)),
+			UpdatedAt:  time.Unix(0, int64(now)),
 		}
 
-		var teacherID string
-		if existingTeacherID != "" {
-			// 教师已存在，使用现有ID
-			teacherID = existingTeacherID
-		} else {
-			// 教师不存在，创建新教师
-			now := primitive.NewDateTimeFromTime(time.Now())
-			newTeacher := &model.Teacher{
-				ID:         primitive.NewObjectID().Hex(),
-				Name:       teacher.Name,
-				Title:      teacher.Title,
-				Department: mapping.Data.AutoRegisterDepartment(teacher.Department),
-				CreatedAt:  time.Unix(0, int64(now)),
-				UpdatedAt:  time.Unix(0, int64(now)),
-			}
-
-			if err := a.TeacherRepo.Insert(ctx, newTeacher); err != nil {
-				logs.CtxErrorf(ctx, "[TeacherRepo] [Insert] error inserting teacher %s: %v", teacher.Name, err)
-				continue // 跳过这个教师
-			}
-			teacherID = newTeacher.ID
+		if err := a.TeacherRepo.Insert(ctx, newTeacher); err != nil {
+			logs.CtxErrorf(ctx, "[TeacherRepo] [Insert] error inserting teacher %s: %v", teacher.Name, err)
+			continue // 跳过这个教师
 		}
-
-		teacherIDs = append(teacherIDs, teacherID)
+		teacherIDs = append(teacherIDs, newTeacher.ID)
 	}
 
 	return &model.Course{
