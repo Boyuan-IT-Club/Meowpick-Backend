@@ -2607,7 +2607,7 @@ const docTemplate = `{
                     {
                         "description": "提案ID",
                         "in": "path",
-                        "name": "id",
+                        "name": "proposalId",
                         "required": true,
                         "schema": {
                             "type": "string"
