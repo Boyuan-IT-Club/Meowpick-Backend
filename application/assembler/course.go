@@ -214,18 +214,9 @@ func (a *CourseAssembler) ToCourseDBDryRun(ctx context.Context, vo *dto.CourseVO
 	// 处理教师
 	var teacherIDs []string
 	for _, teacher := range vo.Teachers {
-		// 已有正式教师ID，直接复用
+		// 已有正式教师ID，直接复用；新教师（无ID）在 DryRun 中不参与匹配
 		if teacher.ID != "" {
 			teacherIDs = append(teacherIDs, teacher.ID)
-			continue
-		}
-		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[TeacherRepo] [GetIDByName] error finding teacher %s: %v", teacher.Name, err)
-			continue
-		}
-		if existingTeacherID != "" {
-			teacherIDs = append(teacherIDs, existingTeacherID)
 		}
 	}
 
@@ -263,18 +254,9 @@ func (a *CourseAssembler) ToCourseDBDryRunFromProposalCourse(ctx context.Context
 	// 处理教师
 	var teacherIDs []string
 	for _, teacher := range vo.Teachers {
-		// 已有正式教师ID，直接复用
+		// 已有正式教师ID，直接复用；新教师（无ID）在 DryRun 中不参与匹配
 		if teacher.ID != "" {
 			teacherIDs = append(teacherIDs, teacher.ID)
-			continue
-		}
-		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[TeacherRepo] [GetIDByName] error finding teacher %s: %v", teacher.Name, err)
-			continue
-		}
-		if existingTeacherID != "" {
-			teacherIDs = append(teacherIDs, existingTeacherID)
 		}
 	}
 

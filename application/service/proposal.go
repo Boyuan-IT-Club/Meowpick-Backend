@@ -231,6 +231,9 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
 	}
 
+	// 贡献值仅创建者可见
+	filterContributionVisibility(vos, userId)
+
 	return &dto.ListProposalResp{
 		Resp:      dto.Success(),
 		Total:     total,
@@ -343,13 +346,11 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 			errorx.KV("src", "database proposal"), errorx.KV("dst", "proposal vo"))
 	}
 
-	// 3. 贡献值权限过滤：仅提案创建者本人可见，其他用户置为 -1
-	isCreator := proposal.UserID == userId
-	if !isCreator {
-		vo.Contribution = -1
-	}
+	// 贡献值仅创建者可见（统一过滤）
+	filterContributionVisibility([]*dto.ProposalVO{vo}, userId)
 
-	// 4. 填充最终课程信息：仅提案状态为已通过，且当前用户为提案创建者或管理员时可见
+	// 填充最终课程信息：仅提案状态为已通过，且当前用户为提案创建者或管理员时可见
+	isCreator := proposal.UserID == userId
 	if vo.Status == consts.ProposalStatusApproved {
 		isAdmin := false
 		if !isCreator {
@@ -376,7 +377,6 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 		}
 	}
 
-	// 5. 返回提案详情
 	return &dto.GetProposalResp{
 		Resp:     dto.Success(),
 		Proposal: vo,
@@ -671,6 +671,9 @@ func (s *ProposalService) GetMyProposals(ctx context.Context, req *dto.GetMyProp
 		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
 			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
 	}
+
+	// 贡献值仅创建者可见（本接口返回均为自己的提案，过滤为恒等操作，保持一致）
+	filterContributionVisibility(vos, userId)
 
 	// 为已通过提案附加关联的正式课程信息（通过课程的来源提案ID关联）
 	for _, vo := range vos {
@@ -1078,6 +1081,18 @@ func teacherNameSetEqual(a, b []*dto.TeacherVO) bool {
 		}
 	}
 	return stringSetEqual(namesA, namesB)
+}
+
+// filterContributionVisibility 贡献值仅创建者可见，非创建者置-1（前端识别-1隐藏展示）
+func filterContributionVisibility(vos []*dto.ProposalVO, userId string) {
+	for _, vo := range vos {
+		if vo == nil {
+			continue
+		}
+		if vo.UserID != userId {
+			vo.Contribution = -1
+		}
+	}
 }
 
 // RevokeProposal 撤回提案操作（通过/拒绝）

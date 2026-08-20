@@ -78,12 +78,6 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 		return nil, err
 	}
 
-	// 贡献值仅创建者可见，其余用户返回-1
-	contribution := int64(-1)
-	if db.UserID == userId {
-		contribution = db.Contribution
-	}
-
 	return &dto.ProposalVO{
 		ID:           db.ID,
 		UserID:       db.UserID,
@@ -93,7 +87,7 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 		Status:       mapping.Data.GetProposalStatusNameByID(db.Status),
 		Deleted:      db.Deleted,
 		ShowUsername: db.ShowUsername,
-		Contribution: contribution,
+		Contribution: db.Contribution,
 		RejectReason: db.RejectReason,
 		LikeVO: &dto.LikeVO{
 			Like:    active,
@@ -163,12 +157,6 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 				return nil, err
 			}
 		}
-		// 贡献值仅创建者可见，其余用户返回-1
-		contribution := int64(-1)
-		if db.UserID == userId {
-			contribution = db.Contribution
-		}
-
 		proposalVO := &dto.ProposalVO{
 			ID:           db.ID,
 			Content:      db.Content,
@@ -177,7 +165,7 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 			Status:       mapping.Data.GetProposalStatusNameByID(db.Status),
 			Deleted:      db.Deleted,
 			ShowUsername: db.ShowUsername,
-			Contribution: contribution,
+			Contribution: db.Contribution,
 			RejectReason: db.RejectReason,
 			LikeVO: &dto.LikeVO{
 				Like:    active,
