@@ -101,7 +101,8 @@ type RejectProposalResp struct {
 }
 
 type ToggleProposalReq struct {
-	ProposalID string `json:"proposalID"`
+	ProposalID  string            `json:"proposalID"`
+	FinalCourse *ProposalCourseVO `json:"finalCourse"` // 管理员最终确认的课程信息，不传则用提案原始课程
 }
 
 type ToggleProposalResp struct {
@@ -111,8 +112,8 @@ type ToggleProposalResp struct {
 }
 
 type RevokeProposalReq struct {
-	ProposalID string `json:"-"`              // 从 URL path 获取
-	ActionType string `json:"actionType"` // "approve" | "reject" | "delete"
+	ProposalID string `json:"-"`               // 从 URL path 获取
+	ActionType string `json:"actionType"` // "approve" | "reject"
 }
 
 type RevokeProposalResp struct {

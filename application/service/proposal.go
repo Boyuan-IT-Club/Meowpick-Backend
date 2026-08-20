@@ -231,6 +231,9 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
 	}
 
+	// 贡献值仅创建者可见
+	filterContributionVisibility(vos, userId)
+
 	return &dto.ListProposalResp{
 		Resp:      dto.Success(),
 		Total:     total,
@@ -343,13 +346,11 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 			errorx.KV("src", "database proposal"), errorx.KV("dst", "proposal vo"))
 	}
 
-	// 3. 贡献值权限过滤：仅提案创建者本人可见，其他用户置为 -1
-	isCreator := proposal.UserID == userId
-	if !isCreator {
-		vo.Contribution = -1
-	}
+	// 贡献值仅创建者可见（统一过滤）
+	filterContributionVisibility([]*dto.ProposalVO{vo}, userId)
 
-	// 4. 填充最终课程信息：仅提案状态为已通过，且当前用户为提案创建者或管理员时可见
+	// 填充最终课程信息：仅提案状态为已通过，且当前用户为提案创建者或管理员时可见
+	isCreator := proposal.UserID == userId
 	if vo.Status == consts.ProposalStatusApproved {
 		isAdmin := false
 		if !isCreator {
@@ -376,7 +377,6 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 		}
 	}
 
-	// 5. 返回提案详情
 	return &dto.GetProposalResp{
 		Resp:     dto.Success(),
 		Proposal: vo,
@@ -404,20 +404,10 @@ func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeletePro
 		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", proposalId))
 	}
 
-	//权限检查：非管理员只能删除自己的提案
+	// 权限检查：仅允许删除自己创建的提案（管理员也不例外）
 	if proposal.UserID != userId {
-		// 查询用户是否是管理员
-		isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[UserRepo] [GetByID] error: %v, userId: %s", err, userId)
-			return nil, errorx.New(errno.ErrUserNotAdmin,
-				errorx.KV("id", userId))
-		}
-
-		if !isAdmin {
-			return nil, errorx.New(errno.ErrUserNotOwner,
-				errorx.KV("id", userId))
-		}
+		return nil, errorx.New(errno.ErrUserNotOwner,
+			errorx.KV("id", userId))
 	}
 
 	// 状态检查：只有待审核和已拒绝状态的提案才允许删除
@@ -436,16 +426,13 @@ func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeletePro
 			errorx.KV("proposal_id", proposalId))
 	}
 
-	updateSource := consts.UpdateSourceUser
-	if proposal.UserID != userId {
-		updateSource = consts.UpdateSourceAdmin
-	}
+	// 记录变更日志（仅创建者可删，来源固定为用户）
 	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
 		TargetID:     proposalId,
 		TargetType:   consts.TargetTypeProposal,
 		Action:       consts.ActionTypeDeleteProposal,
 		Content:      "删除提案",
-		UpdateSource: updateSource,
+		UpdateSource: consts.UpdateSourceUser,
 		ProposalID:   proposalId,
 	}); err != nil {
 		logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", err, proposalId)
@@ -685,6 +672,9 @@ func (s *ProposalService) GetMyProposals(ctx context.Context, req *dto.GetMyProp
 			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
 	}
 
+	// 贡献值仅创建者可见（本接口返回均为自己的提案，过滤为恒等操作，保持一致）
+	filterContributionVisibility(vos, userId)
+
 	// 为已通过提案附加关联的正式课程信息（通过课程的来源提案ID关联）
 	for _, vo := range vos {
 		if vo.Status != consts.ProposalStatusApproved {
@@ -758,63 +748,19 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		return nil, errorx.New(errno.ErrProposalAlreadyProcessed, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
 	}
 
-	// 如果提案通过，同时创建对应的课程
-	if req.ProposalID != "" { // 这里的逻辑改为先创建课程再改状态，保证一致性
-		if proposal.Course == nil {
-			logs.CtxErrorf(ctx, "[ProposalService] [ApproveProposal] proposal course is nil, proposalId: %s", req.ProposalID)
-			return nil, errorx.New(errno.ErrCourseCvtFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-		// 1. 将 ProposalCourse 转换为 ProposalCourseVO
-		courseVO, err := s.CourseAssembler.ToProposalCourseVO(ctx, proposal.Course)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
-		}
+	// 确定最终课程：管理员确认的 finalCourse 优先，未传则用提案原始课程兜底
+	courseVO, err := s.resolveFinalCourse(ctx, req, proposal)
+	if err != nil {
+		return nil, err
+	}
+	if courseVO == nil {
+		logs.CtxErrorf(ctx, "[ProposalService] [ApproveProposal] course is nil, proposalId: %s", req.ProposalID)
+		return nil, errorx.New(errno.ErrCourseCvtFailed, errorx.KV("proposalId", req.ProposalID))
+	}
 
-		// 第一层防重：先进行 DryRun 转换，再检查课程是否已存在
-		dryRunCourse, err := s.CourseAssembler.ToCourseDBDryRunFromProposalCourse(ctx, courseVO)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
-		}
-		if dryRunCourse == nil {
-			logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] course is nil")
-			return nil, errorx.New(errno.ErrCourseCvtFailed)
-		}
-
-		courseExists, err := s.CourseRepo.IsCourseInExistingCourses(ctx, dryRunCourse)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseRepo] [IsCourseInExistingCourses] error: %v", err)
-			return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed)
-		}
-		if courseExists {
-			logs.CtxInfof(ctx, "[ProposalService] [ApproveProposal] course already exists, skip create, proposalId: %s", req.ProposalID)
-		} else {
-			// 2. 将 ProposalCourseVO 转换为 CourseDB，此时会执行自动注册
-			course, err := s.CourseAssembler.ToCourseDBFromProposalCourse(ctx, courseVO)
-			if err != nil {
-				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBFromProposalCourse] error: %v", err)
-				return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
-			}
-
-			if course == nil {
-				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDB] course is nil")
-				return nil, errorx.New(errno.ErrCourseCvtFailed)
-			}
-
-			// 3. 设置课程基础信息并插入（ProposalID 记录来源提案，供后续查询关联课程）
-			course.ID = primitive.NewObjectID().Hex()
-			course.ProposalID = req.ProposalID
-			course.CreatedAt = time.Now()
-			course.UpdatedAt = time.Now()
-			course.Deleted = false
-
-			err = s.CourseRepo.Insert(ctx, course)
-			if err != nil {
-				logs.CtxErrorf(ctx, "[CourseRepo] [Insert] error: %v", err)
-				return nil, errorx.WrapByCode(err, errno.ErrCourseCreateFailed, errorx.KV("name", course.Name))
-			}
-		}
+	// 课程创建或恢复（遵循一对一原则，先创建课程再改状态保证一致性）
+	if err = s.createOrRestoreCourse(ctx, proposal, courseVO); err != nil {
+		return nil, err
 	}
 
 	// 更新提案状态为已通过
@@ -828,7 +774,10 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		return nil, errorx.New(errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
 	}
 
-	// 获取剩余待处理提案数量
+	// 结算贡献值（失败不影响审批主流程，仅记录错误日志）
+	s.settleContribution(ctx, proposal, courseVO)
+
+	// 记录变更日志
 	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
 		TargetID:     req.ProposalID,
 		TargetType:   consts.TargetTypeProposal,
@@ -840,6 +789,7 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", err, req.ProposalID)
 	}
 
+	// 获取剩余待处理提案数量
 	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
 	_, pendingCount, err := s.ProposalRepo.FindManyByStatus(ctx, &dto.PageParam{Page: 1, PageSize: 1}, pendingStatusID)
 	if err != nil {
@@ -854,7 +804,298 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	}, nil
 }
 
-// RevokeProposal 撤回提案操作（通过/拒绝/删除）
+// resolveFinalCourse 确定审批使用的最终课程信息，管理员传入的 finalCourse 优先
+func (s *ProposalService) resolveFinalCourse(ctx context.Context, req *dto.ToggleProposalReq, proposal *model.Proposal) (*dto.ProposalCourseVO, error) {
+	if req.FinalCourse != nil {
+		return req.FinalCourse, nil
+	}
+	if proposal.Course == nil {
+		return nil, nil
+	}
+	courseVO, err := s.CourseAssembler.ToProposalCourseVO(ctx, proposal.Course)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
+	}
+	return courseVO, nil
+}
+
+// createOrRestoreCourse 创建或恢复提案关联的正式课程（一对一原则）
+func (s *ProposalService) createOrRestoreCourse(ctx context.Context, proposal *model.Proposal, courseVO *dto.ProposalCourseVO) error {
+	// 1. 通过提案ID查找是否已存在关联课程（包含已软删除的旧课程）
+	existingCourse, err := s.CourseRepo.FindByProposalIDIncludeDeleted(ctx, proposal.ID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CourseRepo] [FindByProposalID] error: %v, proposalId: %s", err, proposal.ID)
+		return errorx.WrapByCode(err, errno.ErrCourseCreateFailed, errorx.KV("proposalId", proposal.ID))
+	}
+	if existingCourse != nil {
+		if existingCourse.Deleted {
+			// 已软删除的旧课程：用最终课程信息更新并恢复
+			restoredCourse, cvtErr := s.CourseAssembler.ToCourseDBFromProposalCourse(ctx, courseVO)
+			if cvtErr != nil {
+				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBFromProposalCourse] error: %v", cvtErr)
+				return errorx.WrapByCode(cvtErr, errno.ErrCourseCvtFailed)
+			}
+			if restoredCourse == nil {
+				return errorx.New(errno.ErrCourseCvtFailed)
+			}
+			restoredCourse.ID = existingCourse.ID
+			restoredCourse.ProposalID = proposal.ID
+			if err := s.CourseRepo.UpdateCourse(ctx, restoredCourse); err != nil {
+				logs.CtxErrorf(ctx, "[CourseRepo] [UpdateCourse] error: %v, courseId: %s", err, existingCourse.ID)
+				return errorx.WrapByCode(err, errno.ErrCourseCreateFailed, errorx.KV("courseId", existingCourse.ID))
+			}
+			return nil
+		}
+		// 已存在未删除的关联课程，跳过创建
+		logs.CtxInfof(ctx, "[ProposalService] [ApproveProposal] associated course already exists, skip create, proposalId: %s", proposal.ID)
+		return nil
+	}
+
+	// 2. 未找到关联课程：DryRun 防重检查
+	dryRunCourse, err := s.CourseAssembler.ToCourseDBDryRunFromProposalCourse(ctx, courseVO)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] error: %v", err)
+		return errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
+	}
+	if dryRunCourse == nil {
+		logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] course is nil")
+		return errorx.New(errno.ErrCourseCvtFailed)
+	}
+
+	courseExists, err := s.CourseRepo.IsCourseInExistingCourses(ctx, dryRunCourse)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CourseRepo] [IsCourseInExistingCourses] error: %v", err)
+		return errorx.WrapByCode(err, errno.ErrCourseCreateFailed)
+	}
+	if courseExists {
+		logs.CtxInfof(ctx, "[ProposalService] [ApproveProposal] course already exists, skip create, proposalId: %s", proposal.ID)
+		return nil
+	}
+
+	// 3. 创建新课程并写入来源提案ID
+	course, err := s.CourseAssembler.ToCourseDBFromProposalCourse(ctx, courseVO)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBFromProposalCourse] error: %v", err)
+		return errorx.WrapByCode(err, errno.ErrCourseCvtFailed)
+	}
+	if course == nil {
+		logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBFromProposalCourse] course is nil")
+		return errorx.New(errno.ErrCourseCvtFailed)
+	}
+
+	course.ID = primitive.NewObjectID().Hex()
+	course.CreatedAt = time.Now()
+	course.UpdatedAt = time.Now()
+	course.Deleted = false
+	course.ProposalID = proposal.ID
+
+	if err := s.CourseRepo.Insert(ctx, course); err != nil {
+		logs.CtxErrorf(ctx, "[CourseRepo] [Insert] error: %v", err)
+		return errorx.WrapByCode(err, errno.ErrCourseCreateFailed, errorx.KV("name", course.Name))
+	}
+	return nil
+}
+
+// settleContribution 结算提案创建者的贡献值，结算失败仅记录日志不影响主流程
+func (s *ProposalService) settleContribution(ctx context.Context, proposal *model.Proposal, courseVO *dto.ProposalCourseVO) {
+	originalVO, err := s.CourseAssembler.ToProposalCourseVO(ctx, proposal.Course)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v, proposalId: %s", err, proposal.ID)
+		return
+	}
+
+	score := calcContributionScore(originalVO, courseVO)
+	if score <= 0 {
+		return
+	}
+
+	// 原子增加用户贡献值
+	if err := s.UserRepo.IncrementContribution(ctx, proposal.UserID, score); err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [IncrementContribution] error: %v, userId: %s", err, proposal.UserID)
+		return
+	}
+
+	// 将得分写入提案记录
+	if err := s.ProposalRepo.UpdateContributionByID(ctx, proposal.ID, score); err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateContributionByID] error: %v, proposalId: %s", err, proposal.ID)
+	}
+}
+
+// rollbackContribution 撤回审批通过时扣回用户的贡献值，并清空提案上的贡献值记录
+func (s *ProposalService) rollbackContribution(ctx context.Context, proposal *model.Proposal) {
+	amount := proposal.Contribution
+	if amount <= 0 {
+		// 兜底：贡献值字段为空时重新计算一次得分
+		amount = s.recalcContribution(ctx, proposal)
+	}
+	if amount <= 0 {
+		logs.CtxInfof(ctx, "[ProposalService] [RevokeProposal] no contribution to rollback, proposalId: %s", proposal.ID)
+		return
+	}
+
+	// 扣减用户贡献值
+	if err := s.UserRepo.IncrementContribution(ctx, proposal.UserID, -amount); err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [IncrementContribution] error: %v, userId: %s", err, proposal.UserID)
+		return
+	}
+
+	// 提案贡献值置空，表示已撤回
+	if err := s.ProposalRepo.UpdateContributionByID(ctx, proposal.ID, 0); err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateContributionByID] error: %v, proposalId: %s", err, proposal.ID)
+	}
+}
+
+// recalcContribution 重新计算提案的贡献值得分（兜底，对比提案原始课程与关联的最终课程）
+func (s *ProposalService) recalcContribution(ctx context.Context, proposal *model.Proposal) int64 {
+	originalVO, err := s.CourseAssembler.ToProposalCourseVO(ctx, proposal.Course)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v, proposalId: %s", err, proposal.ID)
+		return 0
+	}
+
+	course, err := s.CourseRepo.FindByProposalIDIncludeDeleted(ctx, proposal.ID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[CourseRepo] [FindByProposalID] error: %v, proposalId: %s", err, proposal.ID)
+		return 0
+	}
+	if course == nil {
+		return 0
+	}
+
+	finalVO := s.courseToProposalCourseVO(ctx, course)
+	if finalVO == nil {
+		return 0
+	}
+	return calcContributionScore(originalVO, finalVO)
+}
+
+// courseToProposalCourseVO 将正式课程模型转换为提案课程VO（用于贡献值重新计算）
+func (s *ProposalService) courseToProposalCourseVO(ctx context.Context, course *model.Course) *dto.ProposalCourseVO {
+	if course == nil {
+		return nil
+	}
+
+	campuses := make([]string, 0, len(course.Campuses))
+	for _, id := range course.Campuses {
+		name := mapping.Data.GetCampusNameByID(id)
+		if name != "" {
+			campuses = append(campuses, name)
+		}
+	}
+
+	teachers := make([]*dto.TeacherVO, 0, len(course.TeacherIDs))
+	for _, teacherID := range course.TeacherIDs {
+		teacher, err := s.TeacherRepo.FindByID(ctx, teacherID)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[TeacherRepo] [FindByID] error: %v, teacherId: %s", err, teacherID)
+			continue
+		}
+		if teacher == nil {
+			continue
+		}
+		teachers = append(teachers, &dto.TeacherVO{
+			ID:         teacher.ID,
+			Name:       teacher.Name,
+			Title:      teacher.Title,
+			Department: mapping.Data.GetDepartmentNameByID(teacher.Department),
+		})
+	}
+
+	return &dto.ProposalCourseVO{
+		Name:       course.Name,
+		Code:       course.Code,
+		Department: mapping.Data.GetDepartmentNameByID(course.Department),
+		Category:   mapping.Data.GetCategoryNameByID(course.Category),
+		Campuses:   campuses,
+		Teachers:   teachers,
+	}
+}
+
+// calcContributionScore 对比提案原始课程与管理员最终确认课程，逐字段一致加1分，满分5分
+func calcContributionScore(original, final *dto.ProposalCourseVO) int64 {
+	if original == nil || final == nil {
+		return 0
+	}
+
+	var score int64
+	if strings.TrimSpace(original.Name) == strings.TrimSpace(final.Name) {
+		score++
+	}
+	if strings.TrimSpace(original.Department) == strings.TrimSpace(final.Department) {
+		score++
+	}
+	if strings.TrimSpace(original.Category) == strings.TrimSpace(final.Category) {
+		score++
+	}
+	if stringSetEqual(original.Campuses, final.Campuses) {
+		score++
+	}
+	if teacherNameSetEqual(original.Teachers, final.Teachers) {
+		score++
+	}
+	return score
+}
+
+// stringSetEqual 比较两个字符串集合是否相等（忽略顺序）
+func stringSetEqual(a, b []string) bool {
+	setA := make(map[string]struct{}, len(a))
+	for _, s := range a {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		setA[s] = struct{}{}
+	}
+	setB := make(map[string]struct{}, len(b))
+	for _, s := range b {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		setB[s] = struct{}{}
+	}
+	if len(setA) != len(setB) {
+		return false
+	}
+	for s := range setA {
+		if _, ok := setB[s]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// teacherNameSetEqual 比较两个教师列表的姓名集合是否相等（忽略顺序）
+func teacherNameSetEqual(a, b []*dto.TeacherVO) bool {
+	namesA := make([]string, 0, len(a))
+	for _, t := range a {
+		if t != nil {
+			namesA = append(namesA, t.Name)
+		}
+	}
+	namesB := make([]string, 0, len(b))
+	for _, t := range b {
+		if t != nil {
+			namesB = append(namesB, t.Name)
+		}
+	}
+	return stringSetEqual(namesA, namesB)
+}
+
+// filterContributionVisibility 贡献值仅创建者可见，非创建者置-1（前端识别-1隐藏展示）
+func filterContributionVisibility(vos []*dto.ProposalVO, userId string) {
+	for _, vo := range vos {
+		if vo == nil {
+			continue
+		}
+		if vo.UserID != userId {
+			vo.Contribution = -1
+		}
+	}
+}
+
+// RevokeProposal 撤回提案操作（通过/拒绝）
 func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokeProposalReq) (*dto.RevokeProposalResp, error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
@@ -877,21 +1118,11 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 		return nil, errorx.New(errno.ErrProposalIDRequired, errorx.KV("key", consts.ReqProposalID))
 	}
 
-	// 根据操作类型查询提案
-	var proposal *model.Proposal
-	if req.ActionType == consts.RevokeActionDelete {
-		// 撤回删除需要查询被软删除的提案
-		proposal, err = s.ProposalRepo.FindByIDIncludeDeleted(ctx, req.ProposalID)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [FindByIDIncludeDeleted] error: %v, proposalId: %s", err, req.ProposalID)
-			return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-	} else {
-		proposal, err = s.ProposalRepo.FindByID(ctx, req.ProposalID)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, req.ProposalID)
-			return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
-		}
+	// 查询提案
+	proposal, err := s.ProposalRepo.FindByID(ctx, req.ProposalID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, req.ProposalID)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
 	}
 	if proposal == nil {
 		logs.CtxWarnf(ctx, "[ProposalRepo] proposal not found, proposalId: %s", req.ProposalID)
@@ -910,54 +1141,21 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 			return nil, errorx.New(errno.ErrProposalStatusNotApproved, errorx.KV("proposalId", req.ProposalID))
 		}
 
-		// 查找提案对应的课程
-		if proposal.Course != nil {
-			courseVO, cvtErr := s.CourseAssembler.ToProposalCourseVO(ctx, proposal.Course)
-			if cvtErr != nil {
-				logs.CtxErrorf(ctx, "[CourseAssembler] [ToProposalCourseVO] error: %v", cvtErr)
-				return nil, errorx.WrapByCode(cvtErr, errno.ErrCourseCvtFailed)
-			}
-
-			dryRunCourse, cvtErr := s.CourseAssembler.ToCourseDBDryRunFromProposalCourse(ctx, courseVO)
-			if cvtErr != nil {
-				logs.CtxErrorf(ctx, "[CourseAssembler] [ToCourseDBDryRunFromProposalCourse] error: %v", cvtErr)
-				return nil, errorx.WrapByCode(cvtErr, errno.ErrCourseCvtFailed)
-			}
-
-			courses, findErr := s.CourseRepo.FindByNameAndCode(ctx, dryRunCourse.Name, dryRunCourse.Code)
-			if findErr != nil {
-				logs.CtxErrorf(ctx, "[CourseRepo] [FindByNameAndCode] error: %v, name: %s, code: %s", findErr, dryRunCourse.Name, dryRunCourse.Code)
-				return nil, errorx.WrapByCode(findErr, errno.ErrCourseNotFoundCannotRevoke)
-			}
-
-			// 精确匹配课程
-			var matchedCourse *model.Course
-			for _, c := range courses {
-				if c.Department == dryRunCourse.Department &&
-					c.Category == dryRunCourse.Category &&
-					len(c.Campuses) == len(dryRunCourse.Campuses) {
-					campusMatch := true
-					for i, campus := range c.Campuses {
-						if i < len(dryRunCourse.Campuses) && campus != dryRunCourse.Campuses[i] {
-							campusMatch = false
-							break
-						}
-					}
-					if campusMatch {
-						matchedCourse = c
-						break
-					}
-				}
-			}
-
-			if matchedCourse != nil {
-				// 软删除课程
-				if delErr := s.CourseRepo.SoftDeleteByID(ctx, matchedCourse.ID); delErr != nil {
-					logs.CtxErrorf(ctx, "[CourseRepo] [SoftDeleteByID] error: %v, courseId: %s", delErr, matchedCourse.ID)
-					return nil, errorx.WrapByCode(delErr, errno.ErrProposalUpdateFailed, errorx.KV("courseId", matchedCourse.ID))
-				}
+		// 删除关联课程（通过提案ID查找，课程已被手动删除则仅回退提案状态）
+		associatedCourse, findErr := s.CourseRepo.FindByProposalIDIncludeDeleted(ctx, req.ProposalID)
+		if findErr != nil {
+			logs.CtxErrorf(ctx, "[CourseRepo] [FindByProposalID] error: %v, proposalId: %s", findErr, req.ProposalID)
+			return nil, errorx.WrapByCode(findErr, errno.ErrCourseNotFoundCannotRevoke)
+		}
+		if associatedCourse != nil && !associatedCourse.Deleted {
+			if delErr := s.CourseRepo.SoftDeleteByID(ctx, associatedCourse.ID); delErr != nil {
+				logs.CtxErrorf(ctx, "[CourseRepo] [SoftDeleteByID] error: %v, courseId: %s", delErr, associatedCourse.ID)
+				return nil, errorx.WrapByCode(delErr, errno.ErrProposalUpdateFailed, errorx.KV("courseId", associatedCourse.ID))
 			}
 		}
+
+		// 扣回贡献值
+		s.rollbackContribution(ctx, proposal)
 
 		// 更新提案状态为待审核
 		updated, updateErr := s.ProposalRepo.UpdateStatusByID(ctx, req.ProposalID, pendingStatusID)
@@ -1003,30 +1201,6 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 			TargetType:   consts.TargetTypeProposal,
 			Action:       consts.ActionTypeRevokeRejectProposal,
 			Content:      "撤回提案审批：拒绝→待审核",
-			UpdateSource: consts.UpdateSourceAdmin,
-			ProposalID:   req.ProposalID,
-		}); logErr != nil {
-			logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", logErr, req.ProposalID)
-		}
-
-	case consts.RevokeActionDelete:
-		// 撤回已删除的提案
-		if !proposal.Deleted {
-			return nil, errorx.New(errno.ErrProposalNotDeleted, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 恢复提案
-		if restoreErr := s.ProposalRepo.RestoreProposal(ctx, req.ProposalID); restoreErr != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [RestoreProposal] error: %v, proposalId: %s", restoreErr, req.ProposalID)
-			return nil, errorx.WrapByCode(restoreErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 记录变更日志
-		if _, logErr := s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
-			TargetID:     req.ProposalID,
-			TargetType:   consts.TargetTypeProposal,
-			Action:       consts.ActionTypeRevokeDeleteProposal,
-			Content:      "撤回删除提案",
 			UpdateSource: consts.UpdateSourceAdmin,
 			ProposalID:   req.ProposalID,
 		}); logErr != nil {

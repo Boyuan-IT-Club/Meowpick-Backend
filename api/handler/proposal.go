@@ -15,6 +15,9 @@
 package handler
 
 import (
+	"errors"
+	"io"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/token"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/provider"
@@ -123,10 +126,12 @@ func GetProposal(c *gin.Context) {
 
 // ApproveProposal godoc
 // @Summary 审批提案
-// @Description 通过提案并创建课程，或拒绝提案
+// @Description 管理员通过提案并创建正式课程，可传入管理员最终确认的课程信息 finalCourse（不传则用提案原始课程），并按业务规则结算提案创建者的贡献值
 // @Tags proposal
+// @Accept json
 // @Produce json
 // @Param proposalId path string true "提案ID"
+// @Param req body dto.ToggleProposalReq true "审批参数（finalCourse 为管理员最终确认的课程信息，可选）"
 // @Success 200 {object} Response[dto.ToggleProposalResp]
 // @Security Bearer
 // @Router /api/proposal/{proposalId}/approve [post]
@@ -135,6 +140,11 @@ func ApproveProposal(c *gin.Context) {
 	var resp *dto.ToggleProposalResp
 	var err error
 
+	// finalCourse 为可选参数，兼容无请求体的历史调用（空 body 视为未传入）
+	if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+		PostProcess(c, &req, nil, err)
+		return
+	}
 	req.ProposalID = c.Param(consts.CtxProposalID)
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
@@ -144,11 +154,11 @@ func ApproveProposal(c *gin.Context) {
 
 // RevokeProposal godoc
 // @Summary 撤回提案操作
-// @Description 管理员撤回提案的通过/拒绝/删除操作
+// @Description 管理员撤回提案的通过/拒绝操作；撤回审批通过时同步删除关联课程并扣回已结算的贡献值
 // @Tags proposal
 // @Accept json
 // @Param proposalId path string true "提案ID"
-// @Param req body dto.RevokeProposalReq true "撤回操作类型"
+// @Param req body dto.RevokeProposalReq true "撤回操作类型（approve | reject）"
 // @Success 200 {object} Response[dto.RevokeProposalResp]
 // @Security Bearer
 // @Router /api/proposal/{proposalId}/revoke [post]
@@ -233,7 +243,7 @@ func UpdateProposal(c *gin.Context) {
 
 // DeleteProposal godoc
 // @Summary 删除提案
-// @Description 根据提案ID软删除提案（标记为已删除状态）,只对状态为pending和rejected的进行处理
+// @Description 根据提案ID软删除提案（标记为已删除状态），仅提案创建者可删除，只对状态为pending和rejected的进行处理
 // @Tags proposal
 // @Accept json
 // @Param proposalId path string true "提案ID"

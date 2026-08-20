@@ -52,6 +52,7 @@ type IProposalRepo interface {
 	UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error)
 	IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error
 	UpdateStatusAndReasonByID(ctx context.Context, proposalID string, statusID int32, rejectReason string) (bool, error)
+	UpdateContributionByID(ctx context.Context, proposalID string, contribution int64) error
 }
 
 type ProposalRepo struct {
@@ -357,6 +358,14 @@ func (r *ProposalRepo) RestoreProposal(ctx context.Context, proposalId string) e
 func (r *ProposalRepo) IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error {
 	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}
 	update := bson.M{"$inc": bson.M{"likeCnt": delta}, "$set": bson.M{consts.UpdatedAt: time.Now()}}
+	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	return err
+}
+
+// UpdateContributionByID 更新提案记录的贡献值（撤回审批通过时置0）
+func (r *ProposalRepo) UpdateContributionByID(ctx context.Context, proposalID string, contribution int64) error {
+	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}
+	update := bson.M{"$set": bson.M{consts.Contribution: contribution, consts.UpdatedAt: time.Now()}}
 	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
 	return err
 }

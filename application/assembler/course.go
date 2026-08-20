@@ -214,13 +214,9 @@ func (a *CourseAssembler) ToCourseDBDryRun(ctx context.Context, vo *dto.CourseVO
 	// 处理教师
 	var teacherIDs []string
 	for _, teacher := range vo.Teachers {
-		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[TeacherRepo] [GetIDByName] error finding teacher %s: %v", teacher.Name, err)
-			continue
-		}
-		if existingTeacherID != "" {
-			teacherIDs = append(teacherIDs, existingTeacherID)
+		// 已有正式教师ID，直接复用；新教师（无ID）在 DryRun 中不参与匹配
+		if teacher.ID != "" {
+			teacherIDs = append(teacherIDs, teacher.ID)
 		}
 	}
 
@@ -258,13 +254,9 @@ func (a *CourseAssembler) ToCourseDBDryRunFromProposalCourse(ctx context.Context
 	// 处理教师
 	var teacherIDs []string
 	for _, teacher := range vo.Teachers {
-		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[TeacherRepo] [GetIDByName] error finding teacher %s: %v", teacher.Name, err)
-			continue
-		}
-		if existingTeacherID != "" {
-			teacherIDs = append(teacherIDs, existingTeacherID)
+		// 已有正式教师ID，直接复用；新教师（无ID）在 DryRun 中不参与匹配
+		if teacher.ID != "" {
+			teacherIDs = append(teacherIDs, teacher.ID)
 		}
 	}
 
@@ -306,39 +298,31 @@ func (a *CourseAssembler) ToCourseDBFromProposalCourse(ctx context.Context, vo *
 		categoryID = mapping.Data.AutoRegisterCategory(vo.Category)
 	}
 
-	// 处理教师 - 自动创建不存在的教师
+	// 处理教师 - 已有ID直接复用；无ID视为用户手动输入的新教师，直接创建
 	var teacherIDs []string
 	for _, teacher := range vo.Teachers {
-		// 检查教师是否已存在
-		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
-		if err != nil {
-			logs.CtxErrorf(ctx, "[TeacherRepo] [GetIDByName] error finding teacher %s: %v", teacher.Name, err)
+		// 用户从建议列表选择的已有教师，直接复用其ID
+		if teacher.ID != "" {
+			teacherIDs = append(teacherIDs, teacher.ID)
+			continue
 		}
 
-		var teacherID string
-		if existingTeacherID != "" {
-			// 教师已存在，使用现有ID
-			teacherID = existingTeacherID
-		} else {
-			// 教师不存在，创建新教师
-			now := primitive.NewDateTimeFromTime(time.Now())
-			newTeacher := &model.Teacher{
-				ID:         primitive.NewObjectID().Hex(),
-				Name:       teacher.Name,
-				Title:      teacher.Title,
-				Department: mapping.Data.AutoRegisterDepartment(teacher.Department),
-				CreatedAt:  time.Unix(0, int64(now)),
-				UpdatedAt:  time.Unix(0, int64(now)),
-			}
-
-			if err := a.TeacherRepo.Insert(ctx, newTeacher); err != nil {
-				logs.CtxErrorf(ctx, "[TeacherRepo] [Insert] error inserting teacher %s: %v", teacher.Name, err)
-				continue // 跳过这个教师
-			}
-			teacherID = newTeacher.ID
+		// 无ID：视为新教师，直接创建
+		now := primitive.NewDateTimeFromTime(time.Now())
+		newTeacher := &model.Teacher{
+			ID:         primitive.NewObjectID().Hex(),
+			Name:       teacher.Name,
+			Title:      teacher.Title,
+			Department: mapping.Data.AutoRegisterDepartment(teacher.Department),
+			CreatedAt:  time.Unix(0, int64(now)),
+			UpdatedAt:  time.Unix(0, int64(now)),
 		}
 
-		teacherIDs = append(teacherIDs, teacherID)
+		if err := a.TeacherRepo.Insert(ctx, newTeacher); err != nil {
+			logs.CtxErrorf(ctx, "[TeacherRepo] [Insert] error inserting teacher %s: %v", teacher.Name, err)
+			continue // 跳过这个教师
+		}
+		teacherIDs = append(teacherIDs, newTeacher.ID)
 	}
 
 	return &model.Course{
@@ -363,6 +347,8 @@ func (a *CourseAssembler) ToProposalCourseDB(ctx context.Context, vo *dto.Propos
 		teachers = append(teachers, &model.ProposalTeacher{
 			Name:       t.Name,
 			Department: t.Department,
+			Title:      t.Title,
+			TeacherID:  t.ID,
 		})
 	}
 
@@ -388,6 +374,8 @@ func (a *CourseAssembler) ToProposalCourseVO(ctx context.Context, db *model.Prop
 		teachers = append(teachers, &dto.TeacherVO{
 			Name:       t.Name,
 			Department: t.Department,
+			Title:      t.Title,
+			ID:         t.TeacherID,
 		})
 	}
 

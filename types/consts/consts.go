@@ -38,9 +38,11 @@ const (
 	Name       = "name"
 	Tags       = "tags"
 	Count      = "count"
-	TargetType = "targetType"
-	Content    = "content"
-	ProposalID = "proposalId"
+	TargetType       = "targetType"
+	Content          = "content"
+	ProposalID       = "proposalId"
+	Contribution     = "contribution"
+	UserContribution = "contributionPoints"
 )
 
 const (
@@ -59,16 +61,15 @@ const (
 )
 
 const (
-	ActionTypeGrantAdmin      int32 = 1
-	ActionTypeRevokeAdmin     int32 = 2
-	ActionTypeDeleteProposal  int32 = 3
-	ActionTypeUpdateProposal  int32 = 4
-	ActionTypeApproveProposal int32 = 5
-	ActionTypeCreateProposal  int32 = 6
-	ActionTypeRevokeApproveProposal int32 = 7
-	ActionTypeRevokeRejectProposal  int32 = 8
-	ActionTypeRevokeDeleteProposal  int32 = 9
-	ActionTypeRejectProposal        int32 = 10
+	ActionTypeGrantAdmin             int32 = 1
+	ActionTypeRevokeAdmin            int32 = 2
+	ActionTypeDeleteProposal         int32 = 3
+	ActionTypeUpdateProposal         int32 = 4
+	ActionTypeApproveProposal        int32 = 5
+	ActionTypeCreateProposal         int32 = 6
+	ActionTypeRevokeApproveProposal  int32 = 7
+	ActionTypeRevokeRejectProposal   int32 = 8
+	ActionTypeRejectProposal         int32 = 10
 )
 
 const (
@@ -153,8 +154,7 @@ const (
 // 撤回操作类型
 const (
 	RevokeActionApprove = "approve" // 撤回通过
-	RevokeActionReject   = "reject"  // 撤回拒绝
-	RevokeActionDelete   = "delete"  // 撤回删除
+	RevokeActionReject  = "reject"  // 撤回拒绝
 )
 
 // 变更记录目标类型
