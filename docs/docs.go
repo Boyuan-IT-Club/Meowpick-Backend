@@ -901,7 +901,7 @@ const docTemplate = `{
             "dto.RevokeProposalReq": {
                 "properties": {
                     "actionType": {
-                        "description": "\"approve\" | \"reject\" | \"delete\"",
+                        "description": "\"approve\" | \"reject\"",
                         "type": "string"
                     }
                 },
@@ -1022,6 +1022,17 @@ const docTemplate = `{
                     },
                     "likeCnt": {
                         "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "dto.ToggleProposalReq": {
+                "properties": {
+                    "finalCourse": {
+                        "$ref": "#/components/schemas/dto.ProposalCourseVO"
+                    },
+                    "proposalID": {
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -2628,7 +2639,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/approve": {
             "post": {
-                "description": "通过提案并创建课程，或拒绝提案",
+                "description": "管理员通过提案并创建正式课程，可传入管理员最终确认的课程信息 finalCourse（不传则用提案原始课程），并按业务规则结算提案创建者的贡献值",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -2640,6 +2651,26 @@ const docTemplate = `{
                         }
                     }
                 ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/dto.ToggleProposalReq",
+                                        "summary": "req",
+                                        "description": "审批参数（finalCourse 为管理员最终确认的课程信息，可选）"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "审批参数（finalCourse 为管理员最终确认的课程信息，可选）",
+                    "required": true
+                },
                 "responses": {
                     "200": {
                         "content": {
@@ -2665,7 +2696,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/delete": {
             "post": {
-                "description": "根据提案ID软删除提案（标记为已删除状态）,只对状态为pending和rejected的进行处理",
+                "description": "根据提案ID软删除提案（标记为已删除状态），仅提案创建者可删除，只对状态为pending和rejected的进行处理",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -2768,7 +2799,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/revoke": {
             "post": {
-                "description": "管理员撤回提案的通过/拒绝/删除操作",
+                "description": "管理员撤回提案的通过/拒绝操作；撤回审批通过时同步删除关联课程并扣回已结算的贡献值",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -2791,13 +2822,13 @@ const docTemplate = `{
                                     {
                                         "$ref": "#/components/schemas/dto.RevokeProposalReq",
                                         "summary": "req",
-                                        "description": "撤回操作类型"
+                                        "description": "撤回操作类型（approve | reject）"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "撤回操作类型",
+                    "description": "撤回操作类型（approve | reject）",
                     "required": true
                 },
                 "responses": {
