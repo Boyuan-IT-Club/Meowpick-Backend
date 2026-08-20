@@ -38,6 +38,7 @@ type ICourseAssembler interface {
 	ToCourseDBFromProposalCourse(ctx context.Context, vo *dto.ProposalCourseVO) (*model.Course, error)
 	ToProposalCourseDB(ctx context.Context, vo *dto.ProposalCourseVO) (*model.ProposalCourse, error)
 	ToProposalCourseVO(ctx context.Context, db *model.ProposalCourse) (*dto.ProposalCourseVO, error)
+	ToProposalCourseVOFromCourse(ctx context.Context, db *model.Course) (*dto.ProposalCourseVO, error)
 	ToCourseVOArray(ctx context.Context, dbs []*model.Course) ([]*dto.CourseVO, error)
 	ToCourseDBArray(ctx context.Context, vos []*dto.CourseVO) ([]*model.Course, error)
 	ToPaginatedCourses(cxt context.Context, dbs []*model.Course, total int64, pageParam *dto.PageParam) (*dto.PaginatedCourses, error)
@@ -397,6 +398,51 @@ func (a *CourseAssembler) ToProposalCourseVO(ctx context.Context, db *model.Prop
 		Campuses:   db.Campuses,
 		Department: db.Department,
 		Teachers:   teachers,
+	}, nil
+}
+
+// ToProposalCourseVOFromCourse 正式课程Course转ProposalCourseVO (DB to VO)
+// 用于已通过提案关联的正式课程信息展示，不涉及自动注册
+func (a *CourseAssembler) ToProposalCourseVOFromCourse(ctx context.Context, db *model.Course) (*dto.ProposalCourseVO, error) {
+	if db == nil {
+		return nil, nil
+	}
+
+	// 获取校区名称列表
+	campuses := make([]string, 0, len(db.Campuses))
+	for _, campusId := range db.Campuses {
+		campusName := mapping.Data.GetCampusNameByID(campusId)
+		if campusName != "" {
+			campuses = append(campuses, campusName)
+		}
+	}
+
+	// 获取教师VO
+	teacherVOs := make([]*dto.TeacherVO, 0, len(db.TeacherIDs))
+	for _, tid := range db.TeacherIDs {
+		teacher, err := a.TeacherRepo.FindByID(ctx, tid)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[TeacherRepo] [FindByID] find teacher %s error: %v", tid, err)
+			continue
+		}
+		if teacher != nil {
+			teacherVOs = append(teacherVOs, &dto.TeacherVO{
+				ID:         teacher.ID,
+				Name:       teacher.Name,
+				Title:      teacher.Title,
+				Department: mapping.Data.GetDepartmentNameByID(teacher.Department),
+			})
+		}
+	}
+
+	return &dto.ProposalCourseVO{
+		ID:         db.ID,
+		Name:       db.Name,
+		Code:       db.Code,
+		Category:   mapping.Data.GetCategoryNameByID(db.Category),
+		Campuses:   campuses,
+		Department: mapping.Data.GetDepartmentNameByID(db.Department),
+		Teachers:   teacherVOs,
 	}, nil
 }
 

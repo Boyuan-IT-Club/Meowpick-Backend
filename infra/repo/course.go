@@ -51,6 +51,7 @@ type ICourseRepo interface {
 
 	IsCourseInExistingCourses(ctx context.Context, vo *model.Course) (bool, error)
 	FindByNameAndCode(ctx context.Context, name, code string) ([]*model.Course, error)
+	FindByProposalID(ctx context.Context, proposalID string) (*model.Course, error)
 	SoftDeleteByID(ctx context.Context, courseID string) error
 	Insert(ctx context.Context, course *model.Course) error
 }
@@ -279,6 +280,21 @@ func (r *CourseRepo) FindByNameAndCode(ctx context.Context, name, code string) (
 		return nil, err
 	}
 	return courses, nil
+}
+
+// FindByProposalID 根据来源提案ID查询未删除的课程，未找到时返回 nil
+func (r *CourseRepo) FindByProposalID(ctx context.Context, proposalID string) (*model.Course, error) {
+	course := &model.Course{}
+	if err := r.conn.FindOneNoCache(ctx, course, bson.M{
+		consts.ProposalID: proposalID,
+		consts.Deleted:    bson.M{"$ne": true},
+	}); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return course, nil
 }
 
 // SoftDeleteByID 软删除课程（设置deleted为true）

@@ -19,18 +19,20 @@ import (
 )
 
 type Proposal struct {
-	ID           string          `bson:"_id,omitempty"       json:"id"`
-	UserID       string          `bson:"userId"              json:"userId"`              // 提出Proposal的用户ID
-	Title        string          `bson:"title"               json:"title"`               // 标题
-	Content      string          `bson:"content"             json:"content"`             // 描述的内容
-	Deleted      bool            `bson:"deleted"             json:"deleted"`             // 删除标记
-	DeletedAt    time.Time       `bson:"deletedAt,omitempty" json:"deletedAt,omitempty"` // 删除时间
-	Status       int32           `bson:"status"              json:"status"`              // 提案的状态，1: 待审核，2: 通过，3: 拒绝
-	LikeCnt      int64           `bson:"likeCnt"             json:"likeCnt"`             // 点赞数
-	Course       *ProposalCourse `bson:"course"              json:"course"`              // 课程信息，包含教师的ID（未创建不需要ID）
-	RejectReason string          `bson:"rejectReason"        json:"rejectReason"`        // 拒绝理由
-	CreatedAt    time.Time       `bson:"createdAt"           json:"createdAt"`
-	UpdatedAt    time.Time       `bson:"updatedAt"           json:"updatedAt"`
+	ID           string          `bson:"_id,omitempty"          json:"id"`
+	UserID       string          `bson:"userId"                 json:"userId"`              // 提出Proposal的用户ID
+	Title        string          `bson:"title"                  json:"title"`               // 标题
+	Content      string          `bson:"content"                json:"content"`             // 描述的内容
+	Deleted      bool            `bson:"deleted"                json:"deleted"`             // 删除标记
+	DeletedAt    time.Time       `bson:"deletedAt,omitempty"    json:"deletedAt,omitempty"` // 删除时间
+	Status       int32           `bson:"status"                 json:"status"`              // 提案的状态，1: 待审核，2: 通过，3: 拒绝
+	LikeCnt      int64           `bson:"likeCnt"                json:"likeCnt"`             // 点赞数
+	Course       *ProposalCourse `bson:"course"                 json:"course"`              // 课程信息，包含教师的ID（未创建不需要ID）
+	ShowUsername bool            `bson:"showUsername"           json:"showUsername"`        // 是否展示用户名
+	Contribution int64           `bson:"contribution,omitempty" json:"contribution,omitempty"`
+	RejectReason string          `bson:"rejectReason"           json:"rejectReason"`        // 拒绝理由
+	CreatedAt    time.Time       `bson:"createdAt"              json:"createdAt"`
+	UpdatedAt    time.Time       `bson:"updatedAt"              json:"updatedAt"`           // 最近一次的审批时间
 }
 
 type ProposalCourse struct {
@@ -44,6 +46,8 @@ type ProposalCourse struct {
 }
 
 type ProposalTeacher struct {
-	Name       string `bson:"name"           json:"name"`
-	Department string `bson:"department"     json:"department"`
+	Name       string `bson:"name"                 json:"name"`
+	Department string `bson:"department"           json:"department"`
+	Title      string `bson:"title,omitempty"      json:"title,omitempty"`     // 教师职称
+	TeacherID  string `bson:"teacherId,omitempty"  json:"teacherId,omitempty"` // 关联正式教师ID，空表示新教师
 }
