@@ -28,12 +28,15 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var _ IProposalRepo = (*ProposalRepo)(nil)
 
 const (
-	ProposalCollectionName = "proposal"
+	ProposalCollectionName         = "proposal"
+	ProposalUserCreatedAtIndexName = "idx_proposal_user_id_created_at"
 )
 
 type IProposalRepo interface {
@@ -60,9 +63,27 @@ type ProposalRepo struct {
 	conn *monc.Model
 }
 
-func NewProposalRepo(cfg *config.Config) *ProposalRepo {
+func NewProposalRepo(cfg *config.Config) (*ProposalRepo, error) {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, ProposalCollectionName, cfg.Cache)
-	return &ProposalRepo{conn: conn}
+	repository := &ProposalRepo{conn: conn}
+	if err := repository.ensureIndexes(context.Background()); err != nil {
+		return nil, err
+	}
+
+	return repository, nil
+}
+
+// ensureIndexes 创建 proposal 集合所需的索引。CreateOne 对同名同定义索引是幂等的，
+// 因此可以在每次服务启动时安全调用。
+func (r *ProposalRepo) ensureIndexes(ctx context.Context) error {
+	_, err := r.conn.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: consts.UserID, Value: 1},
+			{Key: consts.CreatedAt, Value: -1},
+		},
+		Options: options.Index().SetName(ProposalUserCreatedAtIndexName),
+	})
+	return err
 }
 
 // Insert 插入一个新的提案
