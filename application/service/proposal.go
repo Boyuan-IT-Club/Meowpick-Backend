@@ -69,6 +69,18 @@ var ProposalServiceSet = wire.NewSet(
 	wire.Bind(new(IProposalService), new(*ProposalService)),
 )
 
+// getDailyProposalLimit 根据用户贡献值计算每日提案发布上限
+func getDailyProposalLimit(contribution int64) int64 {
+	switch {
+	case contribution >= consts.ContributionThresholdHigh:
+		return consts.ProposalDailyQuotaHigh
+	case contribution >= consts.ContributionThresholdMedium:
+		return consts.ProposalDailyQuotaMedium
+	default:
+		return consts.ProposalDailyQuotaLow
+	}
+}
+
 // CreateProposal 添加一个新的课程提案
 func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error) {
 	// 鉴权
@@ -140,18 +152,41 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		)
 	}
 
+	// 每日上限检查：根据用户贡献值计算每日发布上限，并统计今日已提交数量
+	user, err := s.UserRepo.FindByID(ctx, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [FindByID] error: %v, userId: %s", err, userId)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
+	}
+	if user == nil {
+		return nil, errorx.New(errno.ErrUserNotFound,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
+	}
+	dailyLimit := getDailyProposalLimit(user.Contribution)
+	todayCount, err := s.ProposalRepo.CountByUserToday(ctx, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalRepo] [CountByUserToday] error: %v, userId: %s", err, userId)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCountFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
+	}
+	if todayCount >= dailyLimit {
+		return nil, errorx.New(errno.ErrDailyProposalLimitReached, errorx.KV("limit", strconv.FormatInt(dailyLimit, 10)))
+	}
+
 	// 1. 构建数据库模型
 	now := time.Now()
 	proposalVO := &dto.ProposalVO{
-		ID:        primitive.NewObjectID().Hex(),
-		UserID:    userId,
-		Title:     req.Title,
-		Content:   req.Content,
-		Status:    consts.ProposalStatusPending,
-		Deleted:   false,
-		Course:    req.Course,
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:           primitive.NewObjectID().Hex(),
+		UserID:       userId,
+		Title:        req.Title,
+		Content:      req.Content,
+		Status:       consts.ProposalStatusPending,
+		Deleted:      false,
+		Course:       req.Course,
+		ShowUsername: req.ShowUsername,
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 
 	proposal, err := s.ProposalAssembler.ToProposalDB(ctx, proposalVO)
@@ -530,8 +565,9 @@ func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.G
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	// 查询提案建议
-	proposals, _, err := s.ProposalRepo.GetSuggestionsByTitle(ctx, req.Keyword, req.PageParam)
+	// 查询提案建议（仅搜索已通过且未删除的提案）
+	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
+	proposals, _, err := s.ProposalRepo.GetSuggestionsByTitle(ctx, req.Keyword, req.PageParam, approvedStatusID)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalRepo] [GetSuggestionsByTitle] error: %v, keyword: %s", err, req.Keyword)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalGetSuggestionsFailed,

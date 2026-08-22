@@ -43,7 +43,10 @@ func NewProvider() (*Provider, error) {
 	userRepo := repo.NewUserRepo(configConfig)
 	changeLogRepo := repo.NewChangeLogRepo(configConfig)
 	changeLogAssembler := &assembler.ChangeLogAssembler{}
-	proposalRepo := repo.NewProposalRepo(configConfig)
+	proposalRepo, err := repo.NewProposalRepo(configConfig)
+	if err != nil {
+		return nil, err
+	}
 	courseAssembler := &assembler.CourseAssembler{
 		CommentRepo: commentRepo,
 		TeacherRepo: teacherRepo,

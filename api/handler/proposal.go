@@ -277,7 +277,7 @@ func DeleteProposal(c *gin.Context) {
 // @Param pageSize query int false "每页数量" default(10)
 // @Success 200 {object} Response[dto.GetProposalSuggestionsResp]
 // @Security Bearer
-// @Router /api/proposal/suggest [post]
+// @Router /api/proposal/suggest [get]
 func GetProposalSuggestions(c *gin.Context) {
 	var req dto.GetProposalSuggestionsReq
 	var resp *dto.GetProposalSuggestionsResp
