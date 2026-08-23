@@ -107,6 +107,17 @@
                 },
                 "type": "object"
             },
+            "dto.CourseBrief": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "dto.CourseVO": {
                 "properties": {
                     "campuses": {
@@ -329,6 +340,13 @@
             },
             "dto.FieldSuggestionVO": {
                 "properties": {
+                    "courses": {
+                        "items": {
+                            "$ref": "#/components/schemas/dto.CourseBrief"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
                     "id": {
                         "type": "string"
                     },
@@ -518,6 +536,30 @@
                 "properties": {
                     "count": {
                         "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "dto.GetUserProfileResp": {
+                "description": "实际业务数据",
+                "properties": {
+                    "avatar": {
+                        "type": "string"
+                    },
+                    "canEditUsername": {
+                        "type": "boolean"
+                    },
+                    "contribution": {
+                        "type": "integer"
+                    },
+                    "dailyQuota": {
+                        "type": "integer"
+                    },
+                    "dailyQuotaLimit": {
+                        "type": "integer"
+                    },
+                    "username": {
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1073,6 +1115,29 @@
                 },
                 "type": "object"
             },
+            "dto.UpdateUserProfileReq": {
+                "properties": {
+                    "avatar": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "dto.UpdateUserProfileResp": {
+                "description": "实际业务数据",
+                "properties": {
+                    "avatar": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "handler.Response-dto_CreateCommentResp": {
                 "properties": {
                     "code": {
@@ -1361,6 +1426,24 @@
                 },
                 "type": "object"
             },
+            "handler.Response-dto_GetUserProfileResp": {
+                "properties": {
+                    "code": {
+                        "description": "业务代码, 0表示成功",
+                        "example": 0,
+                        "type": "integer"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/dto.GetUserProfileResp"
+                    },
+                    "msg": {
+                        "description": "提示信息",
+                        "example": "success",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "handler.Response-dto_GrantAdminResp": {
                 "properties": {
                     "code": {
@@ -1604,6 +1687,24 @@
                     },
                     "data": {
                         "$ref": "#/components/schemas/dto.UpdateProposalResp"
+                    },
+                    "msg": {
+                        "description": "提示信息",
+                        "example": "success",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "handler.Response-dto_UpdateUserProfileResp": {
+                "properties": {
+                    "code": {
+                        "description": "业务代码, 0表示成功",
+                        "example": 0,
+                        "type": "integer"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/dto.UpdateUserProfileResp"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -2299,7 +2400,7 @@
         },
         "/api/proposal/field-suggestions": {
             "get": {
-                "description": "根据字段类型和关键词获取建议列表，支持学院、类别、校区、课程名称、课程代码、教师姓名",
+                "description": "根据字段类型和关键词获取建议列表；教师姓名建议会附带该教师最近创建的最多两门未删除课程",
                 "parameters": [
                     {
                         "description": "字段类型: department/category/campus/courseName/courseCode/teacherName",
@@ -3122,6 +3223,78 @@
                 "summary": "获取教师搜索建议",
                 "tags": [
                     "teacher"
+                ]
+            }
+        },
+        "/api/user/profile": {
+            "get": {
+                "description": "获取当前登录用户的昵称、头像、贡献值、今日已创建提案数、每日提案上限和昵称可编辑状态",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.Response-dto_GetUserProfileResp"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "summary": "获取当前用户资料",
+                "tags": [
+                    "user"
+                ]
+            }
+        },
+        "/api/user/profile/update": {
+            "post": {
+                "description": "更新当前登录用户的昵称和头像；字段未传或为 null 时保持原值，空字符串用于清空",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/dto.UpdateUserProfileReq",
+                                        "summary": "body",
+                                        "description": "UpdateUserProfileReq"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "UpdateUserProfileReq",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.Response-dto_UpdateUserProfileResp"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "summary": "更新当前用户资料",
+                "tags": [
+                    "user"
                 ]
             }
         }
