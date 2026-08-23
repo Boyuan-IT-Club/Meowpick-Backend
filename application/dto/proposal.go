@@ -29,9 +29,10 @@ type ProposalCourseVO struct {
 
 // CreateProposalReq 新增投票请求参数
 type CreateProposalReq struct {
-	Title   string            `json:"title" binding:"required"`
-	Content string            `json:"content" binding:"required"`
-	Course  *ProposalCourseVO `json:"course" binding:"required"`
+	Title        string            `json:"title" binding:"required"`
+	Content      string            `json:"content"`
+	Course       *ProposalCourseVO `json:"course" binding:"required"`
+	ShowUsername bool              `json:"showUsername"` // 是否展示昵称（注：bool 类型不可加 binding:"required"，否则 false 会被校验拒绝）
 }
 
 // CreateProposalResp 新增投票响应

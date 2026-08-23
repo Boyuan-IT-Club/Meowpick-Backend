@@ -28,12 +28,15 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var _ IProposalRepo = (*ProposalRepo)(nil)
 
 const (
-	ProposalCollectionName = "proposal"
+	ProposalCollectionName         = "proposal"
+	ProposalUserCreatedAtIndexName = "idx_proposal_user_id_created_at"
 )
 
 type IProposalRepo interface {
@@ -45,10 +48,11 @@ type IProposalRepo interface {
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
 	FindByIDIncludeDeleted(ctx context.Context, proposalID string) (*model.Proposal, error)
 	FindByIDs(ctx context.Context, proposalIDs []string) ([]*model.Proposal, error)
+	CountByUserToday(ctx context.Context, userId string) (int64, error)
 	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
 	DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
 	RestoreProposal(ctx context.Context, proposalId string) error
-	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error)
+	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam, statusID int32) ([]*model.Proposal, int64, error)
 	UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error)
 	IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error
 	UpdateStatusAndReasonByID(ctx context.Context, proposalID string, statusID int32, rejectReason string) (bool, error)
@@ -59,9 +63,27 @@ type ProposalRepo struct {
 	conn *monc.Model
 }
 
-func NewProposalRepo(cfg *config.Config) *ProposalRepo {
+func NewProposalRepo(cfg *config.Config) (*ProposalRepo, error) {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, ProposalCollectionName, cfg.Cache)
-	return &ProposalRepo{conn: conn}
+	repository := &ProposalRepo{conn: conn}
+	if err := repository.ensureIndexes(context.Background()); err != nil {
+		return nil, err
+	}
+
+	return repository, nil
+}
+
+// ensureIndexes 创建 proposal 集合所需的索引。CreateOne 对同名同定义索引是幂等的，
+// 因此可以在每次服务启动时安全调用。
+func (r *ProposalRepo) ensureIndexes(ctx context.Context) error {
+	_, err := r.conn.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{
+			{Key: consts.UserID, Value: 1},
+			{Key: consts.CreatedAt, Value: -1},
+		},
+		Options: options.Index().SetName(ProposalUserCreatedAtIndexName),
+	})
+	return err
 }
 
 // Insert 插入一个新的提案
@@ -251,15 +273,15 @@ func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Propo
 	return err
 }
 
-// GetSuggestionsByTitle 根据提案标题模糊分页查询提案
-func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam) ([]*model.Proposal, int64, error) {
+// GetSuggestionsByTitle 根据提案标题模糊分页查询指定状态的提案
+func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam, statusID int32) ([]*model.Proposal, int64, error) {
 	proposals := []*model.Proposal{}
 	filter := bson.M{
 		"title":        bson.M{"$regex": primitive.Regex{Pattern: title, Options: "i"}},
+		consts.Status:  statusID,
 		consts.Deleted: bson.M{"$ne": true},
 	}
 	sort := bson.D{
-		{consts.Status, 1},
 		{consts.CreatedAt, -1},
 	}
 
@@ -334,10 +356,26 @@ func (r *ProposalRepo) FindManyByUserID(ctx context.Context, param *dto.PagePara
 	return proposals, total, nil
 }
 
+// CountByUserToday 按中国时区（UTC+8）自然日统计用户今日创建的提案数
+func (r *ProposalRepo) CountByUserToday(ctx context.Context, userId string) (int64, error) {
+	loc := time.FixedZone("CST", 8*3600) // 中国时区 UTC+8
+	now := time.Now().In(loc)
+	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+
+	filter := bson.M{
+		consts.UserID: userId,
+		consts.CreatedAt: bson.M{
+			"$gte": dayStart,
+			"$lt":  dayStart.Add(24 * time.Hour),
+		},
+	}
+	return r.conn.CountDocuments(ctx, filter)
+}
+
 // RestoreProposal 恢复已删除的提案（将deleted设为false，清空deletedAt）
 func (r *ProposalRepo) RestoreProposal(ctx context.Context, proposalId string) error {
 	filter := bson.M{
-		consts.ID: proposalId,
+		consts.ID:      proposalId,
 		consts.Deleted: true,
 	}
 	update := bson.M{

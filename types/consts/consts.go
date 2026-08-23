@@ -127,6 +127,19 @@ const (
 	ProposalStatusRejected = "rejected" // 已拒绝
 )
 
+// 贡献值分档阈值
+const (
+	ContributionThresholdMedium int64 = 100 // 贡献值达到 100，每日提案上限提升至 10
+	ContributionThresholdHigh   int64 = 500 // 贡献值达到 500，每日提案上限提升至 20
+)
+
+// 提案每日发布上限（按贡献值分档）
+const (
+	ProposalDailyQuotaLow    int64 = 5  // 贡献值 < 100
+	ProposalDailyQuotaMedium int64 = 10 // 100 <= 贡献值 < 500
+	ProposalDailyQuotaHigh   int64 = 20 // 贡献值 >= 500
+)
+
 // 点赞目标类型相关
 const (
 	LikeTargetTypeComment  = "comment"
