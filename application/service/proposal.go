@@ -703,7 +703,7 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 			suggestions = append(suggestions, &dto.FieldSuggestionVO{
 				ID:      teacher.ID,
 				Value:   teacher.Name,
-				Label:   teacher.Name + " - " + teacher.Title,
+				Label:   teacherSuggestionLabel(teacher.Name, teacher.Title),
 				Courses: &briefs,
 			})
 		}
@@ -721,6 +721,13 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 		Suggestions: suggestions,
 		Total:       total,
 	}, nil
+}
+
+func teacherSuggestionLabel(name, title string) string {
+	if title == "" {
+		return name
+	}
+	return name + " - " + title
 }
 
 // GetMyProposals 获取我的提案
