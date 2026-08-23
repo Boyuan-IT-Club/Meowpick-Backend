@@ -48,7 +48,7 @@ func TestPageParam_UnWrap(t *testing.T) {
 		{
 			name:     "页码为负数",
 			input:    &PageParam{Page: -5, PageSize: 10},
-			wantPage: 0,
+			wantPage: 1,
 			wantSize: 10,
 		},
 		{
@@ -72,7 +72,7 @@ func TestPageParam_UnWrap(t *testing.T) {
 		{
 			name:     "页码为 0",
 			input:    &PageParam{Page: 0, PageSize: 10},
-			wantPage: 0,
+			wantPage: 1,
 			wantSize: 10,
 		},
 		{

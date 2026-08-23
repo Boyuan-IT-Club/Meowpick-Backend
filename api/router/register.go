@@ -47,6 +47,13 @@ func SetupRoutes() *gin.Engine {
 		authGroup.POST("/grant_admin", handler.GrantAdmin)
 	}
 
+	// UserApi
+	userGroup := router.Group("/api/user")
+	{
+		userGroup.GET("/profile", handler.GetUserProfile)
+		userGroup.POST("/profile/update", handler.UpdateUserProfile)
+	}
+
 	// LikeApi
 	likeGroup := router.Group("/api/like")
 	{

@@ -18,13 +18,13 @@ import "time"
 
 // ProposalCourseVO 提案中的课程信息
 type ProposalCourseVO struct {
-	ID         string        `json:"id,omitempty"`
-	Name       string        `json:"name"`
-	Code       string        `json:"code"`
-	Category   string        `json:"category"`
-	Campuses   []string      `json:"campuses"`
-	Department string        `json:"department"`
-	Teachers   []*TeacherVO  `json:"teachers"`
+	ID         string       `json:"id,omitempty"`
+	Name       string       `json:"name"`
+	Code       string       `json:"code"`
+	Category   string       `json:"category"`
+	Campuses   []string     `json:"campuses"`
+	Department string       `json:"department"`
+	Teachers   []*TeacherVO `json:"teachers"`
 }
 
 // CreateProposalReq 新增投票请求参数
@@ -97,7 +97,7 @@ type RejectProposalReq struct {
 
 type RejectProposalResp struct {
 	*Resp
-	Rejected    bool  `json:"rejected"`
+	Rejected     bool  `json:"rejected"`
 	PendingCount int64 `json:"pendingCount"`
 }
 
@@ -113,7 +113,7 @@ type ToggleProposalResp struct {
 }
 
 type RevokeProposalReq struct {
-	ProposalID string `json:"-"`               // 从 URL path 获取
+	ProposalID string `json:"-"`          // 从 URL path 获取
 	ActionType string `json:"actionType"` // "approve" | "reject"
 }
 
@@ -183,9 +183,16 @@ type GetProposalFieldSuggestionsResp struct {
 
 // FieldSuggestionVO 字段建议视图对象
 type FieldSuggestionVO struct {
-	ID    string `json:"id,omitempty"`
-	Value string `json:"value"`
-	Label string `json:"label"`
+	ID      string         `json:"id,omitempty"`
+	Value   string         `json:"value"`
+	Label   string         `json:"label"`
+	Courses *[]CourseBrief `json:"courses,omitempty"`
+}
+
+// CourseBrief 教师字段建议中展示的课程简要信息。
+type CourseBrief struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // GetMyProposalsReq 获取我的提案请求

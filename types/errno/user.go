@@ -19,14 +19,17 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 // auth: 100 000 000 ~ 100 999 999
 
 const (
-	ErrUserNotLogin     = 100000001
-	ErrUserNotAdmin     = 100000002
-	ErrUserFindFailed   = 100000003
-	ErrUserNotFound     = 100000004
-	ErrUserInsertFailed = 100000005
-	ErrUserNotOwner     = 100000006
-	ErrUserAlreadyAdmin = 100000007
-	ErrUserUpdateFailed = 100000008
+	ErrUserNotLogin                = 100000001
+	ErrUserNotAdmin                = 100000002
+	ErrUserFindFailed              = 100000003
+	ErrUserNotFound                = 100000004
+	ErrUserInsertFailed            = 100000005
+	ErrUserNotOwner                = 100000006
+	ErrUserAlreadyAdmin            = 100000007
+	ErrUserUpdateFailed            = 100000008
+	ErrUsernameUpdateLimitExceeded = 100000009
+	ErrUsernameAlreadyTaken        = 100000010
+	ErrUsernameInvalid             = 100000011
 )
 
 func init() {
@@ -68,6 +71,21 @@ func init() {
 	code.Register(
 		ErrUserUpdateFailed,
 		"failed to update user: {id}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrUsernameUpdateLimitExceeded,
+		"username can only be updated once every 30 days",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrUsernameAlreadyTaken,
+		"username already taken: {username}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrUsernameInvalid,
+		"invalid username: {reason}",
 		code.WithAffectStability(false),
 	)
 }

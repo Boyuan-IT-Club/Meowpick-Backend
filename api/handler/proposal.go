@@ -295,7 +295,7 @@ func GetProposalSuggestions(c *gin.Context) {
 
 // GetProposalFieldSuggestions godoc
 // @Summary 获取提案字段建议
-// @Description 根据字段类型和关键词获取建议列表，支持学院、类别、校区、课程名称、课程代码、教师姓名
+// @Description 根据字段类型和关键词获取建议列表；教师姓名建议会附带该教师最近创建的最多两门未删除课程
 // @Tags proposal
 // @Produce json
 // @Param field query string true "字段类型: department/category/campus/courseName/courseCode/teacherName"

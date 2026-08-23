@@ -40,7 +40,10 @@ func NewProvider() (*Provider, error) {
 	searchHistoryService := service.SearchHistoryService{
 		SearchHistoryRepo: searchHistoryRepo,
 	}
-	userRepo := repo.NewUserRepo(configConfig)
+	userRepo, err := repo.NewUserRepo(configConfig)
+	if err != nil {
+		return nil, err
+	}
 	changeLogRepo := repo.NewChangeLogRepo(configConfig)
 	changeLogAssembler := &assembler.ChangeLogAssembler{}
 	proposalRepo, err := repo.NewProposalRepo(configConfig)
@@ -62,6 +65,10 @@ func NewProvider() (*Provider, error) {
 	authService := service.AuthService{
 		UserRepo:         userRepo,
 		ChangeLogService: changeLogService,
+	}
+	userService := service.UserService{
+		UserRepo:     userRepo,
+		ProposalRepo: proposalRepo,
 	}
 	likeCache := cache.NewLikeCache(configConfig)
 	likeService := service.LikeService{
@@ -113,6 +120,7 @@ func NewProvider() (*Provider, error) {
 		CommentService:       commentService,
 		SearchHistoryService: searchHistoryService,
 		AuthService:          authService,
+		UserService:          userService,
 		LikeService:          likeService,
 		CourseService:        courseService,
 		TeacherService:       teacherService,
