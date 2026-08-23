@@ -238,12 +238,15 @@ const docTemplate = `{
                     "course": {
                         "$ref": "#/components/schemas/dto.ProposalCourseVO"
                     },
+                    "showUsername": {
+                        "description": "是否展示昵称（注：bool 类型不可加 binding:\"required\"，否则 false 会被校验拒绝）",
+                        "type": "boolean"
+                    },
                     "title": {
                         "type": "string"
                     }
                 },
                 "required": [
-                    "content",
                     "course",
                     "title"
                 ],
@@ -2546,7 +2549,7 @@ const docTemplate = `{
             }
         },
         "/api/proposal/suggest": {
-            "post": {
+            "get": {
                 "description": "根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表",
                 "parameters": [
                     {
