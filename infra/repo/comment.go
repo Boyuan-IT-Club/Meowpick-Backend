@@ -65,26 +65,26 @@ func (r *CommentRepo) Count(ctx context.Context) (int64, error) {
 // GetTagsByCourseID 根据课程ID统计课程数量前3的标签
 func (r *CommentRepo) GetTagsByCourseID(ctx context.Context, courseId string) (map[string]int64, error) {
 	pipeline := mongo.Pipeline{
-		{{"$match", bson.D{
-			{consts.CourseID, courseId},
-			{consts.Deleted, bson.M{"$ne": true}},
-			{consts.Tags, bson.M{"$ne": nil}},
+		{{Key: "$match", Value: bson.D{
+			{Key: consts.CourseID, Value: courseId},
+			{Key: consts.Deleted, Value: bson.M{"$ne": true}},
+			{Key: consts.Tags, Value: bson.M{"$ne": nil}},
 		}}},
-		{{"$unwind", bson.D{
-			{"path", "$tags"},
-			{"preserveNullAndEmptyArrays", false},
+		{{Key: "$unwind", Value: bson.D{
+			{Key: "path", Value: "$tags"},
+			{Key: "preserveNullAndEmptyArrays", Value: false},
 		}}},
-		{{"$match", bson.D{
-			{consts.Tags, bson.M{"$ne": ""}},
+		{{Key: "$match", Value: bson.D{
+			{Key: consts.Tags, Value: bson.M{"$ne": ""}},
 		}}},
-		{{"$group", bson.D{
-			{consts.ID, "$tags"},
-			{consts.Count, bson.D{{"$sum", 1}}},
+		{{Key: "$group", Value: bson.D{
+			{Key: consts.ID, Value: "$tags"},
+			{Key: consts.Count, Value: bson.D{{Key: "$sum", Value: 1}}},
 		}}},
-		{{"$sort", bson.D{
-			{consts.Count, -1},
+		{{Key: "$sort", Value: bson.D{
+			{Key: consts.Count, Value: -1},
 		}}},
-		{{"$limit", 3}},
+		{{Key: "$limit", Value: 3}},
 	}
 	var tags []struct {
 		ID    string `bson:"_id"`

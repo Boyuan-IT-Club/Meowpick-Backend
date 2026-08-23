@@ -57,7 +57,7 @@ func NewLikeRepo(cfg *config.Config) *LikeRepo {
 func (r *LikeRepo) Toggle(ctx context.Context, userId, targetId string, targetType int32) (bool, error) {
 	now := time.Now()
 	pipeline := mongo.Pipeline{
-		{{"$set", bson.M{
+		{{Key: "$set", Value: bson.M{
 			consts.ID: bson.M{"$ifNull": bson.A{"$" + consts.ID, primitive.NewObjectID().Hex()}},
 
 			consts.UserID:     bson.M{"$ifNull": bson.A{"$" + consts.UserID, userId}},
@@ -129,14 +129,14 @@ func (r *LikeRepo) GetLikesByUserIDAndTargets(ctx context.Context, userId string
 // CountByTargets 批量获取多个目标的点赞数，返回目标id->count映射
 func (r *LikeRepo) CountByTargets(ctx context.Context, targetIds []string, targetType int32) (map[string]int64, error) {
 	pipeline := mongo.Pipeline{
-		{{"$match", bson.D{
-			{consts.TargetID, bson.D{{"$in", targetIds}}},
-			{consts.Active, bson.D{{"$ne", false}}},
-			{consts.TargetType, targetType},
+		{{Key: "$match", Value: bson.D{
+			{Key: consts.TargetID, Value: bson.D{{Key: "$in", Value: targetIds}}},
+			{Key: consts.Active, Value: bson.D{{Key: "$ne", Value: false}}},
+			{Key: consts.TargetType, Value: targetType},
 		}}},
-		{{"$group", bson.D{
-			{"_id", "$targetId"},
-			{"count", bson.D{{"$sum", 1}}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$targetId"},
+			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
 		}}},
 	}
 	var likes []struct {

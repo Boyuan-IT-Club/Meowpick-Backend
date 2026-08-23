@@ -282,7 +282,7 @@ func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, 
 		consts.Deleted: bson.M{"$ne": true},
 	}
 	sort := bson.D{
-		{consts.CreatedAt, -1},
+		{Key: consts.CreatedAt, Value: -1},
 	}
 
 	if err := r.conn.Find(ctx, &proposals, filter, page.FindPageOption(param).SetSort(sort)); err != nil {

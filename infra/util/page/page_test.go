@@ -31,11 +31,11 @@ func TestFindPageOption(t *testing.T) {
 		{
 			name:      "正常情况: page=1, size=10",
 			pageParam: &dto.PageParam{Page: 1, PageSize: 10},
-			wantSkip:  10, // page * size = 1 * 10
+			wantSkip:  0, // (page - 1) * size = 0
 			wantLimit: 10,
 		},
 		{
-			name:      "第一页: page=0",
+			name:      "页码为 0（应该修正为第一页）",
 			pageParam: &dto.PageParam{Page: 0, PageSize: 10},
 			wantSkip:  0,
 			wantLimit: 10,
@@ -43,37 +43,37 @@ func TestFindPageOption(t *testing.T) {
 		{
 			name:      "PageSize 为 0（应该用默认值 10）",
 			pageParam: &dto.PageParam{Page: 1, PageSize: 0},
-			wantSkip:  10, // 1 * 10（默认）
+			wantSkip:  0,
 			wantLimit: 10,
 		},
 		{
 			name:      "PageSize 超限 200（应该用默认值 10）",
 			pageParam: &dto.PageParam{Page: 1, PageSize: 200},
-			wantSkip:  10, // 1 * 10（默认）
+			wantSkip:  0,
 			wantLimit: 10,
 		},
 		{
-			name:      "页码为负数（应该修正为 0）",
+			name:      "页码为负数（应该修正为第一页）",
 			pageParam: &dto.PageParam{Page: -5, PageSize: 10},
-			wantSkip:  0, // 0 * 10
+			wantSkip:  0,
 			wantLimit: 10,
 		},
 		{
 			name:      "PageSize 为负数（应该修正为 10）",
 			pageParam: &dto.PageParam{Page: 1, PageSize: -10},
-			wantSkip:  10, // 1 * 10
+			wantSkip:  0,
 			wantLimit: 10,
 		},
 		{
 			name:      "PageSize 为最大值 100",
 			pageParam: &dto.PageParam{Page: 2, PageSize: 100},
-			wantSkip:  200, // 2 * 100
+			wantSkip:  100,
 			wantLimit: 100,
 		},
 		{
 			name:      "第二页: page=2, size=20",
 			pageParam: &dto.PageParam{Page: 2, PageSize: 20},
-			wantSkip:  40, // 2 * 20
+			wantSkip:  20,
 			wantLimit: 20,
 		},
 	}

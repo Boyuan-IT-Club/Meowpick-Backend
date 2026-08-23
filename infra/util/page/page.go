@@ -35,5 +35,5 @@ func FindPageOption(param dto.IPageParam) *options.FindOptions {
 }
 
 func DSort(s string, i int) bson.D {
-	return bson.D{{s, i}}
+	return bson.D{{Key: s, Value: i}}
 }
