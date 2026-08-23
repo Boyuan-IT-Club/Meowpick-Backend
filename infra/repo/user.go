@@ -17,6 +17,7 @@ package repo
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
@@ -24,14 +25,17 @@ import (
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var _ IUserRepo = (*UserRepo)(nil)
 
 const (
-	UserCollectionName   = "user"
-	UserOpenID2UserIDKey = consts.CacheUserKeyPrefix + "openId2id:"
-	UserID2DBKey         = consts.CacheUserKeyPrefix + "id2db:"
+	UserCollectionName    = "user"
+	UserOpenID2UserIDKey  = consts.CacheUserKeyPrefix + "openId2id:"
+	UserID2DBKey          = consts.CacheUserKeyPrefix + "id2db:"
+	UserUsernameIndexName = "idx_user_username_unique"
 )
 
 type IUserRepo interface {
@@ -41,6 +45,8 @@ type IUserRepo interface {
 	FindByID(ctx context.Context, id string) (user *model.User, err error)
 	FindByIDs(ctx context.Context, ids []string) (users []*model.User, err error)
 	FindByOpenID(ctx context.Context, openId string) (user *model.User, err error)
+	IsUsernameExist(ctx context.Context, username, excludeUserID string) (bool, error)
+	UpdateProfile(ctx context.Context, id string, username, avatar *string, usernameUpdatedAt *time.Time) error
 
 	IsAdminByID(ctx context.Context, id string) (isAdmin bool, err error)
 	IncrementContribution(ctx context.Context, id string, delta int64) error
@@ -50,9 +56,32 @@ type UserRepo struct {
 	conn *monc.Model
 }
 
-func NewUserRepo(cfg *config.Config) *UserRepo {
+func NewUserRepo(cfg *config.Config) (*UserRepo, error) {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, UserCollectionName, cfg.Cache)
-	return &UserRepo{conn: conn}
+	repository := &UserRepo{conn: conn}
+	if err := repository.ensureIndexes(context.Background()); err != nil {
+		return nil, err
+	}
+	return repository, nil
+}
+
+// ensureIndexes 为非空昵称创建忽略大小写的唯一索引。
+func (r *UserRepo) ensureIndexes(ctx context.Context) error {
+	_, err := r.conn.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: consts.Username, Value: 1}},
+		Options: options.Index().
+			SetName(UserUsernameIndexName).
+			SetUnique(true).
+			SetCollation(usernameCollation()).
+			SetPartialFilterExpression(bson.M{
+				consts.Username: bson.M{"$type": "string", "$gt": ""},
+			}),
+	})
+	return err
+}
+
+func usernameCollation() *options.Collation {
+	return &options.Collation{Locale: "en", Strength: 2}
 }
 
 // Insert 插入用户
@@ -112,6 +141,49 @@ func (r *UserRepo) FindByOpenID(ctx context.Context, openId string) (*model.User
 	return &user, nil
 }
 
+// IsUsernameExist 检查忽略大小写后的昵称是否已被其他用户占用。
+func (r *UserRepo) IsUsernameExist(ctx context.Context, username, excludeUserID string) (bool, error) {
+	filter := bson.M{consts.Username: username}
+	if excludeUserID != "" {
+		filter[consts.ID] = bson.M{"$ne": excludeUserID}
+	}
+
+	var user model.User
+	err := r.conn.FindOneNoCache(ctx, &user, filter,
+		options.FindOne().SetProjection(bson.M{consts.ID: 1}).SetCollation(usernameCollation()),
+	)
+	if errors.Is(err, monc.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// UpdateProfile 原子更新用户资料中实际传入且发生变化的字段。
+func (r *UserRepo) UpdateProfile(
+	ctx context.Context,
+	id string,
+	username, avatar *string,
+	usernameUpdatedAt *time.Time,
+) error {
+	set := bson.M{consts.UpdatedAt: time.Now()}
+	if username != nil {
+		set[consts.Username] = *username
+	}
+	if avatar != nil {
+		set[consts.Avatar] = *avatar
+	}
+	if usernameUpdatedAt != nil {
+		set[consts.UsernameUpdatedAt] = *usernameUpdatedAt
+	}
+
+	_, err := r.conn.UpdateOne(ctx, UserID2DBKey+id,
+		bson.M{consts.ID: id}, bson.M{"$set": set})
+	return err
+}
+
 // IsAdminByID 判断用户是否是管理员
 func (r *UserRepo) IsAdminByID(ctx context.Context, id string) (bool, error) {
 	user, err := r.FindByID(ctx, id)
@@ -139,16 +211,16 @@ func (r *UserRepo) FindByIDs(ctx context.Context, ids []string) ([]*model.User, 
 	if len(ids) == 0 {
 		return []*model.User{}, nil
 	}
-	
+
 	users := []*model.User{}
 	filter := bson.M{
 		consts.ID: bson.M{"$in": ids},
 	}
-	
+
 	if err := r.conn.Find(ctx, &users, filter); err != nil {
 		logs.CtxErrorf(ctx, "[UserRepo] [FindByIDs] error: %v", err)
 		return nil, err
 	}
-	
+
 	return users, nil
 }

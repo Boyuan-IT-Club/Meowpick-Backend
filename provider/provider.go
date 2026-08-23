@@ -52,6 +52,7 @@ type Provider struct {
 	CommentService       service.CommentService
 	SearchHistoryService service.SearchHistoryService
 	AuthService          service.AuthService
+	UserService          service.UserService
 	LikeService          service.LikeService
 	CourseService        service.CourseService
 	TeacherService       service.TeacherService
@@ -68,6 +69,7 @@ var ApplicationSet = wire.NewSet(
 	service.CommentServiceSet,
 	service.SearchHistoryServiceSet,
 	service.AuthServiceSet,
+	service.UserServiceSet,
 	service.LikeServiceSet,
 	service.CourseServiceSet,
 	service.TeacherServiceSet,
