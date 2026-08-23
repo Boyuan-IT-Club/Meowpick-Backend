@@ -40,6 +40,7 @@ type ICourseRepo interface {
 	FindManyByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error)
 	FindManyByNameLike(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error)
 	FindManyByTeacherID(ctx context.Context, teacherId string, param *dto.PageParam) ([]*model.Course, int64, error)
+	FindRecentByTeacherIDs(ctx context.Context, teacherIDs []string, limitPerTeacher int64) (map[string][]*model.Course, error)
 	FindManyByCategoryID(ctx context.Context, categoryId int32, param *dto.PageParam) ([]*model.Course, int64, error)
 	FindManyByDepartmentID(ctx context.Context, departmentId int32, param *dto.PageParam) ([]*model.Course, int64, error)
 
@@ -122,8 +123,8 @@ func (r *CourseRepo) FindManyByTeacherID(ctx context.Context, teacherId string, 
 	filter := bson.M{consts.TeacherIDs: teacherId}
 	if err := r.conn.Find(ctx, &courses, filter,
 		page.FindPageOption(param).SetSort(bson.D{
-			{consts.CreatedAt, -1},
-			{consts.ID, 1}, // 添加_id作为二级排序，确保排序稳定性
+			{Key: consts.CreatedAt, Value: -1},
+			{Key: consts.ID, Value: 1}, // 添加_id作为二级排序，确保排序稳定性
 		}),
 	); err != nil {
 		return nil, 0, err
@@ -134,6 +135,64 @@ func (r *CourseRepo) FindManyByTeacherID(ctx context.Context, teacherId string, 
 		return nil, 0, err
 	}
 	return courses, total, nil
+}
+
+type teacherCourseGroup struct {
+	TeacherID string `bson:"_id"`
+	Courses   []struct {
+		ID   string `bson:"id"`
+		Name string `bson:"name"`
+	} `bson:"courses"`
+}
+
+// FindRecentByTeacherIDs 批量查询每位教师最近创建的未删除课程。
+func (r *CourseRepo) FindRecentByTeacherIDs(
+	ctx context.Context,
+	teacherIDs []string,
+	limitPerTeacher int64,
+) (map[string][]*model.Course, error) {
+	result := make(map[string][]*model.Course, len(teacherIDs))
+	if len(teacherIDs) == 0 || limitPerTeacher <= 0 {
+		return result, nil
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{
+			consts.TeacherIDs: bson.M{"$in": teacherIDs},
+			consts.Deleted:    bson.M{"$ne": true},
+		}},
+		{"$unwind": "$" + consts.TeacherIDs},
+		{"$match": bson.M{consts.TeacherIDs: bson.M{"$in": teacherIDs}}},
+		{"$sort": bson.D{
+			{Key: consts.TeacherIDs, Value: 1},
+			{Key: consts.CreatedAt, Value: -1},
+			{Key: consts.ID, Value: 1},
+		}},
+		{"$group": bson.M{
+			"_id": "$" + consts.TeacherIDs,
+			"courses": bson.M{"$push": bson.M{
+				"id":   "$" + consts.ID,
+				"name": "$" + consts.Name,
+			}},
+		}},
+		{"$project": bson.M{
+			"courses": bson.M{"$slice": bson.A{"$courses", limitPerTeacher}},
+		}},
+	}
+
+	var groups []teacherCourseGroup
+	if err := r.conn.Aggregate(ctx, &groups, pipeline); err != nil {
+		return nil, err
+	}
+
+	for _, group := range groups {
+		courses := make([]*model.Course, 0, len(group.Courses))
+		for _, brief := range group.Courses {
+			courses = append(courses, &model.Course{ID: brief.ID, Name: brief.Name})
+		}
+		result[group.TeacherID] = courses
+	}
+	return result, nil
 }
 
 // FindManyByCategoryID 根据课程分类ID分页查询课程
@@ -219,16 +278,16 @@ func (r *CourseRepo) GetCampusesByName(ctx context.Context, name string) ([]int3
 func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
 	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}
-	
+
 	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param)); err != nil {
 		return nil, 0, err
 	}
-	
+
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	return courses, total, nil
 }
 
@@ -236,16 +295,16 @@ func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, para
 func (r *CourseRepo) GetSuggestionsByCode(ctx context.Context, code string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
 	filter := bson.M{consts.Code: bson.M{"$regex": primitive.Regex{Pattern: code, Options: "i"}}}
-	
+
 	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param)); err != nil {
 		return nil, 0, err
 	}
-	
+
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	return courses, total, nil
 }
 

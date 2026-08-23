@@ -683,11 +683,28 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 			return nil, errorx.WrapByCode(err, errno.ErrTeacherGetSuggestionsFailed,
 				errorx.KV("keyword", req.Keyword))
 		}
+		teacherIDs := make([]string, 0, len(teachers))
 		for _, teacher := range teachers {
+			teacherIDs = append(teacherIDs, teacher.ID)
+		}
+		coursesByTeacher, err := s.CourseRepo.FindRecentByTeacherIDs(ctx, teacherIDs, 2)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[CourseRepo] [FindRecentByTeacherIDs] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
+				errorx.KV("keyword", req.Keyword))
+		}
+
+		for _, teacher := range teachers {
+			courses := coursesByTeacher[teacher.ID]
+			briefs := make([]dto.CourseBrief, 0, len(courses))
+			for _, course := range courses {
+				briefs = append(briefs, dto.CourseBrief{ID: course.ID, Name: course.Name})
+			}
 			suggestions = append(suggestions, &dto.FieldSuggestionVO{
-				ID:    teacher.ID,
-				Value: teacher.Name,
-				Label: teacher.Name + " - " + teacher.Title,
+				ID:      teacher.ID,
+				Value:   teacher.Name,
+				Label:   teacher.Name + " - " + teacher.Title,
+				Courses: &briefs,
 			})
 		}
 		_ = total
