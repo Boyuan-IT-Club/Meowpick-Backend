@@ -571,6 +571,15 @@ const docTemplate = `{
                 },
                 "type": "object"
             },
+            "dto.GetUsernameByUserIDResp": {
+                "description": "实际业务数据",
+                "properties": {
+                    "username": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "dto.GrantAdminReq": {
                 "properties": {
                     "userId": {
@@ -1442,6 +1451,24 @@ const docTemplate = `{
                     },
                     "data": {
                         "$ref": "#/components/schemas/dto.GetUserProfileResp"
+                    },
+                    "msg": {
+                        "description": "提示信息",
+                        "example": "success",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "handler.Response-dto_GetUsernameByUserIDResp": {
+                "properties": {
+                    "code": {
+                        "description": "业务代码, 0表示成功",
+                        "example": 0,
+                        "type": "integer"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/dto.GetUsernameByUserIDResp"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -3300,6 +3327,43 @@ const docTemplate = `{
                     }
                 ],
                 "summary": "更新当前用户资料",
+                "tags": [
+                    "user"
+                ]
+            }
+        },
+        "/api/user/{userId}/username": {
+            "get": {
+                "description": "根据用户 ID 获取该用户设置的昵称",
+                "parameters": [
+                    {
+                        "description": "用户 ID",
+                        "in": "path",
+                        "name": "userId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.Response-dto_GetUsernameByUserIDResp"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "summary": "根据用户 ID 获取昵称",
                 "tags": [
                     "user"
                 ]

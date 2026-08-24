@@ -40,6 +40,7 @@ var _ IUserService = (*UserService)(nil)
 
 type IUserService interface {
 	GetUserProfile(ctx context.Context) (*dto.GetUserProfileResp, error)
+	GetUsernameByUserID(ctx context.Context, userID string) (*dto.GetUsernameByUserIDResp, error)
 	UpdateUserProfile(ctx context.Context, req *dto.UpdateUserProfileReq) (*dto.UpdateUserProfileResp, error)
 }
 
@@ -86,6 +87,30 @@ func (s *UserService) GetUserProfile(ctx context.Context) (*dto.GetUserProfileRe
 		DailyQuota:      todayCount,
 		DailyQuotaLimit: getDailyProposalLimit(user.Contribution),
 		CanEditUsername: canEditUsername(user.UsernameUpdatedAt, time.Now()),
+	}, nil
+}
+
+// GetUsernameByUserID 获取指定用户的昵称。
+func (s *UserService) GetUsernameByUserID(ctx context.Context, userID string) (*dto.GetUsernameByUserIDResp, error) {
+	currentUserID, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || currentUserID == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	user, err := s.UserRepo.FindByID(ctx, userID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [FindByID] error: %v, userId: %s", err, userID)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userID))
+	}
+	if user == nil {
+		return nil, errorx.New(errno.ErrUserNotFound,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userID))
+	}
+
+	return &dto.GetUsernameByUserIDResp{
+		Resp:     dto.Success(),
+		Username: user.Username,
 	}, nil
 }
 

@@ -25,6 +25,12 @@ type GetUserProfileResp struct {
 	CanEditUsername bool   `json:"canEditUsername"`
 }
 
+// GetUsernameByUserIDResp 返回指定用户的昵称。
+type GetUsernameByUserIDResp struct {
+	*Resp
+	Username string `json:"username"`
+}
+
 // UpdateUserProfileReq 更新当前登录用户的个人资料。
 // 指针用于区分字段未传/null（保持原值）与空字符串（清空）。
 type UpdateUserProfileReq struct {
