@@ -16,6 +16,7 @@
 // @version 1.0
 // @description 选课猫后端接口文档
 // @servers.url /
+// @security Bearer
 // @securitydefinitions.bearerauth Bearer
 package main
 
