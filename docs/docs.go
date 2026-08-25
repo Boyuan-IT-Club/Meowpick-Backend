@@ -1801,11 +1801,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "授予管理员权限",
                 "tags": [
                     "auth"
@@ -1827,11 +1822,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "是否管理员",
                 "tags": [
                     "auth"
@@ -1872,6 +1862,7 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
+                "security": [],
                 "summary": "登录",
                 "tags": [
                     "auth"
@@ -1913,11 +1904,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "分页查询变更记录",
                 "tags": [
                     "changeLog"
@@ -1968,11 +1954,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "按提案聚合的日志列表",
                 "tags": [
                     "changeLog"
@@ -2023,11 +2004,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "扁平化时间线日志",
                 "tags": [
                     "changeLog"
@@ -2069,11 +2045,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "发布课程评论",
                 "tags": [
                     "comment"
@@ -2115,11 +2086,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取我的评论历史",
                 "tags": [
                     "comment"
@@ -2170,11 +2136,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "分页获取课程评论",
                 "tags": [
                     "comment"
@@ -2207,11 +2168,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取课程开课校区",
                 "tags": [
                     "course"
@@ -2244,11 +2200,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取课程分类",
                 "tags": [
                     "course"
@@ -2281,11 +2232,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取课程开课院系",
                 "tags": [
                     "course"
@@ -2318,11 +2264,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取课程信息",
                 "tags": [
                     "course"
@@ -2375,11 +2316,6 @@ const docTemplate = `{
                         "description": "操作成功"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "点赞 / 取消点赞",
                 "tags": [
                     "like"
@@ -2421,11 +2357,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "新增提案",
                 "tags": [
                     "proposal"
@@ -2485,11 +2416,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取提案字段建议",
                 "tags": [
                     "proposal"
@@ -2573,11 +2499,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "分页筛选提案列表",
                 "tags": [
                     "proposal"
@@ -2619,11 +2540,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取我的提案",
                 "tags": [
                     "proposal"
@@ -2665,11 +2581,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "分页获取提案列表",
                 "tags": [
                     "proposal"
@@ -2720,11 +2631,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取提案搜索建议",
                 "tags": [
                     "proposal"
@@ -2757,11 +2663,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取提案详情",
                 "tags": [
                     "proposal"
@@ -2814,11 +2715,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "审批提案",
                 "tags": [
                     "proposal"
@@ -2860,11 +2756,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "删除提案",
                 "tags": [
                     "proposal"
@@ -2917,11 +2808,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "拒绝提案",
                 "tags": [
                     "proposal"
@@ -2974,11 +2860,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "撤回提案操作",
                 "tags": [
                     "proposal"
@@ -3031,11 +2912,6 @@ const docTemplate = `{
                         "description": "更新成功响应"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "更新提案内容",
                 "tags": [
                     "proposal"
@@ -3077,11 +2953,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "搜索课程列表",
                 "tags": [
                     "course"
@@ -3103,11 +2974,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取最近搜索历史",
                 "tags": [
                     "search"
@@ -3140,11 +3006,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取搜索建议",
                 "tags": [
                     "search"
@@ -3166,11 +3027,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取吐槽总数",
                 "tags": [
                     "comment"
@@ -3212,11 +3068,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "新建教师",
                 "tags": [
                     "teacher"
@@ -3249,11 +3100,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取教师搜索建议",
                 "tags": [
                     "teacher"
@@ -3275,11 +3121,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "获取当前用户资料",
                 "tags": [
                     "user"
@@ -3321,11 +3162,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "更新当前用户资料",
                 "tags": [
                     "user"
@@ -3358,11 +3194,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "summary": "根据用户 ID 获取昵称",
                 "tags": [
                     "user"
@@ -3371,6 +3202,11 @@ const docTemplate = `{
         }
     },
     "openapi": "3.1.0",
+    "security": [
+        {
+            "Bearer": []
+        }
+    ],
     "servers": [
         {
             "url": "/"

@@ -1253,8 +1253,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GrantAdminResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 授予管理员权限
       tags:
       - auth
@@ -1268,8 +1266,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_IsAdminResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 是否管理员
       tags:
       - auth
@@ -1293,6 +1289,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_SignInResp'
           description: OK
+      security: []
       summary: 登录
       tags:
       - auth
@@ -1317,8 +1314,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_ListChangeLogsResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 分页查询变更记录
       tags:
       - changeLog
@@ -1350,8 +1345,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_ListProposalLogsGroupedResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 按提案聚合的日志列表
       tags:
       - changeLog
@@ -1383,8 +1376,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_ListProposalLogsTimelineResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 扁平化时间线日志
       tags:
       - changeLog
@@ -1409,8 +1400,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_CreateCommentResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 发布课程评论
       tags:
       - comment
@@ -1435,8 +1424,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetMyCommentsResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取我的评论历史
       tags:
       - comment
@@ -1469,8 +1456,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_ListCourseCommentsResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 分页获取课程评论
       tags:
       - comment
@@ -1491,8 +1476,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetCourseResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取课程信息
       tags:
       - course
@@ -1513,8 +1496,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetCourseCampusesResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取课程开课校区
       tags:
       - course
@@ -1535,8 +1516,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetCourseCategoriesResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取课程分类
       tags:
       - course
@@ -1557,8 +1536,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetCourseDepartmentsResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取课程开课院系
       tags:
       - course
@@ -1590,8 +1567,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_ToggleLikeResp'
           description: 操作成功
-      security:
-      - Bearer: []
       summary: 点赞 / 取消点赞
       tags:
       - like
@@ -1612,8 +1587,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetProposalResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取提案详情
       tags:
       - proposal
@@ -1645,8 +1618,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_ToggleProposalResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 审批提案
       tags:
       - proposal
@@ -1672,8 +1643,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_DeleteProposalResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 删除提案
       tags:
       - proposal
@@ -1711,8 +1680,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_RejectProposalResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 拒绝提案
       tags:
       - proposal
@@ -1744,8 +1711,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_RevokeProposalResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 撤回提案操作
       tags:
       - proposal
@@ -1777,8 +1742,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_UpdateProposalResp'
           description: 更新成功响应
-      security:
-      - Bearer: []
       summary: 更新提案内容
       tags:
       - proposal
@@ -1803,8 +1766,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_CreateProposalResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 新增提案
       tags:
       - proposal
@@ -1843,8 +1804,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/dto.GetProposalFieldSuggestionsResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取提案字段建议
       tags:
       - proposal
@@ -1899,8 +1858,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_ListProposalResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 分页筛选提案列表
       tags:
       - proposal
@@ -1928,8 +1885,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetMyProposalsResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取我的提案
       tags:
       - proposal
@@ -1956,8 +1911,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_ListProposalResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 分页获取提案列表
       tags:
       - proposal
@@ -1990,8 +1943,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetProposalSuggestionsResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取提案搜索建议
       tags:
       - proposal
@@ -2016,8 +1967,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_ListCoursesResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 搜索课程列表
       tags:
       - course
@@ -2031,8 +1980,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetSearchHistoriesResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取最近搜索历史
       tags:
       - search
@@ -2059,8 +2006,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetSearchSuggestionsResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取搜索建议
       tags:
       - search
@@ -2074,8 +2019,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetTotalCourseCommentsCountResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取吐槽总数
       tags:
       - comment
@@ -2100,8 +2043,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_CreateTeacherResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 新建教师
       tags:
       - teacher
@@ -2122,8 +2063,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetTeacherSuggestionsResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取教师搜索建议
       tags:
       - teacher
@@ -2144,8 +2083,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetUsernameByUserIDResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 根据用户 ID 获取昵称
       tags:
       - user
@@ -2159,8 +2096,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_GetUserProfileResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 获取当前用户资料
       tags:
       - user
@@ -2185,10 +2120,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_UpdateUserProfileResp'
           description: OK
-      security:
-      - Bearer: []
       summary: 更新当前用户资料
       tags:
       - user
+security:
+- Bearer: []
 servers:
 - url: /

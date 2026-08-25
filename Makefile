@@ -16,4 +16,4 @@ swagger:
 		--parseDependency \
 		--parseInternal \
 		--output docs
-	perl -0pi -e 's/"bearerauth":/"Bearer":/g; s/\bbearerauth:/Bearer:/g' docs/docs.go docs/swagger.json docs/swagger.yaml
+	perl -0pi -e 's/"bearerauth":/"Bearer":/g; s/\bbearerauth:/Bearer:/g; s/"security": \[\s*\{\s*"": \[\]\s*\}\s*\]/"security": []/g; s/security:\n([ \t]*)- "": \[\]/security: []/g' docs/docs.go docs/swagger.json docs/swagger.yaml

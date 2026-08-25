@@ -29,6 +29,7 @@ import (
 // @Produce json
 // @Param body body dto.SignInReq true "SignInReq"
 // @Success 200 {object} Response[dto.SignInResp]
+// @Security
 // @Router /api/auth/sign_in [post]
 func SignIn(c *gin.Context) {
 	var err error
@@ -53,7 +54,6 @@ func SignIn(c *gin.Context) {
 // @Tags auth
 // @Produce json
 // @Success 200 {object} Response[dto.IsAdminResp]
-// @Security Bearer
 // @Router /api/auth/is_admin [get]
 func IsAdmin(c *gin.Context) {
 	var err error
@@ -73,7 +73,6 @@ func IsAdmin(c *gin.Context) {
 // @Produce json
 // @Param body body dto.GrantAdminReq true "GrantAdminReq"
 // @Success 200 {object} Response[dto.GrantAdminResp]
-// @Security Bearer
 // @Router /api/auth/grant_admin [post]
 func GrantAdmin(c *gin.Context) {
 	var err error

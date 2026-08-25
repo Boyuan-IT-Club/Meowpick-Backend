@@ -28,7 +28,6 @@ import (
 // @Tags user
 // @Produce json
 // @Success 200 {object} Response[dto.GetUserProfileResp]
-// @Security Bearer
 // @Router /api/user/profile [get]
 func GetUserProfile(c *gin.Context) {
 	c.Set(consts.CtxUserID, token.GetUserID(c))
@@ -43,7 +42,6 @@ func GetUserProfile(c *gin.Context) {
 // @Produce json
 // @Param userId path string true "用户 ID"
 // @Success 200 {object} Response[dto.GetUsernameByUserIDResp]
-// @Security Bearer
 // @Router /api/user/{userId}/username [get]
 func GetUsernameByUserID(c *gin.Context) {
 	c.Set(consts.CtxUserID, token.GetUserID(c))
@@ -59,7 +57,6 @@ func GetUsernameByUserID(c *gin.Context) {
 // @Produce json
 // @Param body body dto.UpdateUserProfileReq true "UpdateUserProfileReq"
 // @Success 200 {object} Response[dto.UpdateUserProfileResp]
-// @Security Bearer
 // @Router /api/user/profile/update [post]
 func UpdateUserProfile(c *gin.Context) {
 	var req dto.UpdateUserProfileReq
