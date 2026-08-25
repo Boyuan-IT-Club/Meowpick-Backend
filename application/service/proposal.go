@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -276,12 +277,34 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 	}, nil
 }
 
+// normalizeJSONArrayParam 兼容前端将数组序列化为 JSON 字符串的 query 传参方式
+// 例如 ?status=["pending","approved"] 会被展开为 ["pending", "approved"]
+func normalizeJSONArrayParam(values []string) []string {
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if strings.HasPrefix(trimmed, "[") {
+			var arr []string
+			if err := json.Unmarshal([]byte(trimmed), &arr); err == nil {
+				result = append(result, arr...)
+				continue
+			}
+		}
+		result = append(result, value)
+	}
+	return result
+}
+
 // FilterProposals 分页筛选提案列表
 func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterProposalReq) (*dto.ListProposalResp, error) {
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
+
+	// 兼容 JSON 字符串风格的数组传参
+	req.Statuses = normalizeJSONArrayParam(req.Statuses)
+	req.Campuses = normalizeJSONArrayParam(req.Campuses)
 
 	// 角色判断：查询失败则按普通用户处理
 	isAdmin, err := s.UserRepo.IsAdminByID(ctx, userId)
@@ -327,7 +350,7 @@ func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterPr
 			}
 		}
 		if !valid {
-			return nil, errorx.New(errno.ErrProposalGetStatusFailed,
+			return nil, errorx.New(errno.ErrProposalInvalidCampus,
 				errorx.KV("key", consts.Campuses),
 				errorx.KV("value", campusName),
 			)
