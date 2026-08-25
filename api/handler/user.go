@@ -36,6 +36,21 @@ func GetUserProfile(c *gin.Context) {
 	PostProcess(c, nil, resp, err)
 }
 
+// GetUsernameByUserID godoc
+// @Summary 根据用户 ID 获取昵称
+// @Description 根据用户 ID 获取该用户设置的昵称
+// @Tags user
+// @Produce json
+// @Param userId path string true "用户 ID"
+// @Success 200 {object} Response[dto.GetUsernameByUserIDResp]
+// @Security Bearer
+// @Router /api/user/{userId}/username [get]
+func GetUsernameByUserID(c *gin.Context) {
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+	resp, err := provider.Get().UserService.GetUsernameByUserID(c, c.Param("userId"))
+	PostProcess(c, nil, resp, err)
+}
+
 // UpdateUserProfile godoc
 // @Summary 更新当前用户资料
 // @Description 更新当前登录用户的昵称和头像；字段未传或为 null 时保持原值，空字符串用于清空
