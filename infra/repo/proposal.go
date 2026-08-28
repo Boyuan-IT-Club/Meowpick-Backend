@@ -40,6 +40,7 @@ const (
 )
 
 type IProposalRepo interface {
+	WithTransaction(ctx context.Context, fn func(mongo.SessionContext) error) error
 	Insert(ctx context.Context, proposal *model.Proposal) error
 	IsCourseInExistingProposals(ctx context.Context, course *model.ProposalCourse) (bool, error)
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
@@ -66,11 +67,40 @@ type ProposalRepo struct {
 func NewProposalRepo(cfg *config.Config) (*ProposalRepo, error) {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, ProposalCollectionName, cfg.Cache)
 	repository := &ProposalRepo{conn: conn}
+	if err := repository.ensureTransactionSupport(context.Background()); err != nil {
+		return nil, err
+	}
 	if err := repository.ensureIndexes(context.Background()); err != nil {
 		return nil, err
 	}
 
 	return repository, nil
+}
+
+func (r *ProposalRepo) ensureTransactionSupport(ctx context.Context) error {
+	var hello bson.M
+	if err := r.conn.Database().RunCommand(ctx, bson.D{{Key: "hello", Value: 1}}).Decode(&hello); err != nil {
+		return fmt.Errorf("MongoDB transaction preflight: %w", err)
+	}
+	if msg, _ := hello["msg"].(string); msg == "isdbgrid" {
+		return nil
+	}
+	if setName, _ := hello["setName"].(string); setName != "" {
+		return nil
+	}
+	return errors.New("MongoDB transactions require a replica set or sharded deployment")
+}
+
+func (r *ProposalRepo) WithTransaction(ctx context.Context, fn func(mongo.SessionContext) error) error {
+	session, err := r.conn.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(ctx)
+	_, err = session.WithTransaction(ctx, func(sessionContext mongo.SessionContext) (any, error) {
+		return nil, fn(sessionContext)
+	})
+	return err
 }
 
 // ensureIndexes 创建 proposal 集合所需的索引。CreateOne 对同名同定义索引是幂等的，

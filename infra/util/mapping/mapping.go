@@ -16,19 +16,25 @@ package mapping
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/mapping"
+	typemapping "github.com/Boyuan-IT-Club/Meowpick-Backend/types/mapping"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// StaticData 存放所有静态映射数据
+// StaticData retains static process-local maps for immutable enum-like values.
+// Campus, department, and category maps are only fallbacks before runtime
+// dependencies are initialized (primarily unit tests and migration seeds).
 type StaticData struct {
 	CampusNameByID              map[int32]string
 	DepartmentNameByID          map[int32]string
@@ -42,164 +48,443 @@ type StaticData struct {
 	ProposalStatusIDByName      map[string]int32
 	LikeTargetTypeIDByName      map[string]int32
 	ChangeLogTargetTypeIDByName map[string]int32
-	// 数据库和缓存依赖
+
 	mappingRepo  *repo.MappingRepo
 	mappingCache *cache.MappingCache
-	mutex        sync.RWMutex // 用于并发安全
+	mutex        sync.RWMutex
 }
 
-var Data = &StaticData{
-	CampusNameByID:              make(map[int32]string),
-	DepartmentNameByID:          make(map[int32]string),
-	CategoryNameByID:            make(map[int32]string),
-	ProposalStatusNameByID:      make(map[int32]string),
-	LikeTargetTypeNameByID:      make(map[int32]string),
-	ChangeLogTargetTypeNameByID: make(map[int32]string),
-	CampusIDByName:              make(map[string]int32),
-	DepartmentIDByName:          make(map[string]int32),
-	CategoryIDByName:            make(map[string]int32),
-	ProposalStatusIDByName:      make(map[string]int32),
-	LikeTargetTypeIDByName:      make(map[string]int32),
-	ChangeLogTargetTypeIDByName: make(map[string]int32),
+var Data = newStaticData()
+
+func newStaticData() *StaticData {
+	d := &StaticData{
+		CampusNameByID:              cloneMap(typemapping.CampusesMap),
+		DepartmentNameByID:          cloneMap(typemapping.DepartmentsMap),
+		CategoryNameByID:            cloneMap(typemapping.CategoriesMap),
+		ProposalStatusNameByID:      cloneMap(typemapping.ProposalStatusMap),
+		LikeTargetTypeNameByID:      cloneMap(typemapping.LikeTargetTypeMap),
+		ChangeLogTargetTypeNameByID: cloneMap(typemapping.ChangeLogTargetTypeMap),
+	}
+	d.CampusIDByName = reverseMap(d.CampusNameByID)
+	d.DepartmentIDByName = reverseMap(d.DepartmentNameByID)
+	d.CategoryIDByName = reverseMap(d.CategoryNameByID)
+	d.ProposalStatusIDByName = reverseMap(d.ProposalStatusNameByID)
+	d.LikeTargetTypeIDByName = reverseMap(d.LikeTargetTypeNameByID)
+	d.ChangeLogTargetTypeIDByName = reverseMap(d.ChangeLogTargetTypeNameByID)
+	return d
 }
 
-func init() {
-	for k, v := range mapping.CampusesMap {
-		Data.CampusNameByID[k] = v
+func cloneMap(source map[int32]string) map[int32]string {
+	result := make(map[int32]string, len(source))
+	for code, name := range source {
+		result[code] = name
 	}
-	for k, v := range mapping.DepartmentsMap {
-		Data.DepartmentNameByID[k] = v
-	}
-	for k, v := range mapping.CategoriesMap {
-		Data.CategoryNameByID[k] = v
-	}
-	for k, v := range mapping.ProposalStatusMap {
-		Data.ProposalStatusNameByID[k] = v
-	}
-	for k, v := range mapping.LikeTargetTypeMap {
-		Data.LikeTargetTypeNameByID[k] = v
-	}
-	for k, v := range mapping.ChangeLogTargetTypeMap {
-		Data.ChangeLogTargetTypeNameByID[k] = v
-	}
-
-	for id, name := range Data.CampusNameByID {
-		Data.CampusIDByName[name] = id
-	}
-	for id, name := range Data.DepartmentNameByID {
-		Data.DepartmentIDByName[name] = id
-	}
-	for id, name := range Data.CategoryNameByID {
-		Data.CategoryIDByName[name] = id
-	}
-	for id, name := range Data.ProposalStatusNameByID {
-		Data.ProposalStatusIDByName[name] = id
-	}
-	for id, name := range Data.LikeTargetTypeNameByID {
-		Data.LikeTargetTypeIDByName[name] = id
-	}
-	for id, name := range Data.ChangeLogTargetTypeNameByID {
-		Data.ChangeLogTargetTypeIDByName[name] = id
-	}
+	return result
 }
 
-// InitWithDependencies 初始化映射工具类的数据库和缓存依赖
+func reverseMap(source map[int32]string) map[string]int32 {
+	result := make(map[string]int32, len(source))
+	for code, name := range source {
+		result[name] = code
+	}
+	return result
+}
+
 type MappingDependencies struct {
 	MappingRepo  *repo.MappingRepo
 	MappingCache *cache.MappingCache
 }
 
-func (d *StaticData) InitWithDependencies(deps *MappingDependencies) {
-	if deps == nil {
-		logs.Errorf("[Mapping] dependencies is nil")
-		return
+// InitWithDependencies loads MongoDB's complete mapping set, warms Redis using
+// temporary hashes, and only then exposes the new in-process fuzzy-search snapshot.
+func (d *StaticData) InitWithDependencies(ctx context.Context, deps *MappingDependencies) error {
+	if deps == nil || deps.MappingRepo == nil || deps.MappingCache == nil {
+		return errors.New("mapping dependencies are incomplete")
 	}
-
+	d.mutex.Lock()
 	d.mappingRepo = deps.MappingRepo
 	d.mappingCache = deps.MappingCache
-
-	// 加载数据库中的动态映射数据到内存
-	ctx := context.Background()
-	if err := d.loadDynamicMappings(ctx); err != nil {
-		logs.Errorf("[Mapping] Failed to load dynamic mappings: %v", err)
-	}
+	d.mutex.Unlock()
+	return d.Refresh(ctx)
 }
 
-// loadDynamicMappings 从数据库加载动态映射数据到内存
-func (d *StaticData) loadDynamicMappings(ctx context.Context) error {
-	logs.Info("[Mapping] Starting to load dynamic mappings from database")
-
-	// 加载校区映射
-	campusMappings, err := d.mappingRepo.FindAllByType(ctx, model.MappingTypeCampus)
+// Refresh rebuilds Redis and the local fuzzy-search snapshot from MongoDB. This
+// is also called after a transaction creates new reference mappings.
+func (d *StaticData) Refresh(ctx context.Context) error {
+	d.mutex.RLock()
+	mappingRepo := d.mappingRepo
+	mappingCache := d.mappingCache
+	d.mutex.RUnlock()
+	if mappingRepo == nil || mappingCache == nil {
+		return errors.New("mapping dependencies are not initialized")
+	}
+	if err := mappingRepo.SyncCounters(ctx); err != nil {
+		return fmt.Errorf("sync mapping counters: %w", err)
+	}
+	mappings, err := mappingRepo.FindAll(ctx)
 	if err != nil {
+		return fmt.Errorf("load mappings: %w", err)
+	}
+	if err := validateMappings(mappings); err != nil {
 		return err
 	}
-	for _, m := range campusMappings {
-		d.CampusNameByID[m.Code] = m.Name
-		d.CampusIDByName[m.Name] = m.Code
+	if err := mappingCache.Warm(ctx, mappings); err != nil {
+		return fmt.Errorf("warm mapping cache: %w", err)
 	}
-	logs.Infof("[Mapping] Loaded %d campus mappings", len(campusMappings))
 
-	// 加载院系映射
-	deptMappings, err := d.mappingRepo.FindAllByType(ctx, model.MappingTypeDepartment)
-	if err != nil {
-		return err
+	campusByID, departmentByID, categoryByID := map[int32]string{}, map[int32]string{}, map[int32]string{}
+	campusByName, departmentByName, categoryByName := map[string]int32{}, map[string]int32{}, map[string]int32{}
+	for _, mapping := range mappings {
+		switch mapping.Type {
+		case model.MappingTypeCampus:
+			campusByID[mapping.Code] = mapping.Name
+			if mapping.Canonical {
+				campusByName[mapping.Name] = mapping.Code
+			}
+		case model.MappingTypeDepartment:
+			departmentByID[mapping.Code] = mapping.Name
+			if mapping.Canonical {
+				departmentByName[mapping.Name] = mapping.Code
+			}
+		case model.MappingTypeCategory:
+			categoryByID[mapping.Code] = mapping.Name
+			if mapping.Canonical {
+				categoryByName[mapping.Name] = mapping.Code
+			}
+		}
 	}
-	for _, m := range deptMappings {
-		d.DepartmentNameByID[m.Code] = m.Name
-		d.DepartmentIDByName[m.Name] = m.Code
-	}
-	logs.Infof("[Mapping] Loaded %d department mappings", len(deptMappings))
 
-	// 加载课程类别映射
-	categoryMappings, err := d.mappingRepo.FindAllByType(ctx, model.MappingTypeCategory)
-	if err != nil {
-		return err
-	}
-	for _, m := range categoryMappings {
-		d.CategoryNameByID[m.Code] = m.Name
-		d.CategoryIDByName[m.Name] = m.Code
-	}
-	logs.Infof("[Mapping] Loaded %d category mappings", len(categoryMappings))
+	d.mutex.Lock()
+	d.CampusNameByID, d.CampusIDByName = campusByID, campusByName
+	d.DepartmentNameByID, d.DepartmentIDByName = departmentByID, departmentByName
+	d.CategoryNameByID, d.CategoryIDByName = categoryByID, categoryByName
+	d.mutex.Unlock()
+	logs.Infof("[Mapping] warmed %d MongoDB mappings into Redis", len(mappings))
+	return nil
+}
 
-	logs.Info("[Mapping] Dynamic mappings loaded successfully")
+func validateMappings(mappings []*model.Mapping) error {
+	canonicalCount := make(map[string]int, len(mappings))
+	seenCodes := make(map[string]string, len(mappings))
+	for _, mapping := range mappings {
+		if mapping == nil || mapping.Code <= 0 || strings.TrimSpace(mapping.Name) == "" {
+			return fmt.Errorf("invalid mapping record: %+v", mapping)
+		}
+		if mapping.Type < model.MappingTypeDepartment || mapping.Type > model.MappingTypeCampus {
+			return fmt.Errorf("unsupported mapping type %d", mapping.Type)
+		}
+		nameKey := fmt.Sprintf("%d:%s", mapping.Type, mapping.Name)
+		codeKey := fmt.Sprintf("%d:%d", mapping.Type, mapping.Code)
+		if oldName, ok := seenCodes[codeKey]; ok && oldName != mapping.Name {
+			return fmt.Errorf("mapping conflict: type=%d code=%d has names %q and %q", mapping.Type, mapping.Code, oldName, mapping.Name)
+		}
+		if mapping.Canonical {
+			canonicalCount[nameKey]++
+		}
+		seenCodes[codeKey] = mapping.Name
+	}
+	for nameKey, count := range canonicalCount {
+		if count != 1 {
+			return fmt.Errorf("mapping conflict: %s has %d canonical codes", nameKey, count)
+		}
+	}
+	uniqueNames := make(map[string]struct{}, len(mappings))
+	for _, mapping := range mappings {
+		uniqueNames[fmt.Sprintf("%d:%s", mapping.Type, mapping.Name)] = struct{}{}
+	}
+	for nameKey := range uniqueNames {
+		if canonicalCount[nameKey] != 1 {
+			return fmt.Errorf("mapping conflict: %s has no single canonical code", nameKey)
+		}
+	}
 	return nil
 }
 
 func (d *StaticData) GetCampusNameByID(id int32) string {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-
-	if name, ok := d.CampusNameByID[id]; ok {
-		return name
-	}
-	return "未知校区"
+	return d.getNameByCode(model.MappingTypeCampus, id, "未知校区")
 }
 
 func (d *StaticData) GetDepartmentNameByID(id int32) string {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-
-	if name, ok := d.DepartmentNameByID[id]; ok {
-		return name
-	}
-	return "未知开课院系"
+	return d.getNameByCode(model.MappingTypeDepartment, id, "未知开课院系")
 }
 
 func (d *StaticData) GetCategoryNameByID(id int32) string {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
+	return d.getNameByCode(model.MappingTypeCategory, id, "未知分类")
+}
 
-	if name, ok := d.CategoryNameByID[id]; ok {
+func (d *StaticData) getNameByCode(mappingType model.MappingType, code int32, unknown string) string {
+	if code <= 0 {
+		return unknown
+	}
+	d.mutex.RLock()
+	mappingRepo, mappingCache := d.mappingRepo, d.mappingCache
+	d.mutex.RUnlock()
+	if mappingRepo == nil || mappingCache == nil {
+		if name, ok := d.snapshotName(mappingType, code); ok {
+			return name
+		}
+		return unknown
+	}
+	ctx := context.Background()
+	if name, hit, err := mappingCache.GetNameByCode(ctx, mappingType, code); err == nil && hit {
 		return name
 	}
-	return "未知分类"
+	mapping, err := mappingRepo.FindByCodeAndType(ctx, code, mappingType)
+	if err != nil || mapping == nil {
+		return unknown
+	}
+	if err := mappingCache.SetMapping(ctx, mapping); err != nil {
+		logs.Errorf("[Mapping] refill code cache: %v", err)
+	}
+	d.updateSnapshot(mapping)
+	return mapping.Name
+}
+
+func (d *StaticData) GetCampusIDByName(name string) int32 {
+	return d.getCodeByName(model.MappingTypeCampus, name)
+}
+
+func (d *StaticData) GetDepartmentIDByName(name string) int32 {
+	return d.getCodeByName(model.MappingTypeDepartment, name)
+}
+
+func (d *StaticData) GetCategoryIDByName(name string) int32 {
+	return d.getCodeByName(model.MappingTypeCategory, name)
+}
+
+func (d *StaticData) getCodeByName(mappingType model.MappingType, name string) int32 {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return 0
+	}
+	d.mutex.RLock()
+	mappingRepo, mappingCache := d.mappingRepo, d.mappingCache
+	d.mutex.RUnlock()
+	if mappingRepo == nil || mappingCache == nil {
+		if code, ok := d.snapshotCode(mappingType, name); ok {
+			return code
+		}
+		return 0
+	}
+	ctx := context.Background()
+	if code, hit, err := mappingCache.GetCodeByKey(ctx, mappingType, name); err == nil && hit {
+		return code
+	}
+	mapping, err := mappingRepo.FindByNameAndType(ctx, name, mappingType)
+	if err != nil || mapping == nil {
+		return 0
+	}
+	if err := mappingCache.SetMapping(ctx, mapping); err != nil {
+		logs.Errorf("[Mapping] refill name cache: %v", err)
+	}
+	d.updateSnapshot(mapping)
+	return mapping.Code
+}
+
+// GetNamesByCodes returns values in the same order as codes and uses HMGET for
+// the common path. Only misses are fetched from MongoDB in one query.
+func (d *StaticData) GetNamesByCodes(ctx context.Context, mappingType model.MappingType, codes []int32, unknown string) []string {
+	result := make([]string, len(codes))
+	if len(codes) == 0 {
+		return result
+	}
+	d.mutex.RLock()
+	mappingRepo, mappingCache := d.mappingRepo, d.mappingCache
+	d.mutex.RUnlock()
+	if mappingRepo == nil || mappingCache == nil {
+		for i, code := range codes {
+			if name, ok := d.snapshotName(mappingType, code); ok {
+				result[i] = name
+			} else {
+				result[i] = unknown
+			}
+		}
+		return result
+	}
+
+	values, err := mappingCache.GetNamesByCodes(ctx, mappingType, codes)
+	missing := make([]int32, 0)
+	seenMissing := make(map[int32]struct{})
+	for i, code := range codes {
+		if err == nil && i < len(values) && values[i] != "" {
+			result[i] = values[i]
+			continue
+		}
+		if _, seen := seenMissing[code]; !seen {
+			missing = append(missing, code)
+			seenMissing[code] = struct{}{}
+		}
+	}
+	if len(missing) > 0 {
+		mappings, findErr := mappingRepo.FindByCodes(ctx, mappingType, missing)
+		if findErr == nil {
+			byCode := make(map[int32]string, len(mappings))
+			for _, mapping := range mappings {
+				byCode[mapping.Code] = mapping.Name
+				d.updateSnapshot(mapping)
+				if cacheErr := mappingCache.SetMapping(ctx, mapping); cacheErr != nil {
+					logs.Errorf("[Mapping] refill batch cache: %v", cacheErr)
+				}
+			}
+			for i, code := range codes {
+				if result[i] == "" {
+					result[i] = byCode[code]
+				}
+			}
+		}
+	}
+	for i := range result {
+		if result[i] == "" {
+			result[i] = unknown
+		}
+	}
+	return result
+}
+
+// ResolveOrCreateDepartment and ResolveOrCreateCategory persist to MongoDB first.
+// Redis is updated only outside a MongoDB transaction; callers refresh after commit.
+func (d *StaticData) ResolveOrCreateDepartment(ctx context.Context, name string) (int32, error) {
+	return d.resolveOrCreate(ctx, model.MappingTypeDepartment, name)
+}
+
+func (d *StaticData) ResolveOrCreateCategory(ctx context.Context, name string) (int32, error) {
+	return d.resolveOrCreate(ctx, model.MappingTypeCategory, name)
+}
+
+func (d *StaticData) ResolveCampus(ctx context.Context, name string) (int32, error) {
+	name = strings.TrimSpace(name)
+	d.mutex.RLock()
+	mappingRepo := d.mappingRepo
+	d.mutex.RUnlock()
+	if mappingRepo == nil {
+		code := d.GetCampusIDByName(name)
+		if code == 0 {
+			return 0, fmt.Errorf("unknown campus %q", name)
+		}
+		return code, nil
+	}
+	mapping, err := mappingRepo.FindByNameAndType(ctx, name, model.MappingTypeCampus)
+	if err != nil {
+		return 0, err
+	}
+	if mapping == nil {
+		return 0, fmt.Errorf("unknown campus %q", name)
+	}
+	return mapping.Code, nil
+}
+
+func (d *StaticData) resolveOrCreate(ctx context.Context, mappingType model.MappingType, name string) (int32, error) {
+	d.mutex.RLock()
+	mappingRepo, mappingCache := d.mappingRepo, d.mappingCache
+	d.mutex.RUnlock()
+	if mappingRepo == nil {
+		return 0, errors.New("mapping repository is not initialized")
+	}
+	mapping, _, err := mappingRepo.CreateOrGet(ctx, mappingType, name)
+	if err != nil {
+		return 0, err
+	}
+	if _, inTransaction := ctx.(mongo.SessionContext); !inTransaction {
+		d.updateSnapshot(mapping)
+		if mappingCache != nil {
+			if err := mappingCache.SetMapping(ctx, mapping); err != nil {
+				return mapping.Code, fmt.Errorf("mapping persisted but Redis update failed: %w", err)
+			}
+		}
+	}
+	return mapping.Code, nil
+}
+
+// Deprecated compatibility wrappers. Transactional proposal paths use the
+// context-aware methods above so errors can never be silently converted to code 0.
+func (d *StaticData) AutoRegisterDepartment(name string) int32 {
+	code, err := d.ResolveOrCreateDepartment(context.Background(), name)
+	if err != nil {
+		logs.Errorf("[Mapping] register department %q: %v", name, err)
+	}
+	return code
+}
+
+func (d *StaticData) AutoRegisterCategory(name string) int32 {
+	code, err := d.ResolveOrCreateCategory(context.Background(), name)
+	if err != nil {
+		logs.Errorf("[Mapping] register category %q: %v", name, err)
+	}
+	return code
+}
+
+// AutoRegisterCampus intentionally never creates a campus. Campus registration
+// is an explicit migration/administrative operation.
+func (d *StaticData) AutoRegisterCampus(name string) int32 {
+	code, err := d.ResolveCampus(context.Background(), name)
+	if err != nil {
+		logs.Errorf("[Mapping] resolve campus %q: %v", name, err)
+	}
+	return code
+}
+
+func (d *StaticData) snapshotName(mappingType model.MappingType, code int32) (string, bool) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	switch mappingType {
+	case model.MappingTypeCampus:
+		name, ok := d.CampusNameByID[code]
+		return name, ok
+	case model.MappingTypeDepartment:
+		name, ok := d.DepartmentNameByID[code]
+		return name, ok
+	case model.MappingTypeCategory:
+		name, ok := d.CategoryNameByID[code]
+		return name, ok
+	default:
+		return "", false
+	}
+}
+
+func (d *StaticData) snapshotCode(mappingType model.MappingType, name string) (int32, bool) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	switch mappingType {
+	case model.MappingTypeCampus:
+		code, ok := d.CampusIDByName[name]
+		return code, ok
+	case model.MappingTypeDepartment:
+		code, ok := d.DepartmentIDByName[name]
+		return code, ok
+	case model.MappingTypeCategory:
+		code, ok := d.CategoryIDByName[name]
+		return code, ok
+	default:
+		return 0, false
+	}
+}
+
+func (d *StaticData) updateSnapshot(mapping *model.Mapping) {
+	if mapping == nil {
+		return
+	}
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	switch mapping.Type {
+	case model.MappingTypeCampus:
+		d.CampusNameByID[mapping.Code] = mapping.Name
+		if mapping.Canonical {
+			d.CampusIDByName[mapping.Name] = mapping.Code
+		}
+	case model.MappingTypeDepartment:
+		d.DepartmentNameByID[mapping.Code] = mapping.Name
+		if mapping.Canonical {
+			d.DepartmentIDByName[mapping.Name] = mapping.Code
+		}
+	case model.MappingTypeCategory:
+		d.CategoryNameByID[mapping.Code] = mapping.Name
+		if mapping.Canonical {
+			d.CategoryIDByName[mapping.Name] = mapping.Code
+		}
+	}
 }
 
 func (d *StaticData) GetProposalStatusNameByID(id int32) string {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-
 	if name, ok := d.ProposalStatusNameByID[id]; ok {
 		return name
 	}
@@ -207,9 +492,6 @@ func (d *StaticData) GetProposalStatusNameByID(id int32) string {
 }
 
 func (d *StaticData) GetLikeTargetTypeNameByID(id int32) string {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-
 	if name, ok := d.LikeTargetTypeNameByID[id]; ok {
 		return name
 	}
@@ -223,184 +505,18 @@ func (d *StaticData) GetChangeLogTargetTypeNameByID(id int32) string {
 	return "未知变更记录类型"
 }
 
-func (d *StaticData) GetCampusIDByName(name string) int32 {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-
-	if id, ok := d.CampusIDByName[name]; ok {
-		return id
-	}
-	return 0
-}
-
-func (d *StaticData) GetDepartmentIDByName(name string) int32 {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-	if id, ok := d.DepartmentIDByName[name]; ok {
-		return id
-	}
-	return 0
-}
-
-func (d *StaticData) GetCategoryIDByName(name string) int32 {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-
-	if id, ok := d.CategoryIDByName[name]; ok {
-		return id
-	}
-	return 0
-}
-
 func (d *StaticData) GetProposalStatusIDByName(name string) int32 {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-
-	if id, ok := d.ProposalStatusIDByName[name]; ok {
-		return id
-	}
-	return 0
+	return d.ProposalStatusIDByName[name]
 }
 
 func (d *StaticData) GetLikeTargetTypeIDByName(name string) int32 {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-
-	if id, ok := d.LikeTargetTypeIDByName[name]; ok {
-		return id
-	}
-	return 0
+	return d.LikeTargetTypeIDByName[name]
 }
 
-// AutoRegisterDepartment 自动注册不存在的院系，返回其ID
-func (d *StaticData) AutoRegisterDepartment(name string) int32 {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	return d.autoRegisterMapping(name, model.MappingTypeDepartment,
-		func(id int32, name string) {
-			d.DepartmentNameByID[id] = name
-			d.DepartmentIDByName[name] = id
-		})
-}
-
-// AutoRegisterCategory 自动注册不存在的类别，返回其ID
-func (d *StaticData) AutoRegisterCategory(name string) int32 {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	return d.autoRegisterMapping(name, model.MappingTypeCategory,
-		func(id int32, name string) {
-			d.CategoryNameByID[id] = name
-			d.CategoryIDByName[name] = id
-		})
-}
-
-// AutoRegisterCampus 自动注册不存在的校区，返回其ID
-func (d *StaticData) AutoRegisterCampus(name string) int32 {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	return d.autoRegisterMapping(name, model.MappingTypeCampus,
-		func(id int32, name string) {
-			d.CampusNameByID[id] = name
-			d.CampusIDByName[name] = id
-		})
-}
-
-// autoRegisterMapping 通用的自动注册方法
-func (d *StaticData) autoRegisterMapping(name string, mappingType model.MappingType, updateFunc func(int32, string)) int32 {
-	if name == "" {
-		return 0
-	}
-
-	ctx := context.Background()
-
-	// 1. 先检查内存中是否已存在
-	switch mappingType {
-	case model.MappingTypeDepartment:
-		if id, ok := d.DepartmentIDByName[name]; ok {
-			return id
-		}
-	case model.MappingTypeCategory:
-		if id, ok := d.CategoryIDByName[name]; ok {
-			return id
-		}
-	case model.MappingTypeCampus:
-		if id, ok := d.CampusIDByName[name]; ok {
-			return id
-		}
-	}
-
-	// 2. 检查缓存中是否存在
-	if d.mappingCache != nil {
-		if id, hit, err := d.mappingCache.GetCodeByKey(ctx, mappingType, name); err == nil && hit {
-			updateFunc(id, name) // 同步到内存
-			return id
-		}
-	}
-
-	// 3. 查询数据库
-	if d.mappingRepo != nil {
-		if existing, err := d.mappingRepo.FindByNameAndType(ctx, name, mappingType); err == nil && existing != nil {
-			// 存在于数据库，同步到内存和缓存
-			updateFunc(existing.Code, name)
-			if d.mappingCache != nil {
-				d.mappingCache.SetCodeByKey(ctx, mappingType, name, existing.Code, cache.DefaultTTL)
-				d.mappingCache.SetNameByKey(ctx, mappingType, existing.Code, name, cache.DefaultTTL)
-			}
-			return existing.Code
-		}
-	}
-
-	// 4. 需要创建新的映射
-	if d.mappingRepo == nil {
-		logs.Errorf("[Mapping] mappingRepo is nil, cannot auto register mapping for type %d, name %s", mappingType, name)
-		return 0
-	}
-
-	maxCode, err := d.mappingRepo.FindMaxCodeByType(ctx, mappingType)
-	if err != nil {
-		logs.Errorf("[Mapping] Failed to find max code for type %d: %v", mappingType, err)
-		return 0
-	}
-
-	newID := maxCode + 1
-	newMapping := &model.Mapping{
-		Type: mappingType,
-		Name: name,
-		Code: newID,
-	}
-
-	// 保存到数据库
-	if err := d.mappingRepo.Insert(ctx, newMapping); err != nil {
-		logs.Errorf("[Mapping] Failed to insert new mapping: %v", err)
-		return 0
-	}
-
-	// 更新内存
-	updateFunc(newID, name)
-
-	// 更新缓存
-	if d.mappingCache != nil {
-		d.mappingCache.SetCodeByKey(ctx, mappingType, name, newID, cache.DefaultTTL)
-		d.mappingCache.SetNameByKey(ctx, mappingType, newID, name, cache.DefaultTTL)
-		// 清除列表缓存，因为有新数据加入
-		d.mappingCache.Invalidate(ctx, mappingType)
-	}
-
-	logs.Infof("[Mapping] Auto registered new mapping: type=%d, name=%s, code=%d", mappingType, name, newID)
-	return newID
-}
-
-// --- 搜索方法（正则+包含匹配）---
 func (d *StaticData) GetChangeLogTargetTypeIDByName(name string) int32 {
-	if id, ok := d.ChangeLogTargetTypeIDByName[name]; ok {
-		return id
-	}
-	return 0
+	return d.ChangeLogTargetTypeIDByName[name]
 }
 
-// --- 搜索方法 ---
-
-// GetBestCategoryIDByKeyword 根据关键词获取最匹配的单个分类 ID
 func (d *StaticData) GetBestCategoryIDByKeyword(keyword string) int32 {
 	ids := d.GetCategoryIDsByKeyword(keyword)
 	if len(ids) > 0 {
@@ -409,7 +525,6 @@ func (d *StaticData) GetBestCategoryIDByKeyword(keyword string) int32 {
 	return 0
 }
 
-// GetBestDepartmentIDByKeyword 根据关键词获取最匹配的单个部门 ID
 func (d *StaticData) GetBestDepartmentIDByKeyword(keyword string) int32 {
 	ids := d.GetDepartmentIDsByKeyword(keyword)
 	if len(ids) > 0 {
@@ -418,17 +533,61 @@ func (d *StaticData) GetBestDepartmentIDByKeyword(keyword string) int32 {
 	return 0
 }
 
-// GetCategoryIDsByKeyword 根据类别关键词快速查找匹配的分类 ID
 func (d *StaticData) GetCategoryIDsByKeyword(keyword string) []int32 {
-	return fuzzySearch(keyword, d.CategoryNameByID)
+	return fuzzySearch(keyword, d.mappingMapForSearch(model.MappingTypeCategory))
 }
 
-// GetDepartmentIDsByKeyword 根据部门关键词快速查找匹配的院系 ID
 func (d *StaticData) GetDepartmentIDsByKeyword(keyword string) []int32 {
-	return fuzzySearch(keyword, d.DepartmentNameByID)
+	return fuzzySearch(keyword, d.mappingMapForSearch(model.MappingTypeDepartment))
 }
 
-// 正则 + 包含模糊搜索，按匹配度排序
+func (d *StaticData) AllCampuses() map[int32]string {
+	return d.mappingMapForSearch(model.MappingTypeCampus)
+}
+
+func (d *StaticData) mappingMapForSearch(mappingType model.MappingType) map[int32]string {
+	d.mutex.RLock()
+	mappingRepo, mappingCache := d.mappingRepo, d.mappingCache
+	d.mutex.RUnlock()
+	if mappingRepo != nil && mappingCache != nil {
+		ctx := context.Background()
+		if cached, err := mappingCache.GetAllCodeToName(ctx, mappingType); err == nil && len(cached) > 0 {
+			result := make(map[int32]string, len(cached))
+			for field, name := range cached {
+				code, parseErr := strconv.ParseInt(field, 10, 32)
+				if parseErr == nil {
+					result[int32(code)] = name
+				}
+			}
+			if len(result) > 0 {
+				return result
+			}
+		}
+		if mappings, err := mappingRepo.FindAllByType(ctx, mappingType); err == nil {
+			result := make(map[int32]string, len(mappings))
+			for _, item := range mappings {
+				result[item.Code] = item.Name
+				if cacheErr := mappingCache.SetMapping(ctx, item); cacheErr != nil {
+					logs.Errorf("[Mapping] refill search cache: %v", cacheErr)
+				}
+			}
+			return result
+		}
+	}
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	switch mappingType {
+	case model.MappingTypeCampus:
+		return cloneMap(d.CampusNameByID)
+	case model.MappingTypeDepartment:
+		return cloneMap(d.DepartmentNameByID)
+	case model.MappingTypeCategory:
+		return cloneMap(d.CategoryNameByID)
+	default:
+		return map[int32]string{}
+	}
+}
+
 func fuzzySearch(keyword string, dataMap map[int32]string) []int32 {
 	keyword = strings.TrimSpace(keyword)
 	if keyword == "" {
@@ -440,28 +599,32 @@ func fuzzySearch(keyword string, dataMap map[int32]string) []int32 {
 	}
 	type result struct {
 		id    int32
-		score int // 匹配度分数
+		score int
 	}
-	var results []result
+	results := make([]result, 0)
 	for id, name := range dataMap {
-		nameLower := strings.ToLower(name)
-		keywordLower := strings.ToLower(keyword)
+		nameLower, keywordLower := strings.ToLower(name), strings.ToLower(keyword)
 		if strings.HasPrefix(nameLower, keywordLower) {
-			results = append(results, result{id, 100})
+			results = append(results, result{id: id, score: 100})
 		} else if re.MatchString(name) {
-			// 匹配位置越靠前分数越高
-			idx := strings.Index(nameLower, keywordLower)
-			score := 80 - idx
-			results = append(results, result{id, score})
+			results = append(results, result{id: id, score: 80 - strings.Index(nameLower, keywordLower)})
 		}
 	}
-	// 按分数排序
 	sort.Slice(results, func(i, j int) bool {
+		if results[i].score == results[j].score {
+			return results[i].id < results[j].id
+		}
 		return results[i].score > results[j].score
 	})
-	ids := make([]int32, 0, len(results))
-	for _, r := range results {
-		ids = append(ids, r.id)
+	ids := make([]int32, len(results))
+	for i, result := range results {
+		ids[i] = result.id
 	}
 	return ids
+}
+
+// RedisField exposes the decimal representation used by mapping hashes for
+// operational diagnostics and migration validation.
+func RedisField(code int32) string {
+	return strconv.FormatInt(int64(code), 10)
 }

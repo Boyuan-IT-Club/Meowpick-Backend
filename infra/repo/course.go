@@ -27,12 +27,15 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var _ ICourseRepo = (*CourseRepo)(nil)
 
 const (
-	CourseCollectionName = "course"
+	CourseCollectionName      = "course"
+	CourseProposalIDIndexName = "course_proposal_id_unique"
 )
 
 type ICourseRepo interface {
@@ -68,9 +71,20 @@ func (r *CourseRepo) Insert(ctx context.Context, course *model.Course) error {
 	_, err := r.conn.InsertOneNoCache(ctx, course)
 	return err
 }
-func NewCourseRepo(cfg *config.Config) *CourseRepo {
+func NewCourseRepo(cfg *config.Config) (*CourseRepo, error) {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, CourseCollectionName, cfg.Cache)
-	return &CourseRepo{conn: conn}
+	repository := &CourseRepo{conn: conn}
+	_, err := conn.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		Keys: bson.D{{Key: consts.ProposalID, Value: 1}},
+		Options: options.Index().
+			SetName(CourseProposalIDIndexName).
+			SetUnique(true).
+			SetPartialFilterExpression(bson.M{consts.ProposalID: bson.M{"$type": "string", "$gt": ""}}),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return repository, nil
 }
 
 // FindByID 根据课程ID查询课程

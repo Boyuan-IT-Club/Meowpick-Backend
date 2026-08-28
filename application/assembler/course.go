@@ -16,6 +16,7 @@ package assembler
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -27,6 +28,10 @@ import (
 	"github.com/google/wire"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+type mappingNamesContextKey struct{}
+
+type mappingNamesByType map[model.MappingType]map[int32]string
 
 var _ ICourseAssembler = (*CourseAssembler)(nil)
 
@@ -72,7 +77,7 @@ func (a *CourseAssembler) ToCourseVO(ctx context.Context, db *model.Course) (*dt
 	// 获取校区列表
 	campuses := make([]string, 0)
 	for _, campusId := range db.Campuses {
-		campusName := mapping.Data.GetCampusNameByID(campusId)
+		campusName := mappingNameFromContext(ctx, model.MappingTypeCampus, campusId)
 		if campusName != "" {
 			campuses = append(campuses, campusName)
 		}
@@ -99,7 +104,7 @@ func (a *CourseAssembler) ToCourseVO(ctx context.Context, db *model.Course) (*dt
 					ID:         teacher.ID,
 					Name:       teacher.Name,
 					Title:      teacher.Title,
-					Department: mapping.Data.GetDepartmentNameByID(teacher.Department),
+					Department: mappingNameFromContext(ctx, model.MappingTypeDepartment, teacher.Department),
 				})
 				mu.Unlock()
 			}
@@ -114,9 +119,9 @@ func (a *CourseAssembler) ToCourseVO(ctx context.Context, db *model.Course) (*dt
 		ID:         db.ID,
 		Name:       db.Name,
 		Code:       db.Code,
-		Category:   mapping.Data.GetCategoryNameByID(db.Category),
+		Category:   mappingNameFromContext(ctx, model.MappingTypeCategory, db.Category),
 		Campuses:   campuses,
-		Department: mapping.Data.GetDepartmentNameByID(db.Department),
+		Department: mappingNameFromContext(ctx, model.MappingTypeDepartment, db.Department),
 		Teachers:   teacherVOs,
 		TagCount:   tagCount,
 	}, nil
@@ -130,23 +135,21 @@ func (a *CourseAssembler) ToCourseDB(ctx context.Context, vo *dto.CourseVO) (*mo
 	// 将校区名称转换为ID
 	var campusIDs []int32
 	for _, campus := range vo.Campuses {
-		campusID := mapping.Data.GetCampusIDByName(campus)
-		if campusID == 0 {
-			campusID = mapping.Data.AutoRegisterCampus(campus)
+		campusID, err := mapping.Data.ResolveCampus(ctx, campus)
+		if err != nil {
+			return nil, err
 		}
 		campusIDs = append(campusIDs, campusID)
 	}
 
-	// 处理院系 - 自动注册不存在的院系
-	departmentID := mapping.Data.GetDepartmentIDByName(vo.Department)
-	if departmentID == 0 {
-		departmentID = mapping.Data.AutoRegisterDepartment(vo.Department)
+	departmentID, err := mapping.Data.ResolveOrCreateDepartment(ctx, vo.Department)
+	if err != nil {
+		return nil, fmt.Errorf("resolve course department: %w", err)
 	}
 
-	// 处理课程类别 - 自动注册不存在的类别
-	categoryID := mapping.Data.GetCategoryIDByName(vo.Category)
-	if categoryID == 0 {
-		categoryID = mapping.Data.AutoRegisterCategory(vo.Category)
+	categoryID, err := mapping.Data.ResolveOrCreateCategory(ctx, vo.Category)
+	if err != nil {
+		return nil, fmt.Errorf("resolve course category: %w", err)
 	}
 	// 处理教师 - 自动创建不存在的教师
 	var teacherIDs []string
@@ -154,7 +157,7 @@ func (a *CourseAssembler) ToCourseDB(ctx context.Context, vo *dto.CourseVO) (*mo
 		// 检查教师是否已存在
 		existingTeacherID, err := a.TeacherRepo.GetIDByName(ctx, teacher.Name)
 		if err != nil {
-			logs.CtxErrorf(ctx, "[TeacherRepo] [GetIDByName] error finding teacher %s: %v", teacher.Name, err)
+			return nil, fmt.Errorf("find teacher %q: %w", teacher.Name, err)
 		}
 
 		var teacherID string
@@ -163,19 +166,22 @@ func (a *CourseAssembler) ToCourseDB(ctx context.Context, vo *dto.CourseVO) (*mo
 			teacherID = existingTeacherID
 		} else {
 			// 教师不存在，创建新教师
-			now := primitive.NewDateTimeFromTime(time.Now())
+			teacherDepartment, err := mapping.Data.ResolveOrCreateDepartment(ctx, teacher.Department)
+			if err != nil {
+				return nil, fmt.Errorf("resolve teacher department: %w", err)
+			}
+			now := time.Now().UTC()
 			newTeacher := &model.Teacher{
 				ID:         primitive.NewObjectID().Hex(),
 				Name:       teacher.Name,
 				Title:      teacher.Title,
-				Department: mapping.Data.AutoRegisterDepartment(teacher.Department),
-				CreatedAt:  time.Unix(0, int64(now)),
-				UpdatedAt:  time.Unix(0, int64(now)),
+				Department: teacherDepartment,
+				CreatedAt:  now,
+				UpdatedAt:  now,
 			}
 
 			if err := a.TeacherRepo.Insert(ctx, newTeacher); err != nil {
-				logs.CtxErrorf(ctx, "[TeacherRepo] [Insert] error inserting teacher %s: %v", teacher.Name, err)
-				continue // 跳过这个教师
+				return nil, fmt.Errorf("insert teacher %q: %w", teacher.Name, err)
 			}
 			teacherID = newTeacher.ID
 		}
@@ -279,23 +285,21 @@ func (a *CourseAssembler) ToCourseDBFromProposalCourse(ctx context.Context, vo *
 	// 将校区名称转换为ID
 	var campusIDs []int32
 	for _, campus := range vo.Campuses {
-		campusID := mapping.Data.GetCampusIDByName(campus)
-		if campusID == 0 {
-			campusID = mapping.Data.AutoRegisterCampus(campus)
+		campusID, err := mapping.Data.ResolveCampus(ctx, campus)
+		if err != nil {
+			return nil, err
 		}
 		campusIDs = append(campusIDs, campusID)
 	}
 
-	// 处理院系 - 自动注册不存在的院系
-	departmentID := mapping.Data.GetDepartmentIDByName(vo.Department)
-	if departmentID == 0 {
-		departmentID = mapping.Data.AutoRegisterDepartment(vo.Department)
+	departmentID, err := mapping.Data.ResolveOrCreateDepartment(ctx, vo.Department)
+	if err != nil {
+		return nil, fmt.Errorf("resolve course department: %w", err)
 	}
 
-	// 处理课程类别 - 自动注册不存在的类别
-	categoryID := mapping.Data.GetCategoryIDByName(vo.Category)
-	if categoryID == 0 {
-		categoryID = mapping.Data.AutoRegisterCategory(vo.Category)
+	categoryID, err := mapping.Data.ResolveOrCreateCategory(ctx, vo.Category)
+	if err != nil {
+		return nil, fmt.Errorf("resolve course category: %w", err)
 	}
 
 	// 处理教师 - 已有ID直接复用；无ID视为用户手动输入的新教师，直接创建
@@ -308,19 +312,22 @@ func (a *CourseAssembler) ToCourseDBFromProposalCourse(ctx context.Context, vo *
 		}
 
 		// 无ID：视为新教师，直接创建
-		now := primitive.NewDateTimeFromTime(time.Now())
+		teacherDepartment, err := mapping.Data.ResolveOrCreateDepartment(ctx, teacher.Department)
+		if err != nil {
+			return nil, fmt.Errorf("resolve teacher department: %w", err)
+		}
+		now := time.Now().UTC()
 		newTeacher := &model.Teacher{
 			ID:         primitive.NewObjectID().Hex(),
 			Name:       teacher.Name,
 			Title:      teacher.Title,
-			Department: mapping.Data.AutoRegisterDepartment(teacher.Department),
-			CreatedAt:  time.Unix(0, int64(now)),
-			UpdatedAt:  time.Unix(0, int64(now)),
+			Department: teacherDepartment,
+			CreatedAt:  now,
+			UpdatedAt:  now,
 		}
 
 		if err := a.TeacherRepo.Insert(ctx, newTeacher); err != nil {
-			logs.CtxErrorf(ctx, "[TeacherRepo] [Insert] error inserting teacher %s: %v", teacher.Name, err)
-			continue // 跳过这个教师
+			return nil, fmt.Errorf("insert teacher %q: %w", teacher.Name, err)
 		}
 		teacherIDs = append(teacherIDs, newTeacher.ID)
 	}
@@ -399,7 +406,7 @@ func (a *CourseAssembler) ToProposalCourseVOFromCourse(ctx context.Context, db *
 	// 获取校区名称列表
 	campuses := make([]string, 0, len(db.Campuses))
 	for _, campusId := range db.Campuses {
-		campusName := mapping.Data.GetCampusNameByID(campusId)
+		campusName := mappingNameFromContext(ctx, model.MappingTypeCampus, campusId)
 		if campusName != "" {
 			campuses = append(campuses, campusName)
 		}
@@ -418,7 +425,7 @@ func (a *CourseAssembler) ToProposalCourseVOFromCourse(ctx context.Context, db *
 				ID:         teacher.ID,
 				Name:       teacher.Name,
 				Title:      teacher.Title,
-				Department: mapping.Data.GetDepartmentNameByID(teacher.Department),
+				Department: mappingNameFromContext(ctx, model.MappingTypeDepartment, teacher.Department),
 			})
 		}
 	}
@@ -427,9 +434,9 @@ func (a *CourseAssembler) ToProposalCourseVOFromCourse(ctx context.Context, db *
 		ID:         db.ID,
 		Name:       db.Name,
 		Code:       db.Code,
-		Category:   mapping.Data.GetCategoryNameByID(db.Category),
+		Category:   mappingNameFromContext(ctx, model.MappingTypeCategory, db.Category),
 		Campuses:   campuses,
-		Department: mapping.Data.GetDepartmentNameByID(db.Department),
+		Department: mappingNameFromContext(ctx, model.MappingTypeDepartment, db.Department),
 		Teachers:   teacherVOs,
 	}, nil
 }
@@ -441,6 +448,9 @@ func (a *CourseAssembler) ToCourseVOArray(ctx context.Context, dbs []*model.Cour
 		return []*dto.CourseVO{}, nil
 	}
 
+	// Resolve course-level mappings in three HMGET calls, irrespective of the
+	// number of courses. Individual conversion reads these prefetched values.
+	ctx = withPrefetchedCourseMappingNames(ctx, dbs)
 	courseVOs := make([]*dto.CourseVO, len(dbs))
 
 	type result struct {
@@ -515,4 +525,67 @@ func (a *CourseAssembler) ToPaginatedCourses(cxt context.Context, courses []*mod
 		Total:     total,
 		PageParam: pageParam,
 	}, nil
+}
+
+func withPrefetchedCourseMappingNames(ctx context.Context, courses []*model.Course) context.Context {
+	codesByType := map[model.MappingType][]int32{
+		model.MappingTypeDepartment: {},
+		model.MappingTypeCategory:   {},
+		model.MappingTypeCampus:     {},
+	}
+	seen := map[model.MappingType]map[int32]struct{}{
+		model.MappingTypeDepartment: {},
+		model.MappingTypeCategory:   {},
+		model.MappingTypeCampus:     {},
+	}
+	add := func(mappingType model.MappingType, code int32) {
+		if _, ok := seen[mappingType][code]; ok {
+			return
+		}
+		seen[mappingType][code] = struct{}{}
+		codesByType[mappingType] = append(codesByType[mappingType], code)
+	}
+	for _, course := range courses {
+		if course == nil {
+			continue
+		}
+		add(model.MappingTypeDepartment, course.Department)
+		add(model.MappingTypeCategory, course.Category)
+		for _, campus := range course.Campuses {
+			add(model.MappingTypeCampus, campus)
+		}
+	}
+
+	unknownByType := map[model.MappingType]string{
+		model.MappingTypeDepartment: "未知开课院系",
+		model.MappingTypeCategory:   "未知分类",
+		model.MappingTypeCampus:     "未知校区",
+	}
+	values := make(mappingNamesByType, len(codesByType))
+	for mappingType, codes := range codesByType {
+		names := mapping.Data.GetNamesByCodes(ctx, mappingType, codes, unknownByType[mappingType])
+		values[mappingType] = make(map[int32]string, len(codes))
+		for i, code := range codes {
+			values[mappingType][code] = names[i]
+		}
+	}
+	return context.WithValue(ctx, mappingNamesContextKey{}, values)
+}
+
+func mappingNameFromContext(ctx context.Context, mappingType model.MappingType, code int32) string {
+	if values, ok := ctx.Value(mappingNamesContextKey{}).(mappingNamesByType); ok {
+		if name := values[mappingType][code]; name != "" {
+			return name
+		}
+	}
+	switch mappingType {
+	case model.MappingTypeCampus:
+		return mapping.Data.GetCampusNameByID(code)
+	case model.MappingTypeDepartment:
+		return mapping.Data.GetDepartmentNameByID(code)
+	case model.MappingTypeCategory:
+		return mapping.Data.GetCategoryNameByID(code)
+	default:
+		return ""
+	}
 }

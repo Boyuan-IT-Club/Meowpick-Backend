@@ -14,7 +14,49 @@
 
 package mapping
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
+)
+
+func TestValidateMappingsAllowsOneCanonicalHistoricalAlias(t *testing.T) {
+	err := validateMappings([]*model.Mapping{
+		{Type: model.MappingTypeDepartment, Name: "同名院系", Code: 1, Canonical: true},
+		{Type: model.MappingTypeDepartment, Name: "同名院系", Code: 2, Canonical: false},
+	})
+	if err != nil {
+		t.Fatalf("expected valid alias mapping, got %v", err)
+	}
+}
+
+func TestValidateMappingsRejectsMissingOrDuplicateCanonical(t *testing.T) {
+	tests := []struct {
+		name     string
+		mappings []*model.Mapping
+	}{
+		{
+			name: "missing",
+			mappings: []*model.Mapping{
+				{Type: model.MappingTypeCategory, Name: "同名分类", Code: 1},
+			},
+		},
+		{
+			name: "duplicate",
+			mappings: []*model.Mapping{
+				{Type: model.MappingTypeCategory, Name: "同名分类", Code: 1, Canonical: true},
+				{Type: model.MappingTypeCategory, Name: "同名分类", Code: 2, Canonical: true},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validateMappings(tt.mappings); err == nil {
+				t.Fatal("expected canonical validation error")
+			}
+		})
+	}
+}
 
 // TestData_GetCampusNameByID 测试校区名称查找
 func TestData_GetCampusNameByID(t *testing.T) {
