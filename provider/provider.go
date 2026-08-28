@@ -17,6 +17,8 @@
 package provider
 
 import (
+	"context"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/service"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
@@ -36,10 +38,12 @@ func Init() {
 	}
 
 	// 初始化映射工具类的依赖
-	mapping.Data.InitWithDependencies(&mapping.MappingDependencies{
+	if err := mapping.Data.InitWithDependencies(context.Background(), &mapping.MappingDependencies{
 		MappingRepo:  provider.MappingRepo,
 		MappingCache: provider.MappingCache,
-	})
+	}); err != nil {
+		panic(err)
+	}
 }
 
 func Get() *Provider {
@@ -107,10 +111,10 @@ var AllProvider = wire.NewSet(
 )
 
 // InitMapping 初始化映射工具类的依赖
-func InitMapping(mappingRepo *repo.MappingRepo, mappingCache *cache.MappingCache) {
+func InitMapping(mappingRepo *repo.MappingRepo, mappingCache *cache.MappingCache) error {
 	deps := &mapping.MappingDependencies{
 		MappingRepo:  mappingRepo,
 		MappingCache: mappingCache,
 	}
-	mapping.Data.InitWithDependencies(deps)
+	return mapping.Data.InitWithDependencies(context.Background(), deps)
 }

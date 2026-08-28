@@ -27,6 +27,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var _ ITeacherRepo = (*TeacherRepo)(nil)
@@ -57,8 +58,14 @@ func NewTeacherRepo(cfg *config.Config) *TeacherRepo {
 
 // Insert 插入教师
 func (r *TeacherRepo) Insert(ctx context.Context, teacher *model.Teacher) error {
-	if _, err := r.conn.InsertOne(ctx, TeacherID2DBKey+teacher.ID, teacher); err != nil {
+	if _, err := r.conn.InsertOneNoCache(ctx, teacher); err != nil {
 		return err
+	}
+	if _, inTransaction := ctx.(mongo.SessionContext); inTransaction {
+		return nil
+	}
+	if err := r.conn.DelCache(ctx, TeacherID2DBKey+teacher.ID); err != nil {
+		logs.CtxWarnf(ctx, "[monc] [DelCache] delete teacher cache error: %v", err)
 	}
 	// 设置name->ID映射缓存
 	if err := r.conn.SetCache(TeacherName2IDKey+teacher.Name, teacher.ID); err != nil {
@@ -111,15 +118,15 @@ func (r *TeacherRepo) GetIDByName(ctx context.Context, name string) (string, err
 func (r *TeacherRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, int64, error) {
 	teachers := []*model.Teacher{}
 	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}
-	
+
 	if err := r.conn.Find(ctx, &teachers, filter, page.FindPageOption(param)); err != nil {
 		return nil, 0, err
 	}
-	
+
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	return teachers, total, nil
 }

@@ -14,6 +14,8 @@
 
 package model
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 // MappingType 映射类型
 type MappingType int32
 
@@ -25,8 +27,9 @@ const (
 
 // Mapping 映射模型，用于存储院系、类别、校区、状态等映射数据
 type Mapping struct {
-	ID   int32       `bson:"_id"    json:"id"`   // 映射ID
-	Type MappingType `bson:"type"   json:"type"` // 映射类型
-	Name string      `bson:"name"   json:"name"` // 显示名称
-	Code int32       `bson:"code"   json:"code"` // 对应的值或编码
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`    // MongoDB 文档ID
+	Type      MappingType        `bson:"type" json:"type"`           // 映射类型
+	Name      string             `bson:"name" json:"name"`           // 显示名称
+	Code      int32              `bson:"code" json:"code"`           // 对应的值或编码
+	Canonical bool               `bson:"canonical" json:"canonical"` // 同名映射中供 name→code 使用的规范编号
 }
