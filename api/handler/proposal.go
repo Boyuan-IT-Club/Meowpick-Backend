@@ -77,8 +77,8 @@ func ListProposals(c *gin.Context) {
 // @Description 基于提案状态、校区、开课院系、课程分类筛选 proposal 表中的提案
 // @Tags proposal
 // @Produce json
-// @Param status query []string true "提案状态，可多选" collectionFormat(multi)
-// @Param campus query []string true "校区，可多选" collectionFormat(multi)
+// @Param status query []string false "提案状态，可多选，不传则不按状态过滤" collectionFormat(multi)
+// @Param campus query []string false "校区，可多选，不传则不按校区过滤" collectionFormat(multi)
 // @Param department query string false "开课院系，精确匹配"
 // @Param category query string false "课程分类，精确匹配"
 // @Param page query int false "页码" default(1)

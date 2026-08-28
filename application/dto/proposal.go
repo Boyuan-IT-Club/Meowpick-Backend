@@ -67,8 +67,8 @@ type ListProposalReq struct {
 
 // FilterProposalReq 对应 /api/proposal/filter 的请求参数（分页筛选）
 type FilterProposalReq struct {
-	Statuses   []string `form:"status" binding:"required"`
-	Campuses   []string `form:"campus" binding:"required"`
+	Statuses   []string `form:"status"`
+	Campuses   []string `form:"campus"`
 	Department string   `form:"department"`
 	Category   string   `form:"category"`
 	*PageParam

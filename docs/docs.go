@@ -2439,10 +2439,9 @@ const docTemplate = `{
                 "description": "基于提案状态、校区、开课院系、课程分类筛选 proposal 表中的提案",
                 "parameters": [
                     {
-                        "description": "提案状态，可多选",
+                        "description": "提案状态，可多选，不传则不按状态过滤",
                         "in": "query",
                         "name": "status",
-                        "required": true,
                         "schema": {
                             "items": {
                                 "type": "string"
@@ -2452,10 +2451,9 @@ const docTemplate = `{
                         "style": "form"
                     },
                     {
-                        "description": "校区，可多选",
+                        "description": "校区，可多选，不传则不按校区过滤",
                         "in": "query",
                         "name": "campus",
-                        "required": true,
                         "schema": {
                             "items": {
                                 "type": "string"
