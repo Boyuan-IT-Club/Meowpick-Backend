@@ -131,8 +131,12 @@ func (s *CourseService) GetCourse(ctx context.Context, req *dto.GetCourseReq) (*
 
 	// 搜索课程
 	course, err := s.CourseRepo.FindByID(ctx, req.CourseID)
-	if err != nil || course == nil { // 使用id搜索不应出现找不到的情况
+	if err != nil {
 		return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed,
+			errorx.KV("key", consts.CourseID), errorx.KV("value", req.CourseID))
+	}
+	if course == nil {
+		return nil, errorx.New(errno.ErrCourseNotFound,
 			errorx.KV("key", consts.CourseID), errorx.KV("value", req.CourseID))
 	}
 
@@ -166,10 +170,7 @@ func (s *CourseService) GetDepartments(ctx context.Context, req *dto.GetCourseDe
 	}
 
 	// 转换为院系名称列表
-	departments := []string{}
-	for _, id := range ids {
-		departments = append(departments, mapping.Data.GetDepartmentNameByID(id))
-	}
+	departments := mapping.Data.GetNamesByCodes(ctx, model.MappingTypeDepartment, ids, "未知开课院系")
 
 	return &dto.GetCourseDepartmentsResp{
 		Resp:        dto.Success(),
@@ -192,10 +193,7 @@ func (s *CourseService) GetCategories(ctx context.Context, req *dto.GetCourseCat
 	}
 
 	// 转换为课程分类名称列表
-	categories := make([]string, 0, len(ids))
-	for _, id := range ids {
-		categories = append(categories, mapping.Data.GetCategoryNameByID(id))
-	}
+	categories := mapping.Data.GetNamesByCodes(ctx, model.MappingTypeCategory, ids, "未知分类")
 
 	return &dto.GetCourseCategoriesResp{
 		Resp:       dto.Success(),
@@ -218,10 +216,7 @@ func (s *CourseService) GetCampuses(ctx context.Context, req *dto.GetCourseCampu
 	}
 
 	// 转换为校区名称列表
-	campuses := make([]string, 0, len(ids))
-	for _, id := range ids {
-		campuses = append(campuses, mapping.Data.GetCampusNameByID(id))
-	}
+	campuses := mapping.Data.GetNamesByCodes(ctx, model.MappingTypeCampus, ids, "未知校区")
 
 	return &dto.GetCourseCampusesResp{
 		Resp:     dto.Success(),

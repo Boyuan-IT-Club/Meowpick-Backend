@@ -14,7 +14,12 @@
 
 package dto
 
-import "testing"
+import (
+	"net/http/httptest"
+	"testing"
+
+	"github.com/gin-gonic/gin"
+)
 
 // TestResp_Success 测试 Success 函数
 func TestResp_Success(t *testing.T) {
@@ -91,6 +96,35 @@ func TestPageParam_UnWrap(t *testing.T) {
 			}
 			if size != tt.wantSize {
 				t.Errorf("size = %v, want %v", size, tt.wantSize)
+			}
+		})
+	}
+}
+
+func TestListCourseCommentsReqAcceptsCourseIDAndLegacyID(t *testing.T) {
+	tests := []struct {
+		name       string
+		query      string
+		wantID     string
+		wantLegacy string
+		wantErr    bool
+	}{
+		{name: "courseId", query: "courseId=course-new", wantID: "course-new"},
+		{name: "legacy id", query: "id=course-old", wantLegacy: "course-old"},
+		{name: "missing", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+			ctx.Request = httptest.NewRequest("GET", "/api/comment/course?"+tt.query, nil)
+			var req ListCourseCommentsReq
+			err := ctx.ShouldBindQuery(&req)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ShouldBindQuery() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if req.ID != tt.wantID || req.LegacyID != tt.wantLegacy {
+				t.Fatalf("bound IDs = (%q, %q), want (%q, %q)", req.ID, req.LegacyID, tt.wantID, tt.wantLegacy)
 			}
 		})
 	}

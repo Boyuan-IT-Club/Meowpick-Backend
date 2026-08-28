@@ -61,7 +61,8 @@ type GetMyCommentsReq struct {
 
 // ListCourseCommentsReq 是前端分页请求某一课程下的评论时，需要传递的数据结构。
 type ListCourseCommentsReq struct {
-	ID string `form:"id" binding:"required"`
+	ID       string `form:"courseId" binding:"required_without=LegacyID"`
+	LegacyID string `form:"id" swaggerignore:"true"`
 	*PageParam
 }
 

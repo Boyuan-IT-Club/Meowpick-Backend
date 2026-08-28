@@ -28,6 +28,7 @@ import (
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var _ ICommentService = (*CommentService)(nil)
@@ -62,6 +63,7 @@ func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateComme
 	// 构建Comment模型
 	now := time.Now()
 	comment := &model.Comment{
+		ID:        primitive.NewObjectID().Hex(),
 		UserID:    userId,
 		CourseID:  req.CourseID,
 		Content:   req.Content,

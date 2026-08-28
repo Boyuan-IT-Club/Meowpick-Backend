@@ -2206,7 +2206,7 @@ const docTemplate = `{
                 ]
             }
         },
-        "/api/course/departs": {
+        "/api/course/departments": {
             "get": {
                 "description": "根据课程名字获取课程开课院系",
                 "parameters": [
