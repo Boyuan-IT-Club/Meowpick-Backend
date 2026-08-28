@@ -24,6 +24,7 @@ const (
 	ErrAuthTokenInvalid        = 106000003
 	ErrAuthOpenIDEmpty         = 106000004
 	ErrAuthTokenGenerateFailed = 106000005
+	ErrAuthGrantCodeInvalid    = 106000006
 )
 
 func init() {
@@ -50,6 +51,11 @@ func init() {
 	code.Register(
 		ErrAuthTokenGenerateFailed,
 		"auth token generate failed",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrAuthGrantCodeInvalid,
+		"admin grant verification code invalid",
 		code.WithAffectStability(false),
 	)
 }

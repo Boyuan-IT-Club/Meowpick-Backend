@@ -73,6 +73,7 @@ func SetupRoutes() *gin.Engine {
 	// TeacherApi
 	teacherGroup := router.Group("/api/teacher")
 	{
+		teacherGroup.POST("/add", handler.CreateTeacher)            // 新建教师
 		teacherGroup.GET("/suggest", handler.GetTeacherSuggestions) // 获取教师搜索建议
 	}
 
@@ -98,7 +99,7 @@ func SetupRoutes() *gin.Engine {
 	{
 		changeLogGroup.GET("/proposal/grouped", handler.ListProposalLogsGrouped)   // 按提案聚合的日志列表
 		changeLogGroup.GET("/proposal/timeline", handler.ListProposalLogsTimeline) // 扁平化时间线日志
-		changeLogGroup.GET("/list", handler.ListChangeLogs)
+		changeLogGroup.POST("/list", handler.ListChangeLogs)
 	}
 
 	return router

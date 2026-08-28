@@ -65,6 +65,9 @@ func ListCourseComments(c *gin.Context) {
 		PostProcess(c, &req, nil, err)
 		return
 	}
+	if req.ID == "" {
+		req.ID = req.LegacyID
+	}
 	c.Set(consts.CtxUserID, token.GetUserID(c))
 
 	resp, err = provider.Get().CommentService.GetCourseComments(c, &req)

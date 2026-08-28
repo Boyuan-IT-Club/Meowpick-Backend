@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"time"
 
@@ -55,7 +56,8 @@ var AuthServiceSet = wire.NewSet(
 func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto.SignInResp, err error) {
 	// 查找或创建用户
 	var openId string
-	if req.VerifyCode == "test123" {
+	debugSignIn := config.GetConfig().State == "local" && req.VerifyCode == "test123"
+	if debugSignIn {
 		openId = "debug-openid-001" // 测试环境固定openid
 	} else {
 		// 为微信API调用设置超时
@@ -79,7 +81,7 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 	}
 
 	// 对于调试用户，强制设为管理员
-	if openId == "debug-openid-001" && oldUser != nil && !oldUser.Admin {
+	if debugSignIn && oldUser != nil && !oldUser.Admin {
 		oldUser.Admin = true
 		if err = s.UserRepo.Update(ctx, oldUser); err != nil {
 			logs.CtxErrorf(ctx, "[AuthRepo] [Update] error: %v, userId: %s", err, oldUser.ID)
@@ -89,7 +91,7 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 	// 用户不存在则创建新用户
 	if oldUser == nil {
 		isAdmin := false
-		if openId == "debug-openid-001" {
+		if debugSignIn {
 			isAdmin = true
 		}
 		newUser := model.User{ // 创建用户并存入数据库
@@ -170,6 +172,15 @@ func (s *AuthService) IsAdmin(ctx context.Context) (resp *dto.IsAdminResp, err e
 }
 
 func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (resp *dto.GrantAdminResp, err error) {
+	operatorID, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || operatorID == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+	expectedCode := config.GetConfig().AdminGrantKey
+	if expectedCode == "" || subtle.ConstantTimeCompare([]byte(req.VerifyCode), []byte(expectedCode)) != 1 {
+		return nil, errorx.New(errno.ErrAuthGrantCodeInvalid)
+	}
+
 	// 查询目标用户信息
 	targetUser, err := s.UserRepo.FindByID(ctx, req.UserID)
 	if err != nil {
@@ -189,7 +200,7 @@ func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (r
 	newAdminStatus := !isAdmin
 
 	// 更新用户的管理员状态
-	if err = s.UserRepo.Update(ctx, &model.User{ID: req.UserID, Admin: newAdminStatus}); err != nil {
+	if err = s.UserRepo.SetAdmin(ctx, req.UserID, newAdminStatus); err != nil {
 		logs.CtxErrorf(ctx, "[AuthRepo] [Update] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrUserUpdateFailed,
 			errorx.KV("key", consts.CtxUserID), errorx.KV("value", req.UserID),
@@ -197,7 +208,7 @@ func (s *AuthService) GrantAdmin(ctx context.Context, req *dto.GrantAdminReq) (r
 	}
 
 	// 获取操作者信息
-	operatorId, _ := ctx.Value(consts.CtxUserID).(string)
+	operatorId := operatorID
 	operatorUser, _ := s.UserRepo.FindByID(ctx, operatorId)
 	operatorName := "系统"
 	if operatorUser != nil && operatorUser.Username != "" {

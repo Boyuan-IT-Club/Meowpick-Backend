@@ -24,3 +24,22 @@ func TestGetUsernameByUserIDRoute(t *testing.T) {
 	}
 	t.Fatal("GET /api/user/:userId/username route is not registered")
 }
+
+func TestCorrectedRoutesAreRegistered(t *testing.T) {
+	want := map[string]bool{
+		"POST /api/teacher/add":       false,
+		"POST /api/changelog/list":    false,
+		"GET /api/course/departments": false,
+	}
+	for _, route := range SetupRoutes().Routes() {
+		key := route.Method + " " + route.Path
+		if _, ok := want[key]; ok {
+			want[key] = true
+		}
+	}
+	for route, found := range want {
+		if !found {
+			t.Errorf("route %s is not registered", route)
+		}
+	}
+}

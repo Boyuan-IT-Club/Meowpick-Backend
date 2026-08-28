@@ -17,10 +17,12 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
@@ -76,6 +78,14 @@ func (s *TeacherService) CreateTeacher(ctx context.Context, req *dto.CreateTeach
 
 	// 转换为DB
 	teacher := s.TeacherAssembler.ToTeacherDB(ctx, vo)
+	departmentID, err := mapping.Data.ResolveOrCreateDepartment(ctx, req.Department)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrTeacherInsertFailed, errorx.KV("name", req.Name))
+	}
+	now := time.Now().UTC()
+	teacher.Department = departmentID
+	teacher.CreatedAt = now
+	teacher.UpdatedAt = now
 
 	// 防重 TODO：名字 职称是否重复
 	if exist, err := s.TeacherRepo.IsExistByID(ctx, teacher.ID); err != nil {

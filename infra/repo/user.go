@@ -47,6 +47,7 @@ type IUserRepo interface {
 	FindByOpenID(ctx context.Context, openId string) (user *model.User, err error)
 	IsUsernameExist(ctx context.Context, username, excludeUserID string) (bool, error)
 	UpdateProfile(ctx context.Context, id string, username, avatar *string, usernameUpdatedAt *time.Time) error
+	SetAdmin(ctx context.Context, id string, admin bool) error
 
 	IsAdminByID(ctx context.Context, id string) (isAdmin bool, err error)
 	IncrementContribution(ctx context.Context, id string, delta int64) error
@@ -181,6 +182,16 @@ func (r *UserRepo) UpdateProfile(
 
 	_, err := r.conn.UpdateOne(ctx, UserID2DBKey+id,
 		bson.M{consts.ID: id}, bson.M{"$set": set})
+	return err
+}
+
+// SetAdmin updates only the privilege bit and timestamp. Using a partial User
+// struct with Update would overwrite unrelated identity/profile fields with zeros.
+func (r *UserRepo) SetAdmin(ctx context.Context, id string, admin bool) error {
+	_, err := r.conn.UpdateOne(ctx, UserID2DBKey+id,
+		bson.M{consts.ID: id},
+		bson.M{"$set": bson.M{"admin": admin, consts.UpdatedAt: time.Now()}},
+	)
 	return err
 }
 

@@ -50,7 +50,7 @@ func GetCourse(c *gin.Context) {
 // @Produce json
 // @Param keyword query string true "课程名称关键词"
 // @Success 200 {object} Response[dto.GetCourseDepartmentsResp]
-// @Router /api/course/departs [get]
+// @Router /api/course/departments [get]
 func GetCourseDepartments(c *gin.Context) {
 	var req dto.GetCourseDepartmentsReq
 	var resp *dto.GetCourseDepartmentsResp
