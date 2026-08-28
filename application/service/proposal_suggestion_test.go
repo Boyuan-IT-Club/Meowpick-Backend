@@ -14,7 +14,11 @@
 
 package service
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+)
 
 func TestTeacherSuggestionLabel(t *testing.T) {
 	tests := []struct {
@@ -31,6 +35,28 @@ func TestTeacherSuggestionLabel(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := teacherSuggestionLabel(tt.teacherName, tt.title); got != tt.want {
 				t.Fatalf("teacherSuggestionLabel(%q, %q) = %q, want %q", tt.teacherName, tt.title, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestValidateProposalInputRequiredFields(t *testing.T) {
+	tests := []struct {
+		name   string
+		title  string
+		course *dto.ProposalCourseVO
+	}{
+		{name: "blank title", title: " ", course: &dto.ProposalCourseVO{Name: "课程", Department: "院系", Category: "分类", Campuses: []string{"校区"}}},
+		{name: "missing course", title: "标题"},
+		{name: "blank course name", title: "标题", course: &dto.ProposalCourseVO{Department: "院系", Category: "分类", Campuses: []string{"校区"}}},
+		{name: "blank department", title: "标题", course: &dto.ProposalCourseVO{Name: "课程", Category: "分类", Campuses: []string{"校区"}}},
+		{name: "blank category", title: "标题", course: &dto.ProposalCourseVO{Name: "课程", Department: "院系", Campuses: []string{"校区"}}},
+		{name: "missing campuses", title: "标题", course: &dto.ProposalCourseVO{Name: "课程", Department: "院系", Category: "分类"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validateProposalInput(tt.title, tt.course); err == nil {
+				t.Fatal("validateProposalInput() error = nil, want error")
 			}
 		})
 	}

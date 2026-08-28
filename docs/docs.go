@@ -3178,6 +3178,14 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "description": "跨用户查询时必填，且该提案必须允许展示昵称；本人和管理员可省略",
+                        "in": "query",
+                        "name": "proposalId",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {

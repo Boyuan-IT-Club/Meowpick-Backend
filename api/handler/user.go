@@ -41,11 +41,17 @@ func GetUserProfile(c *gin.Context) {
 // @Tags user
 // @Produce json
 // @Param userId path string true "用户 ID"
+// @Param proposalId query string false "跨用户查询时必填，且该提案必须允许展示昵称；本人和管理员可省略"
 // @Success 200 {object} Response[dto.GetUsernameByUserIDResp]
 // @Router /api/user/{userId}/username [get]
 func GetUsernameByUserID(c *gin.Context) {
+	var req dto.GetUsernameByUserIDReq
+	if err := c.ShouldBindQuery(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
 	c.Set(consts.CtxUserID, token.GetUserID(c))
-	resp, err := provider.Get().UserService.GetUsernameByUserID(c, c.Param("userId"))
+	resp, err := provider.Get().UserService.GetUsernameByUserID(c, c.Param("userId"), req.ProposalID)
 	PostProcess(c, nil, resp, err)
 }
 

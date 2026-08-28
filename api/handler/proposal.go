@@ -248,7 +248,7 @@ func DeleteProposal(c *gin.Context) {
 
 	req.ProposalID = c.Param(consts.CtxProposalID)
 
-	if err = c.ShouldBindJSON(&req); err != nil {
+	if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 		PostProcess(c, &req, nil, err)
 		return
 	}

@@ -17,6 +17,7 @@ package repo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
@@ -46,8 +47,9 @@ type IUserRepo interface {
 	FindByIDs(ctx context.Context, ids []string) (users []*model.User, err error)
 	FindByOpenID(ctx context.Context, openId string) (user *model.User, err error)
 	IsUsernameExist(ctx context.Context, username, excludeUserID string) (bool, error)
-	UpdateProfile(ctx context.Context, id string, username, avatar *string, usernameUpdatedAt *time.Time) error
+	UpdateProfile(ctx context.Context, id string, username, avatar *string, usernameUpdatedAt, expectedUsernameUpdatedAt *time.Time) (bool, error)
 	SetAdmin(ctx context.Context, id string, admin bool) error
+	InvalidateByID(ctx context.Context, id string) error
 
 	IsAdminByID(ctx context.Context, id string) (isAdmin bool, err error)
 	IncrementContribution(ctx context.Context, id string, delta int64) error
@@ -111,7 +113,13 @@ func (r *UserRepo) Update(ctx context.Context, user *model.User) error {
 // FindByID 通过ID查询用户
 func (r *UserRepo) FindByID(ctx context.Context, id string) (*model.User, error) {
 	user := &model.User{}
-	if err := r.conn.FindOne(ctx, UserID2DBKey+id, user, bson.M{consts.ID: id}); err != nil {
+	var err error
+	if _, inTransaction := ctx.(mongo.SessionContext); inTransaction {
+		err = r.conn.FindOneNoCache(ctx, user, bson.M{consts.ID: id})
+	} else {
+		err = r.conn.FindOne(ctx, UserID2DBKey+id, user, bson.M{consts.ID: id})
+	}
+	if err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return nil, nil
 		}
@@ -167,8 +175,8 @@ func (r *UserRepo) UpdateProfile(
 	ctx context.Context,
 	id string,
 	username, avatar *string,
-	usernameUpdatedAt *time.Time,
-) error {
+	usernameUpdatedAt, expectedUsernameUpdatedAt *time.Time,
+) (bool, error) {
 	set := bson.M{consts.UpdatedAt: time.Now()}
 	if username != nil {
 		set[consts.Username] = *username
@@ -180,9 +188,23 @@ func (r *UserRepo) UpdateProfile(
 		set[consts.UsernameUpdatedAt] = *usernameUpdatedAt
 	}
 
-	_, err := r.conn.UpdateOne(ctx, UserID2DBKey+id,
-		bson.M{consts.ID: id}, bson.M{"$set": set})
-	return err
+	filter := bson.M{consts.ID: id}
+	if expectedUsernameUpdatedAt != nil {
+		if expectedUsernameUpdatedAt.IsZero() {
+			filter["$or"] = bson.A{
+				bson.M{consts.UsernameUpdatedAt: bson.M{"$exists": false}},
+				bson.M{consts.UsernameUpdatedAt: time.Time{}},
+			}
+		} else {
+			filter[consts.UsernameUpdatedAt] = *expectedUsernameUpdatedAt
+		}
+	}
+
+	result, err := r.conn.UpdateOne(ctx, UserID2DBKey+id, filter, bson.M{"$set": set})
+	if err != nil {
+		return false, err
+	}
+	return result.MatchedCount == 1, nil
 }
 
 // SetAdmin updates only the privilege bit and timestamp. Using a partial User
@@ -193,6 +215,10 @@ func (r *UserRepo) SetAdmin(ctx context.Context, id string, admin bool) error {
 		bson.M{"$set": bson.M{"admin": admin, consts.UpdatedAt: time.Now()}},
 	)
 	return err
+}
+
+func (r *UserRepo) InvalidateByID(ctx context.Context, id string) error {
+	return r.conn.DelCache(ctx, UserID2DBKey+id)
 }
 
 // IsAdminByID 判断用户是否是管理员
@@ -210,11 +236,25 @@ func (r *UserRepo) IsAdminByID(ctx context.Context, id string) (bool, error) {
 // IncrementContribution 原子增减用户贡献值（delta 可为负，用于撤回时扣减）
 func (r *UserRepo) IncrementContribution(ctx context.Context, id string, delta int64) error {
 	filter := bson.M{consts.ID: id}
+	if delta < 0 {
+		filter[consts.UserContribution] = bson.M{"$gte": -delta}
+	}
 	update := bson.M{
 		"$inc": bson.M{consts.UserContribution: delta},
 	}
-	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
-	return err
+	result, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount != 1 {
+		return fmt.Errorf("user %s not found or contribution would become negative", id)
+	}
+	if _, inTransaction := ctx.(mongo.SessionContext); !inTransaction {
+		if err := r.InvalidateByID(ctx, id); err != nil {
+			logs.CtxWarnf(ctx, "[monc] [DelCache] delete user cache error: %v", err)
+		}
+	}
+	return nil
 }
 
 // FindByIDs 根据用户ID列表批量查询用户
