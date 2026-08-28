@@ -40,7 +40,7 @@ var _ IUserService = (*UserService)(nil)
 
 type IUserService interface {
 	GetUserProfile(ctx context.Context) (*dto.GetUserProfileResp, error)
-	GetUsernameByUserID(ctx context.Context, userID string) (*dto.GetUsernameByUserIDResp, error)
+	GetUsernameByUserID(ctx context.Context, userID, proposalID string) (*dto.GetUsernameByUserIDResp, error)
 	UpdateUserProfile(ctx context.Context, req *dto.UpdateUserProfileReq) (*dto.UpdateUserProfileResp, error)
 }
 
@@ -91,10 +91,26 @@ func (s *UserService) GetUserProfile(ctx context.Context) (*dto.GetUserProfileRe
 }
 
 // GetUsernameByUserID 获取指定用户的昵称。
-func (s *UserService) GetUsernameByUserID(ctx context.Context, userID string) (*dto.GetUsernameByUserIDResp, error) {
+func (s *UserService) GetUsernameByUserID(ctx context.Context, userID, proposalID string) (*dto.GetUsernameByUserIDResp, error) {
 	currentUserID, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || currentUserID == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+	if currentUserID != userID {
+		isAdmin, adminErr := s.UserRepo.IsAdminByID(ctx, currentUserID)
+		if adminErr != nil {
+			return nil, errorx.WrapByCode(adminErr, errno.ErrUserFindFailed,
+				errorx.KV("key", consts.CtxUserID), errorx.KV("value", currentUserID))
+		}
+		if !isAdmin {
+			proposal, proposalErr := s.ProposalRepo.FindByID(ctx, proposalID)
+			if proposalErr != nil {
+				return nil, errorx.WrapByCode(proposalErr, errno.ErrProposalFindFailed)
+			}
+			if proposal == nil || proposal.UserID != userID || !proposal.ShowUsername {
+				return nil, errorx.New(errno.ErrUserNotOwner, errorx.KV("id", currentUserID))
+			}
+		}
 	}
 
 	user, err := s.UserRepo.FindByID(ctx, userID)
@@ -167,13 +183,26 @@ func (s *UserService) UpdateUserProfile(ctx context.Context, req *dto.UpdateUser
 		}, nil
 	}
 
-	if err = s.UserRepo.UpdateProfile(ctx, userID, usernameUpdate, avatarUpdate, usernameUpdatedAt); err != nil {
+	var expectedUsernameUpdatedAt *time.Time
+	if usernameUpdate != nil {
+		expected := user.UsernameUpdatedAt
+		expectedUsernameUpdatedAt = &expected
+	}
+	matched, updateErr := s.UserRepo.UpdateProfile(ctx, userID, usernameUpdate, avatarUpdate, usernameUpdatedAt, expectedUsernameUpdatedAt)
+	if updateErr != nil {
+		err = updateErr
 		if mongo.IsDuplicateKeyError(err) && usernameUpdate != nil {
 			return nil, errorx.New(errno.ErrUsernameAlreadyTaken,
 				errorx.KV("username", *usernameUpdate))
 		}
 		logs.CtxErrorf(ctx, "[UserRepo] [UpdateProfile] error: %v, userId: %s", err, userID)
 		return nil, errorx.WrapByCode(err, errno.ErrUserUpdateFailed, errorx.KV("id", userID))
+	}
+	if !matched {
+		if usernameUpdate != nil && *usernameUpdate != "" {
+			return nil, errorx.New(errno.ErrUsernameUpdateLimitExceeded)
+		}
+		return nil, errorx.New(errno.ErrUserUpdateFailed, errorx.KV("id", userID))
 	}
 
 	if usernameUpdate != nil {

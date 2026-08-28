@@ -36,11 +36,15 @@ var _ IProposalRepo = (*ProposalRepo)(nil)
 
 const (
 	ProposalCollectionName         = "proposal"
+	ProposalGuardCollectionName    = "proposal_guard"
 	ProposalUserCreatedAtIndexName = "idx_proposal_user_id_created_at"
+	ProposalGuardTTLIndexName      = "idx_proposal_guard_expires_at"
+	proposalGuardTTL               = 48 * time.Hour
 )
 
 type IProposalRepo interface {
 	WithTransaction(ctx context.Context, fn func(mongo.SessionContext) error) error
+	AcquireCreateGuards(ctx context.Context, userDayKey, courseFingerprint string) error
 	Insert(ctx context.Context, proposal *model.Proposal) error
 	IsCourseInExistingProposals(ctx context.Context, course *model.ProposalCourse) (bool, error)
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
@@ -50,13 +54,13 @@ type IProposalRepo interface {
 	FindByIDIncludeDeleted(ctx context.Context, proposalID string) (*model.Proposal, error)
 	FindByIDs(ctx context.Context, proposalIDs []string) ([]*model.Proposal, error)
 	CountByUserToday(ctx context.Context, userId string) (int64, error)
-	UpdateProposal(ctx context.Context, proposal *model.Proposal) error
-	DeleteProposal(ctx context.Context, proposalId string, operatorId string) error
+	UpdateProposal(ctx context.Context, proposal *model.Proposal, expectedStatus int32) (bool, error)
+	DeleteProposal(ctx context.Context, proposalId, operatorId string, allowedStatuses []int32) (bool, error)
 	RestoreProposal(ctx context.Context, proposalId string) error
 	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam, statusID int32) ([]*model.Proposal, int64, error)
-	UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error)
+	UpdateStatusByID(ctx context.Context, proposalID string, expectedStatusID, statusID int32) (bool, error)
 	IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error
-	UpdateStatusAndReasonByID(ctx context.Context, proposalID string, statusID int32, rejectReason string) (bool, error)
+	UpdateStatusAndReasonByID(ctx context.Context, proposalID string, expectedStatusID, statusID int32, rejectReason string) (bool, error)
 	UpdateContributionByID(ctx context.Context, proposalID string, contribution int64) error
 }
 
@@ -103,6 +107,33 @@ func (r *ProposalRepo) WithTransaction(ctx context.Context, fn func(mongo.Sessio
 	return err
 }
 
+// AcquireCreateGuards serializes quota and duplicate checks inside a transaction.
+// The guard documents contain no business data and are never used as a source of truth.
+func (r *ProposalRepo) AcquireCreateGuards(ctx context.Context, userDayKey, courseFingerprint string) error {
+	collection := r.conn.Database().Collection(ProposalGuardCollectionName)
+	_, inTransaction := ctx.(mongo.SessionContext)
+	for _, id := range []string{"quota:" + userDayKey, "course:" + courseFingerprint} {
+		if !inTransaction {
+			_, err := collection.UpdateOne(ctx, bson.M{consts.ID: id}, bson.M{
+				"$setOnInsert": bson.M{"version": 0, consts.CreatedAt: time.Now()},
+				"$set":         bson.M{"expiresAt": time.Now().Add(proposalGuardTTL)},
+			}, options.Update().SetUpsert(true))
+			if err != nil && !mongo.IsDuplicateKeyError(err) {
+				return err
+			}
+			continue
+		}
+		_, err := collection.UpdateOne(ctx, bson.M{consts.ID: id}, bson.M{
+			"$inc": bson.M{"version": 1},
+			"$set": bson.M{consts.UpdatedAt: time.Now(), "expiresAt": time.Now().Add(proposalGuardTTL)},
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ensureIndexes 创建 proposal 集合所需的索引。CreateOne 对同名同定义索引是幂等的，
 // 因此可以在每次服务启动时安全调用。
 func (r *ProposalRepo) ensureIndexes(ctx context.Context) error {
@@ -112,6 +143,13 @@ func (r *ProposalRepo) ensureIndexes(ctx context.Context) error {
 			{Key: consts.CreatedAt, Value: -1},
 		},
 		Options: options.Index().SetName(ProposalUserCreatedAtIndexName),
+	})
+	if err != nil {
+		return err
+	}
+	_, err = r.conn.Database().Collection(ProposalGuardCollectionName).Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "expiresAt", Value: 1}},
+		Options: options.Index().SetName(ProposalGuardTTLIndexName).SetExpireAfterSeconds(0),
 	})
 	return err
 }
@@ -255,10 +293,12 @@ func (r *ProposalRepo) FindByIDIncludeDeleted(ctx context.Context, proposalID st
 }
 
 // DeleteProposal 删除单个提案
-func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalId string, operatorId string) error {
+func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalId, operatorId string, allowedStatuses []int32) (bool, error) {
 	// 查找未删除的提案
 	filter := bson.M{
 		consts.ID:      proposalId,
+		consts.UserID:  operatorId,
+		consts.Status:  bson.M{"$in": allowedStatuses},
 		consts.Deleted: bson.M{"$ne": true},
 	}
 
@@ -274,19 +314,19 @@ func (r *ProposalRepo) DeleteProposal(ctx context.Context, proposalId string, op
 
 	// 执行软删除操作
 	key := fmt.Sprintf("proposal:%s", proposalId)
-	_, err := r.conn.UpdateOne(ctx, key, filter, update)
+	result, err := r.conn.UpdateOne(ctx, key, filter, update)
 	if err != nil {
-		return err
+		return false, err
 	}
-
-	return nil
+	return result.ModifiedCount == 1, nil
 }
 
 // UpdateProposal 更新提案
-func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Proposal) error {
+func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Proposal, expectedStatus int32) (bool, error) {
 
 	filter := bson.M{
 		consts.ID:      proposal.ID,
+		consts.Status:  expectedStatus,
 		consts.Deleted: bson.M{"$ne": true},
 	}
 
@@ -299,8 +339,11 @@ func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Propo
 		},
 	}
 
-	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
-	return err
+	result, err := r.conn.UpdateOneNoCache(ctx, filter, update)
+	if err != nil {
+		return false, err
+	}
+	return result.ModifiedCount == 1, nil
 }
 
 // GetSuggestionsByTitle 根据提案标题模糊分页查询指定状态的提案
@@ -342,8 +385,8 @@ func (r *ProposalRepo) FindByIDs(ctx context.Context, proposalIDs []string) ([]*
 }
 
 // UpdateStatusByID 根据提案ID更新提案状态
-func (r *ProposalRepo) UpdateStatusByID(ctx context.Context, proposalID string, statusID int32) (bool, error) {
-	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}
+func (r *ProposalRepo) UpdateStatusByID(ctx context.Context, proposalID string, expectedStatusID, statusID int32) (bool, error) {
+	filter := bson.M{consts.ID: proposalID, consts.Status: expectedStatusID, consts.Deleted: bson.M{"$ne": true}}
 	update := bson.M{"$set": bson.M{consts.Status: statusID, consts.UpdatedAt: time.Now()}}
 
 	result, err := r.conn.UpdateOneNoCache(ctx, filter, update)
@@ -357,8 +400,8 @@ func (r *ProposalRepo) UpdateStatusByID(ctx context.Context, proposalID string, 
 }
 
 // UpdateStatusAndReasonByID 根据提案ID更新提案状态和拒绝理由
-func (r *ProposalRepo) UpdateStatusAndReasonByID(ctx context.Context, proposalID string, statusID int32, rejectReason string) (bool, error) {
-	filter := bson.M{consts.ID: proposalID, consts.Deleted: bson.M{"$ne": true}}
+func (r *ProposalRepo) UpdateStatusAndReasonByID(ctx context.Context, proposalID string, expectedStatusID, statusID int32, rejectReason string) (bool, error) {
+	filter := bson.M{consts.ID: proposalID, consts.Status: expectedStatusID, consts.Deleted: bson.M{"$ne": true}}
 	update := bson.M{"$set": bson.M{consts.Status: statusID, "rejectReason": rejectReason, consts.UpdatedAt: time.Now()}}
 
 	result, err := r.conn.UpdateOneNoCache(ctx, filter, update)

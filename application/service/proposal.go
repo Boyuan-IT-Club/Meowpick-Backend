@@ -16,6 +16,8 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -84,6 +86,33 @@ func getDailyProposalLimit(contribution int64) int64 {
 	}
 }
 
+func validateProposalInput(title string, course *dto.ProposalCourseVO) error {
+	if strings.TrimSpace(title) == "" {
+		return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "title"))
+	}
+	if course == nil {
+		return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "course"))
+	}
+	if strings.TrimSpace(course.Name) == "" || strings.TrimSpace(course.Department) == "" ||
+		strings.TrimSpace(course.Category) == "" || len(course.Campuses) == 0 {
+		return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "course required fields"))
+	}
+	for _, campusName := range course.Campuses {
+		campusName = strings.TrimSpace(campusName)
+		if campusName == "" || mapping.Data.GetCampusIDByName(campusName) == 0 {
+			return errorx.New(errno.ErrProposalInvalidCampus,
+				errorx.KV("key", consts.Campuses), errorx.KV("value", campusName))
+		}
+	}
+	for _, teacher := range course.Teachers {
+		if teacher == nil || strings.TrimSpace(teacher.Name) == "" ||
+			(teacher.ID == "" && strings.TrimSpace(teacher.Department) == "") {
+			return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "course.teachers"))
+		}
+	}
+	return nil
+}
+
 // CreateProposal 添加一个新的课程提案
 func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error) {
 	// 鉴权
@@ -92,18 +121,8 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	// 校验校区合法性
-	if req.Course == nil {
-		return nil, errorx.New(errno.ErrCourseCvtFailed, errorx.KV("reason", "course is required"))
-	}
-	for _, campusName := range req.Course.Campuses {
-		campusName = strings.TrimSpace(campusName)
-		if campusName == "" || mapping.Data.GetCampusIDByName(campusName) == 0 {
-			return nil, errorx.New(errno.ErrProposalInvalidCampus,
-				errorx.KV("key", consts.Campuses),
-				errorx.KV("value", campusName),
-			)
-		}
+	if validationErr := validateProposalInput(req.Title, req.Course); validationErr != nil {
+		return nil, validationErr
 	}
 
 	// 转换为 proposalCourseModel，不执行自动注册
@@ -198,10 +217,66 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		)
 	}
 
-	// 2. 保存提案到数据库
-	if err = s.ProposalRepo.Insert(ctx, proposal); err != nil {
-		logs.CtxErrorf(ctx, "[ProposalRepo] [Insert] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalCreateFailed, errorx.KV("name", req.Course.Name))
+	// 2. 在事务内串行化同用户当天额度检查和同课程防重检查。
+	chinaLocation := time.FixedZone("Asia/Shanghai", 8*60*60)
+	userDayKey := userId + ":" + now.In(chinaLocation).Format("2006-01-02")
+	fingerprintBytes, marshalErr := json.Marshal(course)
+	if marshalErr != nil {
+		return nil, errorx.WrapByCode(marshalErr, errno.ErrProposalCvtFailed)
+	}
+	fingerprintSum := sha256.Sum256(fingerprintBytes)
+	courseFingerprint := hex.EncodeToString(fingerprintSum[:])
+	if guardErr := s.ProposalRepo.AcquireCreateGuards(ctx, userDayKey, courseFingerprint); guardErr != nil {
+		return nil, errorx.WrapByCode(guardErr, errno.ErrProposalCreateFailed, errorx.KV("name", req.Course.Name))
+	}
+	err = s.ProposalRepo.WithTransaction(ctx, func(txCtx mongo.SessionContext) error {
+		if guardErr := s.ProposalRepo.AcquireCreateGuards(txCtx, userDayKey, courseFingerprint); guardErr != nil {
+			return guardErr
+		}
+		duplicateProposal, checkErr := s.ProposalRepo.IsCourseInExistingProposals(txCtx, course)
+		if checkErr != nil {
+			return errorx.WrapByCode(checkErr, errno.ErrProposalCourseFindInProposalsFailed)
+		}
+		if duplicateProposal {
+			return errorx.New(errno.ErrProposalCourseFoundInProposals,
+				errorx.KV("key", consts.ReqCourse), errorx.KV("value", req.Course.Name))
+		}
+		duplicateCourse, checkErr := s.CourseRepo.IsCourseInExistingCourses(txCtx, courseDBDryRun)
+		if checkErr != nil {
+			return errorx.WrapByCode(checkErr, errno.ErrProposalCourseFindInCoursesFailed)
+		}
+		if duplicateCourse {
+			return errorx.New(errno.ErrProposalCourseFoundInCourses,
+				errorx.KV("key", consts.ReqCourse), errorx.KV("value", req.Course.Name))
+		}
+		txUser, findErr := s.UserRepo.FindByID(txCtx, userId)
+		if findErr != nil {
+			return errorx.WrapByCode(findErr, errno.ErrUserFindFailed)
+		}
+		if txUser == nil {
+			return errorx.New(errno.ErrUserNotFound, errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
+		}
+		limit := getDailyProposalLimit(txUser.Contribution)
+		count, countErr := s.ProposalRepo.CountByUserToday(txCtx, userId)
+		if countErr != nil {
+			return errorx.WrapByCode(countErr, errno.ErrProposalCountFailed)
+		}
+		if count >= limit {
+			return errorx.New(errno.ErrDailyProposalLimitReached, errorx.KV("limit", strconv.FormatInt(limit, 10)))
+		}
+		if insertErr := s.ProposalRepo.Insert(txCtx, proposal); insertErr != nil {
+			return errorx.WrapByCode(insertErr, errno.ErrProposalCreateFailed, errorx.KV("name", req.Course.Name))
+		}
+		_, logErr := s.ChangeLogService.CreateChangeLog(txCtx, &dto.CreateChangeLogReq{
+			TargetID: proposal.ID, TargetType: consts.TargetTypeProposal,
+			Action: consts.ActionTypeCreateProposal, Content: "创建提案",
+			UpdateSource: consts.UpdateSourceUser, ProposalID: proposal.ID,
+		})
+		return logErr
+	})
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalService] transactional create failed: %v", err)
+		return nil, err
 	}
 
 	// 3. 转换为 VO (包含点赞信息)
@@ -210,17 +285,6 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVO] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
 			errorx.KV("src", "database proposal"), errorx.KV("dst", "proposal vo"))
-	}
-
-	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
-		TargetID:     proposal.ID,
-		TargetType:   consts.TargetTypeProposal,
-		Action:       consts.ActionTypeCreateProposal,
-		Content:      "创建提案",
-		UpdateSource: consts.UpdateSourceUser,
-		ProposalID:   proposal.ID,
-	}); err != nil {
-		logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", err, proposal.ID)
 	}
 
 	return &dto.CreateProposalResp{
@@ -238,8 +302,19 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	// 获得状态
-	status := mapping.Data.GetProposalStatusIDByName(req.Status)
+	isAdmin, adminErr := s.UserRepo.IsAdminByID(ctx, userId)
+	if adminErr != nil {
+		return nil, errorx.WrapByCode(adminErr, errno.ErrUserFindFailed)
+	}
+	statusName := strings.TrimSpace(req.Status)
+	if !isAdmin {
+		statusName = consts.ProposalStatusApproved
+	}
+	status := mapping.Data.GetProposalStatusIDByName(statusName)
+	if statusName != "" && status == 0 {
+		return nil, errorx.New(errno.ErrProposalGetStatusFailed,
+			errorx.KV("key", consts.Status), errorx.KV("value", statusName))
+	}
 
 	// 获得提案
 	var err error
@@ -342,14 +417,7 @@ func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterPr
 			continue
 		}
 
-		valid := false
-		for _, validCampusName := range typesMapping.CampusesMap {
-			if validCampusName == campusName {
-				valid = true
-				break
-			}
-		}
-		if !valid {
+		if mapping.Data.GetCampusIDByName(campusName) == 0 {
 			return nil, errorx.New(errno.ErrProposalInvalidCampus,
 				errorx.KV("key", consts.Campuses),
 				errorx.KV("value", campusName),
@@ -498,11 +566,17 @@ func (s *ProposalService) DeleteProposal(ctx context.Context, req *dto.DeletePro
 	}
 
 	//执行删除提案
-	err = s.ProposalRepo.DeleteProposal(ctx, proposalId, userId)
+	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
+	rejectedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
+	deleted, deleteErr := s.ProposalRepo.DeleteProposal(ctx, proposalId, userId, []int32{pendingStatusID, rejectedStatusID})
+	err = deleteErr
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalRepo] [Delete] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalDeleteFailed,
 			errorx.KV("proposal_id", proposalId))
+	}
+	if !deleted {
+		return nil, errorx.New(errno.ErrProposalDeleteFailed, errorx.KV("proposal_id", proposalId))
 	}
 
 	// 记录变更日志（仅创建者可删，来源固定为用户）
@@ -556,15 +630,8 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 		return nil, errorx.New(errno.ErrProposalAlreadyProcessed,
 			errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
 	}
-	if req.Course == nil {
-		return nil, errorx.New(errno.ErrCourseCvtFailed, errorx.KV("reason", "course is required"))
-	}
-	for _, campusName := range req.Course.Campuses {
-		campusName = strings.TrimSpace(campusName)
-		if campusName == "" || mapping.Data.GetCampusIDByName(campusName) == 0 {
-			return nil, errorx.New(errno.ErrProposalInvalidCampus,
-				errorx.KV("key", consts.Campuses), errorx.KV("value", campusName))
-		}
+	if validationErr := validateProposalInput(req.Title, req.Course); validationErr != nil {
+		return nil, validationErr
 	}
 
 	// 更新提案字段
@@ -580,9 +647,14 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 	proposal.UpdatedAt = time.Now()
 
 	// 执行更新
-	if err = s.ProposalRepo.UpdateProposal(ctx, proposal); err != nil {
+	updated, updateErr := s.ProposalRepo.UpdateProposal(ctx, proposal, pendingStatusID)
+	if updateErr != nil {
+		err = updateErr
 		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateProposal] error: %v, proposalId: %s", err, req.ProposalID)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+	}
+	if !updated {
+		return nil, errorx.New(errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
 	}
 
 	if _, err = s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
@@ -858,6 +930,7 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 
 	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
 	rejectedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
+	var approvalUserID string
 
 	// Course, teachers, newly allocated mappings, proposal status, contribution,
 	// and audit log commit or roll back as one MongoDB transaction.
@@ -872,6 +945,7 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		if proposal.Status == approvedStatusID || proposal.Status == rejectedStatusID {
 			return errorx.New(errno.ErrProposalAlreadyProcessed, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
 		}
+		approvalUserID = proposal.UserID
 
 		courseVO, resolveErr := s.resolveFinalCourse(txCtx, req, proposal)
 		if resolveErr != nil {
@@ -880,11 +954,15 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 		if courseVO == nil {
 			return errorx.New(errno.ErrCourseCvtFailed, errorx.KV("proposalId", req.ProposalID))
 		}
+		if validationErr := validateProposalInput(proposal.Title, courseVO); validationErr != nil {
+			return validationErr
+		}
 		if createErr := s.createOrRestoreCourse(txCtx, proposal, courseVO); createErr != nil {
 			return createErr
 		}
 
-		updated, updateErr := s.ProposalRepo.UpdateStatusByID(txCtx, req.ProposalID, approvedStatusID)
+		pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
+		updated, updateErr := s.ProposalRepo.UpdateStatusByID(txCtx, req.ProposalID, pendingStatusID, approvedStatusID)
 		if updateErr != nil {
 			return errorx.WrapByCode(updateErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
 		}
@@ -909,6 +987,9 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalService] transactional approval failed: %v, proposalId: %s", err, req.ProposalID)
 		return nil, err
+	}
+	if invalidateErr := s.UserRepo.InvalidateByID(ctx, approvalUserID); invalidateErr != nil {
+		logs.CtxWarnf(ctx, "[UserRepo] post-approval cache invalidation failed: %v", invalidateErr)
 	}
 
 	// Redis is outside the database transaction. Rebuild it only after commit;
@@ -1047,8 +1128,8 @@ func (s *ProposalService) settleContributionStrict(ctx context.Context, proposal
 	return nil
 }
 
-// rollbackContribution 撤回审批通过时扣回用户的贡献值，并清空提案上的贡献值记录
-func (s *ProposalService) rollbackContribution(ctx context.Context, proposal *model.Proposal) {
+// rollbackContributionStrict 在撤回事务内扣回贡献值并清空提案记录；任一步失败均回滚。
+func (s *ProposalService) rollbackContributionStrict(ctx context.Context, proposal *model.Proposal) error {
 	amount := proposal.Contribution
 	if amount <= 0 {
 		// 兜底：贡献值字段为空时重新计算一次得分
@@ -1056,19 +1137,19 @@ func (s *ProposalService) rollbackContribution(ctx context.Context, proposal *mo
 	}
 	if amount <= 0 {
 		logs.CtxInfof(ctx, "[ProposalService] [RevokeProposal] no contribution to rollback, proposalId: %s", proposal.ID)
-		return
+		return nil
 	}
 
 	// 扣减用户贡献值
 	if err := s.UserRepo.IncrementContribution(ctx, proposal.UserID, -amount); err != nil {
-		logs.CtxErrorf(ctx, "[UserRepo] [IncrementContribution] error: %v, userId: %s", err, proposal.UserID)
-		return
+		return fmt.Errorf("decrement user contribution: %w", err)
 	}
 
 	// 提案贡献值置空，表示已撤回
 	if err := s.ProposalRepo.UpdateContributionByID(ctx, proposal.ID, 0); err != nil {
-		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateContributionByID] error: %v, proposalId: %s", err, proposal.ID)
+		return fmt.Errorf("clear proposal contribution: %w", err)
 	}
+	return nil
 }
 
 // recalcContribution 重新计算提案的贡献值得分（兜底，对比提案原始课程与关联的最终课程）
@@ -1243,97 +1324,74 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 		return nil, errorx.New(errno.ErrProposalIDRequired, errorx.KV("key", consts.ReqProposalID))
 	}
 
-	// 查询提案
-	proposal, err := s.ProposalRepo.FindByID(ctx, req.ProposalID)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[ProposalRepo] [FindByID] error: %v, proposalId: %s", err, req.ProposalID)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
-	}
-	if proposal == nil {
-		logs.CtxWarnf(ctx, "[ProposalRepo] proposal not found, proposalId: %s", req.ProposalID)
-		return nil, errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
-	}
-
-	// 获取状态ID
 	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
 	rejectedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
 	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
-
-	switch req.ActionType {
-	case consts.RevokeActionApprove:
-		// 撤回已通过的提案
-		if proposal.Status != approvedStatusID {
-			return nil, errorx.New(errno.ErrProposalStatusNotApproved, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 删除关联课程（通过提案ID查找，课程已被手动删除则仅回退提案状态）
-		associatedCourse, findErr := s.CourseRepo.FindByProposalIDIncludeDeleted(ctx, req.ProposalID)
-		if findErr != nil {
-			logs.CtxErrorf(ctx, "[CourseRepo] [FindByProposalID] error: %v, proposalId: %s", findErr, req.ProposalID)
-			return nil, errorx.WrapByCode(findErr, errno.ErrCourseNotFoundCannotRevoke)
-		}
-		if associatedCourse != nil && !associatedCourse.Deleted {
-			if delErr := s.CourseRepo.SoftDeleteByID(ctx, associatedCourse.ID); delErr != nil {
-				logs.CtxErrorf(ctx, "[CourseRepo] [SoftDeleteByID] error: %v, courseId: %s", delErr, associatedCourse.ID)
-				return nil, errorx.WrapByCode(delErr, errno.ErrProposalUpdateFailed, errorx.KV("courseId", associatedCourse.ID))
-			}
-		}
-
-		// 扣回贡献值
-		s.rollbackContribution(ctx, proposal)
-
-		// 更新提案状态为待审核
-		updated, updateErr := s.ProposalRepo.UpdateStatusByID(ctx, req.ProposalID, pendingStatusID)
-		if updateErr != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusByID] error: %v, proposalId: %s", updateErr, req.ProposalID)
-			return nil, errorx.WrapByCode(updateErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-		if !updated {
-			return nil, errorx.New(errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 记录变更日志
-		if _, logErr := s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
-			TargetID:     req.ProposalID,
-			TargetType:   consts.TargetTypeProposal,
-			Action:       consts.ActionTypeRevokeApproveProposal,
-			Content:      "撤回提案审批：通过→待审核",
-			UpdateSource: consts.UpdateSourceAdmin,
-			ProposalID:   req.ProposalID,
-		}); logErr != nil {
-			logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", logErr, req.ProposalID)
-		}
-
-	case consts.RevokeActionReject:
-		// 撤回已拒绝的提案
-		if proposal.Status != rejectedStatusID {
-			return nil, errorx.New(errno.ErrProposalStatusNotRejected, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 更新提案状态为待审核
-		updated, updateErr := s.ProposalRepo.UpdateStatusByID(ctx, req.ProposalID, pendingStatusID)
-		if updateErr != nil {
-			logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusByID] error: %v, proposalId: %s", updateErr, req.ProposalID)
-			return nil, errorx.WrapByCode(updateErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-		if !updated {
-			return nil, errorx.New(errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
-		}
-
-		// 记录变更日志
-		if _, logErr := s.ChangeLogService.CreateChangeLog(ctx, &dto.CreateChangeLogReq{
-			TargetID:     req.ProposalID,
-			TargetType:   consts.TargetTypeProposal,
-			Action:       consts.ActionTypeRevokeRejectProposal,
-			Content:      "撤回提案审批：拒绝→待审核",
-			UpdateSource: consts.UpdateSourceAdmin,
-			ProposalID:   req.ProposalID,
-		}); logErr != nil {
-			logs.CtxErrorf(ctx, "[ChangeLogService] [CreateChangeLog] error: %v, proposalId: %s", logErr, req.ProposalID)
-		}
-
-	default:
+	if req.ActionType != consts.RevokeActionApprove && req.ActionType != consts.RevokeActionReject {
 		return nil, errorx.New(errno.ErrRevokeActionTypeInvalid, errorx.KV("actionType", req.ActionType))
+	}
+
+	var proposalUserID string
+	err = s.ProposalRepo.WithTransaction(ctx, func(txCtx mongo.SessionContext) error {
+		proposal, findErr := s.ProposalRepo.FindByID(txCtx, req.ProposalID)
+		if findErr != nil {
+			return errorx.WrapByCode(findErr, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
+		}
+		if proposal == nil {
+			return errorx.New(errno.ErrProposalNotFound, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
+		}
+		proposalUserID = proposal.UserID
+
+		expectedStatusID := rejectedStatusID
+		action := consts.ActionTypeRevokeRejectProposal
+		content := "撤回提案审批：拒绝→待审核"
+		if req.ActionType == consts.RevokeActionApprove {
+			expectedStatusID = approvedStatusID
+			action = consts.ActionTypeRevokeApproveProposal
+			content = "撤回提案审批：通过→待审核"
+			if proposal.Status != approvedStatusID {
+				return errorx.New(errno.ErrProposalStatusNotApproved, errorx.KV("proposalId", req.ProposalID))
+			}
+			associatedCourse, courseErr := s.CourseRepo.FindByProposalIDIncludeDeleted(txCtx, req.ProposalID)
+			if courseErr != nil {
+				return errorx.WrapByCode(courseErr, errno.ErrCourseNotFoundCannotRevoke)
+			}
+			if associatedCourse != nil && !associatedCourse.Deleted {
+				if courseErr = s.CourseRepo.SoftDeleteByID(txCtx, associatedCourse.ID); courseErr != nil {
+					return errorx.WrapByCode(courseErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+				}
+			}
+			if contributionErr := s.rollbackContributionStrict(txCtx, proposal); contributionErr != nil {
+				return contributionErr
+			}
+		} else if proposal.Status != rejectedStatusID {
+			return errorx.New(errno.ErrProposalStatusNotRejected, errorx.KV("proposalId", req.ProposalID))
+		}
+
+		updated, updateErr := s.ProposalRepo.UpdateStatusByID(txCtx, req.ProposalID, expectedStatusID, pendingStatusID)
+		if updateErr != nil {
+			return errorx.WrapByCode(updateErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+		}
+		if !updated {
+			return errorx.New(errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+		}
+		_, logErr := s.ChangeLogService.CreateChangeLog(txCtx, &dto.CreateChangeLogReq{
+			TargetID: req.ProposalID, TargetType: consts.TargetTypeProposal, Action: action,
+			Content: content, UpdateSource: consts.UpdateSourceAdmin, ProposalID: req.ProposalID,
+		})
+		return logErr
+	})
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalService] transactional revoke failed: %v, proposalId: %s", err, req.ProposalID)
+		return nil, err
+	}
+	if req.ActionType == consts.RevokeActionApprove {
+		if invalidateErr := s.UserRepo.InvalidateByID(ctx, proposalUserID); invalidateErr != nil {
+			logs.CtxWarnf(ctx, "[UserRepo] post-revoke cache invalidation failed: %v", invalidateErr)
+		}
+		if refreshErr := mapping.Data.Refresh(ctx); refreshErr != nil {
+			logs.CtxWarnf(ctx, "[Mapping] post-revoke refresh failed: %v", refreshErr)
+		}
 	}
 
 	return &dto.RevokeProposalResp{
@@ -1379,7 +1437,7 @@ func (s *ProposalService) RejectProposal(ctx context.Context, req *dto.RejectPro
 	}
 
 	newStatusID := rejectedStatusID
-	updated, err := s.ProposalRepo.UpdateStatusAndReasonByID(ctx, req.ProposalID, newStatusID, req.Reason)
+	updated, err := s.ProposalRepo.UpdateStatusAndReasonByID(ctx, req.ProposalID, pendingStatusID, newStatusID, req.Reason)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalRepo] [UpdateStatusAndReasonByID] error: %v, proposalId: %s", err, req.ProposalID)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))

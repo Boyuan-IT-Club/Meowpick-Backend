@@ -31,6 +31,11 @@ type GetUsernameByUserIDResp struct {
 	Username string `json:"username"`
 }
 
+// GetUsernameByUserIDReq 限定跨用户昵称查询所关联的公开提案。
+type GetUsernameByUserIDReq struct {
+	ProposalID string `form:"proposalId"`
+}
+
 // UpdateUserProfileReq 更新当前登录用户的个人资料。
 // 指针用于区分字段未传/null（保持原值）与空字符串（清空）。
 type UpdateUserProfileReq struct {
