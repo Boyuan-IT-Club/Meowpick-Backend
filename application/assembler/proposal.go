@@ -171,11 +171,11 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 				Like:    active,
 				LikeCnt: likeCnt,
 			},
-			Course:    courseVO,
-			CreatedAt: db.CreatedAt,
-			UpdatedAt: db.UpdatedAt,
-		}
-		vos = append(vos, proposalVO)
+		Course:    courseVO,
+		CreatedAt: db.CreatedAt,
+		UpdatedAt: db.UpdatedAt,
+	}
+	vos = append(vos, proposalVO)
 	}
 
 	return vos, nil
@@ -205,9 +205,9 @@ func (a *ProposalAssembler) ToProposalDB(ctx context.Context, vo *dto.ProposalVO
 		Course:       courseDB,
 		Status:       mapping.Data.GetProposalStatusIDByName(vo.Status),
 		Deleted:      vo.Deleted,
-		RejectReason: vo.RejectReason,
 		ShowUsername: vo.ShowUsername,
 		Contribution: vo.Contribution,
+		RejectReason: vo.RejectReason,
 		CreatedAt:    vo.CreatedAt,
 		UpdatedAt:    vo.UpdatedAt,
 	}, nil
