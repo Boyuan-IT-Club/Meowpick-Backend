@@ -167,6 +167,47 @@ func buildPlan(ctx context.Context, client *mongo.Client, database string) (*pla
 	result := &plan{Version: planVersion, GeneratedAt: time.Now().UTC(), Database: database}
 	result.Deployment, result.Conflicts = deployment(ctx, client)
 
+	// Startup creates a case-insensitive partial unique nickname index. Detect
+	// legacy collisions before deployment so startup cannot fail unexpectedly.
+	usernameCursor, err := db.Collection("user").Aggregate(ctx, mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{"username": bson.M{"$type": "string", "$gt": ""}}}},
+		{{Key: "$group", Value: bson.M{
+			"_id": bson.M{"$toLower": bson.M{"$trim": bson.M{"input": "$username"}}},
+			"ids": bson.M{"$push": "$_id"}, "count": bson.M{"$sum": 1},
+		}}},
+		{{Key: "$match", Value: bson.M{"count": bson.M{"$gt": 1}}}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	var usernameConflicts []struct {
+		Username string   `bson:"_id"`
+		IDs      []string `bson:"ids"`
+	}
+	if err = usernameCursor.All(ctx, &usernameConflicts); err != nil {
+		return nil, err
+	}
+	for _, conflict := range usernameConflicts {
+		result.Conflicts = append(result.Conflicts,
+			fmt.Sprintf("case-insensitive username conflict username=%q userIds=%v", conflict.Username, conflict.IDs))
+	}
+	negativeCursor, err := db.Collection("user").Find(ctx, bson.M{"contributionPoints": bson.M{"$lt": 0}},
+		options.Find().SetProjection(bson.M{"_id": 1, "contributionPoints": 1}))
+	if err != nil {
+		return nil, err
+	}
+	var negativeContributions []struct {
+		ID           string `bson:"_id"`
+		Contribution int64  `bson:"contributionPoints"`
+	}
+	if err = negativeCursor.All(ctx, &negativeContributions); err != nil {
+		return nil, err
+	}
+	for _, user := range negativeContributions {
+		result.Conflicts = append(result.Conflicts,
+			fmt.Sprintf("negative contribution userId=%s contributionPoints=%d", user.ID, user.Contribution))
+	}
+
 	var existing []legacyMapping
 	cursor, err := db.Collection("mapping").Find(ctx, bson.M{})
 	if err != nil {
@@ -556,6 +597,15 @@ func apply(ctx context.Context, client *mongo.Client, approved *plan) error {
 		Keys: bson.D{{Key: "proposalId", Value: 1}},
 		Options: options.Index().SetName("course_proposal_id_unique").SetUnique(true).
 			SetPartialFilterExpression(bson.M{"proposalId": bson.M{"$type": "string", "$gt": ""}}),
+	})
+	if err != nil {
+		return err
+	}
+	_, err = db.Collection("user").Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "username", Value: 1}},
+		Options: options.Index().SetName("idx_user_username_unique").SetUnique(true).
+			SetCollation(&options.Collation{Locale: "en", Strength: 2}).
+			SetPartialFilterExpression(bson.M{"username": bson.M{"$type": "string", "$gt": ""}}),
 	})
 	return err
 }
