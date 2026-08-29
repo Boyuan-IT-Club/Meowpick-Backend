@@ -1,57 +1,37 @@
-# Backend v2 database migration
+# 后端 v2 数据库迁移手册
 
-This migration makes MongoDB the source of truth for campus, department, and
-course-category mappings. Redis is a rebuildable cache. Do not import the old
-JSON fixture into production: it is test input, not a production backup.
+本次迁移将 MongoDB 设为校区、院系和课程分类映射的唯一真源，Redis 仅作为可重建缓存。禁止将旧 JSON 数据导入生产环境：该文件只是测试输入，不是生产数据库备份。
 
-## What changes
+## 迁移内容
 
-- `mapping._id` becomes an ObjectID.
-- `mapping` gains `canonical: bool`. Historical duplicate display names keep all
-  `code -> name` aliases; the lowest historical static code is canonical for
-  `name -> code`. Newly created mappings are canonical.
-- Unique indexes protect `(type, code)` and canonical `(type, name)` records.
-- `mapping_counter` stores the next safe sequence per mapping type.
-- Legacy comment ObjectID keys are converted to their hexadecimal string form so
-  newly returned comment IDs can be used by the like API.
-- Courses with code `0` are repaired from their source proposal only when the
-  source is unambiguous. Otherwise migration stops and reports the course ID.
-- Teacher timestamps affected by the 1970 conversion bug are recovered from a
-  valid ObjectID timestamp when possible.
-- A partial unique index on `course.proposalId` enforces one proposal to one
-  formal course.
-- A case-insensitive partial unique index on non-empty `user.username` values
-  prevents concurrent nickname duplication.
-- `proposal_guard` stores lightweight serialization records for per-user daily
-  quota checks and same-course proposal checks. It contains no authoritative
-  business data, requires no backfill, and expires inactive rows after 48 hours.
+- 将 `mapping._id` 转换为 ObjectID。
+- 为 `mapping` 增加 `canonical: bool`。历史上同名但不同编号的数据会保留全部 `code -> name` 别名；其中最小的历史静态编号作为 `name -> code` 的规范编号。新建映射均为规范映射。
+- 使用唯一索引保护 `(type, code)` 以及规范记录的 `(type, name)`。
+- 使用 `mapping_counter` 保存每种映射类型当前已分配的最大序号；下一次分配会在该值基础上递增。
+- 将旧评论的 ObjectID 主键转换为十六进制字符串，使新接口返回的评论 ID 能直接用于点赞接口。
+- 仅当能从来源提案唯一推导出正确编号时，才修复编号为 `0` 的课程字段；否则迁移会停止并报告课程 ID。
+- 在可以从有效 ObjectID 时间戳恢复时，修复受 1970 年时间转换错误影响的教师时间字段。
+- 为 `course.proposalId` 创建部分唯一索引，保证一条提案最多对应一门正式课程。
+- 为非空 `user.username` 创建忽略大小写的部分唯一索引，防止并发创建重复昵称。
+- 使用 `proposal_guard` 保存每日发布额度和相同课程防重所需的轻量串行化记录。该集合不保存权威业务数据，无需回填；停止活动 48 小时后记录会自动过期。
 
-The application now uses a MongoDB transaction for proposal approval. Production
-MongoDB must therefore be a replica set or sharded deployment; standalone MongoDB
-is rejected by the migration preflight.
+提案审批现在依赖 MongoDB 事务，因此生产 MongoDB 必须是副本集或分片集群。迁移预检会拒绝独立部署的 MongoDB。
 
-## Required execution order
+## 必须遵循的执行顺序
 
-1. Enter a full application write-maintenance window before the backup. Keep all
-   application MongoDB writes stopped through dry-run and apply. If dry-run
-   reports conflicts, an approved operator may make only the reviewed repair
-   writes described below while the application remains closed; discard the old
-   plan after every repair and generate a fresh dry-run.
-2. Confirm the application uses the `Eagle233` release being deployed.
-3. Back up the current online database.
-4. Run dry-run and review the JSON report.
-5. Resolve every reported conflict in the online database; never edit the plan to
-   hide a conflict.
-6. Run dry-run again. Continue only when `conflicts` is empty.
-7. Apply that exact plan. The tool verifies that the database snapshot has not
-   changed since dry-run.
-8. Restart the backend. Startup atomically rebuilds all six Redis Hash keys.
-9. Run the validation queries below before reopening writes.
+1. 备份前进入全应用写维护窗口。从备份开始到试运行和应用阶段完成期间，停止所有应用发起的 MongoDB 写入。若试运行报告冲突，应用必须继续保持关闭，只允许获得批准的运维人员执行下文已经审核的修复写入；每次修复后必须废弃旧计划并重新执行试运行。
+2. 确认待部署应用来自 `Eagle233` 分支对应版本。
+3. 备份当前线上数据库。
+4. 执行试运行并审核 JSON 报告。
+5. 解决线上数据库中报告的每一项冲突，禁止通过编辑迁移计划来隐藏冲突。
+6. 再次执行试运行，只有 `conflicts` 为空才能继续。
+7. 应用这份未经修改的原始计划。工具会验证数据库快照自试运行后没有发生变化。
+8. 重启后端。启动过程会原子重建全部六个 Redis 哈希键。
+9. 执行下文验证，全部通过后才能重新开放写入。
 
-## Backup
+## 备份
 
-Set environment variables in the operator shell; do not place credentials in the
-repository.
+在运维终端中设置环境变量，禁止将数据库凭据写入仓库。
 
 ```bash
 export MEOWPICK_MONGO_URI='mongodb://...'
@@ -66,9 +46,9 @@ mongosh "$MEOWPICK_MONGO_URI/$MEOWPICK_DB" --quiet --eval '
   }' > "$MEOWPICK_BACKUP.counts.txt"
 ```
 
-Record the archive checksum and store it outside the application host.
+记录备份文件校验和，并将备份、校验和及集合计数文件保存到应用服务器之外的位置。
 
-## Mandatory dry-run
+## 强制试运行
 
 ```bash
 go run ./cmd/migrate-v2 \
@@ -77,27 +57,25 @@ go run ./cmd/migrate-v2 \
   --report migration-v2-plan.json
 ```
 
-Exit code `0` means the report has no conflicts. Exit code `2` means no writes
-were made and the `conflicts` array must be resolved. The report contains no
-MongoDB credentials.
+退出码 `0` 表示报告中没有冲突。退出码 `2` 表示没有进行任何数据库写入，必须解决报告 `conflicts` 数组中的问题。报告中不包含 MongoDB 凭据。
 
-The tool stops for, among other cases:
+以下情况会阻止迁移，包括但不限于：
 
-- an online dynamic code colliding with a different old static name;
-- an online name using a different code from its old static definition;
-- a course containing code `0` without an unambiguous source proposal;
-- duplicate formal courses for one `proposalId`;
-- a comment ObjectID colliding with an existing string ID;
-- a standalone MongoDB deployment.
-- duplicate non-empty nicknames when compared case-insensitively;
-- any user whose `contributionPoints` is negative.
+- 线上动态编号与名称不同的旧静态编号发生碰撞；
+- 线上名称使用的编号与旧静态定义不一致；
+- 课程包含编号 `0`，但无法从来源提案唯一确定正确编号；
+- 同一 `proposalId` 对应多门正式课程；
+- 评论 ObjectID 与已有字符串 ID 冲突；
+- MongoDB 为独立部署而不是副本集或分片集群；
+- 非空昵称在忽略大小写后重复；
+- 任意用户的 `contributionPoints` 为负数。
 
-## Conflict investigation templates
+## 冲突调查模板
 
-Use the IDs and values from the generated report. These commands are read-only:
+使用迁移报告中的 ID 和数值执行以下只读命令：
 
 ```javascript
-// mongosh, after selecting the production database
+// mongosh，先切换到生产数据库
 db.mapping.find({type: 1, code: 1})
 db.course.find({$or: [{department: 0}, {category: 0}, {campuses: 0}]})
 db.course.find({proposalId: {$type: "string", $gt: ""}})
@@ -117,9 +95,7 @@ db.course.aggregate([
 db.comment.find({_id: {$type: "objectId"}}, {_id: 1})
 ```
 
-For a zero-code course without a source proposal, an operator must determine the
-correct existing codes from authoritative business data. An explicit repair has
-this form; replace all placeholders and retain the old-value predicates:
+对于没有来源提案的零编号课程，运维人员必须根据权威业务资料确定正确的已有编号。显式修复示例如下；必须替换全部占位符，并保留旧值匹配条件：
 
 ```javascript
 db.course.updateOne(
@@ -128,24 +104,13 @@ db.course.updateOne(
 )
 ```
 
-For an online dynamic/static code collision, do not update only `mapping.code`.
-First identify every course and teacher that uses the ambiguous code, determine
-which records refer to each meaning, and migrate those references together. If
-that decision cannot be made from authoritative data, leave the conflict
-unresolved and do not deploy.
+对于线上动态编号与静态编号的冲突，禁止只修改 `mapping.code`。必须先找到所有使用该歧义编号的课程和教师，判断每条记录实际对应的含义，然后同时迁移这些引用。如果无法根据权威数据作出判断，应保留该冲突并停止部署。
 
-After any explicit repair, discard the old plan and run dry-run again.
+每次显式修复后，都必须废弃旧迁移计划并重新执行试运行。
 
-Nickname collisions require a product/operator decision about which user keeps
-the nickname; do not choose automatically. A negative contribution requires an
-audit of that user's approval/revoke changelog before correction. Duplicate
-formal courses require selecting the authoritative course and repairing every
-reference before removing or soft-deleting the duplicate. Comment ID collisions
-require comparing both documents and their like references. Record each
-decision and the exact before/after values in the change ticket. The migration
-tool intentionally reports these conflicts but does not guess a repair.
+昵称冲突必须由产品或运维负责人决定哪个用户保留昵称，禁止自动选择。负贡献值必须先审计该用户的审批和撤回日志。重复正式课程必须先选择权威课程并修复全部引用，之后才能删除或软删除重复课程。评论 ID 冲突必须比较两份评论记录及其点赞引用。每一项决定和修改前后值都必须记录在变更工单中；迁移工具只负责报告冲突，不会猜测修复方案。
 
-## Apply
+## 应用迁移
 
 ```bash
 go run ./cmd/migrate-v2 \
@@ -154,13 +119,11 @@ go run ./cmd/migrate-v2 \
   --apply-plan migration-v2-plan.json
 ```
 
-Application is refused when the report contains conflicts, has the wrong version
-or database, or its snapshot hash differs from the current database. Mapping,
-counter, comment-ID, course, and timestamp writes run in one MongoDB transaction.
+如果报告包含冲突、版本或数据库不匹配，或者数据库快照与试运行时不同，工具会拒绝应用。映射、计数器、评论 ID、课程和时间戳修改会在同一个 MongoDB 事务中完成。
 
-## Post-migration validation
+## 迁移后验证
 
-Run dry-run again. All repair counts and conflicts must be zero:
+再次执行试运行。所有修复数量和冲突数量都必须为零：
 
 ```bash
 go run ./cmd/migrate-v2 \
@@ -169,7 +132,7 @@ go run ./cmd/migrate-v2 \
   --report migration-v2-postcheck.json
 ```
 
-Useful `mongosh` checks:
+建议执行以下 `mongosh` 检查：
 
 ```javascript
 db.mapping.aggregate([
@@ -188,11 +151,7 @@ db.user.aggregate([
 ])
 ```
 
-Every query that searches for duplicates, zero codes, ObjectID comments,
-negative contributions, or nickname collisions must return no rows (or count
-zero). For each mapping type, the `mapping_counter.seq` must equal the maximum
-`mapping.code`, and there must be exactly one canonical row for each distinct
-mapping name. This read-only check reports counter mismatches:
+所有用于检查重复项、零编号、ObjectID 评论、负贡献值或昵称冲突的查询都必须返回空结果或计数为零。对于每种映射类型，`mapping_counter.seq` 必须等于 `mapping.code` 的最大值；每个不同映射名称必须恰好有一条规范记录。以下只读查询会报告计数器不一致：
 
 ```javascript
 db.mapping.aggregate([
@@ -202,7 +161,7 @@ db.mapping.aggregate([
 ])
 ```
 
-After backend startup, Redis must contain these six hashes:
+后端启动后，Redis 必须包含以下六个哈希键：
 
 ```text
 mapping:{reference-mappings}:1:name_to_code
@@ -213,38 +172,19 @@ mapping:{reference-mappings}:3:name_to_code
 mapping:{reference-mappings}:3:code_to_name
 ```
 
-Choose one canonical mapping added by the migration report and one historical
-alias when those kinds of rows exist. Otherwise choose any canonical row from
-each mapping type and any additional `code -> name` row available. Validate
-`name -> code` for canonical rows and `code -> name` for every chosen code with
-`HGET`; every value must equal MongoDB. Then approve a test proposal
-and confirm the course, mappings, proposal status, contribution, and changelog
-all commit together. Any missing/mismatched Redis value or partial MongoDB state
-is a failed deployment; keep writes closed and roll back.
+如果迁移报告中存在新增规范映射和历史别名，应分别选择一条作为样本；若不存在，则从每种映射类型选择任意规范记录，并选择任意可用的额外 `code -> name` 记录。使用 `HGET` 验证规范记录的 `name -> code` 和所有样本编号的 `code -> name`，每个值都必须与 MongoDB 一致。
 
-## Rollback
+随后通过一条测试提案，确认课程、映射、提案状态、贡献值和变更日志在同一事务中提交。任何 Redis 值缺失或不匹配，或者 MongoDB 出现部分写入，都表示部署失败；必须继续保持写入关闭并执行回滚。
 
-If validation fails, stop the new backend and restore the pre-migration archive.
-Restoring with `--drop` replaces collections and is destructive, so verify the
-database name and archive path before running it:
+## 回滚
+
+如果验证失败，停止新后端并恢复迁移前备份。`--drop` 会替换集合，属于破坏性操作，执行前必须确认数据库名称和备份路径：
 
 ```bash
 mongorestore --uri "$MEOWPICK_MONGO_URI" --db "$MEOWPICK_DB" \
   --archive="PATH_TO_VERIFIED_BACKUP.archive.gz" --gzip --drop
 ```
 
-Before restore, run `shasum -a 256 -c "$MEOWPICK_BACKUP.sha256"`. After restore,
-generate collection counts with the same `mongosh` loop used during backup and
-compare counts only for collection names recorded in
-`$MEOWPICK_BACKUP.counts.txt`. Extra migration-era collections such as
-`mapping_counter` or `proposal_guard` may remain because the previous release
-ignores them; their presence is not a count mismatch. Also verify that mapping,
-course, proposal, user, comment, teacher, and changelog samples required by the
-previous release are readable before restarting it.
+恢复前运行 `shasum -a 256 -c "$MEOWPICK_BACKUP.sha256"` 验证备份。恢复后，使用备份阶段相同的 `mongosh` 循环重新生成集合计数，只比较 `$MEOWPICK_BACKUP.counts.txt` 中已有的集合。迁移后新增的 `mapping_counter` 或 `proposal_guard` 可以保留，因为旧版本会忽略它们；这些额外集合不算计数不一致。启动旧版本前，还应抽样确认旧版本依赖的映射、课程、提案、用户、评论、教师和变更日志均可正常读取。
 
-Flush only the dedicated Redis logical database configured for this application;
-never use `FLUSHALL` on a shared Redis server. Resolve the host and logical DB
-number from deployment configuration, have a second operator confirm them, then
-use `redis-cli -u "$MEOWPICK_REDIS_URI" -n REDIS_DB FLUSHDB`. Restart the previous
-backend, verify profile reads and proposal list/detail reads, and only then reopen
-writes. Redis mapping data is disposable and will be rebuilt from restored MongoDB.
+只能清空本应用独占的 Redis 逻辑库，禁止在共享 Redis 上使用 `FLUSHALL`。应从部署配置中确认 Redis 主机和逻辑库编号，由第二名运维人员复核后，再执行 `redis-cli -u "$MEOWPICK_REDIS_URI" -n REDIS_DB FLUSHDB`。随后启动旧版后端，验证用户资料以及提案列表和详情读取正常，最后才能重新开放写入。Redis 映射数据是可丢弃缓存，会根据已恢复的 MongoDB 自动重建。
