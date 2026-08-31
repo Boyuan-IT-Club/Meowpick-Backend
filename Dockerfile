@@ -28,13 +28,15 @@ RUN go mod tidy
 # 复制其余项目文件
 COPY . .
 
-# 构建可执行文件
-RUN go build -o meowpick-backend main.go
+# 构建后端和一次性数据库迁移工具
+RUN go build -o meowpick-backend main.go && \
+    go build -o migrate-v2 ./cmd/migrate-v2
 
 # 使用精简镜像运行
 FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/meowpick-backend ./
+COPY --from=builder /app/migrate-v2 ./
 
 # 暴露端口
 EXPOSE 8080
