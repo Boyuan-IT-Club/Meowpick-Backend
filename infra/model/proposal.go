@@ -30,9 +30,9 @@ type Proposal struct {
 	Course       *ProposalCourse `bson:"course"                 json:"course"`              // 课程信息，包含教师的ID（未创建不需要ID）
 	ShowUsername bool            `bson:"showUsername"           json:"showUsername"`        // 是否展示用户名
 	Contribution int64           `bson:"contribution,omitempty" json:"contribution,omitempty"`
-	RejectReason string          `bson:"rejectReason"           json:"rejectReason"`        // 拒绝理由
+	RejectReason string          `bson:"rejectReason"           json:"rejectReason"` // 拒绝理由
 	CreatedAt    time.Time       `bson:"createdAt"              json:"createdAt"`
-	UpdatedAt    time.Time       `bson:"updatedAt"              json:"updatedAt"`           // 最近一次的审批时间
+	UpdatedAt    time.Time       `bson:"updatedAt"              json:"updatedAt"` // 最近一次的审批时间
 }
 
 type ProposalCourse struct {
