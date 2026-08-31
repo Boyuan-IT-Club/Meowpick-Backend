@@ -420,7 +420,7 @@ run_migration() {
   migrate_image="$(<"$RUN_DIR/migrate-image.txt")"
   docker image inspect "$migrate_image" >/dev/null
   [[ "$(docker image inspect --format '{{.Id}}' "$migrate_image")" == "$(<"$RUN_DIR/migrate-image-id.txt")" ]] || die "迁移镜像 ID 已变化"
-  docker run --rm --user "$(id -u):$(id -g)" --network "$DOCKER_NETWORK" --volume "$BACKEND_CONFIG:/server-config/config.yaml:ro" --volume "$RUN_DIR:/migration" "$migrate_image" /app/migrate-v2 --config /server-config/config.yaml "$mode" "/migration/$report"
+  docker run --rm --user "$(id -u):$(id -g)" --network "$DOCKER_NETWORK" --volume "$BACKEND_CONFIG:/server-config/config.yaml:ro" --volume "$RUN_DIR:/migration" "$migrate_image" /app/migrate-v2 --config /server-config/config.yaml --require-host "$EXPECTED_MONGO_HOST" --require-port "$EXPECTED_MONGO_PORT" --require-db "$EXPECTED_DATABASE" "$mode" "/migration/$report"
 }
 
 dry_run() {

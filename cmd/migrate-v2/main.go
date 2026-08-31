@@ -11,6 +11,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -101,17 +102,25 @@ type proposalSource struct {
 
 func main() {
 	var uri, database, configPath, reportPath, applyPlanPath string
+	var requireHost, requireDatabase string
+	var requirePort int
 	flag.StringVar(&uri, "uri", "", "MongoDB URI (or MEOWPICK_MONGO_URI)")
 	flag.StringVar(&database, "db", "", "MongoDB database (default: config value or meowpick)")
 	flag.StringVar(&configPath, "config", "", "application config containing Mongo.URL and Mongo.DB")
 	flag.StringVar(&reportPath, "report", "migration-v2-plan.json", "dry-run report path")
 	flag.StringVar(&applyPlanPath, "apply-plan", "", "apply this previously generated dry-run plan")
+	flag.StringVar(&requireHost, "require-host", "", "refuse to connect unless the resolved MongoDB host matches")
+	flag.IntVar(&requirePort, "require-port", 0, "refuse to connect unless the resolved MongoDB port matches")
+	flag.StringVar(&requireDatabase, "require-db", "", "refuse to connect unless the resolved database matches")
 	flag.Parse()
 	if uri == "" {
 		uri = os.Getenv("MEOWPICK_MONGO_URI")
 	}
 	uri, database, err := resolveConnection(uri, database, configPath)
 	if err != nil {
+		fatal(err)
+	}
+	if err := validateRequiredTarget(uri, database, requireHost, requirePort, requireDatabase); err != nil {
 		fatal(err)
 	}
 
@@ -170,6 +179,26 @@ func main() {
 		fatal(err)
 	}
 	fmt.Println("migration applied successfully; restart the backend to atomically warm Redis")
+}
+
+func validateRequiredTarget(uri, database, requireHost string, requirePort int, requireDatabase string) error {
+	parsed, err := url.Parse(uri)
+	if err != nil {
+		return fmt.Errorf("parse MongoDB URI: %w", err)
+	}
+	if requireHost != "" && parsed.Hostname() != requireHost {
+		return fmt.Errorf("refuse MongoDB host %q; required %q", parsed.Hostname(), requireHost)
+	}
+	if requirePort != 0 {
+		port, err := strconv.Atoi(parsed.Port())
+		if err != nil || port != requirePort {
+			return fmt.Errorf("refuse MongoDB port %q; required %d", parsed.Port(), requirePort)
+		}
+	}
+	if requireDatabase != "" && database != requireDatabase {
+		return fmt.Errorf("refuse MongoDB database %q; required %q", database, requireDatabase)
+	}
+	return nil
 }
 
 func resolveConnection(uri, database, configPath string) (string, string, error) {

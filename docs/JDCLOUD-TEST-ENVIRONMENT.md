@@ -7,6 +7,7 @@
 - SSH Host：`Eagle233-JDCloud`；
 - 已核验的服务器 OS hostname：`Eagle233-JDCloud`；
 - 脚本同时校验 `/etc/machine-id` 的 SHA-256 和本机 `unix:///var/run/docker.sock`，并拒绝 `DOCKER_HOST`/`DOCKER_CONTEXT` 覆盖；
+- 迁移二进制必须携带 `--require-host test-mongo --require-port 27017 --require-db meowpick`，以应用自身的 YAML 解析结果做连接前最终保护；
 - Meowpick 后端容器：`test-meowpick-backend`；
 - 后端配置：`/home/eagle233/repos/test/meowpick/config.yaml`；
 - 后端当前连接：`test-mongo:27017/meowpick`；
