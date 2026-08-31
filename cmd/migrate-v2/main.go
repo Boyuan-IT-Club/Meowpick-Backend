@@ -19,6 +19,7 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	typemapping "github.com/Boyuan-IT-Club/Meowpick-Backend/types/mapping"
+	"github.com/zeromicro/go-zero/core/conf"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -68,6 +69,13 @@ type teacherRepair struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+type migrationConfig struct {
+	Mongo struct {
+		URL string
+		DB  string
+	}
+}
+
 type legacyMapping struct {
 	ID   any               `bson:"_id"`
 	Type model.MappingType `bson:"type"`
@@ -92,17 +100,19 @@ type proposalSource struct {
 }
 
 func main() {
-	var uri, database, reportPath, applyPlanPath string
+	var uri, database, configPath, reportPath, applyPlanPath string
 	flag.StringVar(&uri, "uri", "", "MongoDB URI (or MEOWPICK_MONGO_URI)")
-	flag.StringVar(&database, "db", "meowpick", "MongoDB database")
+	flag.StringVar(&database, "db", "", "MongoDB database (default: config value or meowpick)")
+	flag.StringVar(&configPath, "config", "", "application config containing Mongo.URL and Mongo.DB")
 	flag.StringVar(&reportPath, "report", "migration-v2-plan.json", "dry-run report path")
 	flag.StringVar(&applyPlanPath, "apply-plan", "", "apply this previously generated dry-run plan")
 	flag.Parse()
 	if uri == "" {
 		uri = os.Getenv("MEOWPICK_MONGO_URI")
 	}
-	if uri == "" {
-		fatal(errors.New("--uri or MEOWPICK_MONGO_URI is required"))
+	uri, database, err := resolveConnection(uri, database, configPath)
+	if err != nil {
+		fatal(err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -160,6 +170,28 @@ func main() {
 		fatal(err)
 	}
 	fmt.Println("migration applied successfully; restart the backend to atomically warm Redis")
+}
+
+func resolveConnection(uri, database, configPath string) (string, string, error) {
+	if configPath != "" {
+		var cfg migrationConfig
+		if err := conf.Load(configPath, &cfg); err != nil {
+			return "", "", fmt.Errorf("load config: %w", err)
+		}
+		if uri == "" {
+			uri = strings.TrimSpace(cfg.Mongo.URL)
+		}
+		if database == "" {
+			database = strings.TrimSpace(cfg.Mongo.DB)
+		}
+	}
+	if uri == "" {
+		return "", "", errors.New("--uri, MEOWPICK_MONGO_URI, or --config with Mongo.URL is required")
+	}
+	if database == "" {
+		database = "meowpick"
+	}
+	return uri, database, nil
 }
 
 func buildPlan(ctx context.Context, client *mongo.Client, database string) (*plan, error) {

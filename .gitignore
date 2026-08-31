@@ -3,5 +3,8 @@
 /docker-compose.yml
 /vendor/
 /scripts/
+!/scripts/
+/scripts/*
+!/scripts/jdcloud-migrate-v2.sh
 /data/
 .DS_Store

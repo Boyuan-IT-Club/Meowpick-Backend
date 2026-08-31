@@ -14,7 +14,39 @@
 
 package main
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestResolveConnectionFromConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("Mongo:\n  URL: mongodb://test-mongo:27017/meowpick\n  DB: meowpick\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	uri, database, err := resolveConnection("", "", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if uri != "mongodb://test-mongo:27017/meowpick" || database != "meowpick" {
+		t.Fatalf("unexpected connection: uri=%q database=%q", uri, database)
+	}
+}
+
+func TestResolveConnectionExplicitValuesOverrideConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("Mongo:\n  URL: mongodb://from-config:27017/config-db\n  DB: config-db\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	uri, database, err := resolveConnection("mongodb://explicit:27017/explicit-db", "explicit-db", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if uri != "mongodb://explicit:27017/explicit-db" || database != "explicit-db" {
+		t.Fatalf("explicit values were not preserved: uri=%q database=%q", uri, database)
+	}
+}
 
 func TestSnapshotHashIncludesResolvedCourseRepair(t *testing.T) {
 	department := int32(10)
