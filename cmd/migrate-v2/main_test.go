@@ -48,6 +48,23 @@ func TestResolveConnectionExplicitValuesOverrideConfig(t *testing.T) {
 	}
 }
 
+func TestValidateRequiredTarget(t *testing.T) {
+	if err := validateRequiredTarget("mongodb://test-mongo:27017/meowpick?replicaSet=rs0", "meowpick", "test-mongo", 27017, "meowpick"); err != nil {
+		t.Fatal(err)
+	}
+	for name, target := range map[string][2]string{
+		"host":     {"mongodb://prod-mongo:27017/meowpick", "meowpick"},
+		"port":     {"mongodb://test-mongo:27018/meowpick", "meowpick"},
+		"database": {"mongodb://test-mongo:27017/prod", "prod"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if err := validateRequiredTarget(target[0], target[1], "test-mongo", 27017, "meowpick"); err == nil {
+				t.Fatal("expected target validation to fail")
+			}
+		})
+	}
+}
+
 func TestSnapshotHashIncludesResolvedCourseRepair(t *testing.T) {
 	department := int32(10)
 	first, err := snapshotHash(nil, nil, []courseRepair{{ID: "course", Department: &department}}, nil, nil)

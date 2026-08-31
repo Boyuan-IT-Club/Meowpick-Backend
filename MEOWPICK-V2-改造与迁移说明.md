@@ -164,7 +164,7 @@ Redis 为每种映射保存两个 Hash：
 
 ## 七、迁移脚本怎么使用
 
-实际脚本是 `scripts/jdcloud-migrate-v2.sh`。它会校验 JDCloud 主机名、机器指纹、本机 Docker socket、Compose 标签、MongoDB 镜像、数据挂载、端口、网络、URI 和数据库，并拒绝重复的 `Mongo.URL`/`Mongo.DB` 配置，固定拒绝除当前 JDCloud `test-mongo:27017/meowpick` 之外的目标；每个阶段失败都会立即退出。
+实际脚本是 `scripts/jdcloud-migrate-v2.sh`。它会校验 JDCloud 主机名、机器指纹、本机 Docker socket、Compose 标签、MongoDB 镜像、数据挂载、端口、网络、URI 和数据库，并拒绝重复的 `Mongo.URL`/`Mongo.DB` 配置。迁移程序还会用 Go 实际解析出的连接结果再次强制核对 host、port 和 DB，固定拒绝除当前 JDCloud `test-mongo:27017/meowpick` 之外的目标；每个阶段失败都会立即退出。
 
 ### 1. 脚本提供的阶段
 
