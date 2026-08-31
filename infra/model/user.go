@@ -27,7 +27,7 @@ type User struct {
 	EmailVerified     bool      `bson:"emailVerified"               json:"emailVerified"`
 	Ban               bool      `bson:"ban"                         json:"ban"`
 	Admin             bool      `bson:"admin"                       json:"admin"`
-	Contribution      int64     `bson:"contributionPoints"          json:"contributionPoints"`              // 贡献值总分
+	Contribution      int64     `bson:"contributionPoints"          json:"contributionPoints"` // 贡献值总分
 	CreatedAt         time.Time `bson:"createdAt"                   json:"createdAt"`
 	UpdatedAt         time.Time `bson:"updatedAt"                   json:"updatedAt"`
 	UsernameUpdatedAt time.Time `bson:"usernameUpdatedAt,omitempty" json:"usernameUpdatedAt,omitempty"` // 昵称最近修改时间
