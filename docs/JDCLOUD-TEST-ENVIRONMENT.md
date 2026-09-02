@@ -7,7 +7,7 @@
 - SSH Host：`Eagle233-JDCloud`；
 - 已核验的服务器 OS hostname：`Eagle233-JDCloud`；
 - 脚本同时校验 `/etc/machine-id` 的 SHA-256 和本机 `unix:///var/run/docker.sock`，并拒绝 `DOCKER_HOST`/`DOCKER_CONTEXT` 覆盖；
-- 迁移二进制必须携带 `--require-host test-mongo --require-port 27017 --require-db meowpick`，以应用自身的 YAML 解析结果做连接前最终保护；
+- 迁移二进制必须携带 `--replica-set rs0 --require-host test-mongo --require-port 27017 --require-db meowpick`，以应用自身的 YAML 解析结果做连接前最终保护；
 - Meowpick 后端容器：`test-meowpick-backend`；
 - 后端配置：`/home/eagle233/repos/test/meowpick/config.yaml`；
 - 后端当前连接：`test-mongo:27017/meowpick`；
@@ -28,7 +28,9 @@
 
 迁移操作必须由用户手动执行。Agent 不得仅凭本文对 JDCloud 执行停止容器、修改 Compose、初始化副本集、迁移或恢复。
 
-在 standalone 阶段备份前，操作者必须确认 `test-meowpick-backend` 是 `meowpick` 的唯一写入者，并停止其他可能写入该库的程序。回滚会先恢复旧配置并拉起 MongoDB，再进行临时库恢复验证；所需空闲空间下限由备份时记录的 `storageSize` 计算。
+`scripts/jdcloud-migrate-v2.sh` 是纯数据库运维脚本：不得停止、启动或部署后端，不得修改后端配置，不得构建后端镜像。它可以只读现有后端配置取得 MongoDB URI，并检查 `test-meowpick-backend` 已由操作者停止。迁移镜像必须使用 `Dockerfile.migrate-v2` 独立构建；正常后端 `Dockerfile` 不得包含迁移二进制。
+
+在 standalone 阶段备份前，操作者必须手动停止 `test-meowpick-backend`，确认它是 `meowpick` 的唯一写入者，并停止其他可能写入该库的程序。回滚只恢复 MongoDB Compose 和数据库，再进行临时库恢复验证；所需空闲空间下限由备份时记录的 `storageSize` 计算。后端部署、配置和回滚由操作者另行完成。
 
 MongoDB 管理命令从容器自身的环境变量取得账户信息，脚本和文档不保存明文凭据。Database Tools 在执行时仍会把展开后的认证参数短暂放入容器内进程参数，因此迁移窗口必须限制服务器和 Docker 访问权限；后续如果切换到已验证的权限文件认证，可再消除此残余风险。维护此脚本时不得把真实 URI、密码、完整 Compose 环境变量或配置 diff 输出到日志。
 
