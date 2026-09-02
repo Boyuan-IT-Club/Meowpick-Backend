@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
+# JDCloud test-mongo 专用数据库迁移脚本。
+# 不停止、启动、构建、部署或修改 Meowpick 后端。
+
 set -Eeuo pipefail
 umask 077
 
 readonly BACKEND_CONTAINER="test-meowpick-backend"
-readonly BACKEND_COMPOSE="/home/eagle233/repos/test/meowpick/docker-compose.yml"
-readonly BACKEND_CONFIG="/home/eagle233/repos/test/meowpick/config.yaml"
-readonly BACKEND_IMAGE="boyuanclub/meowpick-backend:latest"
+readonly MONGO_CLIENT_CONFIG="/home/eagle233/repos/test/meowpick/config.yaml"
 readonly MONGO_CONTAINER="test-mongo"
 readonly MONGO_COMPOSE="/home/eagle233/portainer/srv/compose/1/v1/docker-compose.yml"
 readonly MONGO_CONFIG_DIR="/home/eagle233/repos/test/mongo/config"
@@ -79,7 +80,7 @@ guard_environment() {
 
 load_config() {
   local -a config_lines
-  mapfile -t config_lines < <(python3 - "$BACKEND_CONFIG" <<'PY'
+  mapfile -t config_lines < <(python3 - "$MONGO_CLIENT_CONFIG" <<'PY'
 from pathlib import Path
 import re
 import sys
@@ -164,13 +165,14 @@ preflight() {
   require_command stat
   require_command install
   require_command seq
+  require_command tar
   require_command sudo
   sudo -n true || die "需要免密 sudo 才能维护 Portainer Compose"
   require_exact_container "$BACKEND_CONTAINER"
   require_exact_container "$MONGO_CONTAINER"
   require_network_attachment "$BACKEND_CONTAINER"
   guard_target
-  [[ -f "$BACKEND_COMPOSE" ]] || die "后端 Compose 不存在"
+  [[ -f "$MONGO_CLIENT_CONFIG" ]] || die "MongoDB 客户端配置不存在"
   sudo test -f "$MONGO_COMPOSE" || die "MongoDB Compose 不存在"
   docker exec "$MONGO_CONTAINER" mongodump --version >/dev/null
   docker exec "$MONGO_CONTAINER" mongorestore --version >/dev/null
@@ -198,14 +200,10 @@ backup() {
   guard_target
   [[ "${MEOWPICK_CONFIRM_EXCLUSIVE_WRITER:-}" == "ONLY-test-meowpick-writes-meowpick" ]] || die "请先确认没有其他程序写 meowpick，并设置 MEOWPICK_CONFIRM_EXCLUSIVE_WRITER=ONLY-test-meowpick-writes-meowpick"
   [[ ! -e "$RUN_DIR/meowpick-before.archive.gz" ]] || die "备份文件已存在，拒绝覆盖"
-  log "停止后端，冻结 Meowpick 写入"
-  docker stop "$BACKEND_CONTAINER" >/dev/null
+  log "检查后端已由操作者停止，以冻结 Meowpick 写入"
   require_backend_stopped
 
-  docker inspect --format '{{.Image}}' "$BACKEND_CONTAINER" >"$RUN_DIR/old-backend-image-id.txt"
-  stat -c '%u:%g:%a' "$BACKEND_CONFIG" >"$RUN_DIR/config.before.meta"
   sudo stat -c '%u:%g:%a' "$MONGO_COMPOSE" >"$RUN_DIR/docker-compose.before.meta"
-  install -m 600 "$BACKEND_CONFIG" "$RUN_DIR/config.before.yaml"
   sudo install -o "$(id -u)" -g "$(id -g)" -m 600 "$MONGO_COMPOSE" "$RUN_DIR/docker-compose.before.yml"
   docker exec "$MONGO_CONTAINER" sh -c 'exec mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "$1"' sh 'print(db.getSiblingDB("meowpick").stats().storageSize)' >"$RUN_DIR/meowpick-storage-size.txt"
   [[ "$(<"$RUN_DIR/meowpick-storage-size.txt")" =~ ^[0-9]+$ ]] || die "无法读取 meowpick storageSize"
@@ -276,54 +274,6 @@ finally:
 PY
 }
 
-append_replica_uri() {
-  python3 - "$BACKEND_CONFIG" <<'PY'
-from pathlib import Path
-import os
-import stat
-import sys
-import tempfile
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
-import re
-
-path = Path(sys.argv[1])
-info = path.stat()
-text = path.read_text()
-mongo = re.search(r"(?m)^Mongo:\s*\n(?P<body>(?:^[ \t]+[^\n]*(?:\n|$))*)", text)
-if not mongo:
-    raise SystemExit("找不到 Mongo 配置段")
-body = mongo.group("body")
-matches = list(re.finditer(r"(?m)^(?P<prefix>[ \t]+URL:\s*[\"'])(?P<uri>mongodb[^\"']+)(?P<suffix>[\"']\s*)$", body))
-db_matches = re.findall(r"(?m)^[ \t]+DB:\s*[\"']([^\"']+)[\"']\s*$", body)
-if len(matches) != 1 or db_matches != ["meowpick"]:
-    raise SystemExit("Mongo 段必须恰好包含目标 URL 和 DB=meowpick")
-match = matches[0]
-uri = urlsplit(match.group("uri"))
-if uri.hostname != "test-mongo" or uri.port != 27017 or uri.path != "/meowpick":
-    raise SystemExit("拒绝修改非 test-mongo/meowpick URI")
-query = dict(parse_qsl(uri.query, keep_blank_values=True))
-if query.get("replicaSet") not in {None, "rs0"}:
-    raise SystemExit("Mongo URI 已指定其他 replicaSet")
-query["replicaSet"] = "rs0"
-updated_uri = urlunsplit((uri.scheme, uri.netloc, uri.path, urlencode(query), uri.fragment))
-updated_body = body[:match.start()] + match.group("prefix") + updated_uri + match.group("suffix") + body[match.end():]
-updated = text[:mongo.start("body")] + updated_body + text[mongo.end("body"):]
-
-fd, temporary = tempfile.mkstemp(prefix=path.name + ".", dir=path.parent)
-try:
-    with os.fdopen(fd, "w") as handle:
-        handle.write(updated)
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.chmod(temporary, stat.S_IMODE(info.st_mode))
-    os.chown(temporary, info.st_uid, info.st_gid)
-    os.replace(temporary, path)
-finally:
-    if os.path.exists(temporary):
-        os.unlink(temporary)
-PY
-}
-
 prepare_replica() {
   load_run_dir
   require_backend_stopped
@@ -374,31 +324,30 @@ prepare_replica() {
   done
   [[ "$state" == *'"setName":"rs0"'* && "$state" == *'"primary":true'* ]] || die "rs0 在 120 秒内未成为主节点"
 
-  append_replica_uri
   guard_target
   require_primary
   log "test-mongo 已准备为 rs0 单节点主节点"
 }
 
-build_images() {
+build_migration_image() {
   load_run_dir
   [[ ! -e "$RUN_DIR/migration-v2-plan.json" ]] || die "已经生成 dry-run 计划，禁止重新构建镜像"
   [[ "$(git -C "$SCRIPT_ROOT" branch --show-current)" == "Eagle233" ]] || die "迁移源码必须位于 Eagle233 分支"
   [[ -z "$(git -C "$SCRIPT_ROOT" status --porcelain)" ]] || die "迁移源码存在未提交修改"
   [[ "$(git -C "$SCRIPT_ROOT" rev-parse HEAD)" == "$(git -C "$SCRIPT_ROOT" rev-parse origin/Eagle233)" ]] || die "当前 HEAD 与 origin/Eagle233 不一致"
-  local commit short migrate_image backend_image
+  local commit short migrate_image build_context
   commit="$(git -C "$SCRIPT_ROOT" rev-parse HEAD)"
   short="${commit:0:12}"
   migrate_image="meowpick-migrate-v2:${short}"
-  backend_image="meowpick-backend-v2:${short}"
+  build_context="$RUN_DIR/migration-build-context"
+  [[ ! -e "$build_context" ]] || die "独立迁移构建目录已经存在"
+  mkdir -m 700 "$build_context"
+  git -C "$SCRIPT_ROOT" archive "$commit" | tar -x -C "$build_context"
   printf '%s\n' "$commit" >"$RUN_DIR/source-commit.txt"
   printf '%s\n' "$migrate_image" >"$RUN_DIR/migrate-image.txt"
-  printf '%s\n' "$backend_image" >"$RUN_DIR/backend-image.txt"
-  docker build --tag "$backend_image" "$SCRIPT_ROOT"
-  docker tag "$backend_image" "$migrate_image"
+  docker build --file "$build_context/Dockerfile.migrate-v2" --tag "$migrate_image" "$build_context"
   docker image inspect --format '{{.Id}}' "$migrate_image" >"$RUN_DIR/migrate-image-id.txt"
-  docker image inspect --format '{{.Id}}' "$backend_image" >"$RUN_DIR/backend-image-id.txt"
-  log "迁移和后端镜像均来自 commit $commit"
+  log "独立迁移镜像来自 commit $commit；未构建后端镜像"
 }
 
 require_recorded_source() {
@@ -420,7 +369,7 @@ run_migration() {
   migrate_image="$(<"$RUN_DIR/migrate-image.txt")"
   docker image inspect "$migrate_image" >/dev/null
   [[ "$(docker image inspect --format '{{.Id}}' "$migrate_image")" == "$(<"$RUN_DIR/migrate-image-id.txt")" ]] || die "迁移镜像 ID 已变化"
-  docker run --rm --user "$(id -u):$(id -g)" --network "$DOCKER_NETWORK" --volume "$BACKEND_CONFIG:/server-config/config.yaml:ro" --volume "$RUN_DIR:/migration" "$migrate_image" /app/migrate-v2 --config /server-config/config.yaml --require-host "$EXPECTED_MONGO_HOST" --require-port "$EXPECTED_MONGO_PORT" --require-db "$EXPECTED_DATABASE" "$mode" "/migration/$report"
+  docker run --rm --user "$(id -u):$(id -g)" --network "$DOCKER_NETWORK" --volume "$MONGO_CLIENT_CONFIG:/migration-config/config.yaml:ro" --volume "$RUN_DIR:/migration" "$migrate_image" --config /migration-config/config.yaml --replica-set rs0 --require-host "$EXPECTED_MONGO_HOST" --require-port "$EXPECTED_MONGO_PORT" --require-db "$EXPECTED_DATABASE" "$mode" "/migration/$report"
 }
 
 dry_run() {
@@ -477,25 +426,6 @@ PY
   chmod 600 "$RUN_DIR/postcheck.ok"
 }
 
-deploy_backend() {
-  load_run_dir
-  [[ -f "$RUN_DIR/postcheck.ok" ]] || die "尚未通过 postcheck"
-  require_primary
-  local backend_image backend_image_id compose_image
-  backend_image="$(<"$RUN_DIR/backend-image.txt")"
-  backend_image_id="$(<"$RUN_DIR/backend-image-id.txt")"
-  docker image inspect "$backend_image" >/dev/null
-  [[ "$(docker image inspect --format '{{.Id}}' "$backend_image")" == "$backend_image_id" ]] || die "后端镜像 ID 已变化"
-  compose_image="$(docker compose -f "$BACKEND_COMPOSE" config --format json | python3 -c 'import json,sys; data=json.load(sys.stdin); print(data["services"]["test-meowpick-backend"]["image"])')"
-  [[ "$compose_image" == "$BACKEND_IMAGE" ]] || die "后端 Compose 镜像不是 $BACKEND_IMAGE: $compose_image"
-  docker tag "$backend_image" "$BACKEND_IMAGE"
-  docker compose -f "$BACKEND_COMPOSE" up -d --pull never --force-recreate "$BACKEND_CONTAINER"
-  sleep 3
-  [[ "$(docker inspect --format '{{.State.Running}}' "$BACKEND_CONTAINER")" == "true" ]] || die "新后端容器未保持运行"
-  [[ "$(docker inspect --format '{{.Image}}' "$BACKEND_CONTAINER")" == "$backend_image_id" ]] || die "新后端容器实际镜像 ID 不匹配"
-  docker logs --tail 120 "$BACKEND_CONTAINER"
-}
-
 rollback_all() {
   load_run_dir
   guard_environment
@@ -505,14 +435,11 @@ rollback_all() {
   [[ "${MEOWPICK_CONFIRM_ROLLBACK:-}" == "ROLLBACK-test-mongo-meowpick" ]] || die "请设置 MEOWPICK_CONFIRM_ROLLBACK=ROLLBACK-test-mongo-meowpick"
   [[ -s "$RUN_DIR/meowpick-before.archive.gz" ]] || die "缺少迁移前备份"
   sha256sum -c "$RUN_DIR/meowpick-before.archive.gz.sha256"
-  docker stop "$BACKEND_CONTAINER" >/dev/null 2>&1 || true
+  require_backend_stopped
 
-  # 先恢复旧配置并拉起 MongoDB。这样 prepare-replica 中途失败、MongoDB
-  # 无法启动时，rollback 仍能进入后续的备份恢复阶段。
-  local config_uid config_gid config_mode compose_uid compose_gid compose_mode
-  IFS=: read -r config_uid config_gid config_mode <"$RUN_DIR/config.before.meta"
+  # 先恢复旧 MongoDB Compose 并拉起数据库。后端配置和镜像由操作者管理。
+  local compose_uid compose_gid compose_mode
   IFS=: read -r compose_uid compose_gid compose_mode <"$RUN_DIR/docker-compose.before.meta"
-  sudo install -o "$config_uid" -g "$config_gid" -m "$config_mode" "$RUN_DIR/config.before.yaml" "$BACKEND_CONFIG"
   sudo install -o "$compose_uid" -g "$compose_gid" -m "$compose_mode" "$RUN_DIR/docker-compose.before.yml" "$MONGO_COMPOSE"
   sudo docker compose -f "$MONGO_COMPOSE" config --quiet
   sudo docker compose -f "$MONGO_COMPOSE" up -d "$MONGO_CONTAINER"
@@ -561,17 +488,9 @@ rollback_all() {
   docker exec "$MONGO_CONTAINER" sh -c 'exec mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "$1"' sh "$drop_scratch_js"
   rm -f "$RUN_DIR/scratch-ready.ok"
 
-  local old_image_id
-  old_image_id="$(<"$RUN_DIR/old-backend-image-id.txt")"
-  docker image inspect "$old_image_id" >/dev/null
-  docker tag "$old_image_id" "$BACKEND_IMAGE"
-  docker compose -f "$BACKEND_COMPOSE" up -d --pull never --force-recreate "$BACKEND_CONTAINER"
-  sleep 3
-  [[ "$(docker inspect --format '{{.State.Running}}' "$BACKEND_CONTAINER")" == "true" ]] || die "旧后端容器未保持运行"
-  [[ "$(docker inspect --format '{{.Image}}' "$BACKEND_CONTAINER")" == "$old_image_id" ]] || die "旧后端容器实际镜像 ID 不匹配"
   printf 'rolled_back_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$RUN_DIR/rolled-back.ok"
   chmod 600 "$RUN_DIR/rolled-back.ok"
-  log "数据库、Mongo Compose、后端配置和旧后端镜像已恢复"
+  log "数据库和 MongoDB Compose 已恢复；后端仍保持停止，请由操作者自行部署或恢复"
 }
 
 usage() {
@@ -581,14 +500,13 @@ usage() {
 命令:
   preflight         只读检查目标容器、网络、配置和 MongoDB 拓扑
   init              创建权限为 700 的本次迁移目录
-  backup            停止后端并生成、校验迁移前备份
+  backup            确认后端已停止，再生成、校验迁移前备份
   prepare-replica   将 test-mongo 准备成 rs0；需要确认变量
-  build             从当前 Eagle233 commit 构建固定迁移/后端镜像
+  build             从当前 Eagle233 commit 构建独立迁移镜像
   dry-run           只读生成迁移计划
   apply             正式写入迁移；需要确认变量
   postcheck         只读迁移后检查
-  deploy            部署与迁移工具相同 commit 的后端镜像
-  rollback          恢复数据库、配置和旧镜像；需要确认变量
+  rollback          仅恢复数据库和 MongoDB Compose；需要确认变量
 EOF
 }
 
@@ -599,11 +517,10 @@ main() {
     init) init_run ;;
     backup) backup ;;
     prepare-replica) prepare_replica ;;
-    build) build_images ;;
+    build) build_migration_image ;;
     dry-run) dry_run ;;
     apply) apply_plan ;;
     postcheck) postcheck ;;
-    deploy) deploy_backend ;;
     rollback) rollback_all ;;
     *) usage; exit 64 ;;
   esac

@@ -101,7 +101,7 @@ type proposalSource struct {
 }
 
 func main() {
-	var uri, database, configPath, reportPath, applyPlanPath string
+	var uri, database, configPath, reportPath, applyPlanPath, replicaSet string
 	var requireHost, requireDatabase string
 	var requirePort int
 	flag.StringVar(&uri, "uri", "", "MongoDB URI (or MEOWPICK_MONGO_URI)")
@@ -112,6 +112,7 @@ func main() {
 	flag.StringVar(&requireHost, "require-host", "", "refuse to connect unless the resolved MongoDB host matches")
 	flag.IntVar(&requirePort, "require-port", 0, "refuse to connect unless the resolved MongoDB port matches")
 	flag.StringVar(&requireDatabase, "require-db", "", "refuse to connect unless the resolved database matches")
+	flag.StringVar(&replicaSet, "replica-set", "", "connect using this MongoDB replica set")
 	flag.Parse()
 	if uri == "" {
 		uri = os.Getenv("MEOWPICK_MONGO_URI")
@@ -126,7 +127,11 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	clientOptions := options.Client().ApplyURI(uri)
+	if replicaSet != "" {
+		clientOptions.SetReplicaSet(replicaSet)
+	}
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		fatal(err)
 	}

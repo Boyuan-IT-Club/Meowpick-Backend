@@ -156,7 +156,7 @@ Redis 为每种映射保存两个 Hash：
 | 后端镜像 | `boyuanclub/meowpick-backend:latest` |
 | 服务器 Go 环境 | 未安装，迁移脚本通过 Docker 构建和运行 |
 
-当前 `test-mongo` 是单机模式。MongoDB 事务要求副本集，所以必须先转换成单节点副本集 `rs0`。转换会重启 MongoDB，因此脚本强制先停止后端并完成备份。
+当前 `test-mongo` 是单机模式。MongoDB 事务要求副本集，所以必须先转换成单节点副本集 `rs0`。转换会重启 MongoDB。后端由操作者手动停止；迁移脚本只检查后端确实已经停止，不会停止、启动或部署后端。
 
 转换和回滚都会短暂重启整个 `test-mongo` 容器。如果还有其他程序使用这个容器中的其他数据库，也会受到短暂停机影响；正式操作前需要一并确认维护窗口。
 
@@ -164,7 +164,7 @@ Redis 为每种映射保存两个 Hash：
 
 ## 七、迁移脚本怎么使用
 
-实际脚本是 `scripts/jdcloud-migrate-v2.sh`。它会校验 JDCloud 主机名、机器指纹、本机 Docker socket、Compose 标签、MongoDB 镜像、数据挂载、端口、网络、URI 和数据库，并拒绝重复的 `Mongo.URL`/`Mongo.DB` 配置。迁移程序还会用 Go 实际解析出的连接结果再次强制核对 host、port 和 DB，固定拒绝除当前 JDCloud `test-mongo:27017/meowpick` 之外的目标；每个阶段失败都会立即退出。
+实际脚本是 `scripts/jdcloud-migrate-v2.sh`。它只处理 MongoDB 备份、副本集准备、数据迁移、检查和数据库回滚，不修改后端配置，不构建后端镜像，也不部署或启动后端。脚本只读现有配置取得 MongoDB 连接信息，并强制核对 JDCloud 主机、机器指纹、本机 Docker socket、容器、端口、网络、URI 和数据库，固定拒绝除当前 JDCloud `test-mongo:27017/meowpick` 之外的目标。
 
 ### 1. 脚本提供的阶段
 
@@ -172,14 +172,13 @@ Redis 为每种映射保存两个 Hash：
 | --- | --- | --- |
 | `preflight` | 否 | 只读检查容器、网络、配置和 MongoDB 拓扑 |
 | `init` | 只创建权限为 `700` 的迁移目录 | 建立本次操作记录目录 |
-| `backup` | 会停止后端并写备份文件 | 备份数据库、配置和旧镜像 ID，并验证备份可恢复性 |
-| `prepare-replica` | 会修改配置并重启 MongoDB | 原子生成 keyFile，把 `test-mongo` 转为单节点 `rs0` |
-| `build` | 会构建本地 Docker 镜像 | 用同一个 Git commit 构建同时包含迁移工具和新后端的固定镜像 |
+| `backup` | 会写数据库备份，不操作后端 | 要求后端已经手动停止，并验证备份可恢复性 |
+| `prepare-replica` | 会修改 MongoDB Compose 并重启 MongoDB | 原子生成 keyFile，把 `test-mongo` 转为单节点 `rs0` |
+| `build` | 会构建独立迁移镜像 | 只构建 `migrate-v2`，不会构建后端镜像 |
 | `dry-run` | 只读数据库 | 生成迁移计划；有冲突时退出码为 `2` |
 | `apply` | 会写 MongoDB | 应用已经审核且数据库快照未变化的计划 |
 | `postcheck` | 只读数据库 | 检查迁移后仍有无冲突或待修复数据 |
-| `deploy` | 会重建后端容器 | 部署与迁移工具完全相同 commit 的后端镜像 |
-| `rollback` | 会删除并恢复 `meowpick` 数据库 | 从迁移前备份恢复数据库、配置和旧后端镜像 |
+| `rollback` | 会删除并恢复 `meowpick` 数据库 | 只恢复数据库和 MongoDB Compose，不操作后端 |
 
 ### 2. 进入服务器并取得脚本
 
@@ -218,6 +217,14 @@ bash scripts/jdcloud-migrate-v2.sh preflight
 
 ### 4. 创建迁移记录并备份
 
+先由你手动停止后端：
+
+```bash
+docker stop test-meowpick-backend
+```
+
+迁移脚本不会执行这条命令，只会检查容器已经停止。确认后执行：
+
 ```bash
 bash scripts/jdcloud-migrate-v2.sh init
 export MEOWPICK_CONFIRM_EXCLUSIVE_WRITER=ONLY-test-meowpick-writes-meowpick
@@ -229,14 +236,13 @@ unset MEOWPICK_CONFIRM_EXCLUSIVE_WRITER
 
 设置确认变量前，必须先确认没有其他程序会写入 `meowpick`。因为当前 MongoDB 还是 standalone，脚本只能通过“停止唯一写入者”冻结写入，不能替其他程序保证跨集合备份一致性。
 
-`backup` 会停止 `test-meowpick-backend`，然后：
+`backup` 会确认 `test-meowpick-backend` 已停止，然后：
 
 - 使用 `mongodump` 生成压缩备份；
 - 使用 `gzip -t` 检查压缩文件；
 - 生成并复核 SHA-256；
 - 使用 `mongorestore --dryRun` 验证备份可读取；
 - 把所有敏感文件保存在权限为 `700` 的目录中，文件权限为 `600`；
-- 记录旧后端镜像 ID，供完整回滚使用。
 - 记录数据库 `storageSize`，回滚前要求至少保留其 1.5 倍再加 1 GiB 的空闲空间，用于临时恢复验证。
 
 脚本会输出迁移目录。请在自己电脑的新终端中，把备份及校验文件复制到服务器之外：
@@ -248,7 +254,7 @@ scp Eagle233-JDCloud:/home/eagle233/migrations/meowpick-v2-实际时间/meowpick
 
 ### 5. 准备单节点副本集
 
-这一步会写配置并重启 `test-mongo`，必须显式确认：
+这一步只会写 MongoDB Compose、创建 keyFile 并重启 `test-mongo`，不会修改后端配置，必须显式确认：
 
 ```bash
 export MEOWPICK_CONFIRM_PREPARE=PREPARE-test-mongo-rs0
@@ -256,15 +262,15 @@ bash scripts/jdcloud-migrate-v2.sh prepare-replica
 unset MEOWPICK_CONFIRM_PREPARE
 ```
 
-脚本会拒绝覆盖已有 keyFile，只接受完整且规范的 MongoDB `command`，并等待 `rs0` 成为主节点。Compose 和后端配置分别使用临时文件原子替换，但“重启 MongoDB、初始化副本集、修改后端 URI”是有顺序的多阶段操作，不属于一个跨文件事务。如果本阶段中途失败，禁止继续 dry-run/apply，应保留后端停止并按第八部分执行回滚。
+脚本会拒绝覆盖已有 keyFile，只接受完整且规范的 MongoDB `command`，并等待 `rs0` 成为主节点。如果本阶段中途失败，禁止继续 dry-run/apply，应保持后端停止并按第八部分执行数据库回滚。
 
-### 6. 从同一 commit 构建迁移工具和新后端
+### 6. 构建独立迁移工具
 
 ```bash
 bash scripts/jdcloud-migrate-v2.sh build
 ```
 
-脚本要求当前分支必须是 `Eagle233` 且工作区无修改，并把完整 commit、迁移镜像名和后端镜像名记录到迁移目录。迁移使用镜像中预编译的 `/app/migrate-v2`，服务器不需要安装 Go，也不会在正式操作时临时下载依赖。
+脚本要求当前分支必须是 `Eagle233` 且工作区无修改，使用 `git archive` 提取已提交代码作为独立构建上下文，再使用 `Dockerfile.migrate-v2` 构建只包含迁移工具的镜像，并记录完整 commit、镜像名和 Image ID。未跟踪的服务器配置不会进入迁移镜像。服务器不需要安装 Go。正常的后端 `Dockerfile` 不再包含迁移程序。
 
 ### 7. 运行 dry-run
 
@@ -292,16 +298,15 @@ unset MEOWPICK_CONFIRM_BACKUP
 
 脚本会在 apply 前再次硬检查主机、机器指纹、端口、数据库、容器、挂载、网络、副本集、备份 SHA-256、后端状态、计划 SHA-256、当前仓库的 Git commit、工作区状态和迁移镜像 ID。计划、镜像、代码或数据库快照发生变化时都会拒绝执行。
 
-### 9. 迁移后检查并部署
+### 9. 迁移后检查
 
 ```bash
 bash scripts/jdcloud-migrate-v2.sh postcheck
-bash scripts/jdcloud-migrate-v2.sh deploy
 ```
 
 `postcheck` 要求冲突、课程修复、评论修复、教师时间修复和旧映射 ID 数量全部归零。报告中的 `mappings` 是完整映射清单，不要求为空。
 
-`deploy` 使用 `build` 阶段生成的固定镜像，不会重新拉取可能变化的 `latest`；启动后还会核对容器实际 Image ID，因此迁移工具与新后端来自同一个 commit。
+检查通过后，数据库迁移工作结束。迁移脚本不会修改后端配置，也不会构建、部署或启动后端。你需要在部署新版后端时自行确认 MongoDB URI 包含 `replicaSet=rs0`，然后按照你原有的部署流程启动新版后端。
 
 ## 八、验证和回滚
 
@@ -328,7 +333,7 @@ bash scripts/jdcloud-migrate-v2.sh rollback
 unset MEOWPICK_CONFIRM_ROLLBACK
 ```
 
-`rollback` 是破坏性操作，会停止后端，先恢复旧 Mongo Compose 和旧后端配置并确保 MongoDB 能启动，再复核备份校验和，把备份恢复到临时数据库并生成集合计数与索引清单；临时恢复成功后才删除当前 `meowpick`，使用 `--stopOnError` 正式恢复并比较两份清单，最后恢复旧镜像。临时恢复失败时会尝试清理本轮创建的临时库；成功回滚会写入标记并拒绝重复执行。没有准确确认变量时脚本拒绝执行。
+`rollback` 是破坏性操作，要求后端已经由操作者停止。它会恢复旧 MongoDB Compose，复核备份校验和，先把备份恢复到临时数据库并生成集合计数与索引清单；临时恢复成功后才删除当前 `meowpick`，使用 `--stopOnError` 正式恢复并比较两份清单。它不会修改、启动或恢复任何后端配置和镜像。临时恢复失败时会尝试清理本轮创建的临时库；成功回滚会写入标记并拒绝重复执行。
 
 回滚会丢弃“迁移前备份生成之后”的所有新写入。如果正式恢复在删除数据库后仍然失败，脚本会立即停止，不会启动任何后端；此时保留着原始备份和已验证的临时恢复库，应先处理磁盘或权限问题，再重新执行回滚，不能开放接口。
 

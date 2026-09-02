@@ -1,0 +1,16 @@
+# 一次性 MongoDB v2 迁移工具；不包含也不部署 Meowpick 后端。
+FROM golang:1.25.5-alpine AS builder
+
+RUN apk add --no-cache git bash
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN CGO_ENABLED=0 go build -o /out/migrate-v2 ./cmd/migrate-v2
+
+FROM alpine:latest
+WORKDIR /app
+COPY --from=builder /out/migrate-v2 ./migrate-v2
+ENTRYPOINT ["/app/migrate-v2"]
