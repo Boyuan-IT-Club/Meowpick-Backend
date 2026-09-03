@@ -41,7 +41,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const planVersion = 3
+const planVersion = 4
 
 type plan struct {
 	Version              int             `json:"version"`
@@ -56,7 +56,7 @@ type plan struct {
 	CourseRepairs        []courseRepair  `json:"courseRepairs"`
 	CommentIDRepairs     []commentRepair `json:"commentIdRepairs"`
 	TeacherTimeRepairs   []teacherRepair `json:"teacherTimeRepairs"`
-	InvalidLikeRepairs   []likeRepair    `json:"invalidLikeRepairs"`
+	LikeRepairs          []likeRepair    `json:"likeRepairs"`
 	LegacyMappingIDCount int             `json:"legacyMappingIdCount"`
 }
 
@@ -86,8 +86,11 @@ type teacherRepair struct {
 }
 
 type likeRepair struct {
-	ID     string `json:"id"`
-	Reason string `json:"reason"`
+	SourceID     string `json:"sourceId"`
+	SourceIDType string `json:"sourceIdType"`
+	TargetType   int32  `json:"targetType,omitempty"`
+	Delete       bool   `json:"delete"`
+	Reason       string `json:"reason"`
 }
 
 type migrationConfig struct {
@@ -172,8 +175,8 @@ func main() {
 		if err = writePlan(reportPath, current); err != nil {
 			fatal(err)
 		}
-		fmt.Printf("dry-run complete: %s\nconflicts=%d mappings=%d courseRepairs=%d commentIdRepairs=%d teacherTimeRepairs=%d invalidLikeRepairs=%d\n",
-			reportPath, len(current.Conflicts), len(current.Mappings), len(current.CourseRepairs), len(current.CommentIDRepairs), len(current.TeacherTimeRepairs), len(current.InvalidLikeRepairs))
+		fmt.Printf("dry-run complete: %s\nconflicts=%d mappings=%d courseRepairs=%d commentIdRepairs=%d teacherTimeRepairs=%d likeRepairs=%d\n",
+			reportPath, len(current.Conflicts), len(current.Mappings), len(current.CourseRepairs), len(current.CommentIDRepairs), len(current.TeacherTimeRepairs), len(current.LikeRepairs))
 		if len(current.Conflicts) > 0 {
 			os.Exit(2)
 		}
@@ -518,36 +521,81 @@ func buildPlan(ctx context.Context, client *mongo.Client, database string) (*pla
 		return nil, err
 	}
 	var likes []struct {
-		ID         any    `bson:"_id"`
-		TargetID   string `bson:"targetId"`
-		TargetType int32  `bson:"targetType"`
+		ID         any `bson:"_id"`
+		TargetID   any `bson:"targetId"`
+		TargetType any `bson:"targetType"`
 	}
 	if err = likeCursor.All(ctx, &likes); err != nil {
 		return nil, err
 	}
+	stringLikeIDs := make(map[string]struct{})
 	for _, like := range likes {
-		reason := ""
-		targets, validType := activeTargets[like.TargetType]
-		if !validType {
-			reason = fmt.Sprintf("unsupported targetType=%d", like.TargetType)
-		} else if like.TargetID == "" {
-			reason = "empty targetId"
-		} else if _, exists := targets[like.TargetID]; !exists {
-			reason = "target is missing or deleted"
+		if id, ok := like.ID.(string); ok && id != "" {
+			stringLikeIDs[id] = struct{}{}
 		}
-		if reason == "" {
-			continue
-		}
-		likeID, stringID := like.ID.(string)
-		if !stringID || likeID == "" {
-			result.Conflicts = append(result.Conflicts,
-				fmt.Sprintf("invalid like without string _id=%v targetType=%d targetId=%q", like.ID, like.TargetType, like.TargetID))
-			continue
-		}
-		result.InvalidLikeRepairs = append(result.InvalidLikeRepairs, likeRepair{ID: likeID, Reason: reason})
 	}
-	sort.Slice(result.InvalidLikeRepairs, func(i, j int) bool {
-		return result.InvalidLikeRepairs[i].ID < result.InvalidLikeRepairs[j].ID
+	for _, like := range likes {
+		sourceID, sourceIDType, idOK := migrationDocumentID(like.ID)
+		if !idOK {
+			result.Conflicts = append(result.Conflicts, fmt.Sprintf("like has unsupported _id=%v", like.ID))
+			continue
+		}
+		targetID, targetIDOK := like.TargetID.(string)
+		targetType, recognizedType, canonicalType := normalizeLikeTargetType(like.TargetType)
+		if !targetIDOK || targetID == "" {
+			result.LikeRepairs = append(result.LikeRepairs, likeRepair{
+				SourceID: sourceID, SourceIDType: sourceIDType, Delete: true, Reason: "empty or non-string targetId",
+			})
+			continue
+		}
+
+		if recognizedType {
+			if _, exists := activeTargets[targetType][targetID]; !exists {
+				result.LikeRepairs = append(result.LikeRepairs, likeRepair{
+					SourceID: sourceID, SourceIDType: sourceIDType, Delete: true, Reason: "target is missing or deleted",
+				})
+				continue
+			}
+		} else {
+			matchedTypes := make([]int32, 0, 2)
+			for _, candidate := range []int32{1, 2} {
+				if _, exists := activeTargets[candidate][targetID]; exists {
+					matchedTypes = append(matchedTypes, candidate)
+				}
+			}
+			switch len(matchedTypes) {
+			case 0:
+				result.LikeRepairs = append(result.LikeRepairs, likeRepair{
+					SourceID: sourceID, SourceIDType: sourceIDType, Delete: true, Reason: "unsupported targetType and target is missing or deleted",
+				})
+				continue
+			case 1:
+				targetType = matchedTypes[0]
+				canonicalType = false
+			default:
+				result.Conflicts = append(result.Conflicts,
+					fmt.Sprintf("like %s target %q exists as both proposal and comment; cannot infer targetType", sourceID, targetID))
+				continue
+			}
+		}
+
+		if sourceIDType == "objectId" {
+			if _, collision := stringLikeIDs[sourceID]; collision {
+				result.Conflicts = append(result.Conflicts, fmt.Sprintf("like id collision for %s", sourceID))
+				continue
+			}
+		}
+		if sourceIDType == "objectId" || !canonicalType {
+			result.LikeRepairs = append(result.LikeRepairs, likeRepair{
+				SourceID: sourceID, SourceIDType: sourceIDType, TargetType: targetType,
+				Reason: "normalize legacy like id/targetType",
+			})
+		}
+	}
+	sort.Slice(result.LikeRepairs, func(i, j int) bool {
+		left := result.LikeRepairs[i].SourceIDType + ":" + result.LikeRepairs[i].SourceID
+		right := result.LikeRepairs[j].SourceIDType + ":" + result.LikeRepairs[j].SourceID
+		return left < right
 	})
 
 	duplicatePipeline := mongo.Pipeline{
@@ -581,7 +629,7 @@ func buildPlan(ctx context.Context, client *mongo.Client, database string) (*pla
 	})
 	sort.Strings(result.Conflicts)
 	sort.Strings(result.Warnings)
-	result.SnapshotSHA256, err = snapshotHash(existing, broken, result.CourseRepairs, result.CommentIDRepairs, result.TeacherTimeRepairs, result.InvalidLikeRepairs)
+	result.SnapshotSHA256, err = snapshotHash(existing, broken, result.CourseRepairs, result.CommentIDRepairs, result.TeacherTimeRepairs, result.LikeRepairs)
 	return result, err
 }
 
@@ -620,7 +668,7 @@ func snapshotHash(mappings []legacyMapping, courses []brokenCourse, repairs []co
 		parts = append(parts, "t|"+item.ID)
 	}
 	for _, item := range likes {
-		parts = append(parts, fmt.Sprintf("l|%s|%s", item.ID, item.Reason))
+		parts = append(parts, fmt.Sprintf("l|%s|%s|%d|%t|%s", item.SourceIDType, item.SourceID, item.TargetType, item.Delete, item.Reason))
 	}
 	sort.Strings(parts)
 	hash := sha256.Sum256([]byte(strings.Join(parts, "\n")))
@@ -730,10 +778,37 @@ func apply(ctx context.Context, client *mongo.Client, approved *plan) error {
 				return nil, err
 			}
 		}
-		for _, repair := range approved.InvalidLikeRepairs {
-			result, deleteErr := db.Collection("like").DeleteOne(tx, bson.M{"_id": repair.ID})
+		for _, repair := range approved.LikeRepairs {
+			filter, filterErr := likeSourceFilter(repair)
+			if filterErr != nil {
+				return nil, filterErr
+			}
+			if repair.Delete {
+				result, deleteErr := db.Collection("like").DeleteOne(tx, filter)
+				if deleteErr != nil || result.DeletedCount != 1 {
+					return nil, fmt.Errorf("delete invalid like %s matched=%d: %w", repair.SourceID, result.DeletedCount, deleteErr)
+				}
+				continue
+			}
+			if repair.SourceIDType == "string" {
+				result, updateErr := db.Collection("like").UpdateOne(tx, filter, bson.M{"$set": bson.M{"targetType": repair.TargetType}})
+				if updateErr != nil || result.MatchedCount != 1 {
+					return nil, fmt.Errorf("normalize like %s matched=%d: %w", repair.SourceID, result.MatchedCount, updateErr)
+				}
+				continue
+			}
+			var document bson.M
+			if findErr := db.Collection("like").FindOne(tx, filter).Decode(&document); findErr != nil {
+				return nil, findErr
+			}
+			document["_id"] = repair.SourceID
+			document["targetType"] = repair.TargetType
+			if _, insertErr := db.Collection("like").InsertOne(tx, document); insertErr != nil {
+				return nil, insertErr
+			}
+			result, deleteErr := db.Collection("like").DeleteOne(tx, filter)
 			if deleteErr != nil || result.DeletedCount != 1 {
-				return nil, fmt.Errorf("delete invalid like %s matched=%d: %w", repair.ID, result.DeletedCount, deleteErr)
+				return nil, fmt.Errorf("replace legacy like %s matched=%d: %w", repair.SourceID, result.DeletedCount, deleteErr)
 			}
 		}
 		return nil, nil
@@ -791,6 +866,55 @@ func documentIDString(value any) (string, bool) {
 		return id.Hex(), true
 	default:
 		return "", false
+	}
+}
+
+func migrationDocumentID(value any) (string, string, bool) {
+	switch id := value.(type) {
+	case string:
+		return id, "string", id != ""
+	case primitive.ObjectID:
+		return id.Hex(), "objectId", true
+	default:
+		return "", "", false
+	}
+}
+
+func normalizeLikeTargetType(value any) (targetType int32, recognized bool, canonical bool) {
+	switch typed := value.(type) {
+	case int32:
+		return typed, typed == 1 || typed == 2, typed == 1 || typed == 2
+	case int64:
+		if typed == 1 || typed == 2 {
+			return int32(typed), true, false
+		}
+	case float64:
+		if typed == 1 || typed == 2 {
+			return int32(typed), true, false
+		}
+	case string:
+		switch strings.ToLower(strings.TrimSpace(typed)) {
+		case "1", "proposal":
+			return 1, true, false
+		case "2", "comment":
+			return 2, true, false
+		}
+	}
+	return 0, false, false
+}
+
+func likeSourceFilter(repair likeRepair) (bson.M, error) {
+	switch repair.SourceIDType {
+	case "string":
+		return bson.M{"_id": repair.SourceID}, nil
+	case "objectId":
+		id, err := primitive.ObjectIDFromHex(repair.SourceID)
+		if err != nil {
+			return nil, err
+		}
+		return bson.M{"_id": id}, nil
+	default:
+		return nil, fmt.Errorf("unsupported like source id type %q", repair.SourceIDType)
 	}
 }
 

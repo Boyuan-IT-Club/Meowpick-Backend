@@ -81,17 +81,38 @@ func TestSnapshotHashIncludesResolvedCourseRepair(t *testing.T) {
 	}
 }
 
-func TestSnapshotHashIncludesInvalidLikeRepairs(t *testing.T) {
-	first, err := snapshotHash(nil, nil, nil, nil, nil, []likeRepair{{ID: "like-1", Reason: "unsupported targetType=0"}})
+func TestSnapshotHashIncludesLikeRepairs(t *testing.T) {
+	first, err := snapshotHash(nil, nil, nil, nil, nil, []likeRepair{{SourceID: "like-1", SourceIDType: "string", Delete: true, Reason: "missing target"}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := snapshotHash(nil, nil, nil, nil, nil, []likeRepair{{ID: "like-2", Reason: "unsupported targetType=0"}})
+	second, err := snapshotHash(nil, nil, nil, nil, nil, []likeRepair{{SourceID: "like-2", SourceIDType: "string", Delete: true, Reason: "missing target"}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if first == second {
 		t.Fatal("snapshot hash must change when invalid like repairs change")
+	}
+}
+
+func TestNormalizeLikeTargetType(t *testing.T) {
+	for _, test := range []struct {
+		input      any
+		want       int32
+		recognized bool
+		canonical  bool
+	}{
+		{int32(1), 1, true, true},
+		{int64(2), 2, true, false},
+		{"proposal", 1, true, false},
+		{"comment", 2, true, false},
+		{"", 0, false, false},
+		{int32(0), 0, false, false},
+	} {
+		got, recognized, canonical := normalizeLikeTargetType(test.input)
+		if got != test.want || recognized != test.recognized || canonical != test.canonical {
+			t.Fatalf("normalizeLikeTargetType(%v) = (%d,%t,%t), want (%d,%t,%t)", test.input, got, recognized, canonical, test.want, test.recognized, test.canonical)
+		}
 	}
 }
 
