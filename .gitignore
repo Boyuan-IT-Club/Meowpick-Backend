@@ -2,10 +2,5 @@
 /etc
 /docker-compose.yml
 /vendor/
-/scripts/
-/cmd/migrate-v2/
-/Dockerfile.migrate-v2
-/MEOWPICK-V2-改造与迁移说明.md
-/docs/*.md
 /data/
 .DS_Store
