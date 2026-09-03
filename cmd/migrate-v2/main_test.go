@@ -67,12 +67,12 @@ func TestValidateRequiredTarget(t *testing.T) {
 
 func TestSnapshotHashIncludesResolvedCourseRepair(t *testing.T) {
 	department := int32(10)
-	first, err := snapshotHash(nil, nil, []courseRepair{{ID: "course", Department: &department}}, nil, nil)
+	first, err := snapshotHash(nil, nil, []courseRepair{{ID: "course", Department: &department}}, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	department = 11
-	second, err := snapshotHash(nil, nil, []courseRepair{{ID: "course", Department: &department}}, nil, nil)
+	second, err := snapshotHash(nil, nil, []courseRepair{{ID: "course", Department: &department}}, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,11 +81,25 @@ func TestSnapshotHashIncludesResolvedCourseRepair(t *testing.T) {
 	}
 }
 
+func TestSnapshotHashIncludesInvalidLikeRepairs(t *testing.T) {
+	first, err := snapshotHash(nil, nil, nil, nil, nil, []likeRepair{{ID: "like-1", Reason: "unsupported targetType=0"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := snapshotHash(nil, nil, nil, nil, nil, []likeRepair{{ID: "like-2", Reason: "unsupported targetType=0"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first == second {
+		t.Fatal("snapshot hash must change when invalid like repairs change")
+	}
+}
+
 func TestSnapshotHashIsOrderIndependent(t *testing.T) {
 	first, err := snapshotHash(
 		[]legacyMapping{{Name: "B", Code: 2}, {Name: "A", Code: 1}},
 		[]brokenCourse{{ID: "B"}, {ID: "A"}},
-		nil, nil, nil,
+		nil, nil, nil, nil,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -93,7 +107,7 @@ func TestSnapshotHashIsOrderIndependent(t *testing.T) {
 	second, err := snapshotHash(
 		[]legacyMapping{{Name: "A", Code: 1}, {Name: "B", Code: 2}},
 		[]brokenCourse{{ID: "A"}, {ID: "B"}},
-		nil, nil, nil,
+		nil, nil, nil, nil,
 	)
 	if err != nil {
 		t.Fatal(err)
