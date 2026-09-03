@@ -345,7 +345,7 @@ import sys
 with open(sys.argv[1], encoding="utf-8") as handle:
     report = json.load(handle)
 pending = sum(len(report.get(name) or []) for name in (
-    "conflicts", "courseRepairs", "commentIdRepairs", "teacherTimeRepairs", "invalidLikeRepairs"
+    "conflicts", "courseRepairs", "commentIdRepairs", "teacherTimeRepairs", "likeRepairs"
 ))
 if pending:
     raise SystemExit(f"迁移后仍有 {pending} 个冲突或待修复项，拒绝导出")
