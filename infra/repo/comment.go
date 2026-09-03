@@ -16,6 +16,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
@@ -35,11 +36,28 @@ const (
 
 type ICommentRepo interface {
 	Insert(ctx context.Context, c *model.Comment) error
+	FindByID(ctx context.Context, id string) (*model.Comment, error)
 	Count(ctx context.Context) (int64, error)
 	GetTagsByCourseID(ctx context.Context, courseId string) (map[string]int64, error)
 
 	FindManyByUserID(ctx context.Context, param *dto.PageParam, userId string) ([]*model.Comment, int64, error)
 	FindManyByCourseID(ctx context.Context, param *dto.PageParam, courseId string) ([]*model.Comment, int64, error)
+}
+
+// FindByID returns an active comment by ID.
+func (r *CommentRepo) FindByID(ctx context.Context, id string) (*model.Comment, error) {
+	var comment model.Comment
+	err := r.conn.FindOneNoCache(ctx, &comment, bson.M{
+		consts.ID:      id,
+		consts.Deleted: bson.M{"$ne": true},
+	})
+	if errors.Is(err, monc.ErrNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &comment, nil
 }
 
 type CommentRepo struct {

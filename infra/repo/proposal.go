@@ -96,7 +96,11 @@ func (r *ProposalRepo) ensureTransactionSupport(ctx context.Context) error {
 }
 
 func (r *ProposalRepo) WithTransaction(ctx context.Context, fn func(mongo.SessionContext) error) error {
-	session, err := r.conn.StartSession()
+	// monc names its wrapped session with the complete MongoDB URI. When a
+	// transaction fails, that name is written to logs and can expose URI
+	// credentials. Start a native driver session from the same client instead;
+	// all repository collections still participate in the same transaction.
+	session, err := r.conn.Database().Client().StartSession()
 	if err != nil {
 		return err
 	}

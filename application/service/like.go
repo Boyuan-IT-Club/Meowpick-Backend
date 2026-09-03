@@ -38,6 +38,7 @@ type LikeService struct {
 	LikeRepo     *repo.LikeRepo
 	LikeCache    *cache.LikeCache
 	ProposalRepo *repo.ProposalRepo
+	CommentRepo  *repo.CommentRepo
 }
 
 var LikeServiceSet = wire.NewSet(
@@ -53,7 +54,39 @@ func (s *LikeService) ToggleLike(ctx context.Context, req *dto.ToggleLikeReq) (r
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	// 获得目标
+	if req == nil || req.TargetID == "" {
+		return nil, errorx.New(errno.ErrLikeTargetNotFound,
+			errorx.KV("targetType", ""), errorx.KV("targetId", ""))
+	}
+	if req.TargetType != consts.LikeTargetTypeProposal && req.TargetType != consts.LikeTargetTypeComment {
+		return nil, errorx.New(errno.ErrLikeTargetTypeInvalid,
+			errorx.KV("targetType", req.TargetType))
+	}
+
+	// 写点赞前确认目标真实存在且未删除，避免生成悬空 like 记录。
+	switch req.TargetType {
+	case consts.LikeTargetTypeProposal:
+		proposal, findErr := s.ProposalRepo.FindByID(ctx, req.TargetID)
+		if findErr != nil {
+			return nil, errorx.WrapByCode(findErr, errno.ErrProposalFindFailed)
+		}
+		if proposal == nil {
+			return nil, errorx.New(errno.ErrLikeTargetNotFound,
+				errorx.KV("targetType", req.TargetType), errorx.KV("targetId", req.TargetID))
+		}
+	case consts.LikeTargetTypeComment:
+		comment, findErr := s.CommentRepo.FindByID(ctx, req.TargetID)
+		if findErr != nil {
+			return nil, errorx.WrapByCode(findErr, errno.ErrCommentFindFailed,
+				errorx.KV("key", consts.ID), errorx.KV("value", req.TargetID))
+		}
+		if comment == nil {
+			return nil, errorx.New(errno.ErrLikeTargetNotFound,
+				errorx.KV("targetType", req.TargetType), errorx.KV("targetId", req.TargetID))
+		}
+	}
+
+	// 获得目标类型编号
 	targetType := mapping.Data.GetLikeTargetTypeIDByName(req.TargetType)
 
 	// 点赞或取消点赞目标
