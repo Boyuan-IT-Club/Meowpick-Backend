@@ -15,15 +15,18 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
 
-	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/lib"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 // Response 统一响应格式，仅用于 Swagger 文档生成
@@ -37,7 +40,13 @@ type Response[T any] struct {
 // 在日志中记录本次调用详情, 同时向响应头中注入符合b3规范的链路信息, 主要是trace_id
 // 最佳实践: 在Handler中调用业务处理, 处理结束后调用PostProcess
 func PostProcess(c *gin.Context, req, resp any, err error) {
-	logs.CtxInfof(c, "[PostProcess] [%s] req=%s, resp=%s, err=%v", c.FullPath(), lib.JSONF(req), lib.JSONF(resp), err)
+	// Request and response bodies may contain login codes, administrator grant
+	// codes, JWTs, or future secrets. Trace the route and result only.
+	if err == nil {
+		logs.CtxInfof(c, "[PostProcess] [%s] success", c.FullPath())
+	} else {
+		logs.CtxInfof(c, "[PostProcess] [%s] failed, error_type=%T", c.FullPath(), err)
+	}
 
 	// 无错, 正常响应
 	if err == nil {
@@ -46,6 +55,7 @@ func PostProcess(c *gin.Context, req, resp any, err error) {
 		return
 	}
 
+	err = normalizeRequestError(err)
 	var se errorx.StatusError
 	if errors.As(err, &se) {
 		c.JSON(http.StatusOK, gin.H{
@@ -55,13 +65,27 @@ func PostProcess(c *gin.Context, req, resp any, err error) {
 		})
 	} else {
 		// 其他非 errorx 错误，500
-		logs.CtxErrorf(c, "[PostProcess] internal error, err=%v", err)
+		logs.CtxErrorf(c, "[PostProcess] internal error, error_type=%T", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": http.StatusInternalServerError,
-			"msg":  err.Error(),
+			"msg":  "internal server error",
 			"data": nil,
 		})
 	}
+}
+
+func normalizeRequestError(err error) error {
+	var validationErrors validator.ValidationErrors
+	if errors.As(err, &validationErrors) && len(validationErrors) > 0 {
+		return errorx.New(errno.ErrRequestInvalid, errorx.KV("field", validationErrors[0].Field()))
+	}
+
+	var syntaxError *json.SyntaxError
+	var typeError *json.UnmarshalTypeError
+	if errors.Is(err, io.EOF) || errors.As(err, &syntaxError) || errors.As(err, &typeError) {
+		return errorx.New(errno.ErrRequestInvalid, errorx.KV("field", "body"))
+	}
+	return err
 }
 
 // makeResponse 通过反射构造嵌套格式的响应体

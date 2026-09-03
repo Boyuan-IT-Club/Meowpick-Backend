@@ -1368,7 +1368,15 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 			return errorx.New(errno.ErrProposalStatusNotRejected, errorx.KV("proposalId", req.ProposalID))
 		}
 
-		updated, updateErr := s.ProposalRepo.UpdateStatusByID(txCtx, req.ProposalID, expectedStatusID, pendingStatusID)
+		var updated bool
+		var updateErr error
+		if req.ActionType == consts.RevokeActionReject {
+			updated, updateErr = s.ProposalRepo.UpdateStatusAndReasonByID(
+				txCtx, req.ProposalID, expectedStatusID, pendingStatusID, "",
+			)
+		} else {
+			updated, updateErr = s.ProposalRepo.UpdateStatusByID(txCtx, req.ProposalID, expectedStatusID, pendingStatusID)
+		}
 		if updateErr != nil {
 			return errorx.WrapByCode(updateErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
 		}

@@ -78,6 +78,7 @@ func NewProvider() (*Provider, error) {
 		LikeRepo:     likeRepo,
 		LikeCache:    likeCache,
 		ProposalRepo: proposalRepo,
+		CommentRepo:  commentRepo,
 	}
 	courseService := service.CourseService{
 		CourseRepo:      courseRepo,

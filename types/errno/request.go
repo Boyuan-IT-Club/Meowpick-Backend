@@ -12,19 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dto
+package errno
 
-type ToggleLikeReq struct {
-	TargetID   string `json:"-" swaggerignore:"true"`                                                        // 从 URL path 获取
-	TargetType string `json:"targetType" binding:"required,oneof=proposal comment" enums:"proposal,comment"` // 点赞对象类型：proposal/comment
-}
+import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 
-type ToggleLikeResp struct {
-	*LikeVO
-	*Resp
-}
+const ErrRequestInvalid = 110000001
 
-type LikeVO struct {
-	Like    bool  `json:"like"`
-	LikeCnt int64 `json:"likeCnt"`
+func init() {
+	code.Register(
+		ErrRequestInvalid,
+		"invalid request parameter: {field}",
+		code.WithAffectStability(false),
+	)
 }

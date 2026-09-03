@@ -200,21 +200,38 @@ func (r *UserRepo) UpdateProfile(
 		}
 	}
 
-	result, err := r.conn.UpdateOne(ctx, UserID2DBKey+id, filter, bson.M{"$set": set})
+	// A partial $set document is not a complete User value. Passing it through
+	// monc's cached UpdateOne path can replace the cached object with only the
+	// updated fields, making unrelated fields (for example username) read back as
+	// zero values. Update MongoDB without touching the object cache, then evict
+	// the complete cached user.
+	result, err := r.conn.UpdateOneNoCache(ctx, filter, bson.M{"$set": set})
 	if err != nil {
 		return false, err
 	}
-	return result.MatchedCount == 1, nil
+	if result.MatchedCount != 1 {
+		return false, nil
+	}
+	if err := r.InvalidateByID(ctx, id); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // SetAdmin updates only the privilege bit and timestamp. Using a partial User
 // struct with Update would overwrite unrelated identity/profile fields with zeros.
 func (r *UserRepo) SetAdmin(ctx context.Context, id string, admin bool) error {
-	_, err := r.conn.UpdateOne(ctx, UserID2DBKey+id,
+	result, err := r.conn.UpdateOneNoCache(ctx,
 		bson.M{consts.ID: id},
 		bson.M{"$set": bson.M{"admin": admin, consts.UpdatedAt: time.Now()}},
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount != 1 {
+		return monc.ErrNotFound
+	}
+	return r.InvalidateByID(ctx, id)
 }
 
 func (r *UserRepo) InvalidateByID(ctx context.Context, id string) error {
