@@ -1,0 +1,53 @@
+name: ChatECNU PR Review
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+
+concurrency:
+  group: pr-agent-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Review pull request with ChatECNU
+        uses: The-PR-Agent/pr-agent@v0.43.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # Add this repository secret in GitHub Actions settings. Never commit the key.
+          OPENAI__KEY: ${{ secrets.CHATECNU_API_KEY }}
+          OPENAI__API_BASE: https://chat.ecnu.edu.cn/open/api/v1
+
+          # The openai/ prefix selects LiteLLM's OpenAI-compatible transport.
+          config.model: "openai/ecnu-max"
+          config.fallback_models: '["openai/ecnu-plus"]'
+          config.custom_model_max_tokens: "128000"
+
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_improve: "false"
+          github_action_config.pr_actions: '["opened","reopened","ready_for_review","synchronize"]'
+
+          pr_description.publish_labels: "false"
+          pr_reviewer.require_score_review: "false"
+          pr_reviewer.require_tests_review: "true"
+          pr_reviewer.num_code_suggestions: "6"
+          pr_reviewer.extra_instructions: >-
+            Use Chinese. Report only issues with concrete evidence and material impact
+            on correctness, security, concurrency, data consistency, API compatibility,
+            or performance. Do not report formatting preferences, naming preferences,
+            or speculative refactors. For every issue, explain its trigger, impact, and
+            a practical fix. Pay special attention to authentication and authorization,
+            MongoDB transaction boundaries, Redis and in-process cache consistency,
+            soft-deletion filters, error handling, and backward compatibility.
