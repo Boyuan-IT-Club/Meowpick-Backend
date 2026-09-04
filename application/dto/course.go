@@ -16,14 +16,25 @@ package dto
 
 // CourseVO 传递给前端的课程类型 模糊搜索和精确搜索结果都可用此类型
 type CourseVO struct {
-	ID         string           `json:"id"`
-	Name       string           `json:"name"`
-	Code       string           `json:"code"`
-	Category   string           `json:"category"`
-	Campuses   []string         `json:"campuses"`
-	Department string           `json:"department"`
-	Teachers   []*TeacherVO     `json:"teachers"`
-	TagCount   map[string]int64 `json:"tagCount"`
+	ID          string               `json:"id"`
+	Name        string               `json:"name"`
+	Code        string               `json:"code"`
+	Category    string               `json:"category"`
+	Campuses    []string             `json:"campuses"`
+	Department  string               `json:"department"`
+	Teachers    []*TeacherVO         `json:"teachers"`
+	TagCount    map[string]int64     `json:"tagCount"`
+	Contributor *CourseContributorVO `json:"contributor,omitempty"`
+}
+
+// CourseContributorVO describes the proposal source of a dynamically added
+// course. UserID and Username are omitted when the proposal author chose not
+// to expose their nickname.
+type CourseContributorVO struct {
+	ProposalID   string `json:"proposalId"`
+	UserID       string `json:"userId,omitempty"`
+	Username     string `json:"username,omitempty"`
+	ShowUsername bool   `json:"showUsername"`
 }
 
 type ListCoursesReq struct {

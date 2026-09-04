@@ -30,8 +30,10 @@ import (
 )
 
 type mappingNamesContextKey struct{}
+type courseContributorsContextKey struct{}
 
 type mappingNamesByType map[model.MappingType]map[int32]string
+type courseContributorsByID map[string]*dto.CourseContributorVO
 
 var _ ICourseAssembler = (*CourseAssembler)(nil)
 
@@ -50,9 +52,11 @@ type ICourseAssembler interface {
 }
 
 type CourseAssembler struct {
-	CommentRepo *repo.CommentRepo
-	TeacherRepo *repo.TeacherRepo
-	CourseRepo  *repo.CourseRepo
+	CommentRepo  *repo.CommentRepo
+	TeacherRepo  *repo.TeacherRepo
+	CourseRepo   *repo.CourseRepo
+	ProposalRepo *repo.ProposalRepo
+	UserRepo     *repo.UserRepo
 }
 
 var CourseAssemblerSet = wire.NewSet(
@@ -114,16 +118,21 @@ func (a *CourseAssembler) ToCourseVO(ctx context.Context, db *model.Course) (*dt
 
 	// 等待tagCount结果
 	tagCount := <-tagCountChan
+	contributor, err := a.courseContributor(ctx, db)
+	if err != nil {
+		return nil, err
+	}
 
 	return &dto.CourseVO{
-		ID:         db.ID,
-		Name:       db.Name,
-		Code:       db.Code,
-		Category:   mappingNameFromContext(ctx, model.MappingTypeCategory, db.Category),
-		Campuses:   campuses,
-		Department: mappingNameFromContext(ctx, model.MappingTypeDepartment, db.Department),
-		Teachers:   teacherVOs,
-		TagCount:   tagCount,
+		ID:          db.ID,
+		Name:        db.Name,
+		Code:        db.Code,
+		Category:    mappingNameFromContext(ctx, model.MappingTypeCategory, db.Category),
+		Campuses:    campuses,
+		Department:  mappingNameFromContext(ctx, model.MappingTypeDepartment, db.Department),
+		Teachers:    teacherVOs,
+		TagCount:    tagCount,
+		Contributor: contributor,
 	}, nil
 }
 
@@ -451,6 +460,11 @@ func (a *CourseAssembler) ToCourseVOArray(ctx context.Context, dbs []*model.Cour
 	// Resolve course-level mappings in three HMGET calls, irrespective of the
 	// number of courses. Individual conversion reads these prefetched values.
 	ctx = withPrefetchedCourseMappingNames(ctx, dbs)
+	var err error
+	ctx, err = a.withPrefetchedCourseContributors(ctx, dbs)
+	if err != nil {
+		return nil, err
+	}
 	courseVOs := make([]*dto.CourseVO, len(dbs))
 
 	type result struct {
@@ -486,6 +500,114 @@ func (a *CourseAssembler) ToCourseVOArray(ctx context.Context, dbs []*model.Cour
 	}
 
 	return courseVOs, nil
+}
+
+func (a *CourseAssembler) courseContributor(ctx context.Context, course *model.Course) (*dto.CourseContributorVO, error) {
+	if course == nil || course.ProposalID == "" {
+		return nil, nil
+	}
+	if contributors, ok := ctx.Value(courseContributorsContextKey{}).(courseContributorsByID); ok {
+		return contributors[course.ID], nil
+	}
+
+	proposal, err := a.ProposalRepo.FindByID(ctx, course.ProposalID)
+	if err != nil || proposal == nil {
+		return nil, err
+	}
+	contributor := newCourseContributor(proposal, nil)
+	if !proposal.ShowUsername {
+		return contributor, nil
+	}
+	user, err := a.UserRepo.FindByID(ctx, proposal.UserID)
+	if err != nil {
+		return nil, err
+	}
+	return newCourseContributor(proposal, user), nil
+}
+
+func (a *CourseAssembler) withPrefetchedCourseContributors(
+	ctx context.Context,
+	courses []*model.Course,
+) (context.Context, error) {
+	proposalIDs := make([]string, 0, len(courses))
+	seenProposalIDs := make(map[string]struct{}, len(courses))
+	for _, course := range courses {
+		if course == nil || course.ProposalID == "" {
+			continue
+		}
+		if _, ok := seenProposalIDs[course.ProposalID]; ok {
+			continue
+		}
+		seenProposalIDs[course.ProposalID] = struct{}{}
+		proposalIDs = append(proposalIDs, course.ProposalID)
+	}
+	if len(proposalIDs) == 0 {
+		return context.WithValue(ctx, courseContributorsContextKey{}, courseContributorsByID{}), nil
+	}
+
+	proposals, err := a.ProposalRepo.FindByIDs(ctx, proposalIDs)
+	if err != nil {
+		return nil, err
+	}
+	proposalsByID := make(map[string]*model.Proposal, len(proposals))
+	userIDs := make([]string, 0, len(proposals))
+	seenUserIDs := make(map[string]struct{}, len(proposals))
+	for _, proposal := range proposals {
+		if proposal == nil {
+			continue
+		}
+		proposalsByID[proposal.ID] = proposal
+		if !proposal.ShowUsername || proposal.UserID == "" {
+			continue
+		}
+		if _, ok := seenUserIDs[proposal.UserID]; ok {
+			continue
+		}
+		seenUserIDs[proposal.UserID] = struct{}{}
+		userIDs = append(userIDs, proposal.UserID)
+	}
+
+	users, err := a.UserRepo.FindByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	usersByID := make(map[string]*model.User, len(users))
+	for _, user := range users {
+		if user != nil {
+			usersByID[user.ID] = user
+		}
+	}
+
+	contributors := make(courseContributorsByID, len(courses))
+	for _, course := range courses {
+		if course == nil || course.ProposalID == "" {
+			continue
+		}
+		proposal := proposalsByID[course.ProposalID]
+		if proposal == nil {
+			continue
+		}
+		contributors[course.ID] = newCourseContributor(proposal, usersByID[proposal.UserID])
+	}
+	return context.WithValue(ctx, courseContributorsContextKey{}, contributors), nil
+}
+
+func newCourseContributor(proposal *model.Proposal, user *model.User) *dto.CourseContributorVO {
+	if proposal == nil {
+		return nil
+	}
+	contributor := &dto.CourseContributorVO{
+		ProposalID:   proposal.ID,
+		ShowUsername: proposal.ShowUsername,
+	}
+	if !proposal.ShowUsername {
+		return contributor
+	}
+	contributor.UserID = proposal.UserID
+	if user != nil {
+		contributor.Username = user.Username
+	}
+	return contributor
 }
 
 // ToCourseDBArray CourseVO数组转CourseDB数组 (VO Array to DB Array)

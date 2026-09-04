@@ -21,7 +21,10 @@ func NewProvider() (*Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	commentRepo := repo.NewCommentRepo(configConfig)
+	commentRepo, err := repo.NewCommentRepo(configConfig)
+	if err != nil {
+		return nil, err
+	}
 	commentCache := cache.NewCommentCache(configConfig)
 	likeRepo := repo.NewLikeRepo(configConfig)
 	courseRepo, err := repo.NewCourseRepo(configConfig)
@@ -54,9 +57,11 @@ func NewProvider() (*Provider, error) {
 		return nil, err
 	}
 	courseAssembler := &assembler.CourseAssembler{
-		CommentRepo: commentRepo,
-		TeacherRepo: teacherRepo,
-		CourseRepo:  courseRepo,
+		CommentRepo:  commentRepo,
+		TeacherRepo:  teacherRepo,
+		CourseRepo:   courseRepo,
+		ProposalRepo: proposalRepo,
+		UserRepo:     userRepo,
 	}
 	changeLogService := &service.ChangeLogService{
 		ChangeLogRepo:      changeLogRepo,
@@ -101,6 +106,7 @@ func NewProvider() (*Provider, error) {
 	}
 	proposalService := service.ProposalService{
 		CourseRepo:        courseRepo,
+		CommentRepo:       commentRepo,
 		CourseAssembler:   courseAssembler,
 		ProposalRepo:      proposalRepo,
 		ProposalAssembler: proposalAssembler,

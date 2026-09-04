@@ -38,9 +38,23 @@ type ILikeRepo interface {
 	Toggle(ctx context.Context, userId, targetId string, targetType int32) (bool, error)
 	IsLike(ctx context.Context, userId, targetId string, targetType int32) (bool, error)
 	CountByTarget(ctx context.Context, targetId string, targetType int32) (int64, error)
+	DeleteByTargets(ctx context.Context, targetIds []string, targetType int32) error
 
 	GetLikesByUserIDAndTargets(ctx context.Context, userId string, targetIds []string, targetType int32) (map[string]bool, error)
 	CountByTargets(ctx context.Context, targetIds []string, targetType int32) (map[string]int64, error)
+}
+
+// DeleteByTargets removes likes belonging to deleted targets. Keeping these
+// rows would create dangling likes that cannot be reached or toggled anymore.
+func (r *LikeRepo) DeleteByTargets(ctx context.Context, targetIds []string, targetType int32) error {
+	if len(targetIds) == 0 {
+		return nil
+	}
+	_, err := r.conn.Database().Collection(LikeCollectionName).DeleteMany(ctx, bson.M{
+		consts.TargetID:   bson.M{"$in": targetIds},
+		consts.TargetType: targetType,
+	})
+	return err
 }
 
 type LikeRepo struct {

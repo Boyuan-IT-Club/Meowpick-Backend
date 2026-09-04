@@ -125,6 +125,23 @@ const docTemplate = `{
                 },
                 "type": "object"
             },
+            "dto.CourseContributorVO": {
+                "properties": {
+                    "proposalId": {
+                        "type": "string"
+                    },
+                    "showUsername": {
+                        "type": "boolean"
+                    },
+                    "userId": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "dto.CourseVO": {
                 "properties": {
                     "campuses": {
@@ -139,6 +156,9 @@ const docTemplate = `{
                     },
                     "code": {
                         "type": "string"
+                    },
+                    "contributor": {
+                        "$ref": "#/components/schemas/dto.CourseContributorVO"
                     },
                     "department": {
                         "type": "string"
