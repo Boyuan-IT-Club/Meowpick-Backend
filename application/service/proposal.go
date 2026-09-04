@@ -59,6 +59,7 @@ type IProposalService interface {
 
 type ProposalService struct {
 	CourseRepo        *repo.CourseRepo
+	CommentRepo       *repo.CommentRepo
 	CourseAssembler   *assembler.CourseAssembler
 	ProposalRepo      *repo.ProposalRepo
 	ProposalAssembler *assembler.ProposalAssembler
@@ -1356,9 +1357,19 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 			if courseErr != nil {
 				return errorx.WrapByCode(courseErr, errno.ErrCourseNotFoundCannotRevoke)
 			}
-			if associatedCourse != nil && !associatedCourse.Deleted {
-				if courseErr = s.CourseRepo.SoftDeleteByID(txCtx, associatedCourse.ID); courseErr != nil {
-					return errorx.WrapByCode(courseErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+			if associatedCourse != nil {
+				if !associatedCourse.Deleted {
+					if courseErr = s.CourseRepo.SoftDeleteByID(txCtx, associatedCourse.ID); courseErr != nil {
+						return errorx.WrapByCode(courseErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+					}
+				}
+				commentIDs, commentErr := s.CommentRepo.SoftDeleteByCourseID(txCtx, associatedCourse.ID)
+				if commentErr != nil {
+					return fmt.Errorf("soft delete course comments: %w", commentErr)
+				}
+				commentTargetType := mapping.Data.GetLikeTargetTypeIDByName(consts.LikeTargetTypeComment)
+				if likeErr := s.LikeRepo.DeleteByTargets(txCtx, commentIDs, commentTargetType); likeErr != nil {
+					return fmt.Errorf("delete course comment likes: %w", likeErr)
 				}
 			}
 			if contributionErr := s.rollbackContributionStrict(txCtx, proposal); contributionErr != nil {

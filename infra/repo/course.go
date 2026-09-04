@@ -90,7 +90,10 @@ func NewCourseRepo(cfg *config.Config) (*CourseRepo, error) {
 // FindByID 根据课程ID查询课程
 func (r *CourseRepo) FindByID(ctx context.Context, id string) (*model.Course, error) {
 	course := &model.Course{}
-	if err := r.conn.FindOneNoCache(ctx, course, bson.M{consts.ID: id}); err != nil {
+	if err := r.conn.FindOneNoCache(ctx, course, bson.M{
+		consts.ID:      id,
+		consts.Deleted: bson.M{"$ne": true},
+	}); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return nil, nil
 		}
@@ -102,7 +105,7 @@ func (r *CourseRepo) FindByID(ctx context.Context, id string) (*model.Course, er
 // FindManyByName 根据课程名称分页查询课程
 func (r *CourseRepo) FindManyByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	filter := bson.M{consts.Name: name}
+	filter := bson.M{consts.Name: name, consts.Deleted: bson.M{"$ne": true}}
 	if err := r.conn.Find(ctx, &courses, filter,
 		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
 	); err != nil {
@@ -119,7 +122,10 @@ func (r *CourseRepo) FindManyByName(ctx context.Context, name string, param *dto
 // FindManyByNameLike 根据课程名称分页模糊查询课程
 func (r *CourseRepo) FindManyByNameLike(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}
+	filter := bson.M{
+		consts.Name:    bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}},
+		consts.Deleted: bson.M{"$ne": true},
+	}
 	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param)); err != nil {
 		return nil, 0, err
 	}
@@ -134,7 +140,7 @@ func (r *CourseRepo) FindManyByNameLike(ctx context.Context, name string, param 
 // FindManyByTeacherID 根据教师ID分页查询其教授的课程
 func (r *CourseRepo) FindManyByTeacherID(ctx context.Context, teacherId string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	filter := bson.M{consts.TeacherIDs: teacherId}
+	filter := bson.M{consts.TeacherIDs: teacherId, consts.Deleted: bson.M{"$ne": true}}
 	if err := r.conn.Find(ctx, &courses, filter,
 		page.FindPageOption(param).SetSort(bson.D{
 			{Key: consts.CreatedAt, Value: -1},
@@ -212,7 +218,7 @@ func (r *CourseRepo) FindRecentByTeacherIDs(
 // FindManyByCategoryID 根据课程分类ID分页查询课程
 func (r *CourseRepo) FindManyByCategoryID(ctx context.Context, categoryId int32, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	filter := bson.M{consts.Category: categoryId}
+	filter := bson.M{consts.Category: categoryId, consts.Deleted: bson.M{"$ne": true}}
 	if err := r.conn.Find(ctx, &courses, filter,
 		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
 	); err != nil {
@@ -229,7 +235,7 @@ func (r *CourseRepo) FindManyByCategoryID(ctx context.Context, categoryId int32,
 // FindManyByDepartmentID 根据开课院系ID分页查询课程
 func (r *CourseRepo) FindManyByDepartmentID(ctx context.Context, departmentId int32, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	filter := bson.M{consts.Department: departmentId}
+	filter := bson.M{consts.Department: departmentId, consts.Deleted: bson.M{"$ne": true}}
 	if err := r.conn.Find(ctx, &courses, filter,
 		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
 	); err != nil {
@@ -245,7 +251,10 @@ func (r *CourseRepo) FindManyByDepartmentID(ctx context.Context, departmentId in
 
 // GetDepartmentsByName 根据课程名称查询开课院系
 func (r *CourseRepo) GetDepartmentsByName(ctx context.Context, name string) ([]int32, error) {
-	results, err := r.conn.Distinct(ctx, consts.Department, bson.M{consts.Name: name})
+	results, err := r.conn.Distinct(ctx, consts.Department, bson.M{
+		consts.Name:    name,
+		consts.Deleted: bson.M{"$ne": true},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +269,10 @@ func (r *CourseRepo) GetDepartmentsByName(ctx context.Context, name string) ([]i
 
 // GetCategoriesByName 根据课程名称查询课程分类
 func (r *CourseRepo) GetCategoriesByName(ctx context.Context, name string) ([]int32, error) {
-	results, err := r.conn.Distinct(ctx, consts.Category, bson.M{consts.Name: name})
+	results, err := r.conn.Distinct(ctx, consts.Category, bson.M{
+		consts.Name:    name,
+		consts.Deleted: bson.M{"$ne": true},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +287,10 @@ func (r *CourseRepo) GetCategoriesByName(ctx context.Context, name string) ([]in
 
 // GetCampusesByName 根据课程名称查询校区
 func (r *CourseRepo) GetCampusesByName(ctx context.Context, name string) ([]int32, error) {
-	results, err := r.conn.Distinct(ctx, consts.Campuses, bson.M{consts.Name: name})
+	results, err := r.conn.Distinct(ctx, consts.Campuses, bson.M{
+		consts.Name:    name,
+		consts.Deleted: bson.M{"$ne": true},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +306,10 @@ func (r *CourseRepo) GetCampusesByName(ctx context.Context, name string) ([]int3
 // GetSuggestionsByName 根据课程名称模糊分页查询课程
 func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}
+	filter := bson.M{
+		consts.Name:    bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}},
+		consts.Deleted: bson.M{"$ne": true},
+	}
 
 	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param)); err != nil {
 		return nil, 0, err
@@ -308,7 +326,10 @@ func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, para
 // GetSuggestionsByCode 根据课程代码模糊分页查询课程
 func (r *CourseRepo) GetSuggestionsByCode(ctx context.Context, code string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	filter := bson.M{consts.Code: bson.M{"$regex": primitive.Regex{Pattern: code, Options: "i"}}}
+	filter := bson.M{
+		consts.Code:    bson.M{"$regex": primitive.Regex{Pattern: code, Options: "i"}},
+		consts.Deleted: bson.M{"$ne": true},
+	}
 
 	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param)); err != nil {
 		return nil, 0, err

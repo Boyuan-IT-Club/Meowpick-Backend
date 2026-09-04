@@ -17,6 +17,7 @@ package repo
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
@@ -26,12 +27,14 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var _ ICommentRepo = (*CommentRepo)(nil)
 
 const (
-	CommentCollectionName = "comment"
+	CommentCollectionName        = "comment"
+	CommentCourseActiveIndexName = "idx_comment_course_id_deleted_created_at"
 )
 
 type ICommentRepo interface {
@@ -39,6 +42,7 @@ type ICommentRepo interface {
 	FindByID(ctx context.Context, id string) (*model.Comment, error)
 	Count(ctx context.Context) (int64, error)
 	GetTagsByCourseID(ctx context.Context, courseId string) (map[string]int64, error)
+	SoftDeleteByCourseID(ctx context.Context, courseID string) ([]string, error)
 
 	FindManyByUserID(ctx context.Context, param *dto.PageParam, userId string) ([]*model.Comment, int64, error)
 	FindManyByCourseID(ctx context.Context, param *dto.PageParam, courseId string) ([]*model.Comment, int64, error)
@@ -64,15 +68,66 @@ type CommentRepo struct {
 	conn *monc.Model
 }
 
-func NewCommentRepo(cfg *config.Config) *CommentRepo {
+func NewCommentRepo(cfg *config.Config) (*CommentRepo, error) {
 	conn := monc.MustNewModel(cfg.Mongo.URL, cfg.Mongo.DB, CommentCollectionName, cfg.Cache)
-	return &CommentRepo{conn: conn}
+	repository := &CommentRepo{conn: conn}
+	_, err := conn.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		Keys: bson.D{
+			{Key: consts.CourseID, Value: 1},
+			{Key: consts.Deleted, Value: 1},
+			{Key: consts.CreatedAt, Value: -1},
+		},
+		Options: options.Index().SetName(CommentCourseActiveIndexName),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return repository, nil
 }
 
 // Insert 插入评论
 func (r *CommentRepo) Insert(ctx context.Context, c *model.Comment) error {
 	_, err := r.conn.InsertOneNoCache(ctx, c)
 	return err
+}
+
+// SoftDeleteByCourseID marks every active comment of a course as deleted and
+// returns the affected comment IDs so callers can remove dependent records in
+// the same transaction.
+func (r *CommentRepo) SoftDeleteByCourseID(ctx context.Context, courseID string) ([]string, error) {
+	collection := r.conn.Database().Collection(CommentCollectionName)
+	filter := bson.M{
+		consts.CourseID: courseID,
+		consts.Deleted:  bson.M{"$ne": true},
+	}
+	cursor, err := collection.Find(ctx, filter, options.Find().SetProjection(bson.M{consts.ID: 1}))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var comments []struct {
+		ID string `bson:"_id"`
+	}
+	if err = cursor.All(ctx, &comments); err != nil {
+		return nil, err
+	}
+	if len(comments) == 0 {
+		return []string{}, nil
+	}
+
+	commentIDs := make([]string, 0, len(comments))
+	for _, comment := range comments {
+		commentIDs = append(commentIDs, comment.ID)
+	}
+	_, err = collection.UpdateMany(ctx, filter, bson.M{"$set": bson.M{
+		consts.Deleted:   true,
+		consts.UpdatedAt: time.Now(),
+	}})
+	if err != nil {
+		return nil, err
+	}
+	return commentIDs, nil
 }
 
 // Count 统计评论总数
