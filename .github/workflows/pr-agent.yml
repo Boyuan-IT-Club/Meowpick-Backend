@@ -47,6 +47,7 @@ jobs:
           config.model: "openai/ecnu-max"
           config.fallback_models: '["openai/ecnu-plus"]'
           config.custom_model_max_tokens: "128000"
+          config.response_language: "zh-CN"
 
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "true"
@@ -54,6 +55,9 @@ jobs:
           github_action_config.pr_actions: '["opened","reopened","ready_for_review","synchronize"]'
 
           pr_description.publish_labels: "false"
+          pr_description.extra_instructions: >-
+            Write the pull request title, summary, walkthrough, and all explanatory
+            text in Simplified Chinese. Keep code identifiers and file paths unchanged.
           pr_reviewer.require_score_review: "false"
           pr_reviewer.require_tests_review: "true"
           pr_reviewer.num_code_suggestions: "6"
