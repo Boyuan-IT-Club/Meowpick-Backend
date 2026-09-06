@@ -19,28 +19,28 @@ import "time"
 // GetSearchHistoriesResp 是返回给前端的搜索历史列表的响应体。
 type GetSearchHistoriesResp struct {
 	*Resp
-	Histories []*SearchHistoryVO `json:"histories"`
+	Histories []*SearchHistoryVO `json:"histories"` // 当前用户最近15条搜索历史，按最近搜索时间倒序
 }
 
 type GetSearchSuggestionsReq struct {
-	Keyword string `form:"keyword" binding:"required"`
+	Keyword string `form:"keyword" binding:"required"` // 同时匹配课程名、教师名、分类名和开课院系名的关键词
 	*PageParam
 }
 
 type GetSearchSuggestionsResp struct {
 	*Resp
-	Suggestions []*SearchSuggestionsVO `json:"suggestions"`
+	Suggestions []*SearchSuggestionsVO `json:"suggestions"` // 合并后的建议列表，最多 pageSize 条
 }
 
 type SearchSuggestionsVO struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
+	Type string `json:"type"` // 建议类型：course、teacher、category、department
+	Name string `json:"name"` // 建议显示及后续搜索使用的名称
 }
 
 // SearchHistoryVO 是返回给前端的、单条搜索历史的“视图对象”。
 // 它对应 OpenAPI 文档中的 SearchHistoryVO。
 type SearchHistoryVO struct {
-	ID        string    `json:"id"`
-	Query     string    `json:"query"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID        string    `json:"id"`        // 搜索历史记录ID
+	Query     string    `json:"query"`     // 曾提交的非空课程搜索关键词
+	CreatedAt time.Time `json:"createdAt"` // 最近一次搜索该关键词的时间
 }

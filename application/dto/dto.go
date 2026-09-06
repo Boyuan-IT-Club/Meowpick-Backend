@@ -27,8 +27,8 @@ func Success() *Resp {
 }
 
 type PageParam struct {
-	Page     int64 `form:"page" json:"page"`
-	PageSize int64 `form:"pageSize" json:"pageSize"`
+	Page     int64 `form:"page" json:"page"`         // 页码，从1开始；小于1时按1处理
+	PageSize int64 `form:"pageSize" json:"pageSize"` // 每页数量，范围1-100；未传、非正数或超过100时按10处理
 }
 
 type IPageParam interface {

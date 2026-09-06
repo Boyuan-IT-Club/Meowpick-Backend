@@ -24,7 +24,7 @@ import (
 
 // GetSearchHistories godoc
 // @Summary 获取最近搜索历史
-// @Description 获取最近搜索历史
+// @Description 登录后返回当前用户最近15条课程搜索历史，按最近搜索时间倒序。相同关键词会复用原记录并更新时间；搜索建议不会写入历史，只有提交非空课程搜索时才异步记录
 // @Tags search
 // @Produce json
 // @Success 200 {object} Response[dto.GetSearchHistoriesResp]
@@ -40,15 +40,12 @@ func GetSearchHistories(c *gin.Context) {
 
 // GetSearchSuggestions godoc
 // @Summary 获取搜索建议
-// @Description 根据关键词获取搜索建议
-// @Description 根据 type 不同执行不同的搜索逻辑：
-// @Description - course：模糊分页搜索课程
-// @Description - teacher：精确分页搜索教师开设的课程
-// @Description - category：精确分页搜索该类别下的课程
-// @Description - department：精确分页搜索该开课院系下的课程
+// @Description 登录后并行匹配未删除课程名称、教师姓名、课程分类和课程开课院系，按 course、teacher、category、department 的顺序合并，最终最多返回 pageSize 条。课程和教师使用分页模糊匹配，分类和院系从当前映射名称中匹配；任一数据库建议查询失败时整个请求失败。此接口只返回建议，不写入搜索历史
 // @Tags search
 // @Produce json
 // @Param keyword query string true "搜索关键词"
+// @Param page query int false "页码，小于1按1处理" default(1)
+// @Param pageSize query int false "最终建议条数上限，范围1-100，超出范围按10处理" default(10)
 // @Success 200 {object} Response[dto.GetSearchSuggestionsResp]
 // @Router /api/search/suggest [get]
 func GetSearchSuggestions(c *gin.Context) {

@@ -24,7 +24,7 @@ import (
 
 // ToggleLike godoc
 // @Summary 点赞 / 取消点赞
-// @Description 对指定目标（提案或评论）进行点赞或取消点赞操作；若已点赞则取消，未点赞则新增
+// @Description 登录用户切换指定未删除提案或评论的点赞状态：未点赞时新增，已点赞时取消。path 中 likeId 是目标ID，请求体 targetType 必须是 proposal 或 comment；目标不存在、已删除或类型非法时拒绝且不会产生悬空点赞。响应返回操作后的点赞状态与最新总数
 // @Tags like
 // @Accept json
 // @Produce json

@@ -25,6 +25,6 @@ type ToggleLikeResp struct {
 }
 
 type LikeVO struct {
-	Like    bool  `json:"like"`
-	LikeCnt int64 `json:"likeCnt"`
+	Like    bool  `json:"like"`    // 当前登录用户在操作后或查询时是否已点赞
+	LikeCnt int64 `json:"likeCnt"` // 目标当前点赞总数
 }

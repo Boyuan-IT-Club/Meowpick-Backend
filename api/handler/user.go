@@ -24,7 +24,7 @@ import (
 
 // GetUserProfile godoc
 // @Summary 获取当前用户资料
-// @Description 获取当前登录用户的昵称、头像、贡献值、今日已创建提案数、每日提案上限和昵称可编辑状态
+// @Description 返回当前登录用户的昵称、头像引用、累计贡献值、按中国时区自然日统计的今日提案使用量、按贡献值等级计算的每日上限，以及当前能否设置或修改非空昵称。昵称未设置和头像未设置均返回空字符串
 // @Tags user
 // @Produce json
 // @Success 200 {object} Response[dto.GetUserProfileResp]
@@ -37,7 +37,7 @@ func GetUserProfile(c *gin.Context) {
 
 // GetUsernameByUserID godoc
 // @Summary 根据用户 ID 获取昵称
-// @Description 根据用户 ID 获取该用户设置的昵称
+// @Description 登录后查询指定用户昵称。查询本人或管理员查询任意用户时无需 proposalId；普通用户跨用户查询必须提供属于目标用户且 showUsername=true 的未删除提案ID，否则拒绝，避免绕过匿名提案设置。目标用户尚未设置昵称时成功返回空字符串
 // @Tags user
 // @Produce json
 // @Param userId path string true "用户 ID"
@@ -57,11 +57,11 @@ func GetUsernameByUserID(c *gin.Context) {
 
 // UpdateUserProfile godoc
 // @Summary 更新当前用户资料
-// @Description 更新当前登录用户的昵称和头像；字段未传或为 null 时保持原值，空字符串用于清空
+// @Description 原子更新当前登录用户的昵称和头像，任一字段校验或写入失败时两者都不改变。字段省略或为 null 表示保持原值，空字符串表示清空。非空昵称去除首尾空白后最多15个 Unicode 字符，不允许控制字符、不得与其他用户昵称重复，设置或改名后30天内不能再次设置非空昵称；清空昵称不受冷却限制。头像仅保存引用字符串，不负责上传、下载或 URL 格式校验
 // @Tags user
 // @Accept json
 // @Produce json
-// @Param body body dto.UpdateUserProfileReq true "UpdateUserProfileReq"
+// @Param body body dto.UpdateUserProfileReq true "昵称和头像的局部更新；字段省略/null 保持，空字符串清空"
 // @Success 200 {object} Response[dto.UpdateUserProfileResp]
 // @Router /api/user/profile/update [post]
 func UpdateUserProfile(c *gin.Context) {
