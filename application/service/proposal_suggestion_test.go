@@ -61,3 +61,20 @@ func TestValidateProposalInputRequiredFields(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateProposalInputAllowsTeacherWithoutDepartment(t *testing.T) {
+	course := &dto.ProposalCourseVO{
+		Name:       "测试课程",
+		Department: "软件工程学院",
+		Category:   "专业必修",
+		Campuses:   []string{"普陀校区"},
+		Teachers: []*dto.TeacherVO{{
+			Name:  "新增教师",
+			Title: "讲师",
+		}},
+	}
+
+	if err := validateProposalInput("测试提案", course); err != nil {
+		t.Fatalf("validateProposalInput() rejected teacher without department: %v", err)
+	}
+}
