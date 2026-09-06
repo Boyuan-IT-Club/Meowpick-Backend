@@ -17,6 +17,7 @@ package assembler
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -57,6 +58,14 @@ type CourseAssembler struct {
 	CourseRepo   *repo.CourseRepo
 	ProposalRepo *repo.ProposalRepo
 	UserRepo     *repo.UserRepo
+}
+
+func resolveOptionalTeacherDepartment(ctx context.Context, department string) (int32, error) {
+	department = strings.TrimSpace(department)
+	if department == "" {
+		return 0, nil
+	}
+	return mapping.Data.ResolveOrCreateDepartment(ctx, department)
 }
 
 var CourseAssemblerSet = wire.NewSet(
@@ -320,8 +329,9 @@ func (a *CourseAssembler) ToCourseDBFromProposalCourse(ctx context.Context, vo *
 			continue
 		}
 
-		// 无ID：视为新教师，直接创建
-		teacherDepartment, err := mapping.Data.ResolveOrCreateDepartment(ctx, teacher.Department)
+		// 无ID：视为新教师，直接创建。教师院系允许暂未维护；空值保存为 0，
+		// 不创建空名称映射，也不从课程开课院系推断教师所属院系。
+		teacherDepartment, err := resolveOptionalTeacherDepartment(ctx, teacher.Department)
 		if err != nil {
 			return nil, fmt.Errorf("resolve teacher department: %w", err)
 		}

@@ -106,8 +106,7 @@ func validateProposalInput(title string, course *dto.ProposalCourseVO) error {
 		}
 	}
 	for _, teacher := range course.Teachers {
-		if teacher == nil || strings.TrimSpace(teacher.Name) == "" ||
-			(teacher.ID == "" && strings.TrimSpace(teacher.Department) == "") {
+		if teacher == nil || strings.TrimSpace(teacher.Name) == "" {
 			return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "course.teachers"))
 		}
 	}

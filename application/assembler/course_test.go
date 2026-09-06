@@ -15,10 +15,21 @@
 package assembler
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 )
+
+func TestResolveOptionalTeacherDepartmentAllowsBlank(t *testing.T) {
+	departmentID, err := resolveOptionalTeacherDepartment(context.Background(), "  ")
+	if err != nil {
+		t.Fatalf("resolveOptionalTeacherDepartment() error = %v", err)
+	}
+	if departmentID != 0 {
+		t.Fatalf("resolveOptionalTeacherDepartment() = %d, want 0", departmentID)
+	}
+}
 
 func TestNewCourseContributorRespectsProposalVisibility(t *testing.T) {
 	proposal := &model.Proposal{
