@@ -24,11 +24,11 @@ import (
 
 // CreateTeacher godoc
 // @Summary 新建教师
-// @Description 新建教师
+// @Description 管理员独立创建正式教师。此接口的姓名、职称和所属院系均必填；与提案审批自动创建教师不同，独立创建教师不接受空院系。院系名称不存在时会创建并持久化对应映射
 // @Tags teacher
 // @Accept json
 // @Produce json
-// @Param body body dto.CreateTeacherReq true "CreateTeacherReq"
+// @Param body body dto.CreateTeacherReq true "正式教师信息；name、title、department 均必填"
 // @Success 200 {object} Response[dto.CreateTeacherResp]
 // @Router /api/teacher/add [post]
 func CreateTeacher(c *gin.Context) {
@@ -48,10 +48,12 @@ func CreateTeacher(c *gin.Context) {
 
 // GetTeacherSuggestions godoc
 // @Summary 获取教师搜索建议
-// @Description 根据关键词获取教师搜索建议
+// @Description 登录后按教师姓名模糊搜索并返回分页建议。响应字段 id 是正式教师ID，可作为提案 course.teachers[].id 提交；教师院系暂未维护时 department 会显示为未知开课院系
 // @Tags teacher
 // @Produce json
 // @Param keyword query string true "搜索关键词"
+// @Param page query int false "页码，小于1按1处理" default(1)
+// @Param pageSize query int false "每页数量，范围1-100，超出范围按10处理" default(10)
 // @Success 200 {object} Response[dto.GetTeacherSuggestionsResp]
 // @Router /api/teacher/suggest [get]
 func GetTeacherSuggestions(c *gin.Context) {

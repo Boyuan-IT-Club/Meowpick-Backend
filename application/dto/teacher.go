@@ -15,7 +15,7 @@
 package dto
 
 type GetTeachersReq struct {
-	TeacherID string `form:"teacherId"`
+	TeacherID string `form:"teacherId"` // 教师ID，用于查询该教师教授的课程
 	*PageParam
 }
 
@@ -25,9 +25,9 @@ type GetTeachersResp struct {
 }
 
 type CreateTeacherReq struct {
-	Name       string `json:"name" binding:"required"`
-	Title      string `json:"title" binding:"required"`
-	Department string `json:"department" binding:"required"`
+	Name       string `json:"name" binding:"required"`       // 教师姓名，必填
+	Title      string `json:"title" binding:"required"`      // 教师职称，必填
+	Department string `json:"department" binding:"required"` // 教师所属院系，独立创建教师时必填；这与提案内教师院系可空的规则不同
 }
 
 type CreateTeacherResp struct {
@@ -43,11 +43,11 @@ type TeacherVO struct {
 }
 
 type GetTeacherSuggestionsReq struct {
-	Keyword string `form:"keyword" binding:"required"`
+	Keyword string `form:"keyword" binding:"required"` // 教师姓名模糊搜索关键词，不能为空
 	*PageParam
 }
 
 type GetTeacherSuggestionsResp struct {
 	*Resp
-	Teachers []*TeacherVO `json:"teachers"`
+	Teachers []*TeacherVO `json:"teachers"` // 当前分页教师建议列表
 }
