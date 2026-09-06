@@ -36,10 +36,10 @@ type CreateTeacherResp struct {
 }
 
 type TeacherVO struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Title      string `json:"title"`
-	Department string `json:"department"`
+	ID         string `json:"id"`         // 教师ID；提案引用已有教师时传入，新教师可为空
+	Name       string `json:"name"`       // 教师姓名
+	Title      string `json:"title"`      // 教师职称
+	Department string `json:"department"` // 教师所属院系；提案场景允许为空，表示暂未维护
 }
 
 type GetTeacherSuggestionsReq struct {
