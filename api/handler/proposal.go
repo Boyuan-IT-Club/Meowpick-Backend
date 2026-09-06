@@ -27,7 +27,7 @@ import (
 
 // CreateProposal godoc
 // @Summary 新增提案
-// @Description 创建一个新的提案
+// @Description 创建一个新的提案；课程教师的 department 可为空，表示教师所属院系暂未维护
 // @Tags proposal
 // @Accept json
 // @Param req body dto.CreateProposalReq true "创建提案的请求参数"
@@ -122,7 +122,7 @@ func GetProposal(c *gin.Context) {
 
 // ApproveProposal godoc
 // @Summary 审批提案
-// @Description 管理员通过提案并创建正式课程，可传入管理员最终确认的课程信息 finalCourse（不传则用提案原始课程），并按业务规则结算提案创建者的贡献值
+// @Description 管理员通过提案并创建正式课程，可传入管理员最终确认的课程信息 finalCourse（不传则用提案原始课程），并按业务规则结算提案创建者的贡献值；课程教师的 department 可为空，空值不会创建院系映射
 // @Tags proposal
 // @Accept json
 // @Produce json
@@ -206,7 +206,7 @@ func RejectProposal(c *gin.Context) {
 
 // UpdateProposal 更新提案接口
 // @Summary 更新提案内容
-// @Description 根据提案ID修改提案的标题和内容
+// @Description 根据提案ID修改提案的标题和内容；课程教师的 department 可为空，表示教师所属院系暂未维护
 // @Tags proposal
 // @Accept json
 // @Produce json

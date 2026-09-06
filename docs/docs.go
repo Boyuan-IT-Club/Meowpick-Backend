@@ -319,15 +319,19 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "department": {
+                        "description": "教师所属院系；提案场景允许为空，表示暂未维护",
                         "type": "string"
                     },
                     "id": {
+                        "description": "教师ID；提案引用已有教师时传入，新教师可为空",
                         "type": "string"
                     },
                     "name": {
+                        "description": "教师姓名",
                         "type": "string"
                     },
                     "title": {
+                        "description": "教师职称",
                         "type": "string"
                     }
                 },
@@ -1058,15 +1062,19 @@ const docTemplate = `{
             "dto.TeacherVO": {
                 "properties": {
                     "department": {
+                        "description": "教师所属院系；提案场景允许为空，表示暂未维护",
                         "type": "string"
                     },
                     "id": {
+                        "description": "教师ID；提案引用已有教师时传入，新教师可为空",
                         "type": "string"
                     },
                     "name": {
+                        "description": "教师姓名",
                         "type": "string"
                     },
                     "title": {
+                        "description": "教师职称",
                         "type": "string"
                     }
                 },
@@ -2344,7 +2352,7 @@ const docTemplate = `{
         },
         "/api/proposal/add": {
             "post": {
-                "description": "创建一个新的提案",
+                "description": "创建一个新的提案；课程教师的 department 可为空，表示教师所属院系暂未维护",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -2689,7 +2697,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/approve": {
             "post": {
-                "description": "管理员通过提案并创建正式课程，可传入管理员最终确认的课程信息 finalCourse（不传则用提案原始课程），并按业务规则结算提案创建者的贡献值",
+                "description": "管理员通过提案并创建正式课程，可传入管理员最终确认的课程信息 finalCourse（不传则用提案原始课程），并按业务规则结算提案创建者的贡献值；课程教师的 department 可为空，空值不会创建院系映射",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -2886,7 +2894,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/update": {
             "post": {
-                "description": "根据提案ID修改提案的标题和内容",
+                "description": "根据提案ID修改提案的标题和内容；课程教师的 department 可为空，表示教师所属院系暂未维护",
                 "parameters": [
                     {
                         "description": "提案唯一ID",
