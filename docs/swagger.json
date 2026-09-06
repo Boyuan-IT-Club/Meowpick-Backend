@@ -110,9 +110,11 @@
             "dto.CourseBrief": {
                 "properties": {
                     "id": {
+                        "description": "未删除课程ID",
                         "type": "string"
                     },
                     "name": {
+                        "description": "课程名称",
                         "type": "string"
                     }
                 },
@@ -257,16 +259,18 @@
             "dto.CreateProposalReq": {
                 "properties": {
                     "content": {
+                        "description": "提案补充说明，可为空",
                         "type": "string"
                     },
                     "course": {
                         "$ref": "#/components/schemas/dto.ProposalCourseVO"
                     },
                     "showUsername": {
-                        "description": "是否展示昵称（注：bool 类型不可加 binding:\"required\"，否则 false 会被校验拒绝）",
+                        "description": "是否允许公开展示提案创建者昵称；false 表示匿名展示",
                         "type": "boolean"
                     },
                     "title": {
+                        "description": "提案标题，去除首尾空白后不能为空",
                         "type": "string"
                     }
                 },
@@ -283,7 +287,7 @@
                         "$ref": "#/components/schemas/dto.ProposalVO"
                     },
                     "proposalId": {
-                        "description": "提案ID",
+                        "description": "新建提案ID",
                         "type": "string"
                     }
                 },
@@ -292,12 +296,15 @@
             "dto.CreateTeacherReq": {
                 "properties": {
                     "department": {
+                        "description": "教师所属院系，独立创建教师时必填；这与提案内教师院系可空的规则不同",
                         "type": "string"
                     },
                     "name": {
+                        "description": "教师姓名，必填",
                         "type": "string"
                     },
                     "title": {
+                        "description": "教师职称，必填",
                         "type": "string"
                     }
                 },
@@ -348,15 +355,19 @@
                 "description": "实际业务数据",
                 "properties": {
                     "deleted": {
+                        "description": "是否成功软删除",
                         "type": "boolean"
                     },
                     "deletedAt": {
+                        "description": "本次删除完成时间",
                         "type": "string"
                     },
                     "operatorId": {
+                        "description": "执行删除的提案创建者用户ID",
                         "type": "string"
                     },
                     "proposalId": {
+                        "description": "被软删除的提案ID",
                         "type": "string"
                     }
                 },
@@ -365,6 +376,7 @@
             "dto.FieldSuggestionVO": {
                 "properties": {
                     "courses": {
+                        "description": "仅 teacherName 建议返回，固定存在且最多两门；其他字段省略",
                         "items": {
                             "$ref": "#/components/schemas/dto.CourseBrief"
                         },
@@ -372,12 +384,15 @@
                         "uniqueItems": false
                     },
                     "id": {
+                        "description": "建议关联实体ID；教师、课程等数据库建议可能返回",
                         "type": "string"
                     },
                     "label": {
+                        "description": "前端展示文本；教师有职称时格式为“姓名 - 职称”",
                         "type": "string"
                     },
                     "value": {
+                        "description": "选中建议后写入请求字段的值",
                         "type": "string"
                     }
                 },
@@ -464,6 +479,7 @@
                 "description": "实际业务数据",
                 "properties": {
                     "proposals": {
+                        "description": "当前分页的个人提案历史",
                         "items": {
                             "$ref": "#/components/schemas/dto.ProposalVO"
                         },
@@ -471,6 +487,7 @@
                         "uniqueItems": false
                     },
                     "total": {
+                        "description": "当前用户全部提案总数，包含所有状态及已删除提案",
                         "type": "integer"
                     }
                 },
@@ -479,9 +496,11 @@
             "dto.GetProposalFieldSuggestionsResp": {
                 "properties": {
                     "field": {
+                        "description": "原样返回请求的字段类型",
                         "type": "string"
                     },
                     "suggestions": {
+                        "description": "当前分页建议列表",
                         "items": {
                             "$ref": "#/components/schemas/dto.FieldSuggestionVO"
                         },
@@ -489,6 +508,7 @@
                         "uniqueItems": false
                     },
                     "total": {
+                        "description": "匹配建议总数",
                         "type": "integer"
                     }
                 },
@@ -546,6 +566,7 @@
                 "description": "实际业务数据",
                 "properties": {
                     "teachers": {
+                        "description": "当前分页教师建议列表",
                         "items": {
                             "$ref": "#/components/schemas/dto.TeacherVO"
                         },
@@ -759,6 +780,7 @@
                 "description": "实际业务数据",
                 "properties": {
                     "proposals": {
+                        "description": "当前分页提案列表，无结果时为空数组",
                         "items": {
                             "$ref": "#/components/schemas/dto.ProposalVO"
                         },
@@ -766,15 +788,17 @@
                         "uniqueItems": false
                     },
                     "total": {
+                        "description": "符合当前权限与筛选条件的提案总数",
                         "type": "integer"
                     }
                 },
                 "type": "object"
             },
             "dto.ProposalCourseVO": {
-                "description": "管理员最终确认的课程（新增）",
+                "description": "提议新增的课程完整信息",
                 "properties": {
                     "campuses": {
+                        "description": "开设校区名称列表，至少一项且必须是系统已有校区，不允许由提案创建新校区",
                         "items": {
                             "type": "string"
                         },
@@ -782,21 +806,27 @@
                         "uniqueItems": false
                     },
                     "category": {
+                        "description": "课程分类名称，不能为空；审批时可落库为新分类",
                         "type": "string"
                     },
                     "code": {
+                        "description": "课程代码，可为空",
                         "type": "string"
                     },
                     "department": {
+                        "description": "课程开课院系，不能为空；与教师所属院系是两个独立字段",
                         "type": "string"
                     },
                     "id": {
+                        "description": "课程ID；创建提案时无需传入，finalCourse 返回正式课程时可能携带",
                         "type": "string"
                     },
                     "name": {
+                        "description": "课程名称，去除首尾空白后不能为空",
                         "type": "string"
                     },
                     "teachers": {
+                        "description": "任课教师列表；每项姓名必填，id 为空表示新增教师，department 可为空",
                         "items": {
                             "$ref": "#/components/schemas/dto.TeacherVO"
                         },
@@ -852,9 +882,11 @@
             "dto.ProposalSuggestionsVO": {
                 "properties": {
                     "id": {
+                        "description": "提案ID",
                         "type": "string"
                     },
                     "title": {
+                        "description": "提案标题",
                         "type": "string"
                     }
                 },
@@ -892,28 +924,32 @@
                 "type": "object"
             },
             "dto.ProposalVO": {
-                "description": "提案详情",
+                "description": "新建后的完整待审核提案",
                 "properties": {
                     "content": {
+                        "description": "提案补充说明，可能为空",
                         "type": "string"
                     },
                     "contribution": {
-                        "description": "贡献值信息（新增）",
+                        "description": "本提案结算贡献值；仅创建者可见，其他用户响应中为 -1",
                         "type": "integer"
                     },
                     "course": {
                         "$ref": "#/components/schemas/dto.ProposalCourseVO"
                     },
                     "createdAt": {
+                        "description": "提案创建时间",
                         "type": "string"
                     },
                     "deleted": {
+                        "description": "是否已被创建者软删除",
                         "type": "boolean"
                     },
                     "finalCourse": {
                         "$ref": "#/components/schemas/dto.ProposalCourseVO"
                     },
                     "id": {
+                        "description": "提案ID",
                         "type": "string"
                     },
                     "like": {
@@ -923,24 +959,27 @@
                         "type": "integer"
                     },
                     "rejectReason": {
-                        "description": "拒绝理由",
+                        "description": "拒绝理由；未拒绝或未填写理由时为空",
                         "type": "string"
                     },
                     "showUsername": {
-                        "description": "是否展示用户名",
+                        "description": "是否允许公开展示创建者昵称",
                         "type": "boolean"
                     },
                     "status": {
-                        "description": "pending / approved / rejected",
+                        "description": "提案状态：pending 待审核、approved 已通过、rejected 已拒绝",
                         "type": "string"
                     },
                     "title": {
+                        "description": "提案标题",
                         "type": "string"
                     },
                     "updatedAt": {
+                        "description": "最近一次编辑或审批时间",
                         "type": "string"
                     },
                     "userId": {
+                        "description": "提案创建者用户ID；是否展示昵称由 showUsername 控制",
                         "type": "string"
                     }
                 },
@@ -949,9 +988,11 @@
             "dto.RejectProposalReq": {
                 "properties": {
                     "proposalId": {
+                        "description": "提案ID，由 URL path 写入，请求体无需传",
                         "type": "string"
                     },
                     "reason": {
+                        "description": "拒绝理由，可为空",
                         "type": "string"
                     }
                 },
@@ -961,9 +1002,11 @@
                 "description": "实际业务数据",
                 "properties": {
                     "pendingCount": {
+                        "description": "操作后剩余待审核提案数量",
                         "type": "integer"
                     },
                     "rejected": {
+                        "description": "是否成功拒绝",
                         "type": "boolean"
                     }
                 },
@@ -972,7 +1015,7 @@
             "dto.RevokeProposalReq": {
                 "properties": {
                     "actionType": {
-                        "description": "\"approve\" | \"reject\"",
+                        "description": "必填；approve 撤回已通过提案，reject 撤回已拒绝提案",
                         "type": "string"
                     }
                 },
@@ -982,6 +1025,7 @@
                 "description": "实际业务数据",
                 "properties": {
                     "proposalId": {
+                        "description": "已恢复为 pending 的提案ID",
                         "type": "string"
                     }
                 },
@@ -1107,6 +1151,7 @@
                         "$ref": "#/components/schemas/dto.ProposalCourseVO"
                     },
                     "proposalID": {
+                        "description": "提案ID，由 URL path 写入，请求体无需传",
                         "type": "string"
                     }
                 },
@@ -1116,9 +1161,11 @@
                 "description": "实际业务数据",
                 "properties": {
                     "proposal": {
+                        "description": "是否成功通过提案",
                         "type": "boolean"
                     },
                     "proposalCnt": {
+                        "description": "操作后剩余待审核提案数量",
                         "type": "integer"
                     }
                 },
@@ -1127,12 +1174,14 @@
             "dto.UpdateProposalReq": {
                 "properties": {
                     "content": {
+                        "description": "更新后的补充说明，当前接口要求非空",
                         "type": "string"
                     },
                     "course": {
                         "$ref": "#/components/schemas/dto.ProposalCourseVO"
                     },
                     "title": {
+                        "description": "更新后的提案标题，不能为空",
                         "type": "string"
                     }
                 },
@@ -1147,6 +1196,7 @@
                 "description": "实际业务数据",
                 "properties": {
                     "proposalId": {
+                        "description": "更新成功的提案ID",
                         "type": "string"
                     }
                 },
@@ -2345,7 +2395,7 @@
         },
         "/api/proposal/add": {
             "post": {
-                "description": "创建一个新的提案；课程教师的 department 可为空，表示教师所属院系暂未维护",
+                "description": "登录用户创建待审核课程提案。标题、课程名称、课程开课院系、课程分类及至少一个已有校区必填，课程代码和补充说明可空；教师列表可为空，教师项姓名必填，id 有值时复用已有教师、为空时审批通过后创建新教师，教师 department 可为空且不会用课程开课院系推断。系统还会检查同课程重复提案、已有课程及当前用户每日额度",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -2386,7 +2436,7 @@
         },
         "/api/proposal/field-suggestions": {
             "get": {
-                "description": "根据字段类型和关键词获取建议列表；教师姓名建议会附带该教师最近创建的最多两门未删除课程",
+                "description": "登录后获取提案表单字段建议。department、category、campus 从当前映射名称中匹配；courseName、courseCode 从未删除课程中分页搜索；teacherName 从教师中分页搜索，每位教师额外返回其按创建时间倒序的最多两门未删除课程，未教授课程时 courses 返回空数组。未知 field 返回无效字段错误",
                 "parameters": [
                     {
                         "description": "字段类型: department/category/campus/courseName/courseCode/teacherName",
@@ -2407,16 +2457,16 @@
                         }
                     },
                     {
-                        "description": "页码",
+                        "description": "页码，小于1按1处理",
                         "in": "query",
                         "name": "page",
                         "schema": {
-                            "default": 0,
+                            "default": 1,
                             "type": "integer"
                         }
                     },
                     {
-                        "description": "每页数量",
+                        "description": "每页数量，范围1-100，超出范围按10处理",
                         "in": "query",
                         "name": "pageSize",
                         "schema": {
@@ -2445,7 +2495,7 @@
         },
         "/api/proposal/filter": {
             "get": {
-                "description": "基于提案状态、校区、开课院系、课程分类筛选 proposal 表中的提案",
+                "description": "登录后按状态、校区、课程开课院系和课程分类组合筛选提案。status 与 campus 支持重复 query 参数或 JSON 数组字符串；普通用户的状态条件固定为 approved。校区必须是系统已有名称，院系和分类按名称精确匹配；所有条件均为空时管理员查询全部、普通用户查询全部已通过提案",
                 "parameters": [
                     {
                         "description": "提案状态，可多选，不传则不按状态过滤",
@@ -2488,7 +2538,7 @@
                         }
                     },
                     {
-                        "description": "页码",
+                        "description": "页码，小于1按1处理",
                         "in": "query",
                         "name": "page",
                         "schema": {
@@ -2497,7 +2547,7 @@
                         }
                     },
                     {
-                        "description": "每页数量",
+                        "description": "每页数量，范围1-100，超出范围按10处理",
                         "in": "query",
                         "name": "pageSize",
                         "schema": {
@@ -2567,23 +2617,31 @@
         },
         "/api/proposal/list": {
             "get": {
-                "description": "分页查询提案列表数据",
+                "description": "登录后分页查询提案。管理员可按 status 查询 pending、approved、rejected，不传 status 时查询全部；普通用户无论传什么 status 都只返回 approved。返回的 contribution 仅提案创建者可见，其他用户看到 -1",
                 "parameters": [
                     {
-                        "description": "页码",
+                        "description": "提案状态：pending/approved/rejected；管理员不传时查询全部，普通用户传值会被忽略",
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "页码，小于1按1处理",
                         "in": "query",
                         "name": "page",
-                        "required": true,
                         "schema": {
+                            "default": 1,
                             "type": "integer"
                         }
                     },
                     {
-                        "description": "每页数量",
+                        "description": "每页数量，范围1-100，超出范围按10处理",
                         "in": "query",
                         "name": "pageSize",
-                        "required": true,
                         "schema": {
+                            "default": 10,
                             "type": "integer"
                         }
                     }
@@ -2608,7 +2666,7 @@
         },
         "/api/proposal/suggest": {
             "get": {
-                "description": "根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表",
+                "description": "登录后根据关键词模糊分页搜索未删除且已通过的提案标题，返回提案ID和标题；无结果时返回空数组",
                 "parameters": [
                     {
                         "description": "搜索关键词",
@@ -2620,16 +2678,16 @@
                         }
                     },
                     {
-                        "description": "页码",
+                        "description": "页码，小于1按1处理",
                         "in": "query",
                         "name": "page",
                         "schema": {
-                            "default": 0,
+                            "default": 1,
                             "type": "integer"
                         }
                     },
                     {
-                        "description": "每页数量",
+                        "description": "每页数量，范围1-100，超出范围按10处理",
                         "in": "query",
                         "name": "pageSize",
                         "schema": {
@@ -2658,7 +2716,7 @@
         },
         "/api/proposal/{proposalId}": {
             "get": {
-                "description": "根据提案ID查询提案完整信息",
+                "description": "登录后根据提案ID查询完整信息及当前用户点赞状态。已删除提案仅创建者本人可见；contribution 仅创建者可见。已通过提案的 finalCourse 仅创建者或管理员可见，关联正式课程已删除或查询失败时省略",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -2690,7 +2748,7 @@
         },
         "/api/proposal/{proposalId}/approve": {
             "post": {
-                "description": "管理员通过提案并创建正式课程，可传入管理员最终确认的课程信息 finalCourse（不传则用提案原始课程），并按业务规则结算提案创建者的贡献值；课程教师的 department 可为空，空值不会创建院系映射",
+                "description": "管理员将 pending 提案审批为 approved，并在同一数据库事务内处理映射、教师、正式课程、贡献值及操作日志。finalCourse 可省略、传 null，或直接使用空请求体，此时以用户原始 course 为准；传入时以管理员确认内容创建或恢复正式课程，但不覆盖提案原文。已有教师传 id 后直接复用；id 为空则创建新教师，department 可为空并保存为未维护状态，不创建空院系映射，也不从课程开课院系推断",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -2713,14 +2771,13 @@
                                     {
                                         "$ref": "#/components/schemas/dto.ToggleProposalReq",
                                         "summary": "req",
-                                        "description": "审批参数（finalCourse 为管理员最终确认的课程信息，可选）"
+                                        "description": "可选审批参数；finalCourse 省略或为 null 时使用提案原始课程"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "审批参数（finalCourse 为管理员最终确认的课程信息，可选）",
-                    "required": true
+                    "description": "可选审批参数；finalCourse 省略或为 null 时使用提案原始课程"
                 },
                 "responses": {
                     "200": {
@@ -2742,7 +2799,7 @@
         },
         "/api/proposal/{proposalId}/delete": {
             "post": {
-                "description": "根据提案ID软删除提案（标记为已删除状态），仅提案创建者可删除，只对状态为pending和rejected的进行处理",
+                "description": "登录用户按 path 中的提案ID执行软删除，请求体可为空。仅提案创建者本人可删除自己的 pending 或 rejected 提案，管理员也不能代删；approved 提案不能删除。软删除后创建者仍可在个人提案历史中查看",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -2835,7 +2892,7 @@
         },
         "/api/proposal/{proposalId}/revoke": {
             "post": {
-                "description": "管理员撤回提案的通过/拒绝操作；撤回审批通过时同步删除关联课程并扣回已结算的贡献值",
+                "description": "管理员把已通过或已拒绝提案恢复为 pending。actionType=approve 仅适用于 approved：事务内软删除提案关联课程和评论、删除相关评论点赞并扣回已结算贡献值；actionType=reject 仅适用于 rejected：清空拒绝理由。状态与 actionType 不匹配时拒绝操作",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -2858,13 +2915,13 @@
                                     {
                                         "$ref": "#/components/schemas/dto.RevokeProposalReq",
                                         "summary": "req",
-                                        "description": "撤回操作类型（approve | reject）"
+                                        "description": "撤回类型：approve 撤回通过，reject 撤回拒绝"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "撤回操作类型（approve | reject）",
+                    "description": "撤回类型：approve 撤回通过，reject 撤回拒绝",
                     "required": true
                 },
                 "responses": {
@@ -2887,7 +2944,7 @@
         },
         "/api/proposal/{proposalId}/update": {
             "post": {
-                "description": "根据提案ID修改提案的标题和内容；课程教师的 department 可为空，表示教师所属院系暂未维护",
+                "description": "管理员更新 pending 提案的标题、补充说明和完整课程信息；已通过、已拒绝或已删除提案不能更新。请求必须提交完整 course，教师规则与创建提案一致：姓名必填，id 为空表示新教师，department 可为空",
                 "parameters": [
                     {
                         "description": "提案唯一ID",
@@ -2910,13 +2967,13 @@
                                     {
                                         "$ref": "#/components/schemas/dto.UpdateProposalReq",
                                         "summary": "body",
-                                        "description": "更新参数（标题、内容）"
+                                        "description": "完整更新参数；title、content、course 必填"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "更新参数（标题、内容）",
+                    "description": "完整更新参数；title、content、course 必填",
                     "required": true
                 },
                 "responses": {
@@ -3054,7 +3111,7 @@
         },
         "/api/teacher/add": {
             "post": {
-                "description": "新建教师",
+                "description": "管理员独立创建正式教师。此接口的姓名、职称和所属院系均必填；与提案审批自动创建教师不同，独立创建教师不接受空院系。院系名称不存在时会创建并持久化对应映射",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -3066,13 +3123,13 @@
                                     {
                                         "$ref": "#/components/schemas/dto.CreateTeacherReq",
                                         "summary": "body",
-                                        "description": "CreateTeacherReq"
+                                        "description": "正式教师信息；name、title、department 均必填"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "CreateTeacherReq",
+                    "description": "正式教师信息；name、title、department 均必填",
                     "required": true
                 },
                 "responses": {
@@ -3095,7 +3152,7 @@
         },
         "/api/teacher/suggest": {
             "get": {
-                "description": "根据关键词获取教师搜索建议",
+                "description": "登录后按教师姓名模糊搜索并返回分页建议。响应字段 id 是正式教师ID，可作为提案 course.teachers[].id 提交；教师院系暂未维护时 department 会显示为未知开课院系",
                 "parameters": [
                     {
                         "description": "搜索关键词",
@@ -3104,6 +3161,24 @@
                         "required": true,
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "description": "页码，小于1按1处理",
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "default": 1,
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "每页数量，范围1-100，超出范围按10处理",
+                        "in": "query",
+                        "name": "pageSize",
+                        "schema": {
+                            "default": 10,
+                            "type": "integer"
                         }
                     }
                 ],

@@ -27,7 +27,7 @@ import (
 
 // CreateProposal godoc
 // @Summary 新增提案
-// @Description 创建一个新的提案；课程教师的 department 可为空，表示教师所属院系暂未维护
+// @Description 登录用户创建待审核课程提案。标题、课程名称、课程开课院系、课程分类及至少一个已有校区必填，课程代码和补充说明可空；教师列表可为空，教师项姓名必填，id 有值时复用已有教师、为空时审批通过后创建新教师，教师 department 可为空且不会用课程开课院系推断。系统还会检查同课程重复提案、已有课程及当前用户每日额度
 // @Tags proposal
 // @Accept json
 // @Param req body dto.CreateProposalReq true "创建提案的请求参数"
@@ -50,11 +50,12 @@ func CreateProposal(c *gin.Context) {
 
 // ListProposals godoc
 // @Summary 分页获取提案列表
-// @Description 分页查询提案列表数据
+// @Description 登录后分页查询提案。管理员可按 status 查询 pending、approved、rejected，不传 status 时查询全部；普通用户无论传什么 status 都只返回 approved。返回的 contribution 仅提案创建者可见，其他用户看到 -1
 // @Tags proposal
 // @Produce json
-// @Param page query int true "页码"
-// @Param pageSize query int true "每页数量"
+// @Param status query string false "提案状态：pending/approved/rejected；管理员不传时查询全部，普通用户传值会被忽略"
+// @Param page query int false "页码，小于1按1处理" default(1)
+// @Param pageSize query int false "每页数量，范围1-100，超出范围按10处理" default(10)
 // @Success 200 {object} Response[dto.ListProposalResp]
 // @Router /api/proposal/list [get]
 func ListProposals(c *gin.Context) {
@@ -74,15 +75,15 @@ func ListProposals(c *gin.Context) {
 
 // FilterProposals godoc
 // @Summary 分页筛选提案列表
-// @Description 基于提案状态、校区、开课院系、课程分类筛选 proposal 表中的提案
+// @Description 登录后按状态、校区、课程开课院系和课程分类组合筛选提案。status 与 campus 支持重复 query 参数或 JSON 数组字符串；普通用户的状态条件固定为 approved。校区必须是系统已有名称，院系和分类按名称精确匹配；所有条件均为空时管理员查询全部、普通用户查询全部已通过提案
 // @Tags proposal
 // @Produce json
 // @Param status query []string false "提案状态，可多选，不传则不按状态过滤" collectionFormat(multi)
 // @Param campus query []string false "校区，可多选，不传则不按校区过滤" collectionFormat(multi)
 // @Param department query string false "开课院系，精确匹配"
 // @Param category query string false "课程分类，精确匹配"
-// @Param page query int false "页码" default(1)
-// @Param pageSize query int false "每页数量" default(10)
+// @Param page query int false "页码，小于1按1处理" default(1)
+// @Param pageSize query int false "每页数量，范围1-100，超出范围按10处理" default(10)
 // @Success 200 {object} Response[dto.ListProposalResp]
 // @Router /api/proposal/filter [get]
 func FilterProposals(c *gin.Context) {
@@ -102,7 +103,7 @@ func FilterProposals(c *gin.Context) {
 
 // GetProposal 获取提案详情
 // @Summary 获取提案详情
-// @Description 根据提案ID查询提案完整信息
+// @Description 登录后根据提案ID查询完整信息及当前用户点赞状态。已删除提案仅创建者本人可见；contribution 仅创建者可见。已通过提案的 finalCourse 仅创建者或管理员可见，关联正式课程已删除或查询失败时省略
 // @Tags proposal
 // @Produce json
 // @Param proposalId path string true "提案ID"
@@ -122,12 +123,12 @@ func GetProposal(c *gin.Context) {
 
 // ApproveProposal godoc
 // @Summary 审批提案
-// @Description 管理员通过提案并创建正式课程，可传入管理员最终确认的课程信息 finalCourse（不传则用提案原始课程），并按业务规则结算提案创建者的贡献值；课程教师的 department 可为空，空值不会创建院系映射
+// @Description 管理员将 pending 提案审批为 approved，并在同一数据库事务内处理映射、教师、正式课程、贡献值及操作日志。finalCourse 可省略、传 null，或直接使用空请求体，此时以用户原始 course 为准；传入时以管理员确认内容创建或恢复正式课程，但不覆盖提案原文。已有教师传 id 后直接复用；id 为空则创建新教师，department 可为空并保存为未维护状态，不创建空院系映射，也不从课程开课院系推断
 // @Tags proposal
 // @Accept json
 // @Produce json
 // @Param proposalId path string true "提案ID"
-// @Param req body dto.ToggleProposalReq true "审批参数（finalCourse 为管理员最终确认的课程信息，可选）"
+// @Param req body dto.ToggleProposalReq false "可选审批参数；finalCourse 省略或为 null 时使用提案原始课程"
 // @Success 200 {object} Response[dto.ToggleProposalResp]
 // @Router /api/proposal/{proposalId}/approve [post]
 func ApproveProposal(c *gin.Context) {
@@ -149,11 +150,11 @@ func ApproveProposal(c *gin.Context) {
 
 // RevokeProposal godoc
 // @Summary 撤回提案操作
-// @Description 管理员撤回提案的通过/拒绝操作；撤回审批通过时同步删除关联课程并扣回已结算的贡献值
+// @Description 管理员把已通过或已拒绝提案恢复为 pending。actionType=approve 仅适用于 approved：事务内软删除提案关联课程和评论、删除相关评论点赞并扣回已结算贡献值；actionType=reject 仅适用于 rejected：清空拒绝理由。状态与 actionType 不匹配时拒绝操作
 // @Tags proposal
 // @Accept json
 // @Param proposalId path string true "提案ID"
-// @Param req body dto.RevokeProposalReq true "撤回操作类型（approve | reject）"
+// @Param req body dto.RevokeProposalReq true "撤回类型：approve 撤回通过，reject 撤回拒绝"
 // @Success 200 {object} Response[dto.RevokeProposalResp]
 // @Router /api/proposal/{proposalId}/revoke [post]
 func RevokeProposal(c *gin.Context) {
@@ -206,12 +207,12 @@ func RejectProposal(c *gin.Context) {
 
 // UpdateProposal 更新提案接口
 // @Summary 更新提案内容
-// @Description 根据提案ID修改提案的标题和内容；课程教师的 department 可为空，表示教师所属院系暂未维护
+// @Description 管理员更新 pending 提案的标题、补充说明和完整课程信息；已通过、已拒绝或已删除提案不能更新。请求必须提交完整 course，教师规则与创建提案一致：姓名必填，id 为空表示新教师，department 可为空
 // @Tags proposal
 // @Accept json
 // @Produce json
 // @Param proposalId path string true "提案唯一ID"
-// @Param body body dto.UpdateProposalReq true "更新参数（标题、内容）"
+// @Param body body dto.UpdateProposalReq true "完整更新参数；title、content、course 必填"
 // @Success 200 {object} Response[dto.UpdateProposalResp] "更新成功响应"
 // @Router /api/proposal/{proposalId}/update [post]
 func UpdateProposal(c *gin.Context) {
@@ -235,7 +236,7 @@ func UpdateProposal(c *gin.Context) {
 
 // DeleteProposal godoc
 // @Summary 删除提案
-// @Description 根据提案ID软删除提案（标记为已删除状态），仅提案创建者可删除，只对状态为pending和rejected的进行处理
+// @Description 登录用户按 path 中的提案ID执行软删除，请求体可为空。仅提案创建者本人可删除自己的 pending 或 rejected 提案，管理员也不能代删；approved 提案不能删除。软删除后创建者仍可在个人提案历史中查看
 // @Tags proposal
 // @Accept json
 // @Param proposalId path string true "提案ID"
@@ -260,12 +261,12 @@ func DeleteProposal(c *gin.Context) {
 
 // GetProposalSuggestions godoc
 // @Summary 获取提案搜索建议
-// @Description 根据关键词模糊分页搜索提案标题，返回匹配的提案建议列表
+// @Description 登录后根据关键词模糊分页搜索未删除且已通过的提案标题，返回提案ID和标题；无结果时返回空数组
 // @Tags proposal
 // @Produce json
 // @Param keyword query string true "搜索关键词"
-// @Param page query int false "页码" default(0)
-// @Param pageSize query int false "每页数量" default(10)
+// @Param page query int false "页码，小于1按1处理" default(1)
+// @Param pageSize query int false "每页数量，范围1-100，超出范围按10处理" default(10)
 // @Success 200 {object} Response[dto.GetProposalSuggestionsResp]
 // @Router /api/proposal/suggest [get]
 func GetProposalSuggestions(c *gin.Context) {
@@ -285,13 +286,13 @@ func GetProposalSuggestions(c *gin.Context) {
 
 // GetProposalFieldSuggestions godoc
 // @Summary 获取提案字段建议
-// @Description 根据字段类型和关键词获取建议列表；教师姓名建议会附带该教师最近创建的最多两门未删除课程
+// @Description 登录后获取提案表单字段建议。department、category、campus 从当前映射名称中匹配；courseName、courseCode 从未删除课程中分页搜索；teacherName 从教师中分页搜索，每位教师额外返回其按创建时间倒序的最多两门未删除课程，未教授课程时 courses 返回空数组。未知 field 返回无效字段错误
 // @Tags proposal
 // @Produce json
 // @Param field query string true "字段类型: department/category/campus/courseName/courseCode/teacherName"
 // @Param keyword query string true "搜索关键词"
-// @Param page query int false "页码" default(0)
-// @Param pageSize query int false "每页数量" default(10)
+// @Param page query int false "页码，小于1按1处理" default(1)
+// @Param pageSize query int false "每页数量，范围1-100，超出范围按10处理" default(10)
 // @Success 200 {object} dto.GetProposalFieldSuggestionsResp
 // @Router /api/proposal/field-suggestions [get]
 func GetProposalFieldSuggestions(c *gin.Context) {
