@@ -25,7 +25,7 @@ import (
 
 // GetCourse godoc
 // @Summary 获取课程信息
-// @Description 获取课程信息
+// @Description 登录后按课程ID获取未被软删除的正式课程，包含课程分类、开课院系、校区、教师、评论标签统计，以及可选的来源提案贡献者信息。课程由匿名提案创建时 contributor 仅返回 proposalId 和 showUsername=false，不返回用户身份
 // @Tags course
 // @Produce json
 // @Param courseId path string true "课程ID"
@@ -45,7 +45,7 @@ func GetCourse(c *gin.Context) {
 
 // GetCourseDepartments godoc
 // @Summary 获取课程开课院系
-// @Description 根据课程名字获取课程开课院系
+// @Description 登录后按完整课程名称精确匹配所有未删除同名课程，返回这些课程涉及的去重开课院系名称；没有同名课程时返回空数组，历史映射缺失时可能返回“未知开课院系”
 // @Tags course
 // @Produce json
 // @Param keyword query string true "课程名称关键词"
@@ -68,7 +68,7 @@ func GetCourseDepartments(c *gin.Context) {
 
 // GetCourseCategories godoc
 // @Summary 获取课程分类
-// @Description 根据课程名字获取课程分类
+// @Description 登录后按完整课程名称精确匹配所有未删除同名课程，返回这些课程涉及的去重课程分类名称；没有同名课程时返回空数组，历史映射缺失时可能返回“未知分类”
 // @Tags course
 // @Produce json
 // @Param keyword query string true "课程名称关键词"
@@ -91,7 +91,7 @@ func GetCourseCategories(c *gin.Context) {
 
 // GetCourseCampuses godoc
 // @Summary 获取课程开课校区
-// @Description 根据课程名字获取课程开课校区
+// @Description 登录后按完整课程名称精确匹配所有未删除同名课程，返回这些课程涉及的去重开设校区名称；没有同名课程时返回空数组，历史映射缺失时可能返回“未知校区”
 // @Tags course
 // @Produce json
 // @Param keyword query string true "课程名称关键词"
@@ -114,11 +114,11 @@ func GetCourseCampuses(c *gin.Context) {
 
 // ListCourses godoc
 // @Summary 搜索课程列表
-// @Description 搜索课程列表
+// @Description 登录后分页搜索未删除课程。type=course 时按课程名称大小写不敏感模糊匹配；type=teacher 时先按教师完整姓名查找教师，再返回其课程；type=category 或 department 时按映射完整名称精确匹配。未知 type 返回参数错误。非空 keyword 会异步写入当前用户搜索历史，重复关键词更新时间且仅保留最近15条
 // @Tags course
 // @Accept json
 // @Produce json
-// @Param body body dto.ListCoursesReq true "ListCoursesReq"
+// @Param body body dto.ListCoursesReq true "搜索类型、关键词和分页；type 支持 course/teacher/category/department"
 // @Success 200 {object} Response[dto.ListCoursesResp]
 // @Router /api/search [post]
 func ListCourses(c *gin.Context) {

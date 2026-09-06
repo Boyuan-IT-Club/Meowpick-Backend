@@ -24,11 +24,11 @@ import (
 
 // CreateComment godoc
 // @Summary 发布课程评论
-// @Description 用户对指定课程发布评论
+// @Description 登录用户对指定正式课程发布评论。courseId 和 content 必填，tags 可省略或为空数组；成功响应包含新评论ID、发布时间以及当前点赞状态。该接口本身不修改课程标签字段，课程详情的 tagCount 会从未删除评论标签实时聚合
 // @Tags comment
 // @Accept json
 // @Produce json
-// @Param body body dto.CreateCommentReq true "CreateCommentReq"
+// @Param body body dto.CreateCommentReq true "课程ID、评论正文和可选标签"
 // @Success 200 {object} Response[dto.CreateCommentResp]
 // @Router /api/comment/add [post]
 func CreateComment(c *gin.Context) {
@@ -48,12 +48,12 @@ func CreateComment(c *gin.Context) {
 
 // ListCourseComments godoc
 // @Summary 分页获取课程评论
-// @Description 根据课程ID分页查询评论列表
+// @Description 登录后分页查询指定课程的未删除评论，按创建时间倒序返回，并为每条评论附带当前用户是否点赞及最新点赞总数。新调用使用 courseId；服务端仍兼容旧 query 参数 id，但旧参数不展示在 Swagger 中
 // @Tags comment
 // @Produce json
 // @Param courseId query string true "课程ID"
-// @Param page query int true "页码"
-// @Param pageSize query int true "每页数量"
+// @Param page query int false "页码，小于1按1处理" default(1)
+// @Param pageSize query int false "每页数量，范围1-100，超出范围按10处理" default(10)
 // @Success 200 {object} Response[dto.ListCourseCommentsResp]
 // @Router /api/comment/query [get]
 func ListCourseComments(c *gin.Context) {
@@ -76,7 +76,7 @@ func ListCourseComments(c *gin.Context) {
 
 // GetTotalCourseCommentsCount godoc
 // @Summary 获取吐槽总数
-// @Description 获取系统中所有课程评论的总数量
+// @Description 登录后获取系统中所有未删除课程评论总数。服务端优先读取短期缓存，缓存不可用或未命中时查询数据库并回填；已随课程撤回而软删除的评论不计入
 // @Tags comment
 // @Produce json
 // @Success 200 {object} Response[dto.GetTotalCourseCommentsCountResp]
@@ -93,11 +93,11 @@ func GetTotalCourseCommentsCount(c *gin.Context) {
 
 // GetMyComments godoc
 // @Summary 获取我的评论历史
-// @Description 分页获取当前用户发布过的评论
+// @Description 登录后分页获取当前用户发布的未删除评论，按创建时间倒序返回。每条记录包含当前点赞状态和对应未删除课程的名称、分类、开课院系及教师姓名职称信息
 // @Tags comment
 // @Accept json
 // @Produce json
-// @Param body body dto.GetMyCommentsReq true "GetMyCommentsReq"
+// @Param body body dto.GetMyCommentsReq true "分页参数；page 小于1按1处理，pageSize 范围1-100且非法值按10处理"
 // @Success 200 {object} Response[dto.GetMyCommentsResp]
 // @Router /api/comment/history [post]
 func GetMyComments(c *gin.Context) {

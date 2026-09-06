@@ -312,11 +312,11 @@ func GetProposalFieldSuggestions(c *gin.Context) {
 
 // GetMyProposals godoc
 // @Summary 获取我的提案
-// @Description 获取当前用户的所有提案（包括所有状态和已删除的提案），updatedAt 字段即为提案最新审批时间；已通过提案会附带关联的正式课程 finalCourse（课程查询失败或已删除时为空）
+// @Description 登录后获取当前用户的完整提案历史，包含 pending、approved、rejected 及已软删除提案，按创建时间倒序分页。updatedAt 是最近一次编辑或审批时间；已通过提案附带关联正式课程 finalCourse，课程查询失败或已删除时省略。此接口中 contribution 对创建者可见
 // @Tags proposal
 // @Produce json
-// @Param page query int false "页码" default(1)
-// @Param pageSize query int false "每页数量" default(10)
+// @Param page query int false "页码，小于1按1处理" default(1)
+// @Param pageSize query int false "每页数量，范围1-100，超出范围按10处理" default(10)
 // @Success 200 {object} Response[dto.GetMyProposalsResp]
 // @Router /api/proposal/history [get]
 func GetMyProposals(c *gin.Context) {

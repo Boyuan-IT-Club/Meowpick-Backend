@@ -9,21 +9,26 @@ const docTemplate = `{
     "components": {
         "schemas": {
             "dto.AdminActionVO": {
+                "description": "最近一次管理员操作；尚无管理员操作时省略",
                 "properties": {
                     "action": {
-                        "description": "approve/reject/delete",
+                        "description": "最近动作名称，例如 approve、reject、delete、update",
                         "type": "string"
                     },
                     "actionTime": {
+                        "description": "操作时间，格式 YYYY-MM-DD HH:mm:ss",
                         "type": "string"
                     },
                     "adminId": {
+                        "description": "操作管理员用户ID",
                         "type": "string"
                     },
                     "adminName": {
+                        "description": "管理员昵称；未设置时回退为 OpenID",
                         "type": "string"
                     },
                     "reason": {
+                        "description": "日志正文或拒绝理由，无内容时省略",
                         "type": "string"
                     }
                 },
@@ -32,30 +37,39 @@ const docTemplate = `{
             "dto.ChangeLogVO": {
                 "properties": {
                     "action": {
+                        "description": "操作类型内部编号",
                         "type": "integer"
                     },
                     "content": {
+                        "description": "操作说明或拒绝理由等日志正文",
                         "type": "string"
                     },
                     "id": {
+                        "description": "变更日志ID",
                         "type": "string"
                     },
                     "proposalId": {
+                        "description": "与提案相关时返回提案ID，否则省略",
                         "type": "string"
                     },
                     "targetId": {
+                        "description": "被操作业务对象ID",
                         "type": "string"
                     },
                     "targetType": {
+                        "description": "目标类型内部编号",
                         "type": "integer"
                     },
                     "updateSource": {
+                        "description": "操作来源内部编号，例如用户或管理员",
                         "type": "integer"
                     },
                     "updatedAt": {
+                        "description": "操作记录时间",
                         "type": "string"
                     },
                     "userId": {
+                        "description": "操作者用户ID",
                         "type": "string"
                     }
                 },
@@ -64,33 +78,43 @@ const docTemplate = `{
             "dto.CommentVO": {
                 "properties": {
                     "category": {
+                        "description": "“我的评论”中附带的课程分类；普通课程评论列表中为空",
                         "type": "string"
                     },
                     "content": {
+                        "description": "评论正文",
                         "type": "string"
                     },
                     "courseId": {
+                        "description": "所属正式课程ID",
                         "type": "string"
                     },
                     "createdAt": {
+                        "description": "发布时间",
                         "type": "string"
                     },
                     "department": {
+                        "description": "“我的评论”中附带的课程开课院系；普通课程评论列表中为空",
                         "type": "string"
                     },
                     "id": {
+                        "description": "评论ID",
                         "type": "string"
                     },
                     "like": {
+                        "description": "当前登录用户在操作后或查询时是否已点赞",
                         "type": "boolean"
                     },
                     "likeCnt": {
+                        "description": "目标当前点赞总数",
                         "type": "integer"
                     },
                     "name": {
+                        "description": "“我的评论”中附带的课程名称；普通课程评论列表中为空",
                         "type": "string"
                     },
                     "tags": {
+                        "description": "评论标签列表，可为空",
                         "items": {
                             "type": "string"
                         },
@@ -98,7 +122,7 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "teachers": {
-                        "description": "这里还是直接返回教师名字+职称组合后的字符串列表",
+                        "description": "“我的评论”中附带的教师姓名与职称拼接字符串列表；普通课程评论列表中为空",
                         "items": {
                             "type": "string"
                         },
@@ -106,9 +130,11 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "updatedAt": {
+                        "description": "最近更新时间",
                         "type": "string"
                     },
                     "userId": {
+                        "description": "评论发布者用户ID",
                         "type": "string"
                     }
                 },
@@ -128,25 +154,32 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.CourseContributorVO": {
+                "description": "课程由审批提案创建时返回来源信息；历史课程无来源提案时省略",
                 "properties": {
                     "proposalId": {
+                        "description": "创建该课程的已通过提案ID",
                         "type": "string"
                     },
                     "showUsername": {
+                        "description": "来源提案是否允许公开展示创建者昵称",
                         "type": "boolean"
                     },
                     "userId": {
+                        "description": "提案允许展示昵称时返回创建者用户ID，匿名时省略",
                         "type": "string"
                     },
                     "username": {
+                        "description": "提案允许展示昵称时返回当前昵称，未设置昵称时可能为空",
                         "type": "string"
                     }
                 },
                 "type": "object"
             },
             "dto.CourseVO": {
+                "description": "未被软删除的课程完整信息",
                 "properties": {
                     "campuses": {
+                        "description": "开设校区名称列表",
                         "items": {
                             "type": "string"
                         },
@@ -154,30 +187,37 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "category": {
+                        "description": "课程分类名称；映射缺失时返回未知分类",
                         "type": "string"
                     },
                     "code": {
+                        "description": "课程代码，历史数据中可能为空",
                         "type": "string"
                     },
                     "contributor": {
                         "$ref": "#/components/schemas/dto.CourseContributorVO"
                     },
                     "department": {
+                        "description": "课程开课院系名称；不是教师所属院系",
                         "type": "string"
                     },
                     "id": {
+                        "description": "正式课程ID",
                         "type": "string"
                     },
                     "name": {
+                        "description": "课程名称",
                         "type": "string"
                     },
                     "tagCount": {
                         "additionalProperties": {
                             "type": "integer"
                         },
+                        "description": "当前未删除评论中出现次数最多的至多三个非空标签及计数",
                         "type": "object"
                     },
                     "teachers": {
+                        "description": "任课教师详情；教师所属院系暂未维护时返回未知开课院系",
                         "items": {
                             "$ref": "#/components/schemas/dto.TeacherVO"
                         },
@@ -190,12 +230,15 @@ const docTemplate = `{
             "dto.CreateCommentReq": {
                 "properties": {
                     "content": {
+                        "description": "评论正文，必填",
                         "type": "string"
                     },
                     "courseId": {
+                        "description": "所属正式课程ID，必填",
                         "type": "string"
                     },
                     "tags": {
+                        "description": "可选标签列表",
                         "items": {
                             "type": "string"
                         },
@@ -213,33 +256,43 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "category": {
+                        "description": "“我的评论”中附带的课程分类；普通课程评论列表中为空",
                         "type": "string"
                     },
                     "content": {
+                        "description": "评论正文",
                         "type": "string"
                     },
                     "courseId": {
+                        "description": "所属正式课程ID",
                         "type": "string"
                     },
                     "createdAt": {
+                        "description": "发布时间",
                         "type": "string"
                     },
                     "department": {
+                        "description": "“我的评论”中附带的课程开课院系；普通课程评论列表中为空",
                         "type": "string"
                     },
                     "id": {
+                        "description": "评论ID",
                         "type": "string"
                     },
                     "like": {
+                        "description": "当前登录用户在操作后或查询时是否已点赞",
                         "type": "boolean"
                     },
                     "likeCnt": {
+                        "description": "目标当前点赞总数",
                         "type": "integer"
                     },
                     "name": {
+                        "description": "“我的评论”中附带的课程名称；普通课程评论列表中为空",
                         "type": "string"
                     },
                     "tags": {
+                        "description": "评论标签列表，可为空",
                         "items": {
                             "type": "string"
                         },
@@ -247,7 +300,7 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "teachers": {
-                        "description": "这里还是直接返回教师名字+职称组合后的字符串列表",
+                        "description": "“我的评论”中附带的教师姓名与职称拼接字符串列表；普通课程评论列表中为空",
                         "items": {
                             "type": "string"
                         },
@@ -255,9 +308,11 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "updatedAt": {
+                        "description": "最近更新时间",
                         "type": "string"
                     },
                     "userId": {
+                        "description": "评论发布者用户ID",
                         "type": "string"
                     }
                 },
@@ -345,14 +400,18 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.CreatorVO": {
+                "description": "提案创建者信息",
                 "properties": {
                     "createTime": {
+                        "description": "提案创建时间，格式 YYYY-MM-DD HH:mm:ss",
                         "type": "string"
                     },
                     "creatorId": {
+                        "description": "提案创建者用户ID",
                         "type": "string"
                     },
                     "creatorName": {
+                        "description": "创建者昵称；未设置时回退为 OpenID",
                         "type": "string"
                     }
                 },
@@ -409,6 +468,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "campuses": {
+                        "description": "同名未删除课程涉及的去重开设校区名称",
                         "items": {
                             "type": "string"
                         },
@@ -422,6 +482,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "categories": {
+                        "description": "同名未删除课程涉及的去重课程分类名称",
                         "items": {
                             "type": "string"
                         },
@@ -435,6 +496,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "departments": {
+                        "description": "同名未删除课程涉及的去重开课院系名称",
                         "items": {
                             "type": "string"
                         },
@@ -456,10 +518,12 @@ const docTemplate = `{
             "dto.GetMyCommentsReq": {
                 "properties": {
                     "page": {
+                        "description": "页码，从1开始；小于1时按1处理",
                         "form": "page",
                         "type": "integer"
                     },
                     "pageSize": {
+                        "description": "每页数量，范围1-100；未传、非正数或超过100时按10处理",
                         "form": "pageSize",
                         "type": "integer"
                     }
@@ -470,6 +534,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "comments": {
+                        "description": "当前分页评论，附带对应课程信息及当前点赞状态",
                         "items": {
                             "$ref": "#/components/schemas/dto.CommentVO"
                         },
@@ -477,6 +542,7 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "total": {
+                        "description": "当前用户未删除评论总数",
                         "type": "integer"
                     }
                 },
@@ -547,6 +613,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "histories": {
+                        "description": "当前用户最近15条搜索历史，按最近搜索时间倒序",
                         "items": {
                             "$ref": "#/components/schemas/dto.SearchHistoryVO"
                         },
@@ -560,6 +627,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "suggestions": {
+                        "description": "合并后的建议列表，最多 pageSize 条",
                         "items": {
                             "$ref": "#/components/schemas/dto.SearchSuggestionsVO"
                         },
@@ -587,6 +655,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "count": {
+                        "description": "系统中所有未删除课程评论总数",
                         "type": "integer"
                     }
                 },
@@ -596,21 +665,27 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "avatar": {
+                        "description": "当前头像引用，未设置时为空字符串",
                         "type": "string"
                     },
                     "canEditUsername": {
+                        "description": "当前是否允许设置或修改非空昵称；清空昵称不受30天冷却限制",
                         "type": "boolean"
                     },
                     "contribution": {
+                        "description": "用户累计贡献值，用于计算每日提案上限",
                         "type": "integer"
                     },
                     "dailyQuota": {
+                        "description": "当前中国时区自然日内已创建的提案数量",
                         "type": "integer"
                     },
                     "dailyQuotaLimit": {
+                        "description": "按当前贡献值等级计算的每日提案上限",
                         "type": "integer"
                     },
                     "username": {
+                        "description": "当前昵称，未设置时为空字符串",
                         "type": "string"
                     }
                 },
@@ -620,6 +695,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "username": {
+                        "description": "目标用户昵称，尚未设置时为空字符串",
                         "type": "string"
                     }
                 },
@@ -628,9 +704,11 @@ const docTemplate = `{
             "dto.GrantAdminReq": {
                 "properties": {
                     "userId": {
+                        "description": "要切换管理员状态的目标用户ID",
                         "type": "string"
                     },
                     "verifyCode": {
+                        "description": "管理员授权密钥，必须与服务端配置完全一致",
                         "type": "string"
                     }
                 },
@@ -640,7 +718,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "isAdmin": {
-                        "description": "操作后的管理员状态",
+                        "description": "切换后的管理员状态；true 表示已授予，false 表示已撤销",
                         "type": "boolean"
                     }
                 },
@@ -650,6 +728,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "isAdmin": {
+                        "description": "当前登录用户是否为管理员",
                         "type": "boolean"
                     }
                 },
@@ -658,17 +737,21 @@ const docTemplate = `{
             "dto.ListChangeLogsReq": {
                 "properties": {
                     "keyword": {
+                        "description": "可选日志内容关键词，大小写不敏感模糊匹配",
                         "type": "string"
                     },
                     "page": {
+                        "description": "页码，从1开始；小于1时按1处理",
                         "form": "page",
                         "type": "integer"
                     },
                     "pageSize": {
+                        "description": "每页数量，范围1-100；未传、非正数或超过100时按10处理",
                         "form": "pageSize",
                         "type": "integer"
                     },
                     "type": {
+                        "description": "可选目标类型：course、proposal、teacher、user；为空时不过滤类型",
                         "enum": [
                             "course",
                             "proposal",
@@ -684,6 +767,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "changeLogs": {
+                        "description": "当前分页日志，按时间倒序",
                         "items": {
                             "$ref": "#/components/schemas/dto.ChangeLogVO"
                         },
@@ -691,6 +775,7 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "total": {
+                        "description": "符合筛选条件的日志总数",
                         "type": "integer"
                     }
                 },
@@ -700,6 +785,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "comments": {
+                        "description": "当前分页评论，按创建时间倒序",
                         "items": {
                             "$ref": "#/components/schemas/dto.CommentVO"
                         },
@@ -707,6 +793,7 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "total": {
+                        "description": "该课程未删除评论总数",
                         "type": "integer"
                     }
                 },
@@ -715,10 +802,12 @@ const docTemplate = `{
             "dto.ListCoursesReq": {
                 "properties": {
                     "page": {
+                        "description": "页码，从1开始；小于1时按1处理",
                         "form": "page",
                         "type": "integer"
                     },
                     "pageSize": {
+                        "description": "每页数量，范围1-100；未传、非正数或超过100时按10处理",
                         "form": "pageSize",
                         "type": "integer"
                     }
@@ -737,10 +826,12 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "page": {
+                        "description": "页码，从1开始；小于1时按1处理",
                         "form": "page",
                         "type": "integer"
                     },
                     "pageSize": {
+                        "description": "每页数量，范围1-100；未传、非正数或超过100时按10处理",
                         "form": "pageSize",
                         "type": "integer"
                     },
@@ -755,6 +846,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "proposals": {
+                        "description": "当前分页提案及其最近一次管理员操作摘要",
                         "items": {
                             "$ref": "#/components/schemas/dto.ProposalLogVO"
                         },
@@ -762,6 +854,7 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "total": {
+                        "description": "提案总数",
                         "type": "integer"
                     }
                 },
@@ -771,6 +864,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "logs": {
+                        "description": "当前分页时间线日志，严格按操作时间倒序",
                         "items": {
                             "$ref": "#/components/schemas/dto.ProposalTimelineLogVO"
                         },
@@ -778,6 +872,7 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "total": {
+                        "description": "全部变更日志总数",
                         "type": "integer"
                     }
                 },
@@ -802,7 +897,7 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ProposalCourseVO": {
-                "description": "提议新增的课程完整信息",
+                "description": "用户提交的课程快照",
                 "properties": {
                     "campuses": {
                         "description": "开设校区名称列表，至少一项且必须是系统已有校区，不允许由提案创建新校区",
@@ -849,6 +944,7 @@ const docTemplate = `{
                         "$ref": "#/components/schemas/dto.AdminActionVO"
                     },
                     "content": {
+                        "description": "提案补充说明",
                         "type": "string"
                     },
                     "course": {
@@ -858,29 +954,37 @@ const docTemplate = `{
                         "$ref": "#/components/schemas/dto.CreatorVO"
                     },
                     "proposalId": {
+                        "description": "提案ID",
                         "type": "string"
                     },
                     "status": {
+                        "description": "当前提案状态",
                         "type": "string"
                     },
                     "title": {
+                        "description": "提案标题",
                         "type": "string"
                     }
                 },
                 "type": "object"
             },
             "dto.ProposalSnapshotVO": {
+                "description": "能找到关联提案时返回当前提案摘要",
                 "properties": {
                     "category": {
+                        "description": "提案课程分类",
                         "type": "string"
                     },
                     "courseName": {
+                        "description": "提案课程名称",
                         "type": "string"
                     },
                     "department": {
+                        "description": "提案课程开课院系",
                         "type": "string"
                     },
                     "title": {
+                        "description": "提案标题",
                         "type": "string"
                     }
                 },
@@ -902,6 +1006,7 @@ const docTemplate = `{
             "dto.ProposalTimelineLogVO": {
                 "properties": {
                     "actionTime": {
+                        "description": "操作时间，格式 YYYY-MM-DD HH:mm:ss",
                         "type": "string"
                     },
                     "actionType": {
@@ -910,18 +1015,23 @@ const docTemplate = `{
                     },
                     "details": {
                         "additionalProperties": {},
+                        "description": "额外操作信息；当前主要通过 content 返回日志正文",
                         "type": "object"
                     },
                     "logId": {
+                        "description": "变更日志ID",
                         "type": "string"
                     },
                     "operatorId": {
+                        "description": "操作者用户ID",
                         "type": "string"
                     },
                     "operatorName": {
+                        "description": "操作者昵称；未设置时回退为 OpenID",
                         "type": "string"
                     },
                     "proposalId": {
+                        "description": "关联提案ID；非提案操作时省略",
                         "type": "string"
                     },
                     "proposalSnapshot": {
@@ -960,9 +1070,11 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "like": {
+                        "description": "当前登录用户在操作后或查询时是否已点赞",
                         "type": "boolean"
                     },
                     "likeCnt": {
+                        "description": "目标当前点赞总数",
                         "type": "integer"
                     },
                     "rejectReason": {
@@ -1041,12 +1153,15 @@ const docTemplate = `{
             "dto.SearchHistoryVO": {
                 "properties": {
                     "createdAt": {
+                        "description": "最近一次搜索该关键词的时间",
                         "type": "string"
                     },
                     "id": {
+                        "description": "搜索历史记录ID",
                         "type": "string"
                     },
                     "query": {
+                        "description": "曾提交的非空课程搜索关键词",
                         "type": "string"
                     }
                 },
@@ -1055,9 +1170,11 @@ const docTemplate = `{
             "dto.SearchSuggestionsVO": {
                 "properties": {
                     "name": {
+                        "description": "建议显示及后续搜索使用的名称",
                         "type": "string"
                     },
                     "type": {
+                        "description": "建议类型：course、teacher、category、department",
                         "type": "string"
                     }
                 },
@@ -1066,15 +1183,15 @@ const docTemplate = `{
             "dto.SignInReq": {
                 "properties": {
                     "authId": {
-                        "description": "微信开放平台ID",
+                        "description": "客户端认证标识，当前版本为兼容字段且仍需传入",
                         "type": "string"
                     },
                     "authType": {
-                        "description": "认证类型(wechat/phone等)",
+                        "description": "认证类型标识，当前登录流程使用微信临时登录凭证",
                         "type": "string"
                     },
                     "verifyCode": {
-                        "description": "res.code",
+                        "description": "微信登录临时 code，用于换取 OpenID，不能为空",
                         "type": "string"
                     }
                 },
@@ -1089,15 +1206,19 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "accessToken": {
+                        "description": "Bearer 访问令牌；已有令牌仍有效且无需续期时可能原样返回",
                         "type": "string"
                     },
                     "expiresIn": {
+                        "description": "访问令牌剩余有效秒数",
                         "type": "integer"
                     },
                     "isAdmin": {
+                        "description": "当前用户是否具有管理员权限",
                         "type": "boolean"
                     },
                     "userId": {
+                        "description": "当前用户ID；首次登录时自动创建用户",
                         "type": "string"
                     }
                 },
@@ -1144,9 +1265,11 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "like": {
+                        "description": "当前登录用户在操作后或查询时是否已点赞",
                         "type": "boolean"
                     },
                     "likeCnt": {
+                        "description": "目标当前点赞总数",
                         "type": "integer"
                     }
                 },
@@ -1212,9 +1335,11 @@ const docTemplate = `{
             "dto.UpdateUserProfileReq": {
                 "properties": {
                     "avatar": {
+                        "description": "省略或 null 保持不变；空字符串清空；服务端仅保存引用字符串，不上传或校验 URL",
                         "type": "string"
                     },
                     "username": {
+                        "description": "省略或 null 保持不变；空字符串清空；非空昵称会去除首尾空白并校验长度、控制字符、唯一性和30天冷却",
                         "type": "string"
                     }
                 },
@@ -1224,9 +1349,11 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "avatar": {
+                        "description": "更新后的头像引用",
                         "type": "string"
                     },
                     "username": {
+                        "description": "更新后的昵称",
                         "type": "string"
                     }
                 },
@@ -1846,7 +1973,7 @@ const docTemplate = `{
     "paths": {
         "/api/auth/grant_admin": {
             "post": {
-                "description": "授予指定用户管理员权限",
+                "description": "登录用户凭服务端配置的管理员授权密钥切换指定用户的管理员状态：普通用户变为管理员，管理员再次操作则撤销权限。目标用户必须存在；操作会写入管理员变更日志。该接口不是“只授予不撤销”，响应 isAdmin 表示切换后的状态",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -1858,13 +1985,13 @@ const docTemplate = `{
                                     {
                                         "$ref": "#/components/schemas/dto.GrantAdminReq",
                                         "summary": "body",
-                                        "description": "GrantAdminReq"
+                                        "description": "目标用户ID和管理员授权密钥"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "GrantAdminReq",
+                    "description": "目标用户ID和管理员授权密钥",
                     "required": true
                 },
                 "responses": {
@@ -1879,7 +2006,7 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 },
-                "summary": "授予管理员权限",
+                "summary": "切换管理员权限",
                 "tags": [
                     "auth"
                 ]
@@ -1887,7 +2014,7 @@ const docTemplate = `{
         },
         "/api/auth/is_admin": {
             "get": {
-                "description": "判断当前用户是否具有管理员权限",
+                "description": "校验 Bearer 登录态并返回当前用户实时管理员状态；用户不存在或查询失败时返回用户查询错误",
                 "responses": {
                     "200": {
                         "content": {
@@ -1908,6 +2035,7 @@ const docTemplate = `{
         },
         "/api/auth/sign_in": {
             "post": {
+                "description": "使用微信临时登录 code 换取 OpenID，查找或首次创建用户并返回 Bearer 访问令牌。请求若同时携带仍有效、属于同一用户且尚无需续期的令牌，服务端会复用原令牌；否则签发新令牌。authId 和 authType 当前为兼容必填字段，实际身份以 verifyCode 换取的 OpenID 为准",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -1919,13 +2047,13 @@ const docTemplate = `{
                                     {
                                         "$ref": "#/components/schemas/dto.SignInReq",
                                         "summary": "body",
-                                        "description": "SignInReq"
+                                        "description": "登录参数；authId、authType、verifyCode 均必填"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "SignInReq",
+                    "description": "登录参数；authId、authType、verifyCode 均必填",
                     "required": true
                 },
                 "responses": {
@@ -1949,7 +2077,7 @@ const docTemplate = `{
         },
         "/api/changelog/list": {
             "post": {
-                "description": "按目标类型+ID分页查询变更记录",
+                "description": "仅管理员可用。按可选目标类型和日志正文关键词分页查询全部变更记录，type 支持 course、proposal、teacher、user，keyword 使用大小写不敏感模糊匹配；两者为空时查询全部，结果按时间倒序",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -1961,13 +2089,13 @@ const docTemplate = `{
                                     {
                                         "$ref": "#/components/schemas/dto.ListChangeLogsReq",
                                         "summary": "req",
-                                        "description": "查询参数"
+                                        "description": "可选类型、内容关键词和分页参数"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "查询参数",
+                    "description": "可选类型、内容关键词和分页参数",
                     "required": true
                 },
                 "responses": {
@@ -1990,10 +2118,10 @@ const docTemplate = `{
         },
         "/api/changelog/proposal/grouped": {
             "get": {
-                "description": "以提案为维度的分页列表，包含提案基础信息、提议者信息、审核操作信息",
+                "description": "仅管理员可用。以提案为分页单位返回提案原始内容、课程、创建者信息和最近一次管理员操作；同一提案存在多次审核、撤回或更新日志时 adminAction 只保留时间最新的一条，尚无管理员操作时省略",
                 "parameters": [
                     {
-                        "description": "页码",
+                        "description": "页码，小于1按1处理",
                         "in": "query",
                         "name": "page",
                         "schema": {
@@ -2002,7 +2130,7 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "description": "每页数量",
+                        "description": "每页数量，默认20；大于100按10处理",
                         "in": "query",
                         "name": "pageSize",
                         "schema": {
@@ -2040,10 +2168,10 @@ const docTemplate = `{
         },
         "/api/changelog/proposal/timeline": {
             "get": {
-                "description": "一条记录代表一次独立动作的扁平化分页，严格按时间倒序排列",
+                "description": "仅管理员可用。以每次独立操作为一条记录分页返回全部变更日志，严格按操作时间倒序，包含操作者、标准化动作名、可选关联提案当前摘要及日志正文；管理员权限变更等非提案操作可能没有 proposalId 和 proposalSnapshot",
                 "parameters": [
                     {
-                        "description": "页码",
+                        "description": "页码，小于1按1处理",
                         "in": "query",
                         "name": "page",
                         "schema": {
@@ -2052,7 +2180,7 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "description": "每页数量",
+                        "description": "每页数量，默认20；大于100按10处理",
                         "in": "query",
                         "name": "pageSize",
                         "schema": {
@@ -2090,7 +2218,7 @@ const docTemplate = `{
         },
         "/api/comment/add": {
             "post": {
-                "description": "用户对指定课程发布评论",
+                "description": "登录用户对指定正式课程发布评论。courseId 和 content 必填，tags 可省略或为空数组；成功响应包含新评论ID、发布时间以及当前点赞状态。该接口本身不修改课程标签字段，课程详情的 tagCount 会从未删除评论标签实时聚合",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -2102,13 +2230,13 @@ const docTemplate = `{
                                     {
                                         "$ref": "#/components/schemas/dto.CreateCommentReq",
                                         "summary": "body",
-                                        "description": "CreateCommentReq"
+                                        "description": "课程ID、评论正文和可选标签"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "CreateCommentReq",
+                    "description": "课程ID、评论正文和可选标签",
                     "required": true
                 },
                 "responses": {
@@ -2131,7 +2259,7 @@ const docTemplate = `{
         },
         "/api/comment/history": {
             "post": {
-                "description": "分页获取当前用户发布过的评论",
+                "description": "登录后分页获取当前用户发布的未删除评论，按创建时间倒序返回。每条记录包含当前点赞状态和对应未删除课程的名称、分类、开课院系及教师姓名职称信息",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -2143,13 +2271,13 @@ const docTemplate = `{
                                     {
                                         "$ref": "#/components/schemas/dto.GetMyCommentsReq",
                                         "summary": "body",
-                                        "description": "GetMyCommentsReq"
+                                        "description": "分页参数；page 小于1按1处理，pageSize 范围1-100且非法值按10处理"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "GetMyCommentsReq",
+                    "description": "分页参数；page 小于1按1处理，pageSize 范围1-100且非法值按10处理",
                     "required": true
                 },
                 "responses": {
@@ -2172,7 +2300,7 @@ const docTemplate = `{
         },
         "/api/comment/query": {
             "get": {
-                "description": "根据课程ID分页查询评论列表",
+                "description": "登录后分页查询指定课程的未删除评论，按创建时间倒序返回，并为每条评论附带当前用户是否点赞及最新点赞总数。新调用使用 courseId；服务端仍兼容旧 query 参数 id，但旧参数不展示在 Swagger 中",
                 "parameters": [
                     {
                         "description": "课程ID",
@@ -2184,20 +2312,20 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "description": "页码",
+                        "description": "页码，小于1按1处理",
                         "in": "query",
                         "name": "page",
-                        "required": true,
                         "schema": {
+                            "default": 1,
                             "type": "integer"
                         }
                     },
                     {
-                        "description": "每页数量",
+                        "description": "每页数量，范围1-100，超出范围按10处理",
                         "in": "query",
                         "name": "pageSize",
-                        "required": true,
                         "schema": {
+                            "default": 10,
                             "type": "integer"
                         }
                     }
@@ -2222,7 +2350,7 @@ const docTemplate = `{
         },
         "/api/course/campuses": {
             "get": {
-                "description": "根据课程名字获取课程开课校区",
+                "description": "登录后按完整课程名称精确匹配所有未删除同名课程，返回这些课程涉及的去重开设校区名称；没有同名课程时返回空数组，历史映射缺失时可能返回“未知校区”",
                 "parameters": [
                     {
                         "description": "课程名称关键词",
@@ -2254,7 +2382,7 @@ const docTemplate = `{
         },
         "/api/course/categories": {
             "get": {
-                "description": "根据课程名字获取课程分类",
+                "description": "登录后按完整课程名称精确匹配所有未删除同名课程，返回这些课程涉及的去重课程分类名称；没有同名课程时返回空数组，历史映射缺失时可能返回“未知分类”",
                 "parameters": [
                     {
                         "description": "课程名称关键词",
@@ -2286,7 +2414,7 @@ const docTemplate = `{
         },
         "/api/course/departments": {
             "get": {
-                "description": "根据课程名字获取课程开课院系",
+                "description": "登录后按完整课程名称精确匹配所有未删除同名课程，返回这些课程涉及的去重开课院系名称；没有同名课程时返回空数组，历史映射缺失时可能返回“未知开课院系”",
                 "parameters": [
                     {
                         "description": "课程名称关键词",
@@ -2318,7 +2446,7 @@ const docTemplate = `{
         },
         "/api/course/{courseId}": {
             "get": {
-                "description": "获取课程信息",
+                "description": "登录后按课程ID获取未被软删除的正式课程，包含课程分类、开课院系、校区、教师、评论标签统计，以及可选的来源提案贡献者信息。课程由匿名提案创建时 contributor 仅返回 proposalId 和 showUsername=false，不返回用户身份",
                 "parameters": [
                     {
                         "description": "课程ID",
@@ -2350,7 +2478,7 @@ const docTemplate = `{
         },
         "/api/like/{likeId}": {
             "post": {
-                "description": "对指定目标（提案或评论）进行点赞或取消点赞操作；若已点赞则取消，未点赞则新增",
+                "description": "登录用户切换指定未删除提案或评论的点赞状态：未点赞时新增，已点赞时取消。path 中 likeId 是目标ID，请求体 targetType 必须是 proposal 或 comment；目标不存在、已删除或类型非法时拒绝且不会产生悬空点赞。响应返回操作后的点赞状态与最新总数",
                 "parameters": [
                     {
                         "description": "目标ID（提案ID或评论ID）",
@@ -2583,10 +2711,10 @@ const docTemplate = `{
         },
         "/api/proposal/history": {
             "get": {
-                "description": "获取当前用户的所有提案（包括所有状态和已删除的提案），updatedAt 字段即为提案最新审批时间；已通过提案会附带关联的正式课程 finalCourse（课程查询失败或已删除时为空）",
+                "description": "登录后获取当前用户的完整提案历史，包含 pending、approved、rejected 及已软删除提案，按创建时间倒序分页。updatedAt 是最近一次编辑或审批时间；已通过提案附带关联正式课程 finalCourse，课程查询失败或已删除时省略。此接口中 contribution 对创建者可见",
                 "parameters": [
                     {
-                        "description": "页码",
+                        "description": "页码，小于1按1处理",
                         "in": "query",
                         "name": "page",
                         "schema": {
@@ -2595,7 +2723,7 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "description": "每页数量",
+                        "description": "每页数量，范围1-100，超出范围按10处理",
                         "in": "query",
                         "name": "pageSize",
                         "schema": {
@@ -3003,7 +3131,7 @@ const docTemplate = `{
         },
         "/api/search": {
             "post": {
-                "description": "搜索课程列表",
+                "description": "登录后分页搜索未删除课程。type=course 时按课程名称大小写不敏感模糊匹配；type=teacher 时先按教师完整姓名查找教师，再返回其课程；type=category 或 department 时按映射完整名称精确匹配。未知 type 返回参数错误。非空 keyword 会异步写入当前用户搜索历史，重复关键词更新时间且仅保留最近15条",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -3015,13 +3143,13 @@ const docTemplate = `{
                                     {
                                         "$ref": "#/components/schemas/dto.ListCoursesReq",
                                         "summary": "body",
-                                        "description": "ListCoursesReq"
+                                        "description": "搜索类型、关键词和分页；type 支持 course/teacher/category/department"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "ListCoursesReq",
+                    "description": "搜索类型、关键词和分页；type 支持 course/teacher/category/department",
                     "required": true
                 },
                 "responses": {
@@ -3044,7 +3172,7 @@ const docTemplate = `{
         },
         "/api/search/recent": {
             "get": {
-                "description": "获取最近搜索历史",
+                "description": "登录后返回当前用户最近15条课程搜索历史，按最近搜索时间倒序。相同关键词会复用原记录并更新时间；搜索建议不会写入历史，只有提交非空课程搜索时才异步记录",
                 "responses": {
                     "200": {
                         "content": {
@@ -3065,7 +3193,7 @@ const docTemplate = `{
         },
         "/api/search/suggest": {
             "get": {
-                "description": "根据关键词获取搜索建议\n根据 type 不同执行不同的搜索逻辑：\n- course：模糊分页搜索课程\n- teacher：精确分页搜索教师开设的课程\n- category：精确分页搜索该类别下的课程\n- department：精确分页搜索该开课院系下的课程",
+                "description": "登录后并行匹配未删除课程名称、教师姓名、课程分类和课程开课院系，按 course、teacher、category、department 的顺序合并，最终最多返回 pageSize 条。课程和教师使用分页模糊匹配，分类和院系从当前映射名称中匹配；任一数据库建议查询失败时整个请求失败。此接口只返回建议，不写入搜索历史",
                 "parameters": [
                     {
                         "description": "搜索关键词",
@@ -3074,6 +3202,24 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "description": "页码，小于1按1处理",
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "default": 1,
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "最终建议条数上限，范围1-100，超出范围按10处理",
+                        "in": "query",
+                        "name": "pageSize",
+                        "schema": {
+                            "default": 10,
+                            "type": "integer"
                         }
                     }
                 ],
@@ -3097,7 +3243,7 @@ const docTemplate = `{
         },
         "/api/search/total": {
             "get": {
-                "description": "获取系统中所有课程评论的总数量",
+                "description": "登录后获取系统中所有未删除课程评论总数。服务端优先读取短期缓存，缓存不可用或未命中时查询数据库并回填；已随课程撤回而软删除的评论不计入",
                 "responses": {
                     "200": {
                         "content": {
@@ -3209,7 +3355,7 @@ const docTemplate = `{
         },
         "/api/user/profile": {
             "get": {
-                "description": "获取当前登录用户的昵称、头像、贡献值、今日已创建提案数、每日提案上限和昵称可编辑状态",
+                "description": "返回当前登录用户的昵称、头像引用、累计贡献值、按中国时区自然日统计的今日提案使用量、按贡献值等级计算的每日上限，以及当前能否设置或修改非空昵称。昵称未设置和头像未设置均返回空字符串",
                 "responses": {
                     "200": {
                         "content": {
@@ -3230,7 +3376,7 @@ const docTemplate = `{
         },
         "/api/user/profile/update": {
             "post": {
-                "description": "更新当前登录用户的昵称和头像；字段未传或为 null 时保持原值，空字符串用于清空",
+                "description": "原子更新当前登录用户的昵称和头像，任一字段校验或写入失败时两者都不改变。字段省略或为 null 表示保持原值，空字符串表示清空。非空昵称去除首尾空白后最多15个 Unicode 字符，不允许控制字符、不得与其他用户昵称重复，设置或改名后30天内不能再次设置非空昵称；清空昵称不受冷却限制。头像仅保存引用字符串，不负责上传、下载或 URL 格式校验",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -3242,13 +3388,13 @@ const docTemplate = `{
                                     {
                                         "$ref": "#/components/schemas/dto.UpdateUserProfileReq",
                                         "summary": "body",
-                                        "description": "UpdateUserProfileReq"
+                                        "description": "昵称和头像的局部更新；字段省略/null 保持，空字符串清空"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "UpdateUserProfileReq",
+                    "description": "昵称和头像的局部更新；字段省略/null 保持，空字符串清空",
                     "required": true
                 },
                 "responses": {
@@ -3271,7 +3417,7 @@ const docTemplate = `{
         },
         "/api/user/{userId}/username": {
             "get": {
-                "description": "根据用户 ID 获取该用户设置的昵称",
+                "description": "登录后查询指定用户昵称。查询本人或管理员查询任意用户时无需 proposalId；普通用户跨用户查询必须提供属于目标用户且 showUsername=true 的未删除提案ID，否则拒绝，避免绕过匿名提案设置。目标用户尚未设置昵称时成功返回空字符串",
                 "parameters": [
                     {
                         "description": "用户 ID",
