@@ -46,15 +46,18 @@ func TestMappingReferenceFiltersExcludeDeletedRecords(t *testing.T) {
 		t.Fatalf("activeMappingReferenceFilter(department) = %#v", courseDepartment)
 	}
 
-	proposalCategory, err := proposalMappingReferenceFilter(model.MappingTypeCategory, " 专业必修 ")
+	proposalCategory, err := proposalMappingReferenceFilter(model.MappingTypeCategory, " 专业必修 ", "proposal-1")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if proposalCategory[consts.PathCourseCategory] != "专业必修" || !reflect.DeepEqual(proposalCategory[consts.Deleted], wantDeleted) {
 		t.Fatalf("proposalMappingReferenceFilter(category) = %#v", proposalCategory)
 	}
+	if !reflect.DeepEqual(proposalCategory[consts.ID], bson.M{"$ne": "proposal-1"}) {
+		t.Fatalf("proposalMappingReferenceFilter(category) did not exclude source proposal: %#v", proposalCategory)
+	}
 
-	proposalDepartment, err := proposalMappingReferenceFilter(model.MappingTypeDepartment, "计算机学院")
+	proposalDepartment, err := proposalMappingReferenceFilter(model.MappingTypeDepartment, "计算机学院", "")
 	if err != nil {
 		t.Fatal(err)
 	}
