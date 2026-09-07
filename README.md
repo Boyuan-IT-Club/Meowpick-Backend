@@ -130,7 +130,7 @@ AdminGrantKey: "replace-with-a-separate-admin-verification-code"
 
 `Cache` 是各 MongoDB Repository 使用的文档缓存配置；`Redis` 是点赞和基础映射等显式缓存使用的连接配置。当前两者都必须提供，通常指向同一个 Redis 实例。
 
-应用启动会幂等创建运行时所需索引，但不会为全新空数据库自动写入完整的校区、院系和分类种子，仓库目前也没有一键空库种子命令。纯本地可以从空映射启动服务并验证登录等不依赖基础映射的接口，但空库没有校区记录，不能直接创建和审批课程提案；院系、分类可由相应业务流程按需创建，校区必须通过迁移或受控管理方式预置。需要完整业务链路时，应恢复一份已脱敏的 BSON，再按[数据库迁移流程](docs/MIGRATION-V2.md)生成并审核迁移计划。已有旧库升级也必须走该迁移流程，不能直接启动新版覆盖数据。
+应用启动会幂等创建运行时所需索引，但不会为全新空数据库自动写入校区、院系和分类。纯本地可以从空映射启动服务并验证登录等接口；完整测试课程提案链路前，需要准备包含校区等基础映射的开发数据库。
 
 ### 启动服务
 
@@ -210,13 +210,9 @@ docker run --rm \
 
 准确的请求参数、权限与响应结构以运行时 Swagger 和 [`docs/swagger.yaml`](docs/swagger.yaml) 为准。
 
-## 数据库升级
+## 相关文档
 
-从旧版数据库升级时，不要直接启动新版后端，也不要用旧 JSON 覆盖数据库。应先导出 `mongodump` BSON，在隔离 MongoDB 中执行 dry-run、迁移和 postcheck，再部署应用。
-
-- [数据库迁移流程](docs/MIGRATION-V2.md)
 - [基础映射运行时设计](docs/REFERENCE-MAPPINGS.md)
-- [提案映射与迁移说明](docs/USER-PROPOSAL-CONSISTENCY.md)
 - [用户与提案接口修复、验收项和已知限制](docs/USER-PROPOSAL-API-FIXES.md)
 
 ## License
