@@ -44,6 +44,7 @@ type ITeacherRepo interface {
 	FindByID(ctx context.Context, id string) (*model.Teacher, error)
 	DeleteByID(ctx context.Context, id string) (*model.Teacher, error)
 	InvalidateDeleted(ctx context.Context, teacher *model.Teacher) error
+	IsDepartmentReferenced(ctx context.Context, departmentID int32) (bool, error)
 
 	GetIDByName(ctx context.Context, name string) (string, error)
 	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, int64, error)
@@ -73,6 +74,11 @@ func (r *TeacherRepo) InvalidateDeleted(ctx context.Context, teacher *model.Teac
 		return nil
 	}
 	return r.conn.DelCache(ctx, TeacherID2DBKey+teacher.ID, TeacherName2IDKey+teacher.Name)
+}
+
+func (r *TeacherRepo) IsDepartmentReferenced(ctx context.Context, departmentID int32) (bool, error) {
+	count, err := r.conn.CountDocuments(ctx, bson.M{consts.Department: departmentID})
+	return count > 0, err
 }
 
 type TeacherRepo struct {

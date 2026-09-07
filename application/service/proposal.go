@@ -67,6 +67,7 @@ type ProposalService struct {
 	LikeCache         *cache.LikeCache
 	UserRepo          *repo.UserRepo
 	TeacherRepo       *repo.TeacherRepo
+	MappingRepo       *repo.MappingRepo
 	ChangeLogService  IChangeLogService
 }
 
@@ -1333,8 +1334,10 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 
 	var proposalUserID string
 	var deletedTeachers []*model.Teacher
+	var deletedMappings []*model.Mapping
 	err = s.ProposalRepo.WithTransaction(ctx, func(txCtx mongo.SessionContext) error {
 		deletedTeachers = nil
+		deletedMappings = nil
 		proposal, findErr := s.ProposalRepo.FindByID(txCtx, req.ProposalID)
 		if findErr != nil {
 			return errorx.WrapByCode(findErr, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
@@ -1400,6 +1403,21 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 						deletedTeachers = append(deletedTeachers, deletedTeacher)
 					}
 				}
+				for _, mappingRef := range []struct {
+					mappingType model.MappingType
+					code        int32
+				}{
+					{mappingType: model.MappingTypeDepartment, code: associatedCourse.Department},
+					{mappingType: model.MappingTypeCategory, code: associatedCourse.Category},
+				} {
+					deletedMapping, cleanupErr := s.deleteMappingIfUnreferenced(txCtx, mappingRef.mappingType, mappingRef.code)
+					if cleanupErr != nil {
+						return cleanupErr
+					}
+					if deletedMapping != nil {
+						deletedMappings = append(deletedMappings, deletedMapping)
+					}
+				}
 			}
 			if contributionErr := s.rollbackContributionStrict(txCtx, proposal); contributionErr != nil {
 				return contributionErr
@@ -1445,6 +1463,9 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 		if refreshErr := mapping.Data.Refresh(ctx); refreshErr != nil {
 			logs.CtxWarnf(ctx, "[Mapping] post-revoke refresh failed: %v", refreshErr)
 		}
+		if len(deletedMappings) > 0 {
+			logs.CtxInfof(ctx, "[Mapping] removed %d unreferenced mappings after revoke", len(deletedMappings))
+		}
 	}
 
 	return &dto.RevokeProposalResp{
@@ -1455,6 +1476,46 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 
 func shouldDeleteTeacher(courseReferenced, proposalReferenced bool) bool {
 	return !courseReferenced && !proposalReferenced
+}
+
+func shouldDeleteMapping(courseReferenced, proposalReferenced, teacherReferenced bool) bool {
+	return !courseReferenced && !proposalReferenced && !teacherReferenced
+}
+
+func (s *ProposalService) deleteMappingIfUnreferenced(ctx context.Context, mappingType model.MappingType, code int32) (*model.Mapping, error) {
+	if code <= 0 {
+		return nil, nil
+	}
+	mappingRecord, err := s.MappingRepo.FindByCodeAndType(ctx, code, mappingType)
+	if err != nil {
+		return nil, fmt.Errorf("find mapping type=%d code=%d: %w", mappingType, code, err)
+	}
+	if mappingRecord == nil {
+		return nil, nil
+	}
+	courseReferenced, err := s.CourseRepo.IsMappingReferenced(ctx, mappingType, code)
+	if err != nil {
+		return nil, fmt.Errorf("check course mapping reference type=%d code=%d: %w", mappingType, code, err)
+	}
+	proposalReferenced, err := s.ProposalRepo.IsMappingReferenced(ctx, mappingType, mappingRecord.Name)
+	if err != nil {
+		return nil, fmt.Errorf("check proposal mapping reference type=%d name=%q: %w", mappingType, mappingRecord.Name, err)
+	}
+	teacherReferenced := false
+	if mappingType == model.MappingTypeDepartment {
+		teacherReferenced, err = s.TeacherRepo.IsDepartmentReferenced(ctx, code)
+		if err != nil {
+			return nil, fmt.Errorf("check teacher department reference code=%d: %w", code, err)
+		}
+	}
+	if !shouldDeleteMapping(courseReferenced, proposalReferenced, teacherReferenced) {
+		return nil, nil
+	}
+	deleted, err := s.MappingRepo.DeleteByCodeAndType(ctx, code, mappingType)
+	if err != nil {
+		return nil, fmt.Errorf("delete unreferenced mapping type=%d code=%d: %w", mappingType, code, err)
+	}
+	return deleted, nil
 }
 
 // RejectProposal 拒绝提案，将状态从 pending 改为 rejected

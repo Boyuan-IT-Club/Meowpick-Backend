@@ -18,6 +18,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -31,6 +32,35 @@ func TestTeacherReferenceFiltersExcludeDeletedRecords(t *testing.T) {
 	proposalFilter := proposalTeacherReferenceFilter("teacher-1")
 	if proposalFilter[consts.PathCourseTeacherID] != "teacher-1" || !reflect.DeepEqual(proposalFilter[consts.Deleted], wantDeleted) {
 		t.Fatalf("proposalTeacherReferenceFilter() = %#v", proposalFilter)
+	}
+}
+
+func TestMappingReferenceFiltersExcludeDeletedRecords(t *testing.T) {
+	wantDeleted := bson.M{"$ne": true}
+
+	courseDepartment, err := activeMappingReferenceFilter(model.MappingTypeDepartment, 12)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if courseDepartment[consts.Department] != int32(12) || !reflect.DeepEqual(courseDepartment[consts.Deleted], wantDeleted) {
+		t.Fatalf("activeMappingReferenceFilter(department) = %#v", courseDepartment)
+	}
+
+	proposalCategory, err := proposalMappingReferenceFilter(model.MappingTypeCategory, " 专业必修 ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if proposalCategory[consts.PathCourseCategory] != "专业必修" || !reflect.DeepEqual(proposalCategory[consts.Deleted], wantDeleted) {
+		t.Fatalf("proposalMappingReferenceFilter(category) = %#v", proposalCategory)
+	}
+
+	proposalDepartment, err := proposalMappingReferenceFilter(model.MappingTypeDepartment, "计算机学院")
+	if err != nil {
+		t.Fatal(err)
+	}
+	orFilters, ok := proposalDepartment["$or"].(bson.A)
+	if !ok || len(orFilters) != 2 {
+		t.Fatalf("proposalMappingReferenceFilter(department) = %#v", proposalDepartment)
 	}
 }
 

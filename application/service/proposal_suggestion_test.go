@@ -99,3 +99,26 @@ func TestShouldDeleteTeacher(t *testing.T) {
 		})
 	}
 }
+
+func TestShouldDeleteMapping(t *testing.T) {
+	tests := []struct {
+		name               string
+		courseReferenced   bool
+		proposalReferenced bool
+		teacherReferenced  bool
+		want               bool
+	}{
+		{name: "unreferenced", want: true},
+		{name: "referenced by course", courseReferenced: true},
+		{name: "referenced by proposal", proposalReferenced: true},
+		{name: "department referenced by teacher", teacherReferenced: true},
+		{name: "referenced by all", courseReferenced: true, proposalReferenced: true, teacherReferenced: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldDeleteMapping(tt.courseReferenced, tt.proposalReferenced, tt.teacherReferenced); got != tt.want {
+				t.Fatalf("shouldDeleteMapping(%v, %v, %v) = %v, want %v", tt.courseReferenced, tt.proposalReferenced, tt.teacherReferenced, got, tt.want)
+			}
+		})
+	}
+}

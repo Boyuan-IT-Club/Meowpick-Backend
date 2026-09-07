@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
@@ -63,6 +64,7 @@ type IProposalRepo interface {
 	UpdateStatusAndReasonByID(ctx context.Context, proposalID string, expectedStatusID, statusID int32, rejectReason string) (bool, error)
 	UpdateContributionByID(ctx context.Context, proposalID string, contribution int64) error
 	IsTeacherReferenced(ctx context.Context, teacherID string) (bool, error)
+	IsMappingReferenced(ctx context.Context, mappingType model.MappingType, name string) (bool, error)
 }
 
 func proposalTeacherReferenceFilter(teacherID string) bson.M {
@@ -74,6 +76,32 @@ func proposalTeacherReferenceFilter(teacherID string) bson.M {
 
 func (r *ProposalRepo) IsTeacherReferenced(ctx context.Context, teacherID string) (bool, error) {
 	count, err := r.conn.CountDocuments(ctx, proposalTeacherReferenceFilter(teacherID))
+	return count > 0, err
+}
+
+func proposalMappingReferenceFilter(mappingType model.MappingType, name string) (bson.M, error) {
+	name = strings.TrimSpace(name)
+	filter := bson.M{consts.Deleted: bson.M{"$ne": true}}
+	switch mappingType {
+	case model.MappingTypeDepartment:
+		filter["$or"] = bson.A{
+			bson.M{consts.PathCourseDepartment: name},
+			bson.M{"course.teachers.department": name},
+		}
+	case model.MappingTypeCategory:
+		filter[consts.PathCourseCategory] = name
+	default:
+		return nil, fmt.Errorf("unsupported proposal mapping reference type %d", mappingType)
+	}
+	return filter, nil
+}
+
+func (r *ProposalRepo) IsMappingReferenced(ctx context.Context, mappingType model.MappingType, name string) (bool, error) {
+	filter, err := proposalMappingReferenceFilter(mappingType, name)
+	if err != nil {
+		return false, err
+	}
+	count, err := r.conn.CountDocuments(ctx, filter)
 	return count > 0, err
 }
 

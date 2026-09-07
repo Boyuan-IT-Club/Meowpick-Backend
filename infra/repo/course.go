@@ -17,6 +17,7 @@ package repo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
@@ -50,6 +51,7 @@ type ICourseRepo interface {
 	FindActiveCategoryIDs(ctx context.Context) ([]int32, error)
 	FindActiveDepartmentIDs(ctx context.Context) ([]int32, error)
 	IsTeacherReferenced(ctx context.Context, teacherID string) (bool, error)
+	IsMappingReferenced(ctx context.Context, mappingType model.MappingType, code int32) (bool, error)
 
 	GetDepartmentsByName(ctx context.Context, name string) ([]int32, error)
 	GetCategoriesByName(ctx context.Context, name string) ([]int32, error)
@@ -124,6 +126,28 @@ func activeTeacherReferenceFilter(teacherID string) bson.M {
 
 func (r *CourseRepo) IsTeacherReferenced(ctx context.Context, teacherID string) (bool, error) {
 	count, err := r.conn.CountDocuments(ctx, activeTeacherReferenceFilter(teacherID))
+	return count > 0, err
+}
+
+func activeMappingReferenceFilter(mappingType model.MappingType, code int32) (bson.M, error) {
+	field := ""
+	switch mappingType {
+	case model.MappingTypeDepartment:
+		field = consts.Department
+	case model.MappingTypeCategory:
+		field = consts.Category
+	default:
+		return nil, fmt.Errorf("unsupported course mapping reference type %d", mappingType)
+	}
+	return bson.M{field: code, consts.Deleted: bson.M{"$ne": true}}, nil
+}
+
+func (r *CourseRepo) IsMappingReferenced(ctx context.Context, mappingType model.MappingType, code int32) (bool, error) {
+	filter, err := activeMappingReferenceFilter(mappingType, code)
+	if err != nil {
+		return false, err
+	}
+	count, err := r.conn.CountDocuments(ctx, filter)
 	return count > 0, err
 }
 
