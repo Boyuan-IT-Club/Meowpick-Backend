@@ -1410,7 +1410,7 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 					{mappingType: model.MappingTypeDepartment, code: associatedCourse.Department},
 					{mappingType: model.MappingTypeCategory, code: associatedCourse.Category},
 				} {
-					deletedMapping, cleanupErr := s.deleteMappingIfUnreferenced(txCtx, mappingRef.mappingType, mappingRef.code)
+					deletedMapping, cleanupErr := s.deleteMappingIfUnreferenced(txCtx, mappingRef.mappingType, mappingRef.code, req.ProposalID)
 					if cleanupErr != nil {
 						return cleanupErr
 					}
@@ -1482,7 +1482,7 @@ func shouldDeleteMapping(courseReferenced, proposalReferenced, teacherReferenced
 	return !courseReferenced && !proposalReferenced && !teacherReferenced
 }
 
-func (s *ProposalService) deleteMappingIfUnreferenced(ctx context.Context, mappingType model.MappingType, code int32) (*model.Mapping, error) {
+func (s *ProposalService) deleteMappingIfUnreferenced(ctx context.Context, mappingType model.MappingType, code int32, excludeProposalID string) (*model.Mapping, error) {
 	if code <= 0 {
 		return nil, nil
 	}
@@ -1497,7 +1497,7 @@ func (s *ProposalService) deleteMappingIfUnreferenced(ctx context.Context, mappi
 	if err != nil {
 		return nil, fmt.Errorf("check course mapping reference type=%d code=%d: %w", mappingType, code, err)
 	}
-	proposalReferenced, err := s.ProposalRepo.IsMappingReferenced(ctx, mappingType, mappingRecord.Name)
+	proposalReferenced, err := s.ProposalRepo.IsMappingReferenced(ctx, mappingType, mappingRecord.Name, excludeProposalID)
 	if err != nil {
 		return nil, fmt.Errorf("check proposal mapping reference type=%d name=%q: %w", mappingType, mappingRecord.Name, err)
 	}

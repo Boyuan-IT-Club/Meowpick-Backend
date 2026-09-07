@@ -64,7 +64,7 @@ type IProposalRepo interface {
 	UpdateStatusAndReasonByID(ctx context.Context, proposalID string, expectedStatusID, statusID int32, rejectReason string) (bool, error)
 	UpdateContributionByID(ctx context.Context, proposalID string, contribution int64) error
 	IsTeacherReferenced(ctx context.Context, teacherID string) (bool, error)
-	IsMappingReferenced(ctx context.Context, mappingType model.MappingType, name string) (bool, error)
+	IsMappingReferenced(ctx context.Context, mappingType model.MappingType, name, excludeProposalID string) (bool, error)
 }
 
 func proposalTeacherReferenceFilter(teacherID string) bson.M {
@@ -79,9 +79,12 @@ func (r *ProposalRepo) IsTeacherReferenced(ctx context.Context, teacherID string
 	return count > 0, err
 }
 
-func proposalMappingReferenceFilter(mappingType model.MappingType, name string) (bson.M, error) {
+func proposalMappingReferenceFilter(mappingType model.MappingType, name, excludeProposalID string) (bson.M, error) {
 	name = strings.TrimSpace(name)
 	filter := bson.M{consts.Deleted: bson.M{"$ne": true}}
+	if excludeProposalID != "" {
+		filter[consts.ID] = bson.M{"$ne": excludeProposalID}
+	}
 	switch mappingType {
 	case model.MappingTypeDepartment:
 		filter["$or"] = bson.A{
@@ -96,8 +99,8 @@ func proposalMappingReferenceFilter(mappingType model.MappingType, name string) 
 	return filter, nil
 }
 
-func (r *ProposalRepo) IsMappingReferenced(ctx context.Context, mappingType model.MappingType, name string) (bool, error) {
-	filter, err := proposalMappingReferenceFilter(mappingType, name)
+func (r *ProposalRepo) IsMappingReferenced(ctx context.Context, mappingType model.MappingType, name, excludeProposalID string) (bool, error) {
+	filter, err := proposalMappingReferenceFilter(mappingType, name, excludeProposalID)
 	if err != nil {
 		return false, err
 	}
