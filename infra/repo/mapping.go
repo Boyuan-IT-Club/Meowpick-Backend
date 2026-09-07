@@ -47,6 +47,7 @@ type IMappingRepo interface {
 	FindAllByType(ctx context.Context, mType model.MappingType) ([]*model.Mapping, error)
 	SyncCounters(ctx context.Context) error
 	CreateOrGet(ctx context.Context, mType model.MappingType, name string) (*model.Mapping, bool, error)
+	DeleteByCodeAndType(ctx context.Context, code int32, mType model.MappingType) (*model.Mapping, error)
 }
 
 // MappingRepo deliberately bypasses monc's per-document string cache. Mapping data
@@ -207,4 +208,24 @@ func (r *MappingRepo) CreateOrGet(ctx context.Context, mType model.MappingType, 
 	}
 
 	return nil, false, fmt.Errorf("allocate mapping code after %d attempts", mappingCreateMaxAttempts)
+}
+
+// DeleteByCodeAndType removes one mapping and returns the deleted value so the
+// caller can refresh caches after its transaction commits.
+func (r *MappingRepo) DeleteByCodeAndType(ctx context.Context, code int32, mType model.MappingType) (*model.Mapping, error) {
+	mapping, err := r.FindByCodeAndType(ctx, code, mType)
+	if err != nil || mapping == nil {
+		return mapping, err
+	}
+	result, err := r.conn.Database().Collection(MappingCollectionName).DeleteOne(ctx, bson.M{
+		"code": code,
+		"type": mType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if result.DeletedCount == 0 {
+		return nil, nil
+	}
+	return mapping, nil
 }

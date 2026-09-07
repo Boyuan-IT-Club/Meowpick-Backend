@@ -104,6 +104,10 @@ func NewProvider() (*Provider, error) {
 		CourseAssembler: courseAssembler,
 		LikeRepo:        likeRepo,
 	}
+	mappingRepo, err := repo.NewMappingRepo(configConfig)
+	if err != nil {
+		return nil, err
+	}
 	proposalService := service.ProposalService{
 		CourseRepo:        courseRepo,
 		CommentRepo:       commentRepo,
@@ -114,6 +118,7 @@ func NewProvider() (*Provider, error) {
 		LikeCache:         likeCache,
 		UserRepo:          userRepo,
 		TeacherRepo:       teacherRepo,
+		MappingRepo:       mappingRepo,
 		ChangeLogService:  changeLogService,
 	}
 	serviceChangeLogService := service.ChangeLogService{
@@ -122,10 +127,6 @@ func NewProvider() (*Provider, error) {
 		UserRepo:           userRepo,
 		ProposalRepo:       proposalRepo,
 		CourseAssembler:    courseAssembler,
-	}
-	mappingRepo, err := repo.NewMappingRepo(configConfig)
-	if err != nil {
-		return nil, err
 	}
 	mappingCache := cache.NewMappingCache(configConfig)
 	providerProvider := &Provider{
