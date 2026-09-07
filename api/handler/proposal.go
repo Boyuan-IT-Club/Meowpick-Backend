@@ -150,7 +150,7 @@ func ApproveProposal(c *gin.Context) {
 
 // RevokeProposal godoc
 // @Summary 撤回提案操作
-// @Description 管理员把已通过或已拒绝提案恢复为 pending。actionType=approve 仅适用于 approved：事务内软删除提案关联课程和评论、删除相关评论点赞、扣回已结算贡献值，并清理无引用的教师、分类和院系；教师仍被未删除课程或提案引用时保留，分类和院系仍被未删除课程或其他未删除提案引用时保留，院系被正式教师引用时也保留。actionType=reject 仅适用于 rejected：清空拒绝理由。状态与 actionType 不匹配时拒绝操作
+// @Description 管理员把已通过或已拒绝提案恢复为 pending。actionType=approve 仅适用于 approved：事务内软删除提案关联课程和评论、删除相关评论点赞、扣回已结算贡献值，并清理无引用的教师、分类和院系；教师仍被未删除课程或提案通过 teacherId 引用时保留，分类仍被未删除课程引用时保留，院系仍被未删除课程或正式教师引用时保留。提案中的院系和分类是名称文本，不计作映射引用。actionType=reject 仅适用于 rejected：清空拒绝理由。状态与 actionType 不匹配时拒绝操作
 // @Tags proposal
 // @Accept json
 // @Param proposalId path string true "提案ID"
