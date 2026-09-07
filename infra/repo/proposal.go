@@ -62,6 +62,19 @@ type IProposalRepo interface {
 	IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error
 	UpdateStatusAndReasonByID(ctx context.Context, proposalID string, expectedStatusID, statusID int32, rejectReason string) (bool, error)
 	UpdateContributionByID(ctx context.Context, proposalID string, contribution int64) error
+	IsTeacherReferenced(ctx context.Context, teacherID string) (bool, error)
+}
+
+func proposalTeacherReferenceFilter(teacherID string) bson.M {
+	return bson.M{
+		consts.PathCourseTeacherID: teacherID,
+		consts.Deleted:             bson.M{"$ne": true},
+	}
+}
+
+func (r *ProposalRepo) IsTeacherReferenced(ctx context.Context, teacherID string) (bool, error) {
+	count, err := r.conn.CountDocuments(ctx, proposalTeacherReferenceFilter(teacherID))
+	return count > 0, err
 }
 
 type ProposalRepo struct {

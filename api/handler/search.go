@@ -40,7 +40,7 @@ func GetSearchHistories(c *gin.Context) {
 
 // GetSearchSuggestions godoc
 // @Summary 获取搜索建议
-// @Description 登录后并行匹配未删除课程名称、教师姓名、课程分类和课程开课院系，按 course、teacher、category、department 的顺序合并，最终最多返回 pageSize 条。课程和教师使用分页模糊匹配，分类和院系从当前映射名称中匹配；任一数据库建议查询失败时整个请求失败。此接口只返回建议，不写入搜索历史
+// @Description 登录后并行匹配未删除课程名称，以及至少被一门未删除课程引用的教师、课程分类和课程开课院系；按 course、teacher、category、department 的顺序合并，最终最多返回 pageSize 条。任一数据库建议查询失败时整个请求失败。此接口只返回建议，不写入搜索历史
 // @Tags search
 // @Produce json
 // @Param keyword query string true "搜索关键词"

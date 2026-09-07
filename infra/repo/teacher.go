@@ -42,9 +42,37 @@ type ITeacherRepo interface {
 	Insert(ctx context.Context, teacher *model.Teacher) error
 	IsExistByID(ctx context.Context, id string) (bool, error)
 	FindByID(ctx context.Context, id string) (*model.Teacher, error)
+	DeleteByID(ctx context.Context, id string) (*model.Teacher, error)
+	InvalidateDeleted(ctx context.Context, teacher *model.Teacher) error
 
 	GetIDByName(ctx context.Context, name string) (string, error)
 	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, int64, error)
+	GetSuggestionsByNameAndIDs(ctx context.Context, name string, ids []string, param *dto.PageParam) ([]*model.Teacher, int64, error)
+}
+
+func (r *TeacherRepo) DeleteByID(ctx context.Context, id string) (*model.Teacher, error) {
+	teacher := &model.Teacher{}
+	if err := r.conn.FindOneNoCache(ctx, teacher, bson.M{consts.ID: id}); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	result, err := r.conn.Database().Collection(TeacherCollectionName).DeleteOne(ctx, bson.M{consts.ID: id})
+	if err != nil {
+		return nil, err
+	}
+	if result.DeletedCount == 0 {
+		return nil, nil
+	}
+	return teacher, nil
+}
+
+func (r *TeacherRepo) InvalidateDeleted(ctx context.Context, teacher *model.Teacher) error {
+	if teacher == nil {
+		return nil
+	}
+	return r.conn.DelCache(ctx, TeacherID2DBKey+teacher.ID, TeacherName2IDKey+teacher.Name)
 }
 
 type TeacherRepo struct {
@@ -116,8 +144,22 @@ func (r *TeacherRepo) GetIDByName(ctx context.Context, name string) (string, err
 
 // GetSuggestionsByName 根据教师名称模糊分页查询教师
 func (r *TeacherRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, int64, error) {
+	return r.getSuggestionsByName(ctx, name, nil, param)
+}
+
+func (r *TeacherRepo) GetSuggestionsByNameAndIDs(ctx context.Context, name string, ids []string, param *dto.PageParam) ([]*model.Teacher, int64, error) {
+	if len(ids) == 0 {
+		return []*model.Teacher{}, 0, nil
+	}
+	return r.getSuggestionsByName(ctx, name, ids, param)
+}
+
+func (r *TeacherRepo) getSuggestionsByName(ctx context.Context, name string, ids []string, param *dto.PageParam) ([]*model.Teacher, int64, error) {
 	teachers := []*model.Teacher{}
 	filter := bson.M{consts.Name: bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}}}
+	if ids != nil {
+		filter[consts.ID] = bson.M{"$in": ids}
+	}
 
 	if err := r.conn.Find(ctx, &teachers, filter, page.FindPageOption(param)); err != nil {
 		return nil, 0, err

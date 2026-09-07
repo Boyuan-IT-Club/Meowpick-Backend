@@ -55,6 +55,7 @@ const (
 	PathCourseCategory   = "course.category"
 	PathCourseCampuses   = "course.campuses"
 	PathCourseTeachers   = "course.teachers"
+	PathCourseTeacherID  = "course.teachers.teacherId"
 )
 
 // 变更日志相关
