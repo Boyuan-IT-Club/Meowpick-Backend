@@ -52,7 +52,7 @@ type ProposalVO struct {
 	RejectReason string            `json:"rejectReason"` // 拒绝理由；未拒绝或未填写理由时为空
 	*LikeVO                        // 当前用户的点赞状态及提案点赞数
 	Course       *ProposalCourseVO `json:"course"`                 // 用户最初提交的课程内容，审批时不会被 finalCourse 覆盖
-	FinalCourse  *ProposalCourseVO `json:"finalCourse,omitempty"`  // 审批通过后的正式课程；仅创建者或管理员查询时返回，课程已删除或查询失败时省略
+	FinalCourse  *ProposalCourseVO `json:"finalCourse,omitempty"`  // 审批通过后的正式课程；历史/列表/筛选接口对已通过提案返回，详情接口仅创建者或管理员可见，课程已删除或查询失败时省略
 	ShowUsername bool              `json:"showUsername"`           // 是否允许公开展示创建者昵称
 	Contribution int64             `json:"contribution,omitempty"` // 本提案结算贡献值；仅创建者可见，其他用户响应中为 -1
 	CreatedAt    time.Time         `json:"createdAt"`              // 提案创建时间
