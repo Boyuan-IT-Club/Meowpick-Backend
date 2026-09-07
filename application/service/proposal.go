@@ -1403,14 +1403,8 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 						deletedTeachers = append(deletedTeachers, deletedTeacher)
 					}
 				}
-				for _, mappingRef := range []struct {
-					mappingType model.MappingType
-					code        int32
-				}{
-					{mappingType: model.MappingTypeDepartment, code: associatedCourse.Department},
-					{mappingType: model.MappingTypeCategory, code: associatedCourse.Category},
-				} {
-					deletedMapping, cleanupErr := s.deleteMappingIfUnreferenced(txCtx, mappingRef.mappingType, mappingRef.code, req.ProposalID)
+				for _, mappingRef := range revokedCourseMappingReferences(associatedCourse, deletedTeachers) {
+					deletedMapping, cleanupErr := s.deleteMappingIfUnreferenced(txCtx, mappingRef.mappingType, mappingRef.code)
 					if cleanupErr != nil {
 						return cleanupErr
 					}
@@ -1478,28 +1472,51 @@ func shouldDeleteTeacher(courseReferenced, proposalReferenced bool) bool {
 	return !courseReferenced && !proposalReferenced
 }
 
-func shouldDeleteMapping(courseReferenced, proposalReferenced, teacherReferenced bool) bool {
-	return !courseReferenced && !proposalReferenced && !teacherReferenced
+func shouldDeleteMapping(courseReferenced, teacherReferenced bool) bool {
+	return !courseReferenced && !teacherReferenced
 }
 
-func (s *ProposalService) deleteMappingIfUnreferenced(ctx context.Context, mappingType model.MappingType, code int32, excludeProposalID string) (*model.Mapping, error) {
+type mappingReference struct {
+	mappingType model.MappingType
+	code        int32
+}
+
+func revokedCourseMappingReferences(course *model.Course, deletedTeachers []*model.Teacher) []mappingReference {
+	if course == nil {
+		return nil
+	}
+	candidates := []mappingReference{
+		{mappingType: model.MappingTypeDepartment, code: course.Department},
+		{mappingType: model.MappingTypeCategory, code: course.Category},
+	}
+	for _, teacher := range deletedTeachers {
+		if teacher != nil {
+			candidates = append(candidates, mappingReference{mappingType: model.MappingTypeDepartment, code: teacher.Department})
+		}
+	}
+
+	seen := make(map[mappingReference]struct{}, len(candidates))
+	result := make([]mappingReference, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate.code <= 0 {
+			continue
+		}
+		if _, exists := seen[candidate]; exists {
+			continue
+		}
+		seen[candidate] = struct{}{}
+		result = append(result, candidate)
+	}
+	return result
+}
+
+func (s *ProposalService) deleteMappingIfUnreferenced(ctx context.Context, mappingType model.MappingType, code int32) (*model.Mapping, error) {
 	if code <= 0 {
-		return nil, nil
-	}
-	mappingRecord, err := s.MappingRepo.FindByCodeAndType(ctx, code, mappingType)
-	if err != nil {
-		return nil, fmt.Errorf("find mapping type=%d code=%d: %w", mappingType, code, err)
-	}
-	if mappingRecord == nil {
 		return nil, nil
 	}
 	courseReferenced, err := s.CourseRepo.IsMappingReferenced(ctx, mappingType, code)
 	if err != nil {
 		return nil, fmt.Errorf("check course mapping reference type=%d code=%d: %w", mappingType, code, err)
-	}
-	proposalReferenced, err := s.ProposalRepo.IsMappingReferenced(ctx, mappingType, mappingRecord.Name, excludeProposalID)
-	if err != nil {
-		return nil, fmt.Errorf("check proposal mapping reference type=%d name=%q: %w", mappingType, mappingRecord.Name, err)
 	}
 	teacherReferenced := false
 	if mappingType == model.MappingTypeDepartment {
@@ -1508,7 +1525,7 @@ func (s *ProposalService) deleteMappingIfUnreferenced(ctx context.Context, mappi
 			return nil, fmt.Errorf("check teacher department reference code=%d: %w", code, err)
 		}
 	}
-	if !shouldDeleteMapping(courseReferenced, proposalReferenced, teacherReferenced) {
+	if !shouldDeleteMapping(courseReferenced, teacherReferenced) {
 		return nil, nil
 	}
 	deleted, err := s.MappingRepo.DeleteByCodeAndType(ctx, code, mappingType)

@@ -15,9 +15,11 @@
 package service
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 )
 
 func TestTeacherSuggestionLabel(t *testing.T) {
@@ -102,23 +104,40 @@ func TestShouldDeleteTeacher(t *testing.T) {
 
 func TestShouldDeleteMapping(t *testing.T) {
 	tests := []struct {
-		name               string
-		courseReferenced   bool
-		proposalReferenced bool
-		teacherReferenced  bool
-		want               bool
+		name              string
+		courseReferenced  bool
+		teacherReferenced bool
+		want              bool
 	}{
 		{name: "unreferenced", want: true},
 		{name: "referenced by course", courseReferenced: true},
-		{name: "referenced by proposal", proposalReferenced: true},
 		{name: "department referenced by teacher", teacherReferenced: true},
-		{name: "referenced by all", courseReferenced: true, proposalReferenced: true, teacherReferenced: true},
+		{name: "referenced by course and teacher", courseReferenced: true, teacherReferenced: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := shouldDeleteMapping(tt.courseReferenced, tt.proposalReferenced, tt.teacherReferenced); got != tt.want {
-				t.Fatalf("shouldDeleteMapping(%v, %v, %v) = %v, want %v", tt.courseReferenced, tt.proposalReferenced, tt.teacherReferenced, got, tt.want)
+			if got := shouldDeleteMapping(tt.courseReferenced, tt.teacherReferenced); got != tt.want {
+				t.Fatalf("shouldDeleteMapping(%v, %v) = %v, want %v", tt.courseReferenced, tt.teacherReferenced, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRevokedCourseMappingReferencesIncludesDeletedTeacherDepartments(t *testing.T) {
+	course := &model.Course{Department: 10, Category: 20}
+	teachers := []*model.Teacher{
+		{Department: 30},
+		{Department: 10},
+		{Department: 30},
+		{Department: 0},
+		nil,
+	}
+	want := []mappingReference{
+		{mappingType: model.MappingTypeDepartment, code: 10},
+		{mappingType: model.MappingTypeCategory, code: 20},
+		{mappingType: model.MappingTypeDepartment, code: 30},
+	}
+	if got := revokedCourseMappingReferences(course, teachers); !reflect.DeepEqual(got, want) {
+		t.Fatalf("revokedCourseMappingReferences() = %#v, want %#v", got, want)
 	}
 }
