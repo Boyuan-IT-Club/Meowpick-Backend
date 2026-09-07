@@ -78,3 +78,24 @@ func TestValidateProposalInputAllowsTeacherWithoutDepartment(t *testing.T) {
 		t.Fatalf("validateProposalInput() rejected teacher without department: %v", err)
 	}
 }
+
+func TestShouldDeleteTeacher(t *testing.T) {
+	tests := []struct {
+		name               string
+		courseReferenced   bool
+		proposalReferenced bool
+		want               bool
+	}{
+		{name: "unreferenced", want: true},
+		{name: "referenced by course", courseReferenced: true},
+		{name: "referenced by proposal", proposalReferenced: true},
+		{name: "referenced by both", courseReferenced: true, proposalReferenced: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldDeleteTeacher(tt.courseReferenced, tt.proposalReferenced); got != tt.want {
+				t.Fatalf("shouldDeleteTeacher(%v, %v) = %v, want %v", tt.courseReferenced, tt.proposalReferenced, got, tt.want)
+			}
+		})
+	}
+}

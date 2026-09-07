@@ -46,6 +46,10 @@ type ICourseRepo interface {
 	FindRecentByTeacherIDs(ctx context.Context, teacherIDs []string, limitPerTeacher int64) (map[string][]*model.Course, error)
 	FindManyByCategoryID(ctx context.Context, categoryId int32, param *dto.PageParam) ([]*model.Course, int64, error)
 	FindManyByDepartmentID(ctx context.Context, departmentId int32, param *dto.PageParam) ([]*model.Course, int64, error)
+	FindActiveTeacherIDs(ctx context.Context) ([]string, error)
+	FindActiveCategoryIDs(ctx context.Context) ([]int32, error)
+	FindActiveDepartmentIDs(ctx context.Context) ([]int32, error)
+	IsTeacherReferenced(ctx context.Context, teacherID string) (bool, error)
 
 	GetDepartmentsByName(ctx context.Context, name string) ([]int32, error)
 	GetCategoriesByName(ctx context.Context, name string) ([]int32, error)
@@ -60,6 +64,67 @@ type ICourseRepo interface {
 	SoftDeleteByID(ctx context.Context, courseID string) error
 	Insert(ctx context.Context, course *model.Course) error
 	UpdateCourse(ctx context.Context, course *model.Course) error
+}
+
+func activeCourseFilter() bson.M {
+	return bson.M{consts.Deleted: bson.M{"$ne": true}}
+}
+
+func (r *CourseRepo) FindActiveTeacherIDs(ctx context.Context) ([]string, error) {
+	values, err := r.conn.Distinct(ctx, consts.TeacherIDs, activeCourseFilter())
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(values))
+	for _, value := range values {
+		if id, ok := value.(string); ok && id != "" {
+			ids = append(ids, id)
+		}
+	}
+	return ids, nil
+}
+
+func activeInt32References(values []interface{}) []int32 {
+	ids := make([]int32, 0, len(values))
+	for _, value := range values {
+		switch id := value.(type) {
+		case int32:
+			ids = append(ids, id)
+		case int64:
+			if id >= -1<<31 && id <= 1<<31-1 {
+				ids = append(ids, int32(id))
+			}
+		}
+	}
+	return ids
+}
+
+func (r *CourseRepo) FindActiveCategoryIDs(ctx context.Context) ([]int32, error) {
+	values, err := r.conn.Distinct(ctx, consts.Category, activeCourseFilter())
+	if err != nil {
+		return nil, err
+	}
+	return activeInt32References(values), nil
+}
+
+func (r *CourseRepo) FindActiveDepartmentIDs(ctx context.Context) ([]int32, error) {
+	values, err := r.conn.Distinct(ctx, consts.Department, activeCourseFilter())
+	if err != nil {
+		return nil, err
+	}
+	return activeInt32References(values), nil
+}
+
+func activeTeacherReferenceFilter(teacherID string) bson.M {
+	return bson.M{
+		consts.TeacherIDs: teacherID,
+		consts.Deleted:    bson.M{"$ne": true},
+	}
+}
+
+func (r *CourseRepo) IsTeacherReferenced(ctx context.Context, teacherID string) (bool, error) {
+	count, err := r.conn.CountDocuments(ctx, activeTeacherReferenceFilter(teacherID))
+	return count > 0, err
 }
 
 type CourseRepo struct {

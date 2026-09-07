@@ -1332,7 +1332,9 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 	}
 
 	var proposalUserID string
+	var deletedTeachers []*model.Teacher
 	err = s.ProposalRepo.WithTransaction(ctx, func(txCtx mongo.SessionContext) error {
+		deletedTeachers = nil
 		proposal, findErr := s.ProposalRepo.FindByID(txCtx, req.ProposalID)
 		if findErr != nil {
 			return errorx.WrapByCode(findErr, errno.ErrProposalFindFailed, errorx.KV("proposalId", req.ProposalID))
@@ -1370,6 +1372,34 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 				if likeErr := s.LikeRepo.DeleteByTargets(txCtx, commentIDs, commentTargetType); likeErr != nil {
 					return fmt.Errorf("delete course comment likes: %w", likeErr)
 				}
+				seenTeacherIDs := make(map[string]struct{}, len(associatedCourse.TeacherIDs))
+				for _, teacherID := range associatedCourse.TeacherIDs {
+					if teacherID == "" {
+						continue
+					}
+					if _, seen := seenTeacherIDs[teacherID]; seen {
+						continue
+					}
+					seenTeacherIDs[teacherID] = struct{}{}
+					courseReferenced, referenceErr := s.CourseRepo.IsTeacherReferenced(txCtx, teacherID)
+					if referenceErr != nil {
+						return fmt.Errorf("check course teacher reference %s: %w", teacherID, referenceErr)
+					}
+					proposalReferenced, referenceErr := s.ProposalRepo.IsTeacherReferenced(txCtx, teacherID)
+					if referenceErr != nil {
+						return fmt.Errorf("check proposal teacher reference %s: %w", teacherID, referenceErr)
+					}
+					if !shouldDeleteTeacher(courseReferenced, proposalReferenced) {
+						continue
+					}
+					deletedTeacher, deleteErr := s.TeacherRepo.DeleteByID(txCtx, teacherID)
+					if deleteErr != nil {
+						return fmt.Errorf("delete unreferenced teacher %s: %w", teacherID, deleteErr)
+					}
+					if deletedTeacher != nil {
+						deletedTeachers = append(deletedTeachers, deletedTeacher)
+					}
+				}
 			}
 			if contributionErr := s.rollbackContributionStrict(txCtx, proposal); contributionErr != nil {
 				return contributionErr
@@ -1404,6 +1434,11 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 		return nil, err
 	}
 	if req.ActionType == consts.RevokeActionApprove {
+		for _, teacher := range deletedTeachers {
+			if invalidateErr := s.TeacherRepo.InvalidateDeleted(ctx, teacher); invalidateErr != nil {
+				logs.CtxWarnf(ctx, "[TeacherRepo] post-revoke cache invalidation failed: %v", invalidateErr)
+			}
+		}
 		if invalidateErr := s.UserRepo.InvalidateByID(ctx, proposalUserID); invalidateErr != nil {
 			logs.CtxWarnf(ctx, "[UserRepo] post-revoke cache invalidation failed: %v", invalidateErr)
 		}
@@ -1416,6 +1451,10 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 		Resp:       dto.Success(),
 		ProposalID: req.ProposalID,
 	}, nil
+}
+
+func shouldDeleteTeacher(courseReferenced, proposalReferenced bool) bool {
+	return !courseReferenced && !proposalReferenced
 }
 
 // RejectProposal 拒绝提案，将状态从 pending 改为 rejected

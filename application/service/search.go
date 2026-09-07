@@ -78,7 +78,12 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		},
 		// Teachers
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			teachers, _, err := s.TeacherRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
+			teacherIDs, err := s.CourseRepo.FindActiveTeacherIDs(ctx)
+			if err != nil {
+				return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
+					errorx.KV("keyword", req.Keyword))
+			}
+			teachers, _, err := s.TeacherRepo.GetSuggestionsByNameAndIDs(ctx, req.Keyword, teacherIDs, req.PageParam)
 			if err != nil {
 				logs.CtxErrorf(ctx, "[TeacherRepo] [GetSuggestionsByName] error: %v", err)
 				return nil, errorx.WrapByCode(err, errno.ErrTeacherGetSuggestionsFailed,
@@ -95,7 +100,12 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		},
 		// Categories
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			ids := mapping.Data.GetCategoryIDsByKeyword(req.Keyword)
+			activeIDs, err := s.CourseRepo.FindActiveCategoryIDs(ctx)
+			if err != nil {
+				return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
+					errorx.KV("keyword", req.Keyword))
+			}
+			ids := referencedMappingIDs(mapping.Data.GetCategoryIDsByKeyword(req.Keyword), activeIDs)
 			var vo []*dto.SearchSuggestionsVO
 			for _, id := range ids {
 				name := mapping.Data.GetCategoryNameByID(id)
@@ -108,7 +118,12 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		},
 		// Departments
 		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			ids := mapping.Data.GetDepartmentIDsByKeyword(req.Keyword)
+			activeIDs, err := s.CourseRepo.FindActiveDepartmentIDs(ctx)
+			if err != nil {
+				return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
+					errorx.KV("keyword", req.Keyword))
+			}
+			ids := referencedMappingIDs(mapping.Data.GetDepartmentIDsByKeyword(req.Keyword), activeIDs)
 			var vo []*dto.SearchSuggestionsVO
 			for _, id := range ids {
 				name := mapping.Data.GetDepartmentNameByID(id)
@@ -161,4 +176,18 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 		Resp:        dto.Success(),
 		Suggestions: vos,
 	}, nil
+}
+
+func referencedMappingIDs(matches, active []int32) []int32 {
+	activeSet := make(map[int32]struct{}, len(active))
+	for _, id := range active {
+		activeSet[id] = struct{}{}
+	}
+	result := make([]int32, 0, len(matches))
+	for _, id := range matches {
+		if _, ok := activeSet[id]; ok {
+			result = append(result, id)
+		}
+	}
+	return result
 }
