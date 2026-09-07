@@ -346,6 +346,9 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 	// 贡献值仅创建者可见
 	filterContributionVisibility(vos, userId)
 
+	// 为已通过提案附加关联的正式课程信息
+	s.attachFinalCourses(ctx, vos)
+
 	return &dto.ListProposalResp{
 		Resp:      dto.Success(),
 		Total:     total,
@@ -451,11 +454,43 @@ func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterPr
 		// 若创建者是自己，保留原值（由 Assembler 填充）
 	}
 
+	// 为已通过提案附加关联的正式课程信息
+	s.attachFinalCourses(ctx, vos)
+
 	return &dto.ListProposalResp{
 		Resp:      dto.Success(),
 		Total:     total,
 		Proposals: vos,
 	}, nil
+}
+
+// attachFinalCourses 为列表中状态为已通过的提案附加关联的正式课程信息（通过课程的来源提案ID关联），
+// 查询失败或课程已删除时 FinalCourse 保持为空，不影响主流程
+func (s *ProposalService) attachFinalCourses(ctx context.Context, vos []*dto.ProposalVO) {
+	for _, vo := range vos {
+		if vo.Status != consts.ProposalStatusApproved {
+			continue
+		}
+
+		// 根据提案 ID 查询关联的正式课程（仅返回未删除的课程）
+		course, err := s.CourseRepo.FindByProposalID(ctx, vo.ID)
+		if err != nil {
+			// 查询失败不影响主流程，FinalCourse 保持为空
+			logs.CtxWarnf(ctx, "[CourseRepo] [FindByProposalID] error: %v, proposalId: %s", err, vo.ID)
+			continue
+		}
+		if course == nil {
+			// 课程不存在或已被删除，FinalCourse 保持为空
+			continue
+		}
+
+		finalCourse, err := s.CourseAssembler.ToProposalCourseVOFromCourse(ctx, course)
+		if err != nil {
+			logs.CtxWarnf(ctx, "[CourseAssembler] [ToProposalCourseVOFromCourse] error: %v, proposalId: %s", err, vo.ID)
+			continue
+		}
+		vo.FinalCourse = finalCourse
+	}
 }
 
 // GetProposal 获取提案详情
@@ -874,31 +909,8 @@ func (s *ProposalService) GetMyProposals(ctx context.Context, req *dto.GetMyProp
 	// 贡献值仅创建者可见（本接口返回均为自己的提案，过滤为恒等操作，保持一致）
 	filterContributionVisibility(vos, userId)
 
-	// 为已通过提案附加关联的正式课程信息（通过课程的来源提案ID关联）
-	for _, vo := range vos {
-		if vo.Status != consts.ProposalStatusApproved {
-			continue
-		}
-
-		// 根据提案 ID 查询关联的正式课程（仅返回未删除的课程）
-		course, err := s.CourseRepo.FindByProposalID(ctx, vo.ID)
-		if err != nil {
-			// 查询失败不影响主流程，FinalCourse 保持为空
-			logs.CtxWarnf(ctx, "[CourseRepo] [FindByProposalID] error: %v, proposalId: %s", err, vo.ID)
-			continue
-		}
-		if course == nil {
-			// 课程不存在或已被删除，FinalCourse 保持为空
-			continue
-		}
-
-		finalCourse, err := s.CourseAssembler.ToProposalCourseVOFromCourse(ctx, course)
-		if err != nil {
-			logs.CtxWarnf(ctx, "[CourseAssembler] [ToProposalCourseVOFromCourse] error: %v, proposalId: %s", err, vo.ID)
-			continue
-		}
-		vo.FinalCourse = finalCourse
-	}
+	// 为已通过提案附加关联的正式课程信息
+	s.attachFinalCourses(ctx, vos)
 
 	return &dto.GetMyProposalsResp{
 		Resp:      dto.Success(),

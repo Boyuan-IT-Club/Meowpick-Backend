@@ -50,7 +50,7 @@ func CreateProposal(c *gin.Context) {
 
 // ListProposals godoc
 // @Summary 分页获取提案列表
-// @Description 登录后分页查询提案。管理员可按 status 查询 pending、approved、rejected，不传 status 时查询全部；普通用户无论传什么 status 都只返回 approved。返回的 contribution 仅提案创建者可见，其他用户看到 -1
+// @Description 登录后分页查询提案。管理员可按 status 查询 pending、approved、rejected，不传 status 时查询全部；普通用户无论传什么 status 都只返回 approved。返回的 contribution 仅提案创建者可见，其他用户看到 -1；已通过提案附带关联正式课程 finalCourse，课程查询失败或已删除时省略
 // @Tags proposal
 // @Produce json
 // @Param status query string false "提案状态：pending/approved/rejected；管理员不传时查询全部，普通用户传值会被忽略"
@@ -75,7 +75,7 @@ func ListProposals(c *gin.Context) {
 
 // FilterProposals godoc
 // @Summary 分页筛选提案列表
-// @Description 登录后按状态、校区、课程开课院系和课程分类组合筛选提案。status 与 campus 支持重复 query 参数或 JSON 数组字符串；普通用户的状态条件固定为 approved。校区必须是系统已有名称，院系和分类按名称精确匹配；所有条件均为空时管理员查询全部、普通用户查询全部已通过提案
+// @Description 登录后按状态、校区、课程开课院系和课程分类组合筛选提案。status 与 campus 支持重复 query 参数或 JSON 数组字符串；普通用户的状态条件固定为 approved。校区必须是系统已有名称，院系和分类按名称精确匹配；所有条件均为空时管理员查询全部、普通用户查询全部已通过提案；已通过提案附带关联正式课程 finalCourse，课程查询失败或已删除时省略
 // @Tags proposal
 // @Produce json
 // @Param status query []string false "提案状态，可多选，不传则不按状态过滤" collectionFormat(multi)
