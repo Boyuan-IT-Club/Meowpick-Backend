@@ -114,6 +114,14 @@ func validateProposalInput(title string, course *dto.ProposalCourseVO) error {
 	return nil
 }
 
+func resolveApprovalTitle(currentTitle, requestedTitle string) (string, bool) {
+	title := strings.TrimSpace(requestedTitle)
+	if title == "" || title == currentTitle {
+		return currentTitle, false
+	}
+	return title, true
+}
+
 // CreateProposal 添加一个新的课程提案
 func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error) {
 	// 鉴权
@@ -921,6 +929,7 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 
 	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
 	rejectedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
+	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
 	var approvalUserID string
 
 	// Course, teachers, newly allocated mappings, proposal status, contribution,
@@ -937,6 +946,17 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 			return errorx.New(errno.ErrProposalAlreadyProcessed, errorx.KV("key", consts.ReqProposalID), errorx.KV("value", req.ProposalID))
 		}
 		approvalUserID = proposal.UserID
+		if title, changed := resolveApprovalTitle(proposal.Title, req.Title); changed {
+			proposal.Title = title
+			proposal.UpdatedAt = time.Now()
+			updated, updateErr := s.ProposalRepo.UpdateProposal(txCtx, proposal, pendingStatusID)
+			if updateErr != nil {
+				return errorx.WrapByCode(updateErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+			}
+			if !updated {
+				return errorx.New(errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
+			}
+		}
 
 		courseVO, resolveErr := s.resolveFinalCourse(txCtx, req, proposal)
 		if resolveErr != nil {
@@ -952,7 +972,6 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 			return createErr
 		}
 
-		pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
 		updated, updateErr := s.ProposalRepo.UpdateStatusByID(txCtx, req.ProposalID, pendingStatusID, approvedStatusID)
 		if updateErr != nil {
 			return errorx.WrapByCode(updateErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
@@ -990,7 +1009,6 @@ func (s *ProposalService) ApproveProposal(ctx context.Context, req *dto.TogglePr
 	}
 
 	// 获取剩余待处理提案数量
-	pendingStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
 	_, pendingCount, err := s.ProposalRepo.FindManyByStatus(ctx, &dto.PageParam{Page: 1, PageSize: 1}, pendingStatusID)
 	if err != nil {
 		logs.CtxWarnf(ctx, "[ProposalRepo] [FindManyByStatus] error: %v", err)
