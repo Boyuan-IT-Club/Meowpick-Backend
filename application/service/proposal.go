@@ -46,11 +46,10 @@ var _ IProposalService = (*ProposalService)(nil)
 type IProposalService interface {
 	CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
-	FilterProposals(ctx context.Context, req *dto.FilterProposalReq) (*dto.ListProposalResp, error)
+	SuggestProposals(ctx context.Context, req *dto.SuggestProposalReq) (*dto.ListProposalResp, error)
 	GetProposal(ctx context.Context, req *dto.GetProposalReq) (*dto.GetProposalResp, error)
 	DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (*dto.DeleteProposalResp, error)
 	UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error)
-	GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.ListProposalResp, error)
 	GetProposalFieldSuggestions(ctx context.Context, req *dto.GetProposalFieldSuggestionsReq) (*dto.GetProposalFieldSuggestionsResp, error)
 	ApproveProposal(ctx context.Context, req *dto.ToggleProposalReq) (*dto.ToggleProposalResp, error)
 	RevokeProposal(ctx context.Context, req *dto.RevokeProposalReq) (*dto.RevokeProposalResp, error)
@@ -382,8 +381,8 @@ func normalizeJSONArrayParam(values []string) []string {
 	return result
 }
 
-// FilterProposals 分页筛选提案列表
-func (s *ProposalService) FilterProposals(ctx context.Context, req *dto.FilterProposalReq) (*dto.ListProposalResp, error) {
+// SuggestProposals 分页搜索并筛选提案列表
+func (s *ProposalService) SuggestProposals(ctx context.Context, req *dto.SuggestProposalReq) (*dto.ListProposalResp, error) {
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
@@ -716,16 +715,6 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 		Resp:       dto.Success(),
 		ProposalID: proposal.ID,
 	}, nil
-}
-
-// GetProposalSuggestions 获取提案搜索建议
-func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.ListProposalResp, error) {
-	// 保留旧入口兼容性，查询与响应完全复用 filter；suggest 历史上只查询 approved。
-	return s.FilterProposals(ctx, &dto.FilterProposalReq{
-		Keyword:   req.Keyword,
-		Statuses:  []string{consts.ProposalStatusApproved},
-		PageParam: req.PageParam,
-	})
 }
 
 // GetProposalFieldSuggestions 获取提案字段建议

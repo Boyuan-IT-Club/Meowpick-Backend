@@ -58,7 +58,7 @@ func TestActiveInt32References(t *testing.T) {
 }
 
 func TestBuildProposalFilterCombinesKeywordAndFields(t *testing.T) {
-	req := &dto.FilterProposalReq{
+	req := &dto.SuggestProposalReq{
 		Keyword:    "测试.*",
 		Statuses:   []string{"approved"},
 		Campuses:   []string{"普陀校区"},

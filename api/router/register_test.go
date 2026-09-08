@@ -43,3 +43,21 @@ func TestCorrectedRoutesAreRegistered(t *testing.T) {
 		}
 	}
 }
+
+func TestProposalSearchUsesSuggestRouteOnly(t *testing.T) {
+	var suggestFound bool
+	for _, route := range SetupRoutes().Routes() {
+		if route.Method != "GET" {
+			continue
+		}
+		switch route.Path {
+		case "/api/proposal/suggest":
+			suggestFound = true
+		case "/api/proposal/filter":
+			t.Fatal("deprecated GET /api/proposal/filter route is still registered")
+		}
+	}
+	if !suggestFound {
+		t.Fatal("GET /api/proposal/suggest route is not registered")
+	}
+}

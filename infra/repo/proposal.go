@@ -50,7 +50,7 @@ type IProposalRepo interface {
 	IsCourseInExistingProposals(ctx context.Context, course *model.ProposalCourse) (bool, error)
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error)
 	FindManyByStatus(ctx context.Context, param *dto.PageParam, status int32) ([]*model.Proposal, int64, error)
-	FindManyByFilter(ctx context.Context, req *dto.FilterProposalReq, statuses []int32) ([]*model.Proposal, int64, error)
+	FindManyByFilter(ctx context.Context, req *dto.SuggestProposalReq, statuses []int32) ([]*model.Proposal, int64, error)
 	FindByID(ctx context.Context, proposalID string) (*model.Proposal, error)
 	FindByIDIncludeDeleted(ctx context.Context, proposalID string) (*model.Proposal, error)
 	FindByIDs(ctx context.Context, proposalIDs []string) ([]*model.Proposal, error)
@@ -246,7 +246,7 @@ func (r *ProposalRepo) FindManyByStatus(ctx context.Context, param *dto.PagePara
 }
 
 // FindManyByFilter 按多个字段筛选提案
-func (r *ProposalRepo) FindManyByFilter(ctx context.Context, req *dto.FilterProposalReq, statuses []int32) ([]*model.Proposal, int64, error) {
+func (r *ProposalRepo) FindManyByFilter(ctx context.Context, req *dto.SuggestProposalReq, statuses []int32) ([]*model.Proposal, int64, error) {
 	proposals := []*model.Proposal{}
 	filter := buildProposalFilter(req, statuses)
 
@@ -267,7 +267,7 @@ func (r *ProposalRepo) FindManyByFilter(ctx context.Context, req *dto.FilterProp
 	return proposals, total, nil
 }
 
-func buildProposalFilter(req *dto.FilterProposalReq, statuses []int32) bson.M {
+func buildProposalFilter(req *dto.SuggestProposalReq, statuses []int32) bson.M {
 	filter := bson.M{consts.Deleted: bson.M{"$ne": true}}
 	if req.Keyword != "" {
 		filter["title"] = bson.M{"$regex": primitive.Regex{Pattern: regexp.QuoteMeta(req.Keyword), Options: "i"}}

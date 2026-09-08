@@ -65,8 +65,8 @@ type ListProposalReq struct {
 	*PageParam
 }
 
-// FilterProposalReq 对应 /api/proposal/filter 的请求参数（分页筛选）
-type FilterProposalReq struct {
+// SuggestProposalReq 对应 /api/proposal/suggest 的请求参数（分页搜索与筛选）
+type SuggestProposalReq struct {
 	Keyword    string   `form:"keyword"`    // 提案标题普通文本模糊搜索关键词；为空时不按标题筛选
 	Statuses   []string `form:"status"`     // 状态多选；支持重复 query 参数及 JSON 数组字符串，普通用户传值会被忽略并固定为 approved
 	Campuses   []string `form:"campus"`     // 校区多选；支持重复 query 参数及 JSON 数组字符串，值必须是已有校区名称
@@ -148,12 +148,6 @@ type UpdateProposalReq struct {
 type UpdateProposalResp struct {
 	*Resp      `json:",inline"`
 	ProposalID string `json:"proposalId"` // 更新成功的提案ID
-}
-
-// GetProposalSuggestionsReq 获取提案搜索建议请求
-type GetProposalSuggestionsReq struct {
-	Keyword string `form:"keyword" binding:"required"` // 提案标题模糊搜索关键词，不能为空
-	*PageParam
 }
 
 // GetProposalFieldSuggestionsReq 获取提案字段建议请求
