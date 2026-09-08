@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
@@ -57,7 +58,6 @@ type IProposalRepo interface {
 	UpdateProposal(ctx context.Context, proposal *model.Proposal, expectedStatus int32) (bool, error)
 	DeleteProposal(ctx context.Context, proposalId, operatorId string, allowedStatuses []int32) (bool, error)
 	RestoreProposal(ctx context.Context, proposalId string) error
-	GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam, statusID int32) ([]*model.Proposal, int64, error)
 	UpdateStatusByID(ctx context.Context, proposalID string, expectedStatusID, statusID int32) (bool, error)
 	IncrementLikeCnt(ctx context.Context, proposalID string, delta int64) error
 	UpdateStatusAndReasonByID(ctx context.Context, proposalID string, expectedStatusID, statusID int32, rejectReason string) (bool, error)
@@ -248,23 +248,7 @@ func (r *ProposalRepo) FindManyByStatus(ctx context.Context, param *dto.PagePara
 // FindManyByFilter 按多个字段筛选提案
 func (r *ProposalRepo) FindManyByFilter(ctx context.Context, req *dto.FilterProposalReq, statuses []int32) ([]*model.Proposal, int64, error) {
 	proposals := []*model.Proposal{}
-	filter := bson.M{
-		consts.Deleted: bson.M{"$ne": true},
-	}
-
-	if len(statuses) > 0 {
-		filter[consts.Status] = bson.M{"$in": statuses}
-	}
-	if len(req.Campuses) > 0 {
-		filter[consts.PathCourseCampuses] = bson.M{"$in": req.Campuses}
-	}
-
-	if req.Department != "" {
-		filter[consts.PathCourseDepartment] = req.Department
-	}
-	if req.Category != "" {
-		filter[consts.PathCourseCategory] = req.Category
-	}
+	filter := buildProposalFilter(req, statuses)
 
 	total, err := r.conn.CountDocuments(ctx, filter)
 	if err != nil {
@@ -281,6 +265,26 @@ func (r *ProposalRepo) FindManyByFilter(ctx context.Context, req *dto.FilterProp
 	}
 
 	return proposals, total, nil
+}
+
+func buildProposalFilter(req *dto.FilterProposalReq, statuses []int32) bson.M {
+	filter := bson.M{consts.Deleted: bson.M{"$ne": true}}
+	if req.Keyword != "" {
+		filter["title"] = bson.M{"$regex": primitive.Regex{Pattern: regexp.QuoteMeta(req.Keyword), Options: "i"}}
+	}
+	if len(statuses) > 0 {
+		filter[consts.Status] = bson.M{"$in": statuses}
+	}
+	if len(req.Campuses) > 0 {
+		filter[consts.PathCourseCampuses] = bson.M{"$in": req.Campuses}
+	}
+	if req.Department != "" {
+		filter[consts.PathCourseDepartment] = req.Department
+	}
+	if req.Category != "" {
+		filter[consts.PathCourseCategory] = req.Category
+	}
+	return filter
 }
 
 // FindByID 根据提案ID查询单个未删除的提案
@@ -361,30 +365,6 @@ func (r *ProposalRepo) UpdateProposal(ctx context.Context, proposal *model.Propo
 		return false, err
 	}
 	return result.ModifiedCount == 1, nil
-}
-
-// GetSuggestionsByTitle 根据提案标题模糊分页查询指定状态的提案
-func (r *ProposalRepo) GetSuggestionsByTitle(ctx context.Context, title string, param *dto.PageParam, statusID int32) ([]*model.Proposal, int64, error) {
-	proposals := []*model.Proposal{}
-	filter := bson.M{
-		"title":        bson.M{"$regex": primitive.Regex{Pattern: title, Options: "i"}},
-		consts.Status:  statusID,
-		consts.Deleted: bson.M{"$ne": true},
-	}
-	sort := bson.D{
-		{Key: consts.CreatedAt, Value: -1},
-	}
-
-	if err := r.conn.Find(ctx, &proposals, filter, page.FindPageOption(param).SetSort(sort)); err != nil {
-		return nil, 0, err
-	}
-
-	total, err := r.conn.CountDocuments(ctx, filter)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return proposals, total, nil
 }
 
 // FindByIDs 根据提案ID列表批量查询提案
