@@ -2586,8 +2586,16 @@ const docTemplate = `{
         },
         "/api/proposal/filter": {
             "get": {
-                "description": "登录后按状态、校区、课程开课院系和课程分类组合筛选提案。status 与 campus 支持重复 query 参数或 JSON 数组字符串；普通用户的状态条件固定为 approved。校区必须是系统已有名称，院系和分类按名称精确匹配；所有条件均为空时管理员查询全部、普通用户查询全部已通过提案；已通过提案附带关联正式课程 finalCourse，课程查询失败或已删除时省略",
+                "description": "登录后按提案标题关键词、状态、校区、课程开课院系和课程分类组合筛选提案。keyword 对提案原始 title 进行大小写不敏感模糊匹配；status 与 campus 支持重复 query 参数或 JSON 数组字符串；普通用户的状态条件固定为 approved。校区必须是系统已有名称，院系和分类按名称精确匹配；所有条件均为空时管理员查询全部、普通用户查询全部已通过提案；已通过提案附带关联正式课程 finalCourse，课程查询失败或已删除时省略",
                 "parameters": [
+                    {
+                        "description": "提案标题普通文本模糊搜索关键词，正则特殊字符按字面值处理",
+                        "in": "query",
+                        "name": "keyword",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     {
                         "description": "提案状态，可多选，不传则不按状态过滤",
                         "in": "query",
@@ -2757,7 +2765,7 @@ const docTemplate = `{
         },
         "/api/proposal/suggest": {
             "get": {
-                "description": "登录后根据关键词模糊分页搜索未删除且已通过的提案标题。响应与提案 list/filter 接口一致，返回总数和完整 ProposalVO 列表，包括原始课程、正式课程、点赞、状态及时间等信息；贡献值仍仅创建者本人可见。无结果时 proposals 返回空数组",
+                "description": "兼容旧版前端的提案搜索入口，内部复用 filter 的 keyword 查询，固定搜索未删除且已通过的提案。新调用应使用 /api/proposal/filter?keyword=...；响应与 list/filter 一致，返回 total 和完整 proposals",
                 "parameters": [
                     {
                         "description": "搜索关键词",

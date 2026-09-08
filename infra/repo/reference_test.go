@@ -18,9 +18,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestTeacherReferenceFiltersExcludeDeletedRecords(t *testing.T) {
@@ -52,5 +54,28 @@ func TestActiveInt32References(t *testing.T) {
 	want := []int32{2, 3}
 	if got := activeInt32References(values); !reflect.DeepEqual(got, want) {
 		t.Fatalf("activeInt32References() = %v, want %v", got, want)
+	}
+}
+
+func TestBuildProposalFilterCombinesKeywordAndFields(t *testing.T) {
+	req := &dto.FilterProposalReq{
+		Keyword:    "测试.*",
+		Statuses:   []string{"approved"},
+		Campuses:   []string{"普陀校区"},
+		Department: "计算机科学与技术学院",
+		Category:   "专业必修",
+	}
+	got := buildProposalFilter(req, []int32{2})
+
+	want := bson.M{
+		consts.Deleted:              bson.M{"$ne": true},
+		consts.Status:               bson.M{"$in": []int32{2}},
+		consts.PathCourseCampuses:   bson.M{"$in": []string{"普陀校区"}},
+		consts.PathCourseDepartment: "计算机科学与技术学院",
+		consts.PathCourseCategory:   "专业必修",
+		"title":                     bson.M{"$regex": primitive.Regex{Pattern: `测试\.\*`, Options: "i"}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("buildProposalFilter() = %#v, want %#v", got, want)
 	}
 }

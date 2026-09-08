@@ -67,6 +67,7 @@ type ListProposalReq struct {
 
 // FilterProposalReq 对应 /api/proposal/filter 的请求参数（分页筛选）
 type FilterProposalReq struct {
+	Keyword    string   `form:"keyword"`    // 提案标题普通文本模糊搜索关键词；为空时不按标题筛选
 	Statuses   []string `form:"status"`     // 状态多选；支持重复 query 参数及 JSON 数组字符串，普通用户传值会被忽略并固定为 approved
 	Campuses   []string `form:"campus"`     // 校区多选；支持重复 query 参数及 JSON 数组字符串，值必须是已有校区名称
 	Department string   `form:"department"` // 课程开课院系名称，精确匹配；为空时不筛选

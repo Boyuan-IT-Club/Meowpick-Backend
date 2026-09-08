@@ -712,36 +712,12 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 
 // GetProposalSuggestions 获取提案搜索建议
 func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.ListProposalResp, error) {
-	// 鉴权
-	userId, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userId == "" {
-		return nil, errorx.New(errno.ErrUserNotLogin)
-	}
-
-	// 查询提案建议（仅搜索已通过且未删除的提案）
-	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
-	proposals, total, err := s.ProposalRepo.GetSuggestionsByTitle(ctx, req.Keyword, req.PageParam, approvedStatusID)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[ProposalRepo] [GetSuggestionsByTitle] error: %v, keyword: %s", err, req.Keyword)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalGetSuggestionsFailed,
-			errorx.KV("keyword", req.Keyword))
-	}
-
-	// 与 list/filter 使用相同的完整提案响应规范
-	vos, err := s.ProposalAssembler.ToProposalVOArray(ctx, proposals, userId)
-	if err != nil {
-		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVOArray] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
-			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
-	}
-	filterContributionVisibility(vos, userId)
-	s.attachFinalCourses(ctx, vos)
-
-	return &dto.ListProposalResp{
-		Resp:      dto.Success(),
-		Total:     total,
-		Proposals: vos,
-	}, nil
+	// 保留旧入口兼容性，查询与响应完全复用 filter；suggest 历史上只查询 approved。
+	return s.FilterProposals(ctx, &dto.FilterProposalReq{
+		Keyword:   req.Keyword,
+		Statuses:  []string{consts.ProposalStatusApproved},
+		PageParam: req.PageParam,
+	})
 }
 
 // GetProposalFieldSuggestions 获取提案字段建议
