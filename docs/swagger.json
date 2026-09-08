@@ -589,19 +589,6 @@
                 },
                 "type": "object"
             },
-            "dto.GetProposalSuggestionsResp": {
-                "description": "实际业务数据",
-                "properties": {
-                    "suggestions": {
-                        "items": {
-                            "$ref": "#/components/schemas/dto.ProposalSuggestionsVO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    }
-                },
-                "type": "object"
-            },
             "dto.GetSearchHistoriesResp": {
                 "description": "实际业务数据",
                 "properties": {
@@ -974,19 +961,6 @@
                     },
                     "department": {
                         "description": "提案课程开课院系",
-                        "type": "string"
-                    },
-                    "title": {
-                        "description": "提案标题",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "dto.ProposalSuggestionsVO": {
-                "properties": {
-                    "id": {
-                        "description": "提案ID",
                         "type": "string"
                     },
                     "title": {
@@ -1541,24 +1515,6 @@
                     },
                     "data": {
                         "$ref": "#/components/schemas/dto.GetProposalResp"
-                    },
-                    "msg": {
-                        "description": "提示信息",
-                        "example": "success",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "handler.Response-dto_GetProposalSuggestionsResp": {
-                "properties": {
-                    "code": {
-                        "description": "业务代码, 0表示成功",
-                        "example": 0,
-                        "type": "integer"
-                    },
-                    "data": {
-                        "$ref": "#/components/schemas/dto.GetProposalSuggestionsResp"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -2794,7 +2750,7 @@
         },
         "/api/proposal/suggest": {
             "get": {
-                "description": "登录后根据关键词模糊分页搜索未删除且已通过的提案标题，返回提案ID和标题；无结果时返回空数组",
+                "description": "登录后根据关键词模糊分页搜索未删除且已通过的提案标题。响应与提案 list/filter 接口一致，返回总数和完整 ProposalVO 列表，包括原始课程、正式课程、点赞、状态及时间等信息；贡献值仍仅创建者本人可见。无结果时 proposals 返回空数组",
                 "parameters": [
                     {
                         "description": "搜索关键词",
@@ -2829,7 +2785,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/handler.Response-dto_GetProposalSuggestionsResp"
+                                    "$ref": "#/components/schemas/handler.Response-dto_ListProposalResp"
                                 }
                             }
                         },

@@ -261,17 +261,17 @@ func DeleteProposal(c *gin.Context) {
 
 // GetProposalSuggestions godoc
 // @Summary 获取提案搜索建议
-// @Description 登录后根据关键词模糊分页搜索未删除且已通过的提案标题，返回提案ID和标题；无结果时返回空数组
+// @Description 登录后根据关键词模糊分页搜索未删除且已通过的提案标题。响应与提案 list/filter 接口一致，返回总数和完整 ProposalVO 列表，包括原始课程、正式课程、点赞、状态及时间等信息；贡献值仍仅创建者本人可见。无结果时 proposals 返回空数组
 // @Tags proposal
 // @Produce json
 // @Param keyword query string true "搜索关键词"
 // @Param page query int false "页码，小于1按1处理" default(1)
 // @Param pageSize query int false "每页数量，范围1-100，超出范围按10处理" default(10)
-// @Success 200 {object} Response[dto.GetProposalSuggestionsResp]
+// @Success 200 {object} Response[dto.ListProposalResp]
 // @Router /api/proposal/suggest [get]
 func GetProposalSuggestions(c *gin.Context) {
 	var req dto.GetProposalSuggestionsReq
-	var resp *dto.GetProposalSuggestionsResp
+	var resp *dto.ListProposalResp
 	var err error
 
 	if err = c.ShouldBindQuery(&req); err != nil {

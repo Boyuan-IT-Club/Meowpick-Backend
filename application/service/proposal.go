@@ -50,7 +50,7 @@ type IProposalService interface {
 	GetProposal(ctx context.Context, req *dto.GetProposalReq) (*dto.GetProposalResp, error)
 	DeleteProposal(ctx context.Context, req *dto.DeleteProposalReq) (*dto.DeleteProposalResp, error)
 	UpdateProposal(ctx context.Context, req *dto.UpdateProposalReq) (*dto.UpdateProposalResp, error)
-	GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.GetProposalSuggestionsResp, error)
+	GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.ListProposalResp, error)
 	GetProposalFieldSuggestions(ctx context.Context, req *dto.GetProposalFieldSuggestionsReq) (*dto.GetProposalFieldSuggestionsResp, error)
 	ApproveProposal(ctx context.Context, req *dto.ToggleProposalReq) (*dto.ToggleProposalResp, error)
 	RevokeProposal(ctx context.Context, req *dto.RevokeProposalReq) (*dto.RevokeProposalResp, error)
@@ -711,7 +711,7 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 }
 
 // GetProposalSuggestions 获取提案搜索建议
-func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.GetProposalSuggestionsResp, error) {
+func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.GetProposalSuggestionsReq) (*dto.ListProposalResp, error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
@@ -720,25 +720,27 @@ func (s *ProposalService) GetProposalSuggestions(ctx context.Context, req *dto.G
 
 	// 查询提案建议（仅搜索已通过且未删除的提案）
 	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
-	proposals, _, err := s.ProposalRepo.GetSuggestionsByTitle(ctx, req.Keyword, req.PageParam, approvedStatusID)
+	proposals, total, err := s.ProposalRepo.GetSuggestionsByTitle(ctx, req.Keyword, req.PageParam, approvedStatusID)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalRepo] [GetSuggestionsByTitle] error: %v, keyword: %s", err, req.Keyword)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalGetSuggestionsFailed,
 			errorx.KV("keyword", req.Keyword))
 	}
 
-	// 转换为VO
-	var vos []*dto.ProposalSuggestionsVO
-	for _, proposal := range proposals {
-		vos = append(vos, &dto.ProposalSuggestionsVO{
-			ID:    proposal.ID,
-			Title: proposal.Title,
-		})
+	// 与 list/filter 使用相同的完整提案响应规范
+	vos, err := s.ProposalAssembler.ToProposalVOArray(ctx, proposals, userId)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[ProposalAssembler] [ToProposalVOArray] error: %v", err)
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed,
+			errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
 	}
+	filterContributionVisibility(vos, userId)
+	s.attachFinalCourses(ctx, vos)
 
-	return &dto.GetProposalSuggestionsResp{
-		Resp:        dto.Success(),
-		Suggestions: vos,
+	return &dto.ListProposalResp{
+		Resp:      dto.Success(),
+		Total:     total,
+		Proposals: vos,
 	}, nil
 }
 

@@ -56,3 +56,32 @@ func TestFieldSuggestionVOCoursesJSON(t *testing.T) {
 		}
 	})
 }
+
+func TestListProposalRespJSONContract(t *testing.T) {
+	payload, err := json.Marshal(ListProposalResp{
+		Resp:  Success(),
+		Total: 1,
+		Proposals: []*ProposalVO{{
+			ID:    "proposal-1",
+			Title: "测试提案",
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var got map[string]any
+	if err = json.Unmarshal(payload, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got["total"] != float64(1) {
+		t.Fatalf("total = %#v, want 1", got["total"])
+	}
+	proposals, ok := got["proposals"].([]any)
+	if !ok || len(proposals) != 1 {
+		t.Fatalf("proposals = %#v, want one item", got["proposals"])
+	}
+	if _, exists := got["suggestions"]; exists {
+		t.Fatalf("legacy suggestions field should not be present: %s", payload)
+	}
+}
