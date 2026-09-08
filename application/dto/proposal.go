@@ -154,18 +154,6 @@ type GetProposalSuggestionsReq struct {
 	*PageParam
 }
 
-// GetProposalSuggestionsResp 获取提案搜索建议响应
-type GetProposalSuggestionsResp struct {
-	*Resp
-	Suggestions []*ProposalSuggestionsVO `json:"suggestions"`
-}
-
-// ProposalSuggestionsVO 提案搜索建议视图对象
-type ProposalSuggestionsVO struct {
-	ID    string `json:"id"`    // 提案ID
-	Title string `json:"title"` // 提案标题
-}
-
 // GetProposalFieldSuggestionsReq 获取提案字段建议请求
 type GetProposalFieldSuggestionsReq struct {
 	Field   string `form:"field" binding:"required"`   // 建议字段：department、category、campus、courseName、courseCode、teacherName
