@@ -104,6 +104,7 @@ type RejectProposalResp struct {
 
 type ToggleProposalReq struct {
 	ProposalID  string            `json:"proposalID"`  // 提案ID，由 URL path 写入，请求体无需传
+	Title       string            `json:"title"`       // 管理员确认的提案标题；省略、空字符串或纯空格时保留原标题
 	FinalCourse *ProposalCourseVO `json:"finalCourse"` // 管理员最终确认的课程；省略、null 或空请求体时使用用户原始 course
 }
 

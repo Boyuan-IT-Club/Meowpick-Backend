@@ -81,6 +81,30 @@ func TestValidateProposalInputAllowsTeacherWithoutDepartment(t *testing.T) {
 	}
 }
 
+func TestResolveApprovalTitle(t *testing.T) {
+	tests := []struct {
+		name      string
+		current   string
+		requested string
+		want      string
+		changed   bool
+	}{
+		{name: "omitted", current: "原标题", want: "原标题"},
+		{name: "blank", current: "原标题", requested: "  ", want: "原标题"},
+		{name: "same", current: "原标题", requested: "原标题", want: "原标题"},
+		{name: "updated and trimmed", current: "原标题", requested: "  新标题  ", want: "新标题", changed: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, changed := resolveApprovalTitle(tt.current, tt.requested)
+			if got != tt.want || changed != tt.changed {
+				t.Fatalf("resolveApprovalTitle(%q, %q) = (%q, %v), want (%q, %v)",
+					tt.current, tt.requested, got, changed, tt.want, tt.changed)
+			}
+		})
+	}
+}
+
 func TestShouldDeleteTeacher(t *testing.T) {
 	tests := []struct {
 		name               string

@@ -124,12 +124,12 @@ func GetProposal(c *gin.Context) {
 
 // ApproveProposal godoc
 // @Summary 审批提案
-// @Description 管理员将 pending 提案审批为 approved，并在同一数据库事务内处理映射、教师、正式课程、贡献值及操作日志。finalCourse 可省略、传 null，或直接使用空请求体，此时以用户原始 course 为准；传入时以管理员确认内容创建或恢复正式课程，但不覆盖提案原文。已有教师传 id 后直接复用；id 为空则创建新教师，department 可为空并保存为未维护状态，不创建空院系映射，也不从课程开课院系推断
+// @Description 管理员将 pending 提案审批为 approved，并在同一数据库事务内处理可选标题修改、映射、教师、正式课程、贡献值及操作日志。title 传入非空文本时会去除首尾空白并更新提案标题，省略或空白时保留原标题。finalCourse 可省略、传 null，或直接使用空请求体，此时以用户原始 course 为准；传入时以管理员确认内容创建或恢复正式课程，但不覆盖提案原始 course。已有教师传 id 后直接复用；id 为空则创建新教师，department 可为空并保存为未维护状态，不创建空院系映射，也不从课程开课院系推断
 // @Tags proposal
 // @Accept json
 // @Produce json
 // @Param proposalId path string true "提案ID"
-// @Param req body dto.ToggleProposalReq false "可选审批参数；finalCourse 省略或为 null 时使用提案原始课程"
+// @Param req body dto.ToggleProposalReq false "可选审批参数；title 非空时修改提案标题，finalCourse 省略或为 null 时使用提案原始课程"
 // @Success 200 {object} Response[dto.ToggleProposalResp]
 // @Router /api/proposal/{proposalId}/approve [post]
 func ApproveProposal(c *gin.Context) {
