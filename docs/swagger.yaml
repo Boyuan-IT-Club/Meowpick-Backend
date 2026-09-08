@@ -1997,65 +1997,6 @@ paths:
       summary: 获取提案字段建议
       tags:
       - proposal
-  /api/proposal/filter:
-    get:
-      description: 登录后按提案标题关键词、状态、校区、课程开课院系和课程分类组合筛选提案。keyword 对提案原始 title 进行大小写不敏感模糊匹配；status
-        与 campus 支持重复 query 参数或 JSON 数组字符串；普通用户的状态条件固定为 approved。校区必须是系统已有名称，院系和分类按名称精确匹配；所有条件均为空时管理员查询全部、普通用户查询全部已通过提案；已通过提案附带关联正式课程
-        finalCourse，课程查询失败或已删除时省略
-      parameters:
-      - description: 提案标题普通文本模糊搜索关键词，正则特殊字符按字面值处理
-        in: query
-        name: keyword
-        schema:
-          type: string
-      - description: 提案状态，可多选，不传则不按状态过滤
-        in: query
-        name: status
-        schema:
-          items:
-            type: string
-          type: array
-        style: form
-      - description: 校区，可多选，不传则不按校区过滤
-        in: query
-        name: campus
-        schema:
-          items:
-            type: string
-          type: array
-        style: form
-      - description: 开课院系，精确匹配
-        in: query
-        name: department
-        schema:
-          type: string
-      - description: 课程分类，精确匹配
-        in: query
-        name: category
-        schema:
-          type: string
-      - description: 页码，小于1按1处理
-        in: query
-        name: page
-        schema:
-          default: 1
-          type: integer
-      - description: 每页数量，范围1-100，超出范围按10处理
-        in: query
-        name: pageSize
-        schema:
-          default: 10
-          type: integer
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/handler.Response-dto_ListProposalResp'
-          description: OK
-      summary: 分页筛选提案列表
-      tags:
-      - proposal
   /api/proposal/history:
     get:
       description: 登录后获取当前用户的完整提案历史，包含 pending、approved、rejected 及已软删除提案，按创建时间倒序分页。updatedAt
@@ -2117,13 +2058,39 @@ paths:
       - proposal
   /api/proposal/suggest:
     get:
-      description: 兼容旧版前端的提案搜索入口，内部复用 filter 的 keyword 查询，固定搜索未删除且已通过的提案。新调用应使用 /api/proposal/filter?keyword=...；响应与
-        list/filter 一致，返回 total 和完整 proposals
+      description: 登录后按提案标题关键词、状态、校区、课程开课院系和课程分类组合筛选提案。keyword 对提案原始 title 进行大小写不敏感模糊匹配；status
+        与 campus 支持重复 query 参数或 JSON 数组字符串；普通用户的状态条件固定为 approved。校区必须是系统已有名称，院系和分类按名称精确匹配；所有条件均为空时管理员查询全部、普通用户查询全部已通过提案；已通过提案附带关联正式课程
+        finalCourse，课程查询失败或已删除时省略
       parameters:
-      - description: 搜索关键词
+      - description: 提案标题普通文本模糊搜索关键词，正则特殊字符按字面值处理
         in: query
         name: keyword
-        required: true
+        schema:
+          type: string
+      - description: 提案状态，可多选，不传则不按状态过滤
+        in: query
+        name: status
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - description: 校区，可多选，不传则不按校区过滤
+        in: query
+        name: campus
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - description: 开课院系，精确匹配
+        in: query
+        name: department
+        schema:
+          type: string
+      - description: 课程分类，精确匹配
+        in: query
+        name: category
         schema:
           type: string
       - description: 页码，小于1按1处理
@@ -2145,7 +2112,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/handler.Response-dto_ListProposalResp'
           description: OK
-      summary: 获取提案搜索建议
+      summary: 分页搜索并筛选提案列表
       tags:
       - proposal
   /api/search:

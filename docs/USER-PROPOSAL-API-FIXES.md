@@ -5,7 +5,7 @@
 ## 已修复的接口行为
 
 - `GET /api/proposal/list` 会从查询参数绑定 `status`。普通用户始终只能获得已通过提案；管理员可以指定一种状态，也可以不传状态查询全部提案。
-- `GET /api/proposal/filter` 允许省略 `status` 和 `campus`。普通用户仍被强制限制为已通过提案。校区合法性使用 MongoDB/Redis 中的运行时映射校验。
+- `GET /api/proposal/suggest` 统一承担标题搜索和组合筛选，`keyword`、`status`、`campus`、`department`、`category` 均可选。普通用户仍被强制限制为已通过提案，校区合法性使用 MongoDB/Redis 中的运行时映射校验。
 - 创建、更新和通过提案时，会拒绝空白标题、空白课程名、空白院系、空白课程分类、空校区列表、格式错误的教师信息和未知校区。管理员传入的最终课程会在审批时重新校验。
 - `POST /api/proposal/:proposalId/delete` 支持空请求体，因为提案 ID 已由路径参数提供。
 - `GET /api/user/:userId/username` 允许用户查询自己，也允许管理员查询任意用户。普通用户跨用户查询时必须提供 `proposalId`，且提案必须属于目标用户并满足 `showUsername=true`。
@@ -21,7 +21,7 @@
 涉及的路由包括：
 
 - `GET /api/user/profile`、`POST /api/user/profile/update`、`GET /api/user/:userId/username`；
-- `POST /api/proposal/add`、`GET /api/proposal/list`、`GET /api/proposal/filter`、`POST /api/proposal/:proposalId/update`、`POST /api/proposal/:proposalId/delete`；
+- `POST /api/proposal/add`、`GET /api/proposal/list`、`GET /api/proposal/suggest`、`POST /api/proposal/:proposalId/update`、`POST /api/proposal/:proposalId/delete`；
 - `POST /api/proposal/:proposalId/approve`、`POST /api/proposal/:proposalId/reject`、`POST /api/proposal/:proposalId/revoke`。
 
 ## 一致性保证
