@@ -42,7 +42,8 @@ func TestTeacherSuggestionRank(t *testing.T) {
 		want        int
 	}{
 		{name: "exact name", keyword: "张丹", teacherName: "张丹", title: "副教授", want: 0},
-		{name: "exact search value", keyword: "张丹副教授", teacherName: "张丹", title: "副教授", want: 0},
+		{name: "exact search value", keyword: "张丹副教授", teacherName: "张丹", title: "副教授", want: 1},
+		{name: "exact name with empty title", keyword: "张丹", teacherName: "张丹", title: "", want: 0},
 		{name: "name prefix", keyword: "张", teacherName: "张丹", title: "副教授", want: 10},
 		{name: "name substring", keyword: "丹", teacherName: "张丹", title: "副教授", want: 20},
 		{name: "title substring", keyword: "副教授", teacherName: "张丹", title: "副教授", want: 21},
@@ -53,6 +54,14 @@ func TestTeacherSuggestionRank(t *testing.T) {
 				t.Fatalf("teacherSuggestionRank() = %d, want %d", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestTeacherSuggestionRankPrefersExactNameOverExactSearchValue(t *testing.T) {
+	exactName := teacherSuggestionRank("张丹副教授", "张丹副教授", "")
+	exactSearchValue := teacherSuggestionRank("张丹副教授", "张丹", "副教授")
+	if exactName >= exactSearchValue {
+		t.Fatalf("exact name rank = %d, exact search value rank = %d", exactName, exactSearchValue)
 	}
 }
 
