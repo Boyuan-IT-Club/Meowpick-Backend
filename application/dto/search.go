@@ -36,7 +36,7 @@ type SearchSuggestionsVO struct {
 	Type        string `json:"type"`            // 建议类型：course、teacher、category、department
 	Name        string `json:"name"`            // 建议实体名称；教师建议仅为姓名，不包含职称
 	Title       string `json:"title,omitempty"` // 仅教师建议返回职称；其他类型省略
-	SearchValue string `json:"searchValue"`     // 点击后传给 /api/search 的精确搜索值；教师为姓名+职称，其他类型等于 name
+	SearchValue string `json:"searchValue"`     // 点击后传给 /api/search 的精确搜索值；教师为无分隔的姓名+职称（职称为空时等于姓名），其他类型等于 name
 }
 
 // SearchHistoryVO 是返回给前端的、单条搜索历史的“视图对象”。

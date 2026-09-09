@@ -74,7 +74,7 @@ func teacherSuggestionRank(keyword, name, title string) int {
 		return 0
 	}
 	if rank := textSuggestionRank(keyword, searchValue); rank == 0 {
-		return 0
+		return 1 // An exact name match outranks an exact combined name-and-title match.
 	}
 	if rank := textSuggestionRank(keyword, name); rank != noSuggestionMatch {
 		return rank
