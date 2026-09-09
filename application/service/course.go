@@ -75,12 +75,17 @@ func (s *CourseService) ListCourses(ctx context.Context, req *dto.ListCoursesReq
 			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed, errorx.KV("name", req.Keyword))
 		}
 	case consts.ReqTeacher:
-		tid, err := s.TeacherRepo.GetIDByName(ctx, req.Keyword)
+		teacherIDs, err := s.TeacherRepo.FindIDsBySearchValue(ctx, req.Keyword)
 		if err != nil {
-			logs.CtxErrorf(ctx, "[CourseRepo] [GetIDByName] error: %v", err)
+			logs.CtxErrorf(ctx, "[TeacherRepo] [FindIDsBySearchValue] error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrTeacherFindFailed, errorx.KV("name", req.Keyword))
 		}
-		courses, total, err = s.CourseRepo.FindManyByTeacherID(ctx, tid, req.PageParam)
+		courses, total, err = s.CourseRepo.FindManyByTeacherIDs(ctx, teacherIDs, req.PageParam)
+		if err != nil {
+			logs.CtxErrorf(ctx, "[CourseRepo] [FindManyByTeacherIDs] error: %v", err)
+			return nil, errorx.WrapByCode(err, errno.ErrCourseFindFailed,
+				errorx.KV("key", consts.ReqTeacher), errorx.KV("value", req.Keyword))
+		}
 	case consts.ReqCategory:
 		cid := mapping.Data.GetCategoryIDByName(req.Keyword)
 		courses, total, err = s.CourseRepo.FindManyByCategoryID(ctx, cid, req.PageParam)

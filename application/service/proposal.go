@@ -804,16 +804,19 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 		_ = total
 
 	case consts.FieldTeacherName:
-		// 从数据库查询教师姓名
-		teachers, total, err := s.TeacherRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
+		// 按姓名、职称或无分隔的姓名+职称查询，并按搜索值合并重复教师记录。
+		teachers, err := s.TeacherRepo.FindSuggestionCandidates(ctx, req.Keyword, nil)
 		if err != nil {
-			logs.CtxErrorf(ctx, "[TeacherRepo] [GetSuggestionsByName] error: %v", err)
+			logs.CtxErrorf(ctx, "[TeacherRepo] [FindSuggestionCandidates] error: %v", err)
 			return nil, errorx.WrapByCode(err, errno.ErrTeacherGetSuggestionsFailed,
 				errorx.KV("keyword", req.Keyword))
 		}
+		allGroups := groupTeacherSuggestionCandidates(teachers, req.Keyword)
+		total = int64(len(allGroups))
+		groups := pageTeacherSuggestionGroups(allGroups, req.PageParam)
 		teacherIDs := make([]string, 0, len(teachers))
-		for _, teacher := range teachers {
-			teacherIDs = append(teacherIDs, teacher.ID)
+		for _, group := range groups {
+			teacherIDs = append(teacherIDs, group.TeacherIDs...)
 		}
 		coursesByTeacher, err := s.CourseRepo.FindRecentByTeacherIDs(ctx, teacherIDs, 2)
 		if err != nil {
@@ -822,20 +825,17 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 				errorx.KV("keyword", req.Keyword))
 		}
 
-		for _, teacher := range teachers {
-			courses := coursesByTeacher[teacher.ID]
-			briefs := make([]dto.CourseBrief, 0, len(courses))
-			for _, course := range courses {
-				briefs = append(briefs, dto.CourseBrief{ID: course.ID, Name: course.Name})
-			}
+		for _, group := range groups {
+			teacher := group.Teacher
+			briefs := recentCourseBriefsForTeacherIDs(group.TeacherIDs, coursesByTeacher, 2)
 			suggestions = append(suggestions, &dto.FieldSuggestionVO{
 				ID:      teacher.ID,
 				Value:   teacher.Name,
 				Label:   teacherSuggestionLabel(teacher.Name, teacher.Title),
+				Title:   teacher.Title,
 				Courses: &briefs,
 			})
 		}
-		_ = total
 
 	default:
 		logs.CtxErrorf(ctx, "[ProposalService] [GetProposalFieldSuggestions] invalid field: %s", req.Field)

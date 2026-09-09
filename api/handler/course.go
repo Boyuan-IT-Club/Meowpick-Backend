@@ -114,7 +114,7 @@ func GetCourseCampuses(c *gin.Context) {
 
 // ListCourses godoc
 // @Summary 搜索课程列表
-// @Description 登录后分页搜索未删除课程。type=course 时按课程名称大小写不敏感模糊匹配；type=teacher 时先按教师完整姓名查找教师，再返回其课程；type=category 或 department 时按映射完整名称精确匹配。未知 type 返回参数错误。非空 keyword 会异步写入当前用户搜索历史，重复关键词更新时间且仅保留最近15条
+// @Description 登录后分页搜索未删除课程。type=course 时按课程名称大小写不敏感模糊匹配；type=teacher 时 keyword 精确接受教师姓名或无分隔的“姓名+职称”，姓名命中返回所有同名教师课程的并集，姓名+职称命中返回所有同名同职称教师课程的并集；不接受姓名与职称间的空格或连字符。type=category 或 department 时按映射完整名称精确匹配。未知 type 返回参数错误。非空 keyword 会异步写入当前用户搜索历史，重复关键词更新时间且仅保留最近15条
 // @Tags course
 // @Accept json
 // @Produce json

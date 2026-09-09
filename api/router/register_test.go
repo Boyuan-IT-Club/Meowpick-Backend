@@ -33,6 +33,9 @@ func TestCorrectedRoutesAreRegistered(t *testing.T) {
 	}
 	for _, route := range SetupRoutes().Routes() {
 		key := route.Method + " " + route.Path
+		if key == "GET /api/course/departs" {
+			t.Fatal("removed GET /api/course/departs route is still registered")
+		}
 		if _, ok := want[key]; ok {
 			want[key] = true
 		}

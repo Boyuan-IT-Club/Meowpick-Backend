@@ -170,6 +170,7 @@ type FieldSuggestionVO struct {
 	ID      string         `json:"id,omitempty"`      // 建议关联实体ID；教师、课程等数据库建议可能返回
 	Value   string         `json:"value"`             // 选中建议后写入请求字段的值
 	Label   string         `json:"label"`             // 前端展示文本；教师有职称时格式为“姓名 - 职称”
+	Title   string         `json:"title,omitempty"`   // 仅 teacherName 建议返回教师职称；其他字段省略
 	Courses *[]CourseBrief `json:"courses,omitempty"` // 仅 teacherName 建议返回，固定存在且最多两门；其他字段省略
 }
 
