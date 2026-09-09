@@ -46,102 +46,116 @@ var SearchServiceSet = wire.NewSet(
 
 // GetSearchSuggestions 并行获取搜索建议
 func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSearchSuggestionsReq) (*dto.GetSearchSuggestionsResp, error) {
-	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
-	// 确保分页参数有默认值
 	if req.PageParam == nil {
 		req.PageParam = &dto.PageParam{Page: 1, PageSize: 10}
 	}
+	candidateLimit := searchSuggestionCandidateLimit(req.PageParam)
 
-	// 创建任务列表
-	tasks := []func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error){
-		// Courses
-		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
-			courses, _, err := s.CourseRepo.GetSuggestionsByName(ctx, req.Keyword, req.PageParam)
+	// 各类型先独立召回，随后统一按相关度排序和分页，避免固定类型顺序挤占结果。
+	tasks := []func(ctx context.Context) ([]*rankedSearchSuggestion, error){
+		func(ctx context.Context) ([]*rankedSearchSuggestion, error) {
+			courses, err := s.CourseRepo.FindSearchSuggestionCandidates(ctx, req.Keyword, candidateLimit)
 			if err != nil {
-				logs.CtxErrorf(ctx, "[CourseRepo] [GetSuggestionsByName] error: %v", err)
+				logs.CtxErrorf(ctx, "[CourseRepo] [FindSearchSuggestionCandidates] error: %v", err)
 				return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
-					errorx.KV("keyword", req.Keyword)) // 返回错误，errgroup 会捕获它
+					errorx.KV("keyword", req.Keyword))
 			}
-			var vo []*dto.SearchSuggestionsVO
+			result := make([]*rankedSearchSuggestion, 0, len(courses))
 			for _, course := range courses {
-				vo = append(vo, &dto.SearchSuggestionsVO{
-					Type: consts.SuggestionTargetTypeCourse,
-					Name: course.Name,
+				result = append(result, &rankedSearchSuggestion{
+					VO: &dto.SearchSuggestionsVO{
+						Type:        consts.SuggestionTargetTypeCourse,
+						Name:        course.Name,
+						SearchValue: course.Name,
+					},
+					Rank:         textSuggestionRank(req.Keyword, course.Name),
+					TypePriority: searchSuggestionTypePriority(consts.SuggestionTargetTypeCourse),
 				})
 			}
-			return vo, nil
+			return result, nil
 		},
-		// Teachers
-		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
+		func(ctx context.Context) ([]*rankedSearchSuggestion, error) {
 			teacherIDs, err := s.CourseRepo.FindActiveTeacherIDs(ctx)
 			if err != nil {
 				return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
 					errorx.KV("keyword", req.Keyword))
 			}
-			teachers, _, err := s.TeacherRepo.GetSuggestionsByNameAndIDs(ctx, req.Keyword, teacherIDs, req.PageParam)
+			teachers, err := s.TeacherRepo.FindSuggestionCandidates(ctx, req.Keyword, teacherIDs)
 			if err != nil {
-				logs.CtxErrorf(ctx, "[TeacherRepo] [GetSuggestionsByName] error: %v", err)
+				logs.CtxErrorf(ctx, "[TeacherRepo] [FindSuggestionCandidates] error: %v", err)
 				return nil, errorx.WrapByCode(err, errno.ErrTeacherGetSuggestionsFailed,
 					errorx.KV("keyword", req.Keyword))
 			}
-			var vo []*dto.SearchSuggestionsVO
-			for _, teacher := range teachers {
-				vo = append(vo, &dto.SearchSuggestionsVO{
-					Type: consts.SuggestionTargetTypeTeacher,
-					Name: teacher.Name,
+			groups := groupTeacherSuggestionCandidates(teachers, req.Keyword)
+			result := make([]*rankedSearchSuggestion, 0, len(groups))
+			for _, group := range groups {
+				teacher := group.Teacher
+				result = append(result, &rankedSearchSuggestion{
+					VO: &dto.SearchSuggestionsVO{
+						Type:        consts.SuggestionTargetTypeTeacher,
+						Name:        teacher.Name,
+						Title:       teacher.Title,
+						SearchValue: teacher.Name + teacher.Title,
+					},
+					Rank:         group.Rank,
+					TypePriority: searchSuggestionTypePriority(consts.SuggestionTargetTypeTeacher),
 				})
 			}
-			return vo, nil
+			return result, nil
 		},
-		// Categories
-		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
+		func(ctx context.Context) ([]*rankedSearchSuggestion, error) {
 			activeIDs, err := s.CourseRepo.FindActiveCategoryIDs(ctx)
 			if err != nil {
 				return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
 					errorx.KV("keyword", req.Keyword))
 			}
 			ids := referencedMappingIDs(mapping.Data.GetCategoryIDsByKeyword(req.Keyword), activeIDs)
-			var vo []*dto.SearchSuggestionsVO
+			result := make([]*rankedSearchSuggestion, 0, len(ids))
 			for _, id := range ids {
 				name := mapping.Data.GetCategoryNameByID(id)
-				vo = append(vo, &dto.SearchSuggestionsVO{
-					Type: consts.SuggestionTargetTypeCategory,
-					Name: name,
+				result = append(result, &rankedSearchSuggestion{
+					VO: &dto.SearchSuggestionsVO{
+						Type:        consts.SuggestionTargetTypeCategory,
+						Name:        name,
+						SearchValue: name,
+					},
+					Rank:         textSuggestionRank(req.Keyword, name),
+					TypePriority: searchSuggestionTypePriority(consts.SuggestionTargetTypeCategory),
 				})
 			}
-			return vo, nil
+			return result, nil
 		},
-		// Departments
-		func(ctx context.Context) ([]*dto.SearchSuggestionsVO, error) {
+		func(ctx context.Context) ([]*rankedSearchSuggestion, error) {
 			activeIDs, err := s.CourseRepo.FindActiveDepartmentIDs(ctx)
 			if err != nil {
 				return nil, errorx.WrapByCode(err, errno.ErrCourseGetSuggestionsFailed,
 					errorx.KV("keyword", req.Keyword))
 			}
 			ids := referencedMappingIDs(mapping.Data.GetDepartmentIDsByKeyword(req.Keyword), activeIDs)
-			var vo []*dto.SearchSuggestionsVO
+			result := make([]*rankedSearchSuggestion, 0, len(ids))
 			for _, id := range ids {
 				name := mapping.Data.GetDepartmentNameByID(id)
-				vo = append(vo, &dto.SearchSuggestionsVO{
-					Type: consts.SuggestionTargetTypeDepartment,
-					Name: name,
+				result = append(result, &rankedSearchSuggestion{
+					VO: &dto.SearchSuggestionsVO{
+						Type:        consts.SuggestionTargetTypeDepartment,
+						Name:        name,
+						SearchValue: name,
+					},
+					Rank:         textSuggestionRank(req.Keyword, name),
+					TypePriority: searchSuggestionTypePriority(consts.SuggestionTargetTypeDepartment),
 				})
 			}
-			return vo, nil
+			return result, nil
 		},
 	}
-	n := len(tasks)
-	results := make([][]*dto.SearchSuggestionsVO, n)
+	results := make([][]*rankedSearchSuggestion, len(tasks))
 
-	// 创建一个 errgroup.Group
 	g, ctx := errgroup.WithContext(ctx)
-
-	// 启动 goroutine，使用 g.Go
 	for i, task := range tasks {
 		i, task := i, task
 		g.Go(func() error {
@@ -153,28 +167,18 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 			return nil
 		})
 	}
-
-	// 等待所有 goroutine 完成
-	// g.Wait() 会阻塞直到所有任务都完成。 如果任何一个任务返回了非 nil 的 error，g.Wait() 会返回这个 error， 并且自动取消其他正在运行的任务。
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 
-	// 合并结果（保持顺序）
-	var vos []*dto.SearchSuggestionsVO
-	for i := 0; i < n; i++ {
-		if results[i] != nil {
-			vos = append(vos, results[i]...)
-		}
-		if int64(len(vos)) >= req.PageSize {
-			vos = vos[:req.PageSize]
-			break
-		}
+	var candidates []*rankedSearchSuggestion
+	for _, result := range results {
+		candidates = append(candidates, result...)
 	}
 
 	return &dto.GetSearchSuggestionsResp{
 		Resp:        dto.Success(),
-		Suggestions: vos,
+		Suggestions: sortAndPageSearchSuggestions(candidates, req.PageParam),
 	}, nil
 }
 

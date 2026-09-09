@@ -47,8 +47,9 @@ func CreateTeacher(c *gin.Context) {
 }
 
 // GetTeacherSuggestions godoc
-// @Summary 获取教师搜索建议
-// @Description 登录后按教师姓名模糊搜索并返回分页建议。响应字段 id 是正式教师ID，可作为提案 course.teachers[].id 提交；教师院系暂未维护时 department 会显示为未知开课院系
+// @Summary 获取教师搜索建议（已弃用）
+// @Description 已弃用，当前前端未调用且不再扩展搜索规则；提案教师建议请使用 /api/proposal/field-suggestions?field=teacherName，全局搜索建议请使用 /api/search/suggest
+// @Deprecated
 // @Tags teacher
 // @Produce json
 // @Param keyword query string true "搜索关键词"

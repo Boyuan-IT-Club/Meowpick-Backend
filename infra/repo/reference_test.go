@@ -37,6 +37,43 @@ func TestTeacherReferenceFiltersExcludeDeletedRecords(t *testing.T) {
 	}
 }
 
+func TestActiveTeacherIDsFilterUsesUnionAndExcludesDeleted(t *testing.T) {
+	filter := activeTeacherIDsFilter([]string{"teacher-1", "teacher-2"})
+	wantIDs := bson.M{"$in": []string{"teacher-1", "teacher-2"}}
+	wantDeleted := bson.M{"$ne": true}
+	if !reflect.DeepEqual(filter[consts.TeacherIDs], wantIDs) || !reflect.DeepEqual(filter[consts.Deleted], wantDeleted) {
+		t.Fatalf("activeTeacherIDsFilter() = %#v", filter)
+	}
+}
+
+func TestTeacherSuggestionSearchFilterEscapesKeywordAndRestrictsIDs(t *testing.T) {
+	filter := teacherSuggestionSearchFilter("张.*", []string{"teacher-1"})
+	or, ok := filter["$or"].(bson.A)
+	if !ok || len(or) != 3 {
+		t.Fatalf("suggestion filter $or = %#v", filter["$or"])
+	}
+	nameFilter := or[0].(bson.M)
+	regex := nameFilter[consts.Name].(primitive.Regex)
+	if regex.Pattern != `张\.\*` || regex.Options != "i" {
+		t.Fatalf("name regex = %#v", regex)
+	}
+	wantIDs := bson.M{"$in": []string{"teacher-1"}}
+	if !reflect.DeepEqual(filter[consts.ID], wantIDs) {
+		t.Fatalf("ID filter = %#v, want %#v", filter[consts.ID], wantIDs)
+	}
+}
+
+func TestTeacherExactSearchFilterMatchesNameOrSearchValue(t *testing.T) {
+	filter := teacherExactSearchFilter("张丹副教授")
+	or, ok := filter["$or"].(bson.A)
+	if !ok || len(or) != 2 {
+		t.Fatalf("exact filter $or = %#v", filter["$or"])
+	}
+	if got := or[0].(bson.M)[consts.Name]; got != "张丹副教授" {
+		t.Fatalf("exact name = %#v", got)
+	}
+}
+
 func TestMappingReferenceFiltersExcludeDeletedRecords(t *testing.T) {
 	wantDeleted := bson.M{"$ne": true}
 

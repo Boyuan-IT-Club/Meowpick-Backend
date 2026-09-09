@@ -17,6 +17,7 @@ package repo
 import (
 	"context"
 	"errors"
+	"regexp"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
@@ -28,6 +29,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var _ ITeacherRepo = (*TeacherRepo)(nil)
@@ -49,6 +51,8 @@ type ITeacherRepo interface {
 	GetIDByName(ctx context.Context, name string) (string, error)
 	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Teacher, int64, error)
 	GetSuggestionsByNameAndIDs(ctx context.Context, name string, ids []string, param *dto.PageParam) ([]*model.Teacher, int64, error)
+	FindIDsBySearchValue(ctx context.Context, searchValue string) ([]string, error)
+	FindSuggestionCandidates(ctx context.Context, keyword string, ids []string) ([]*model.Teacher, error)
 }
 
 func (r *TeacherRepo) DeleteByID(ctx context.Context, id string) (*model.Teacher, error) {
@@ -158,6 +162,71 @@ func (r *TeacherRepo) GetSuggestionsByNameAndIDs(ctx context.Context, name strin
 		return []*model.Teacher{}, 0, nil
 	}
 	return r.getSuggestionsByName(ctx, name, ids, param)
+}
+
+func teacherSearchValueExpression() bson.M {
+	return bson.M{"$concat": bson.A{
+		bson.M{"$ifNull": bson.A{"$" + consts.Name, ""}},
+		bson.M{"$ifNull": bson.A{"$" + consts.Title, ""}},
+	}}
+}
+
+func teacherExactSearchFilter(searchValue string) bson.M {
+	return bson.M{"$or": bson.A{
+		bson.M{consts.Name: searchValue},
+		bson.M{"$expr": bson.M{"$eq": bson.A{teacherSearchValueExpression(), searchValue}}},
+	}}
+}
+
+func teacherSuggestionSearchFilter(keyword string, ids []string) bson.M {
+	pattern := regexp.QuoteMeta(keyword)
+	regex := primitive.Regex{Pattern: pattern, Options: "i"}
+	filter := bson.M{"$or": bson.A{
+		bson.M{consts.Name: regex},
+		bson.M{consts.Title: regex},
+		bson.M{"$expr": bson.M{"$regexMatch": bson.M{
+			"input":   teacherSearchValueExpression(),
+			"regex":   pattern,
+			"options": "i",
+		}}},
+	}}
+	if ids != nil {
+		filter[consts.ID] = bson.M{"$in": ids}
+	}
+	return filter
+}
+
+// FindIDsBySearchValue resolves an exact teacher name or concatenated name and title.
+// All matching IDs are returned so same-name teachers do not lose courses.
+func (r *TeacherRepo) FindIDsBySearchValue(ctx context.Context, searchValue string) ([]string, error) {
+	values, err := r.conn.Distinct(ctx, consts.ID, teacherExactSearchFilter(searchValue))
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(values))
+	for _, value := range values {
+		if id, ok := value.(string); ok && id != "" {
+			ids = append(ids, id)
+		}
+	}
+	return ids, nil
+}
+
+// FindSuggestionCandidates finds teachers by name, title, or concatenated name and title.
+// Pagination and identity de-duplication are intentionally handled by the calling service.
+func (r *TeacherRepo) FindSuggestionCandidates(ctx context.Context, keyword string, ids []string) ([]*model.Teacher, error) {
+	if ids != nil && len(ids) == 0 {
+		return []*model.Teacher{}, nil
+	}
+	teachers := []*model.Teacher{}
+	if err := r.conn.Find(ctx, &teachers, teacherSuggestionSearchFilter(keyword, ids), options.Find().SetSort(bson.D{
+		{Key: consts.Name, Value: 1},
+		{Key: consts.Title, Value: 1},
+		{Key: consts.ID, Value: 1},
+	})); err != nil {
+		return nil, err
+	}
+	return teachers, nil
 }
 
 func (r *TeacherRepo) getSuggestionsByName(ctx context.Context, name string, ids []string, param *dto.PageParam) ([]*model.Teacher, int64, error) {

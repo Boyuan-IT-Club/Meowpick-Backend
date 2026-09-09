@@ -262,7 +262,7 @@ func DeleteProposal(c *gin.Context) {
 
 // GetProposalFieldSuggestions godoc
 // @Summary 获取提案字段建议
-// @Description 登录后获取提案表单字段建议。department、category、campus 从当前映射名称中匹配；courseName、courseCode 从未删除课程中分页搜索；teacherName 从教师中分页搜索，每位教师额外返回其按创建时间倒序的最多两门未删除课程，未教授课程时 courses 返回空数组。未知 field 返回无效字段错误
+// @Description 登录后获取提案表单字段建议。department、category、campus 从当前映射名称中匹配；courseName、courseCode 从未删除课程中分页搜索；teacherName 可按姓名、无分隔的“姓名+职称”或职称模糊匹配，相同搜索值合并并按相关度排序，返回独立的 name(value)、title 和展示 label，每项额外返回所有重复教师记录合并后的最近两门未删除课程。未知 field 返回无效字段错误
 // @Tags proposal
 // @Produce json
 // @Param field query string true "字段类型: department/category/campus/courseName/courseCode/teacherName"

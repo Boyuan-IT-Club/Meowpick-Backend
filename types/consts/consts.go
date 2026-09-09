@@ -36,6 +36,7 @@ const (
 	Campuses          = "campuses"
 	Code              = "code"
 	Name              = "name"
+	Title             = "title"
 	Tags              = "tags"
 	Count             = "count"
 	TargetType        = "targetType"

@@ -450,6 +450,10 @@
                         "description": "前端展示文本；教师有职称时格式为“姓名 - 职称”",
                         "type": "string"
                     },
+                    "title": {
+                        "description": "仅 teacherName 建议返回教师职称；其他字段省略",
+                        "type": "string"
+                    },
                     "value": {
                         "description": "选中建议后写入请求字段的值",
                         "type": "string"
@@ -1137,7 +1141,15 @@
             "dto.SearchSuggestionsVO": {
                 "properties": {
                     "name": {
-                        "description": "建议显示及后续搜索使用的名称",
+                        "description": "建议实体名称；教师建议仅为姓名，不包含职称",
+                        "type": "string"
+                    },
+                    "searchValue": {
+                        "description": "点击后传给 /api/search 的精确搜索值；教师为姓名+职称，其他类型等于 name",
+                        "type": "string"
+                    },
+                    "title": {
+                        "description": "仅教师建议返回职称；其他类型省略",
                         "type": "string"
                     },
                     "type": {
@@ -2524,7 +2536,7 @@
         },
         "/api/proposal/field-suggestions": {
             "get": {
-                "description": "登录后获取提案表单字段建议。department、category、campus 从当前映射名称中匹配；courseName、courseCode 从未删除课程中分页搜索；teacherName 从教师中分页搜索，每位教师额外返回其按创建时间倒序的最多两门未删除课程，未教授课程时 courses 返回空数组。未知 field 返回无效字段错误",
+                "description": "登录后获取提案表单字段建议。department、category、campus 从当前映射名称中匹配；courseName、courseCode 从未删除课程中分页搜索；teacherName 可按姓名、无分隔的“姓名+职称”或职称模糊匹配，相同搜索值合并并按相关度排序，返回独立的 name(value)、title 和展示 label，每项额外返回所有重复教师记录合并后的最近两门未删除课程。未知 field 返回无效字段错误",
                 "parameters": [
                     {
                         "description": "字段类型: department/category/campus/courseName/courseCode/teacherName",
@@ -3042,7 +3054,7 @@
         },
         "/api/search": {
             "post": {
-                "description": "登录后分页搜索未删除课程。type=course 时按课程名称大小写不敏感模糊匹配；type=teacher 时先按教师完整姓名查找教师，再返回其课程；type=category 或 department 时按映射完整名称精确匹配。未知 type 返回参数错误。非空 keyword 会异步写入当前用户搜索历史，重复关键词更新时间且仅保留最近15条",
+                "description": "登录后分页搜索未删除课程。type=course 时按课程名称大小写不敏感模糊匹配；type=teacher 时 keyword 精确接受教师姓名或无分隔的“姓名+职称”，姓名命中返回所有同名教师课程的并集，姓名+职称命中返回所有同名同职称教师课程的并集；不接受姓名与职称间的空格或连字符。type=category 或 department 时按映射完整名称精确匹配。未知 type 返回参数错误。非空 keyword 会异步写入当前用户搜索历史，重复关键词更新时间且仅保留最近15条",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -3104,7 +3116,7 @@
         },
         "/api/search/suggest": {
             "get": {
-                "description": "登录后并行匹配未删除课程名称，以及至少被一门未删除课程引用的教师、课程分类和课程开课院系；按 course、teacher、category、department 的顺序合并，最终最多返回 pageSize 条。任一数据库建议查询失败时整个请求失败。此接口只返回建议，不写入搜索历史",
+                "description": "登录后模糊匹配未删除课程名称，以及至少被一门未删除课程引用的教师、课程分类和课程开课院系。教师可按姓名、无分隔的“姓名+职称”或职称匹配；相同教师搜索值合并。结果按完全一致、前缀一致、子串一致排序，教师姓名命中优先于职称命中，同分再按 course、teacher、category、department 稳定排序。每项 searchValue 均可直接作为 /api/search 的 keyword；教师项另返回纯姓名 name 和职称 title。此接口不写入搜索历史",
                 "parameters": [
                     {
                         "description": "搜索关键词",
@@ -3216,7 +3228,8 @@
         },
         "/api/teacher/suggest": {
             "get": {
-                "description": "登录后按教师姓名模糊搜索并返回分页建议。响应字段 id 是正式教师ID，可作为提案 course.teachers[].id 提交；教师院系暂未维护时 department 会显示为未知开课院系",
+                "deprecated": true,
+                "description": "已弃用，当前前端未调用且不再扩展搜索规则；提案教师建议请使用 /api/proposal/field-suggestions?field=teacherName，全局搜索建议请使用 /api/search/suggest",
                 "parameters": [
                     {
                         "description": "搜索关键词",
@@ -3258,7 +3271,7 @@
                         "description": "OK"
                     }
                 },
-                "summary": "获取教师搜索建议",
+                "summary": "获取教师搜索建议（已弃用）",
                 "tags": [
                     "teacher"
                 ]

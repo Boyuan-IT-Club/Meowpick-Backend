@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
@@ -44,6 +45,7 @@ type ICourseRepo interface {
 	FindManyByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error)
 	FindManyByNameLike(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error)
 	FindManyByTeacherID(ctx context.Context, teacherId string, param *dto.PageParam) ([]*model.Course, int64, error)
+	FindManyByTeacherIDs(ctx context.Context, teacherIDs []string, param *dto.PageParam) ([]*model.Course, int64, error)
 	FindRecentByTeacherIDs(ctx context.Context, teacherIDs []string, limitPerTeacher int64) (map[string][]*model.Course, error)
 	FindManyByCategoryID(ctx context.Context, categoryId int32, param *dto.PageParam) ([]*model.Course, int64, error)
 	FindManyByDepartmentID(ctx context.Context, departmentId int32, param *dto.PageParam) ([]*model.Course, int64, error)
@@ -57,6 +59,7 @@ type ICourseRepo interface {
 	GetCategoriesByName(ctx context.Context, name string) ([]int32, error)
 	GetCampusesByName(ctx context.Context, name string) ([]int32, error)
 	GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error)
+	FindSearchSuggestionCandidates(ctx context.Context, keyword string, limit int64) ([]*model.Course, error)
 	GetSuggestionsByCode(ctx context.Context, code string, param *dto.PageParam) ([]*model.Course, int64, error)
 
 	IsCourseInExistingCourses(ctx context.Context, vo *model.Course) (bool, error)
@@ -228,8 +231,23 @@ func (r *CourseRepo) FindManyByNameLike(ctx context.Context, name string, param 
 
 // FindManyByTeacherID 根据教师ID分页查询其教授的课程
 func (r *CourseRepo) FindManyByTeacherID(ctx context.Context, teacherId string, param *dto.PageParam) ([]*model.Course, int64, error) {
+	return r.FindManyByTeacherIDs(ctx, []string{teacherId}, param)
+}
+
+func activeTeacherIDsFilter(teacherIDs []string) bson.M {
+	return bson.M{
+		consts.TeacherIDs: bson.M{"$in": teacherIDs},
+		consts.Deleted:    bson.M{"$ne": true},
+	}
+}
+
+// FindManyByTeacherIDs 根据一个或多个教师ID分页查询其教授的课程。
+func (r *CourseRepo) FindManyByTeacherIDs(ctx context.Context, teacherIDs []string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	filter := bson.M{consts.TeacherIDs: teacherId, consts.Deleted: bson.M{"$ne": true}}
+	if len(teacherIDs) == 0 {
+		return courses, 0, nil
+	}
+	filter := activeTeacherIDsFilter(teacherIDs)
 	if err := r.conn.Find(ctx, &courses, filter,
 		page.FindPageOption(param).SetSort(bson.D{
 			{Key: consts.CreatedAt, Value: -1},
@@ -410,6 +428,52 @@ func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, para
 	}
 
 	return courses, total, nil
+}
+
+// FindSearchSuggestionCandidates returns the highest-ranked literal course-name
+// matches for the global suggestion service, which performs cross-type ranking.
+func (r *CourseRepo) FindSearchSuggestionCandidates(ctx context.Context, keyword string, limit int64) ([]*model.Course, error) {
+	courses := []*model.Course{}
+	pattern := regexp.QuoteMeta(keyword)
+	filter := bson.M{
+		consts.Name: bson.M{"$regex": primitive.Regex{
+			Pattern: pattern,
+			Options: "i",
+		}},
+		consts.Deleted: bson.M{"$ne": true},
+	}
+	pipeline := []bson.M{
+		{"$match": filter},
+		{"$addFields": bson.M{"_suggestionRank": bson.M{"$switch": bson.M{
+			"branches": bson.A{
+				bson.M{"case": bson.M{"$regexMatch": bson.M{"input": "$" + consts.Name, "regex": "^" + pattern + "$", "options": "i"}}, "then": 0},
+				bson.M{"case": bson.M{"$regexMatch": bson.M{"input": "$" + consts.Name, "regex": "^" + pattern, "options": "i"}}, "then": 10},
+			},
+			"default": 20,
+		}}}},
+		{"$sort": bson.D{
+			{Key: "_suggestionRank", Value: 1},
+			{Key: consts.Name, Value: 1},
+			{Key: consts.ID, Value: 1},
+		}},
+		{"$group": bson.M{
+			"_id":    "$" + consts.Name,
+			"course": bson.M{"$first": "$$ROOT"},
+		}},
+		{"$replaceRoot": bson.M{"newRoot": "$course"}},
+		{"$sort": bson.D{
+			{Key: "_suggestionRank", Value: 1},
+			{Key: consts.Name, Value: 1},
+			{Key: consts.ID, Value: 1},
+		}},
+	}
+	if limit > 0 {
+		pipeline = append(pipeline, bson.M{"$limit": limit})
+	}
+	if err := r.conn.Aggregate(ctx, &courses, pipeline); err != nil {
+		return nil, err
+	}
+	return courses, nil
 }
 
 // GetSuggestionsByCode 根据课程代码模糊分页查询课程

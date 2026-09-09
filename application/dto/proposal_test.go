@@ -37,7 +37,7 @@ func TestFieldSuggestionVOCoursesJSON(t *testing.T) {
 	t.Run("teacher without courses emits empty array", func(t *testing.T) {
 		courses := []CourseBrief{}
 		payload, err := json.Marshal(FieldSuggestionVO{
-			ID: "teacher-1", Value: "张三", Label: "张三 - 教授", Courses: &courses,
+			ID: "teacher-1", Value: "张三", Label: "张三 - 教授", Title: "教授", Courses: &courses,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -53,6 +53,9 @@ func TestFieldSuggestionVOCoursesJSON(t *testing.T) {
 		items, ok := value.([]any)
 		if !ok || len(items) != 0 {
 			t.Fatalf("courses = %#v, want empty array", value)
+		}
+		if got["title"] != "教授" {
+			t.Fatalf("title = %#v, want 教授", got["title"])
 		}
 	})
 }
