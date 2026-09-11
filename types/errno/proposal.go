@@ -146,7 +146,7 @@ func init() {
 	)
 	code.Register(
 		ErrProposalStatusNotRejected,
-		"proposal status is not rejected cannot revoke reject",
+		"proposal status is not rejected",
 		code.WithAffectStability(false),
 	)
 	code.Register(

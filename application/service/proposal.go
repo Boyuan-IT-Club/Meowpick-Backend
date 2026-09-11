@@ -45,6 +45,7 @@ var _ IProposalService = (*ProposalService)(nil)
 
 type IProposalService interface {
 	CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error)
+	ResubmitProposal(ctx context.Context, req *dto.ResubmitProposalReq) (*dto.ResubmitProposalResp, error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
 	SuggestProposals(ctx context.Context, req *dto.SuggestProposalReq) (*dto.ListProposalResp, error)
 	GetProposal(ctx context.Context, req *dto.GetProposalReq) (*dto.GetProposalResp, error)
@@ -123,6 +124,29 @@ func resolveApprovalTitle(currentTitle, requestedTitle string) (string, bool) {
 
 // CreateProposal 添加一个新的课程提案
 func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error) {
+	return s.createProposal(ctx, req, "")
+}
+
+// ResubmitProposal 将当前用户的一条 rejected 提案软删除，并原子创建新的 pending 提案。
+func (s *ProposalService) ResubmitProposal(ctx context.Context, req *dto.ResubmitProposalReq) (*dto.ResubmitProposalResp, error) {
+	createResp, err := s.createProposal(ctx, &dto.CreateProposalReq{
+		Title:        req.Title,
+		Content:      req.Content,
+		Course:       req.Course,
+		ShowUsername: req.ShowUsername,
+	}, req.ProposalID)
+	if err != nil {
+		return nil, err
+	}
+	return &dto.ResubmitProposalResp{
+		Resp:               createResp.Resp,
+		PreviousProposalID: req.ProposalID,
+		ProposalID:         createResp.ProposalID,
+		Proposal:           createResp.Proposal,
+	}, nil
+}
+
+func (s *ProposalService) createProposal(ctx context.Context, req *dto.CreateProposalReq, resubmitProposalID string) (*dto.CreateProposalResp, error) {
 	// 鉴权
 	userId, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userId == "" {
@@ -131,6 +155,22 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 
 	if validationErr := validateProposalInput(req.Title, req.Course); validationErr != nil {
 		return nil, validationErr
+	}
+	if resubmitProposalID != "" {
+		previousProposal, findErr := s.ProposalRepo.FindByID(ctx, resubmitProposalID)
+		if findErr != nil {
+			return nil, errorx.WrapByCode(findErr, errno.ErrProposalFindFailed,
+				errorx.KV("proposalId", resubmitProposalID))
+		}
+		if previousProposal == nil || previousProposal.UserID != userId {
+			return nil, errorx.New(errno.ErrProposalNotFound,
+				errorx.KV("key", consts.ReqProposalID), errorx.KV("value", resubmitProposalID))
+		}
+		rejectedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
+		if previousProposal.Status != rejectedStatusID {
+			return nil, errorx.New(errno.ErrProposalStatusNotRejected,
+				errorx.KV("proposalId", resubmitProposalID))
+		}
 	}
 
 	// 转换为 proposalCourseModel，不执行自动注册
@@ -143,12 +183,15 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 	}
 
 	// 检查是否已经存在相同的提案
-	existingProposal, err := s.ProposalRepo.IsCourseInExistingProposals(ctx, course)
-	if err != nil {
-		return nil, errorx.WrapByCode(err, errno.ErrProposalCourseFindInProposalsFailed,
-			errorx.KV("key", consts.ReqCourse),
-			errorx.KV("value", req.Course.Name),
-		)
+	existingProposal := false
+	if resubmitProposalID == "" {
+		existingProposal, err = s.ProposalRepo.IsCourseInExistingProposals(ctx, course)
+		if err != nil {
+			return nil, errorx.WrapByCode(err, errno.ErrProposalCourseFindInProposalsFailed,
+				errorx.KV("key", consts.ReqCourse),
+				errorx.KV("value", req.Course.Name),
+			)
+		}
 	}
 
 	// 检查是否已经存在相同的课程 (DryRun转换，不执行自动注册)
@@ -241,6 +284,37 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		if guardErr := s.ProposalRepo.AcquireCreateGuards(txCtx, userDayKey, courseFingerprint); guardErr != nil {
 			return guardErr
 		}
+		if resubmitProposalID != "" {
+			previousProposal, findErr := s.ProposalRepo.FindByID(txCtx, resubmitProposalID)
+			if findErr != nil {
+				return errorx.WrapByCode(findErr, errno.ErrProposalFindFailed,
+					errorx.KV("proposalId", resubmitProposalID))
+			}
+			if previousProposal == nil || previousProposal.UserID != userId {
+				return errorx.New(errno.ErrProposalNotFound,
+					errorx.KV("key", consts.ReqProposalID), errorx.KV("value", resubmitProposalID))
+			}
+			rejectedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusRejected)
+			if previousProposal.Status != rejectedStatusID {
+				return errorx.New(errno.ErrProposalStatusNotRejected,
+					errorx.KV("proposalId", resubmitProposalID))
+			}
+			deleted, deleteErr := s.ProposalRepo.DeleteProposal(txCtx, resubmitProposalID, userId, []int32{rejectedStatusID})
+			if deleteErr != nil {
+				return errorx.WrapByCode(deleteErr, errno.ErrProposalDeleteFailed,
+					errorx.KV("proposal_id", resubmitProposalID))
+			}
+			if !deleted {
+				return errorx.New(errno.ErrProposalDeleteFailed, errorx.KV("proposal_id", resubmitProposalID))
+			}
+			if _, logErr := s.ChangeLogService.CreateChangeLog(txCtx, &dto.CreateChangeLogReq{
+				TargetID: resubmitProposalID, TargetType: consts.TargetTypeProposal,
+				Action: consts.ActionTypeDeleteProposal, Content: "重新提交提案：软删除旧提案",
+				UpdateSource: consts.UpdateSourceUser, ProposalID: resubmitProposalID,
+			}); logErr != nil {
+				return logErr
+			}
+		}
 		duplicateProposal, checkErr := s.ProposalRepo.IsCourseInExistingProposals(txCtx, course)
 		if checkErr != nil {
 			return errorx.WrapByCode(checkErr, errno.ErrProposalCourseFindInProposalsFailed,
@@ -281,9 +355,13 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		if insertErr := s.ProposalRepo.Insert(txCtx, proposal); insertErr != nil {
 			return errorx.WrapByCode(insertErr, errno.ErrProposalCreateFailed, errorx.KV("name", req.Course.Name))
 		}
+		createLogContent := "创建提案"
+		if resubmitProposalID != "" {
+			createLogContent = "重新提交提案：创建新提案"
+		}
 		_, logErr := s.ChangeLogService.CreateChangeLog(txCtx, &dto.CreateChangeLogReq{
 			TargetID: proposal.ID, TargetType: consts.TargetTypeProposal,
-			Action: consts.ActionTypeCreateProposal, Content: "创建提案",
+			Action: consts.ActionTypeCreateProposal, Content: createLogContent,
 			UpdateSource: consts.UpdateSourceUser, ProposalID: proposal.ID,
 		})
 		return logErr

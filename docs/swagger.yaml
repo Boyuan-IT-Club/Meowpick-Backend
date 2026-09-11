@@ -812,6 +812,35 @@ components:
           description: 是否成功拒绝
           type: boolean
       type: object
+    dto.ResubmitProposalReq:
+      properties:
+        content:
+          description: 新提案补充说明，可为空
+          type: string
+        course:
+          $ref: '#/components/schemas/dto.ProposalCourseVO'
+        showUsername:
+          description: 是否允许公开展示新提案创建者昵称
+          type: boolean
+        title:
+          description: 新提案标题，不能为空
+          type: string
+      required:
+      - course
+      - title
+      type: object
+    dto.ResubmitProposalResp:
+      description: 实际业务数据
+      properties:
+        previousProposalId:
+          description: 已软删除的原拒绝提案ID
+          type: string
+        proposal:
+          $ref: '#/components/schemas/dto.ProposalVO'
+        proposalId:
+          description: 新建待审核提案ID
+          type: string
+      type: object
     dto.RevokeProposalReq:
       properties:
         actionType:
@@ -1315,6 +1344,19 @@ components:
           type: integer
         data:
           $ref: '#/components/schemas/dto.RejectProposalResp'
+        msg:
+          description: 提示信息
+          example: success
+          type: string
+      type: object
+    handler.Response-dto_ResubmitProposalResp:
+      properties:
+        code:
+          description: 业务代码, 0表示成功
+          example: 0
+          type: integer
+        data:
+          $ref: '#/components/schemas/dto.ResubmitProposalResp'
         msg:
           description: 提示信息
           example: success
@@ -1874,6 +1916,38 @@ paths:
                 $ref: '#/components/schemas/handler.Response-dto_RejectProposalResp'
           description: OK
       summary: 拒绝提案
+      tags:
+      - proposal
+  /api/proposal/{proposalId}/resubmit:
+    post:
+      description: 登录用户重新提交自己未删除的 rejected 提案。请求必须携带完整的新提案内容；后端在同一 MongoDB 事务内软删除原提案并创建新的
+        pending 提案，同时执行课程防重和每日额度检查。任一步失败时原提案保持未删除且不会创建新提案
+      parameters:
+      - description: 原拒绝提案ID
+        in: path
+        name: proposalId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/dto.ResubmitProposalReq'
+                description: 重新提交后的完整提案内容
+                summary: req
+        description: 重新提交后的完整提案内容
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handler.Response-dto_ResubmitProposalResp'
+          description: OK
+      summary: 重新提交被拒绝提案
       tags:
       - proposal
   /api/proposal/{proposalId}/revoke:
