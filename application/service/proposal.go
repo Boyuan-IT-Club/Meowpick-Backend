@@ -243,7 +243,10 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		}
 		duplicateProposal, checkErr := s.ProposalRepo.IsCourseInExistingProposals(txCtx, course)
 		if checkErr != nil {
-			return errorx.WrapByCode(checkErr, errno.ErrProposalCourseFindInProposalsFailed)
+			return errorx.WrapByCode(checkErr, errno.ErrProposalCourseFindInProposalsFailed,
+				errorx.KV("key", consts.ReqCourse),
+				errorx.KV("value", req.Course.Name),
+			)
 		}
 		if duplicateProposal {
 			return errorx.New(errno.ErrProposalCourseFoundInProposals,
@@ -251,7 +254,10 @@ func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreatePro
 		}
 		duplicateCourse, checkErr := s.CourseRepo.IsCourseInExistingCourses(txCtx, courseDBDryRun)
 		if checkErr != nil {
-			return errorx.WrapByCode(checkErr, errno.ErrProposalCourseFindInCoursesFailed)
+			return errorx.WrapByCode(checkErr, errno.ErrProposalCourseFindInCoursesFailed,
+				errorx.KV("key", consts.ReqCourse),
+				errorx.KV("value", req.Course.Name),
+			)
 		}
 		if duplicateCourse {
 			return errorx.New(errno.ErrProposalCourseFoundInCourses,
