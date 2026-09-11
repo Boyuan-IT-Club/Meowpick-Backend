@@ -64,3 +64,12 @@ func TestProposalSearchUsesSuggestRouteOnly(t *testing.T) {
 		t.Fatal("GET /api/proposal/suggest route is not registered")
 	}
 }
+
+func TestProposalResubmitRouteIsRegistered(t *testing.T) {
+	for _, route := range SetupRoutes().Routes() {
+		if route.Method == "POST" && route.Path == "/api/proposal/:proposalId/resubmit" {
+			return
+		}
+	}
+	t.Fatal("POST /api/proposal/:proposalId/resubmit route is not registered")
+}

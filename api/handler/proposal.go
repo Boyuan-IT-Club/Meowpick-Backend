@@ -48,6 +48,32 @@ func CreateProposal(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
+// ResubmitProposal godoc
+// @Summary 重新提交被拒绝提案
+// @Description 登录用户重新提交自己未删除的 rejected 提案。请求必须携带完整的新提案内容；后端在同一 MongoDB 事务内软删除原提案并创建新的 pending 提案，同时执行课程防重和每日额度检查。任一步失败时原提案保持未删除且不会创建新提案
+// @Tags proposal
+// @Accept json
+// @Produce json
+// @Param proposalId path string true "原拒绝提案ID"
+// @Param req body dto.ResubmitProposalReq true "重新提交后的完整提案内容"
+// @Success 200 {object} Response[dto.ResubmitProposalResp]
+// @Router /api/proposal/{proposalId}/resubmit [post]
+func ResubmitProposal(c *gin.Context) {
+	var req dto.ResubmitProposalReq
+	var resp *dto.ResubmitProposalResp
+	var err error
+
+	if err = c.ShouldBindJSON(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	req.ProposalID = c.Param(consts.CtxProposalID)
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err = provider.Get().ProposalService.ResubmitProposal(c, &req)
+	PostProcess(c, &req, resp, err)
+}
+
 // ListProposals godoc
 // @Summary 分页获取提案列表
 // @Description 登录后分页查询提案。管理员可按 status 查询 pending、approved、rejected，不传 status 时查询全部；普通用户无论传什么 status 都只返回 approved。返回的 contribution 仅提案创建者可见，其他用户看到 -1；已通过提案附带关联正式课程 finalCourse，课程查询失败或已删除时省略

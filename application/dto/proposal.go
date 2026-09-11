@@ -42,6 +42,23 @@ type CreateProposalResp struct {
 	Proposal   *ProposalVO `json:"proposal"`   // 新建后的完整待审核提案
 }
 
+// ResubmitProposalReq 重新提交被拒绝提案的完整内容。
+type ResubmitProposalReq struct {
+	ProposalID   string            `json:"-"`
+	Title        string            `json:"title" binding:"required"`  // 新提案标题，不能为空
+	Content      string            `json:"content"`                   // 新提案补充说明，可为空
+	Course       *ProposalCourseVO `json:"course" binding:"required"` // 新提案的完整课程信息
+	ShowUsername bool              `json:"showUsername"`              // 是否允许公开展示新提案创建者昵称
+}
+
+// ResubmitProposalResp 返回被替换的旧提案和新建提案。
+type ResubmitProposalResp struct {
+	*Resp
+	PreviousProposalID string      `json:"previousProposalId"` // 已软删除的原拒绝提案ID
+	ProposalID         string      `json:"proposalId"`         // 新建待审核提案ID
+	Proposal           *ProposalVO `json:"proposal"`           // 新建后的完整待审核提案
+}
+
 type ProposalVO struct {
 	ID           string            `json:"id"`           // 提案ID
 	UserID       string            `json:"userId"`       // 提案创建者用户ID；是否展示昵称由 showUsername 控制
