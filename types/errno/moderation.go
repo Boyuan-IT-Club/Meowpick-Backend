@@ -27,17 +27,17 @@ const (
 func init() {
 	code.Register(
 		ErrContentModerationRejected,
-		"内容可能不符合社区规范，请修改后重试",
+		"content may violate community guidelines, please revise and try again",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrContentModerationUnavailable,
-		"内容审核服务暂时不可用，请稍后重试",
+		"content moderation service is temporarily unavailable, please try again later",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrContentModerationRateLimited,
-		"提交过于频繁，请稍后重试",
+		"too many moderation attempts, please try again later",
 		code.WithAffectStability(false),
 	)
 }
