@@ -15,7 +15,9 @@
 package config
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/service"
@@ -65,8 +67,25 @@ func NewConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err = validateWeApp(c.WeApp); err != nil {
+		return nil, err
+	}
 	config = c
 	return c, nil
+}
+
+func validateWeApp(weApp WeApp) error {
+	missing := make([]string, 0, 2)
+	if strings.TrimSpace(weApp.AppID) == "" {
+		missing = append(missing, "WeApp.AppID")
+	}
+	if strings.TrimSpace(weApp.AppSecret) == "" {
+		missing = append(missing, "WeApp.AppSecret")
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("missing required configuration: %s", strings.Join(missing, ", "))
+	}
+	return nil
 }
 
 func GetConfig() *Config {

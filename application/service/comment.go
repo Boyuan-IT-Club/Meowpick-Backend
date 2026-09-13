@@ -23,6 +23,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/wechatsecurity"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
@@ -42,9 +43,12 @@ type ICommentService interface {
 }
 
 type CommentService struct {
-	CommentRepo      *repo.CommentRepo
-	CommentCache     *cache.CommentCache
-	CommentAssembler *assembler.CommentAssembler
+	CommentRepo       *repo.CommentRepo
+	CommentCache      *cache.CommentCache
+	CommentAssembler  *assembler.CommentAssembler
+	UserRepo          *repo.UserRepo
+	ContentModeration IContentModerationService
+	ModerationLimiter cache.IModerationRateLimiter
 }
 
 var CommentServiceSet = wire.NewSet(
@@ -55,19 +59,50 @@ var CommentServiceSet = wire.NewSet(
 // CreateComment 创建评论
 func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateCommentReq) (*dto.CreateCommentResp, error) {
 	// 鉴权
-	userId, ok := ctx.Value(consts.CtxUserID).(string)
-	if !ok || userId == "" {
+	userID, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userID == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+	content, tags, err := normalizeCommentInput(req.Content, req.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := s.UserRepo.FindByID(ctx, userID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "[UserRepo] [FindByID] error: %v, userId: %s", err, userID)
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userID))
+	}
+	if user == nil {
+		return nil, errorx.New(errno.ErrUserNotFound,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userID))
+	}
+
+	allowed, err := s.ModerationLimiter.AllowComment(ctx, userID)
+	if err != nil {
+		logs.CtxWarnf(ctx, "[ModerationRateLimiter] [AllowComment] error: %v, userId: %s", err, userID)
+		return nil, errorx.WrapByCode(err, errno.ErrContentModerationUnavailable)
+	}
+	if !allowed {
+		return nil, errorx.New(errno.ErrContentModerationRateLimited)
+	}
+	if err = s.ContentModeration.CheckText(ctx, wechatsecurity.TextCheckRequest{
+		OpenID:  user.OpenID,
+		Scene:   wechatsecurity.SceneComment,
+		Content: content,
+	}); err != nil {
+		return nil, err
 	}
 
 	// 构建Comment模型
 	now := time.Now()
 	comment := &model.Comment{
 		ID:        primitive.NewObjectID().Hex(),
-		UserID:    userId,
+		UserID:    userID,
 		CourseID:  req.CourseID,
-		Content:   req.Content,
-		Tags:      req.Tags,
+		Content:   content,
+		Tags:      tags,
 		CreatedAt: now,
 		UpdatedAt: now,
 		Deleted:   false,
@@ -75,12 +110,12 @@ func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateComme
 
 	// 插入数据库
 	if err := s.CommentRepo.Insert(ctx, comment); err != nil {
-		logs.CtxErrorf(ctx, "[CommentRepo] [Insert] error: %v", err)
-		return nil, errorx.WrapByCode(err, errno.ErrCommentInsertFailed, errorx.KV("content", req.Content))
+		logs.CtxErrorf(ctx, "[CommentRepo] [Insert] error_type=%T, userId=%s", err, userID)
+		return nil, errorx.WrapByCode(err, errno.ErrCommentInsertFailed)
 	}
 
 	// 转换为VO
-	vo, err := s.CommentAssembler.ToCommentVO(ctx, comment, userId)
+	vo, err := s.CommentAssembler.ToCommentVO(ctx, comment, userID)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[CommentAssembler] [ToCommentVO] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrCommentCvtFailed,

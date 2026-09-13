@@ -25,6 +25,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/wechatsecurity"
 	"github.com/google/wire"
 )
 
@@ -80,6 +81,7 @@ var ApplicationSet = wire.NewSet(
 	service.SearchServiceSet,
 	service.ProposalServiceSet,
 	service.ChangeLogServiceSet,
+	service.ContentModerationServiceSet,
 	// Assembler 相关
 	assembler.CommentAssemblerSet,
 	assembler.CourseAssemblerSet,
@@ -103,6 +105,8 @@ var InfraSet = wire.NewSet(
 	cache.NewLikeCache,
 	cache.NewCommentCache,
 	cache.NewMappingCache, // 添加映射缓存
+	cache.ModerationRateLimiterSet,
+	wechatsecurity.ContentSecurityClientSet,
 )
 
 var AllProvider = wire.NewSet(

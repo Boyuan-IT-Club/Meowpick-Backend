@@ -1,0 +1,43 @@
+// Copyright 2025 Boyuan-IT-Club
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package errno
+
+import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
+
+// content moderation: 111 000 000 ~ 111 999 999
+
+const (
+	ErrContentModerationRejected    = 111000001
+	ErrContentModerationUnavailable = 111000002
+	ErrContentModerationRateLimited = 111000003
+)
+
+func init() {
+	code.Register(
+		ErrContentModerationRejected,
+		"内容可能不符合社区规范，请修改后重试",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrContentModerationUnavailable,
+		"内容审核服务暂时不可用，请稍后重试",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrContentModerationRateLimited,
+		"提交过于频繁，请稍后重试",
+		code.WithAffectStability(false),
+	)
+}

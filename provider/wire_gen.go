@@ -12,6 +12,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/wechatsecurity"
 )
 
 // Injectors from wire.go:
@@ -37,18 +38,26 @@ func NewProvider() (*Provider, error) {
 		CourseRepo:  courseRepo,
 		TeacherRepo: teacherRepo,
 	}
+	userRepo, err := repo.NewUserRepo(configConfig)
+	if err != nil {
+		return nil, err
+	}
+	contentSecurityClient := wechatsecurity.NewContentSecurityClient(configConfig)
+	contentModerationService := &service.ContentModerationService{
+		Client: contentSecurityClient,
+	}
+	moderationRateLimiter := cache.NewModerationRateLimiter(configConfig)
 	commentService := service.CommentService{
-		CommentRepo:      commentRepo,
-		CommentCache:     commentCache,
-		CommentAssembler: commentAssembler,
+		CommentRepo:       commentRepo,
+		CommentCache:      commentCache,
+		CommentAssembler:  commentAssembler,
+		UserRepo:          userRepo,
+		ContentModeration: contentModerationService,
+		ModerationLimiter: moderationRateLimiter,
 	}
 	searchHistoryRepo := repo.NewSearchHistoryRepo(configConfig)
 	searchHistoryService := service.SearchHistoryService{
 		SearchHistoryRepo: searchHistoryRepo,
-	}
-	userRepo, err := repo.NewUserRepo(configConfig)
-	if err != nil {
-		return nil, err
 	}
 	changeLogRepo := repo.NewChangeLogRepo(configConfig)
 	changeLogAssembler := &assembler.ChangeLogAssembler{}
@@ -75,8 +84,9 @@ func NewProvider() (*Provider, error) {
 		ChangeLogService: changeLogService,
 	}
 	userService := service.UserService{
-		UserRepo:     userRepo,
-		ProposalRepo: proposalRepo,
+		UserRepo:          userRepo,
+		ProposalRepo:      proposalRepo,
+		ContentModeration: contentModerationService,
 	}
 	likeCache := cache.NewLikeCache(configConfig)
 	likeService := service.LikeService{

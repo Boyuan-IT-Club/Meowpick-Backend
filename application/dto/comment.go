@@ -37,9 +37,9 @@ type ExtraInfo struct {
 
 // CreateCommentReq 对应 /api/comment/add 的请求体
 type CreateCommentReq struct {
-	CourseID string   `json:"courseId" binding:"required"` // 所属正式课程ID，必填
-	Content  string   `json:"content" binding:"required"`  // 评论正文，必填
-	Tags     []string `json:"tags"`                        // 可选标签列表
+	CourseID string   `json:"courseId" binding:"required"`                                  // 所属正式课程ID，必填
+	Content  string   `json:"content" binding:"required" minLength:"1" maxLength:"140"`     // 评论正文，服务端去除首尾空白后必须为1至140个 Unicode 字符，并在发布前完成内容审核
+	Tags     []string `json:"tags" validate:"max=4,unique" enums:"容易,硬核,避雷,推荐,严格,快跑,幽默,枯燥"` // 可选标签，最多4个、不得重复，只能取八个固定值之一
 }
 
 // CreateCommentResp 对应 /api/comment/add 的响应体

@@ -39,7 +39,7 @@ type GetUsernameByUserIDReq struct {
 // UpdateUserProfileReq 更新当前登录用户的个人资料。
 // 指针用于区分字段未传/null（保持原值）与空字符串（清空）。
 type UpdateUserProfileReq struct {
-	Username *string `json:"username"` // 省略或 null 保持不变；空字符串清空；非空昵称会去除首尾空白并校验长度、控制字符、唯一性和30天冷却
+	Username *string `json:"username"` // 省略或 null 保持不变；空字符串清空；非空昵称会去除首尾空白并校验长度、控制字符、唯一性、30天冷却及微信内容审核
 	Avatar   *string `json:"avatar"`   // 省略或 null 保持不变；空字符串清空；服务端仅保存引用字符串，不上传或校验 URL
 }
 

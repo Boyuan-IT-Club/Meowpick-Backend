@@ -19,16 +19,18 @@ import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 // comment: 105 000 000 ~ 105 999 999
 
 const (
-	ErrCommentInsertFailed = 105000001
-	ErrCommentCvtFailed    = 105000002
-	ErrCommentCountFailed  = 105000003
-	ErrCommentFindFailed   = 105000004
+	ErrCommentInsertFailed   = 105000001
+	ErrCommentCvtFailed      = 105000002
+	ErrCommentCountFailed    = 105000003
+	ErrCommentFindFailed     = 105000004
+	ErrCommentInvalidContent = 105000005
+	ErrCommentInvalidTags    = 105000006
 )
 
 func init() {
 	code.Register(
 		ErrCommentInsertFailed,
-		"failed to insert comment: {content}",
+		"failed to insert comment",
 		code.WithAffectStability(false),
 	)
 	code.Register(
@@ -44,6 +46,16 @@ func init() {
 	code.Register(
 		ErrCommentFindFailed,
 		"failed to find comments by {key}: {value}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCommentInvalidContent,
+		"评论正文去除首尾空白后须为 1 至 140 个字符",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCommentInvalidTags,
+		"评论标签无效，请从允许的标签中选择且最多选择 4 个",
 		code.WithAffectStability(false),
 	)
 }
