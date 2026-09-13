@@ -612,6 +612,23 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 		}
 	}
 
+	isCreator := proposal.UserID == userId
+	isAdmin := false
+	adminChecked := false
+	approvedStatusID := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusApproved)
+	if !isCreator && proposal.Status != approvedStatusID {
+		isAdmin, err = s.UserRepo.IsAdminByID(ctx, userId)
+		if err != nil {
+			return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+				errorx.KV("key", consts.CtxUserID), errorx.KV("value", userId))
+		}
+		adminChecked = true
+		if !proposalDetailsVisible(proposal.Status, approvedStatusID, isCreator, isAdmin) {
+			return nil, errorx.New(errno.ErrProposalNotFound,
+				errorx.KV("key", consts.ReqProposalID), errorx.KV("value", proposalId))
+		}
+	}
+
 	// 2. 转换为VO（附带当前用户的点赞状态）
 	vo, err := s.ProposalAssembler.ToProposalVO(ctx, proposal, userId)
 	if err != nil {
@@ -624,10 +641,8 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 	filterContributionVisibility([]*dto.ProposalVO{vo}, userId)
 
 	// 填充最终课程信息：仅提案状态为已通过，且当前用户为提案创建者或管理员时可见
-	isCreator := proposal.UserID == userId
 	if vo.Status == consts.ProposalStatusApproved {
-		isAdmin := false
-		if !isCreator {
+		if !isCreator && !adminChecked {
 			isAdmin, err = s.UserRepo.IsAdminByID(ctx, userId)
 			if err != nil {
 				// 管理员查询失败不影响主流程，按非管理员处理
@@ -655,6 +670,10 @@ func (s *ProposalService) GetProposal(ctx context.Context, req *dto.GetProposalR
 		Resp:     dto.Success(),
 		Proposal: vo,
 	}, nil
+}
+
+func proposalDetailsVisible(status, approvedStatus int32, isCreator, isAdmin bool) bool {
+	return status == approvedStatus || isCreator || isAdmin
 }
 
 // DeleteProposal 删除提案

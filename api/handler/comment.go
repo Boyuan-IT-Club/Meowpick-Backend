@@ -24,11 +24,11 @@ import (
 
 // CreateComment godoc
 // @Summary 发布课程评论
-// @Description 登录用户对指定正式课程发布评论。courseId 和 content 必填，tags 可省略或为空数组；成功响应包含新评论ID、发布时间以及当前点赞状态。该接口本身不修改课程标签字段，课程详情的 tagCount 会从未删除评论标签实时聚合
+// @Description 登录用户对指定正式课程发布评论。content 去除首尾空白后须为 1 至 140 个 Unicode 字符；tags 可省略或为空数组，最多 4 个、不可重复，只允许：容易、硬核、避雷、推荐、严格、快跑、幽默、枯燥。通过本地校验后，每个用户每 60 秒最多发起 10 次微信内容审核；只有微信返回 pass 才写入并公开，review/risky 返回业务码 111000001，微信审核不可用返回 111000002，超过频率返回 111000003。所有业务错误仍使用 HTTP 200 并返回 code、msg、data=null。成功响应包含新评论ID、发布时间以及当前点赞状态；课程详情的 tagCount 从未删除评论标签实时聚合
 // @Tags comment
 // @Accept json
 // @Produce json
-// @Param body body dto.CreateCommentReq true "课程ID、评论正文和可选标签"
+// @Param body body dto.CreateCommentReq true "课程ID、1至140字符的评论正文，以及最多4个预定义标签"
 // @Success 200 {object} Response[dto.CreateCommentResp]
 // @Router /api/comment/add [post]
 func CreateComment(c *gin.Context) {

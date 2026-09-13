@@ -152,7 +152,7 @@ curl -X POST http://localhost:8080/api/auth/sign_in \
   -d '{"authId":"local","authType":"wechat","verifyCode":"test123"}'
 ```
 
-`State: local` 且验证码为 `test123` 时不会调用微信接口，因此本地调试可以使用占位的 WeApp 配置。其他请求把响应中的 `accessToken` 放入 `Authorization: Bearer <token>` 请求头。
+`State: local` 且验证码为 `test123` 时，登录本身不会调用微信接口；但服务启动仍要求配置非空的 WeApp AppID/AppSecret，昵称更新和评论发布也始终调用真实微信内容审核。占位凭据只适合测试不涉及内容审核的本地流程，不能验证昵称或评论审核。其他请求把响应中的 `accessToken` 放入 `Authorization: Bearer <token>` 请求头。
 
 ## 开发与验证
 

@@ -23,6 +23,7 @@ import (
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/wechatsecurity"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
@@ -45,8 +46,9 @@ type IUserService interface {
 }
 
 type UserService struct {
-	UserRepo     *repo.UserRepo
-	ProposalRepo *repo.ProposalRepo
+	UserRepo          *repo.UserRepo
+	ProposalRepo      *repo.ProposalRepo
+	ContentModeration IContentModerationService
 }
 
 var UserServiceSet = wire.NewSet(
@@ -159,13 +161,21 @@ func (s *UserService) UpdateUserProfile(ctx context.Context, req *dto.UpdateUser
 	if usernameUpdate != nil && *usernameUpdate != "" {
 		exists, findErr := s.UserRepo.IsUsernameExist(ctx, *usernameUpdate, userID)
 		if findErr != nil {
-			logs.CtxErrorf(ctx, "[UserRepo] [IsUsernameExist] error: %v, username: %s", findErr, *usernameUpdate)
+			logs.CtxErrorf(ctx, "[UserRepo] [IsUsernameExist] error_type=%T, userId=%s", findErr, userID)
 			return nil, errorx.WrapByCode(findErr, errno.ErrUserFindFailed,
 				errorx.KV("key", consts.Username), errorx.KV("value", *usernameUpdate))
 		}
 		if exists {
 			return nil, errorx.New(errno.ErrUsernameAlreadyTaken,
 				errorx.KV("username", *usernameUpdate))
+		}
+		if err = s.ContentModeration.CheckText(ctx, wechatsecurity.TextCheckRequest{
+			OpenID:   user.OpenID,
+			Scene:    wechatsecurity.SceneProfile,
+			Content:  *usernameUpdate,
+			Nickname: *usernameUpdate,
+		}); err != nil {
+			return nil, err
 		}
 	}
 

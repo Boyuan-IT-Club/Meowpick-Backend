@@ -130,7 +130,7 @@ func SuggestProposals(c *gin.Context) {
 
 // GetProposal 获取提案详情
 // @Summary 获取提案详情
-// @Description 登录后根据提案ID查询完整信息及当前用户点赞状态。已删除提案仅创建者本人可见；contribution 仅创建者可见。已通过提案的 finalCourse 仅创建者或管理员可见，关联正式课程已删除或查询失败时省略
+// @Description 登录后根据提案ID查询完整信息及当前用户点赞状态。approved 提案所有登录用户可见；pending/rejected 提案仅创建者和管理员可见，其他用户按提案不存在处理；已删除提案仅创建者本人可见。contribution 仅创建者可见。已通过提案的 finalCourse 仅创建者或管理员可见，关联正式课程已删除或查询失败时省略
 // @Tags proposal
 // @Produce json
 // @Param proposalId path string true "提案ID"

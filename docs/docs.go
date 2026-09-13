@@ -230,7 +230,9 @@ const docTemplate = `{
             "dto.CreateCommentReq": {
                 "properties": {
                     "content": {
-                        "description": "评论正文，必填",
+                        "description": "评论正文，服务端去除首尾空白后必须为1至140个 Unicode 字符，并在发布前完成内容审核",
+                        "maxLength": 140,
+                        "minLength": 1,
                         "type": "string"
                     },
                     "courseId": {
@@ -238,12 +240,23 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "tags": {
-                        "description": "可选标签列表",
+                        "description": "可选标签，最多4个、不得重复，只能取八个固定值之一",
                         "items": {
+                            "enum": [
+                                "容易",
+                                "硬核",
+                                "避雷",
+                                "推荐",
+                                "严格",
+                                "快跑",
+                                "幽默",
+                                "枯燥"
+                            ],
                             "type": "string"
                         },
+                        "maxItems": 4,
                         "type": "array",
-                        "uniqueItems": false
+                        "uniqueItems": true
                     }
                 },
                 "required": [
@@ -1370,7 +1383,7 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "username": {
-                        "description": "省略或 null 保持不变；空字符串清空；非空昵称会去除首尾空白并校验长度、控制字符、唯一性和30天冷却",
+                        "description": "省略或 null 保持不变；空字符串清空；非空昵称会去除首尾空白并校验长度、控制字符、唯一性、30天冷却及微信内容审核",
                         "type": "string"
                     }
                 },
@@ -2249,7 +2262,7 @@ const docTemplate = `{
         },
         "/api/comment/add": {
             "post": {
-                "description": "登录用户对指定正式课程发布评论。courseId 和 content 必填，tags 可省略或为空数组；成功响应包含新评论ID、发布时间以及当前点赞状态。该接口本身不修改课程标签字段，课程详情的 tagCount 会从未删除评论标签实时聚合",
+                "description": "登录用户对指定正式课程发布评论。content 去除首尾空白后须为 1 至 140 个 Unicode 字符；tags 可省略或为空数组，最多 4 个、不可重复，只允许：容易、硬核、避雷、推荐、严格、快跑、幽默、枯燥。通过本地校验后，每个用户每 60 秒最多发起 10 次微信内容审核；只有微信返回 pass 才写入并公开，review/risky 返回业务码 111000001，微信审核不可用返回 111000002，超过频率返回 111000003。所有业务错误仍使用 HTTP 200 并返回 code、msg、data=null。成功响应包含新评论ID、发布时间以及当前点赞状态；课程详情的 tagCount 从未删除评论标签实时聚合",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -2261,13 +2274,13 @@ const docTemplate = `{
                                     {
                                         "$ref": "#/components/schemas/dto.CreateCommentReq",
                                         "summary": "body",
-                                        "description": "课程ID、评论正文和可选标签"
+                                        "description": "课程ID、1至140字符的评论正文，以及最多4个预定义标签"
                                     }
                                 ]
                             }
                         }
                     },
-                    "description": "课程ID、评论正文和可选标签",
+                    "description": "课程ID、1至140字符的评论正文，以及最多4个预定义标签",
                     "required": true
                 },
                 "responses": {
@@ -2840,7 +2853,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}": {
             "get": {
-                "description": "登录后根据提案ID查询完整信息及当前用户点赞状态。已删除提案仅创建者本人可见；contribution 仅创建者可见。已通过提案的 finalCourse 仅创建者或管理员可见，关联正式课程已删除或查询失败时省略",
+                "description": "登录后根据提案ID查询完整信息及当前用户点赞状态。approved 提案所有登录用户可见；pending/rejected 提案仅创建者和管理员可见，其他用户按提案不存在处理；已删除提案仅创建者本人可见。contribution 仅创建者可见。已通过提案的 finalCourse 仅创建者或管理员可见，关联正式课程已删除或查询失败时省略",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -3418,7 +3431,7 @@ const docTemplate = `{
         },
         "/api/user/profile/update": {
             "post": {
-                "description": "原子更新当前登录用户的昵称和头像，任一字段校验或写入失败时两者都不改变。字段省略或为 null 表示保持原值，空字符串表示清空。非空昵称去除首尾空白后最多15个 Unicode 字符，不允许控制字符、不得与其他用户昵称重复，设置或改名后30天内不能再次设置非空昵称；清空昵称不受冷却限制。头像仅保存引用字符串，不负责上传、下载或 URL 格式校验",
+                "description": "原子更新当前登录用户的昵称和头像，任一字段校验、微信审核或写入失败时两者都不改变。字段省略或为 null 表示保持原值，空字符串表示清空且不调用审核。非空昵称去除首尾空白后最多15个 Unicode 字符，不允许控制字符、不得与其他用户昵称重复，设置或改名后30天内不能再次设置非空昵称，并且只有微信内容审核返回 pass 才保存；review/risky 返回业务码 111000001，微信审核不可用返回 111000002。所有业务错误仍使用 HTTP 200 并返回 code、msg、data=null。清空昵称不受冷却限制。头像仅保存引用字符串，不负责上传、下载或 URL 格式校验",
                 "requestBody": {
                     "content": {
                         "application/json": {
