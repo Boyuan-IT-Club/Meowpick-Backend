@@ -50,12 +50,12 @@ func init() {
 	)
 	code.Register(
 		ErrCommentInvalidContent,
-		"评论正文去除首尾空白后须为 1 至 140 个字符",
+		"comment content must be between 1 and 140 characters after trimming",
 		code.WithAffectStability(false),
 	)
 	code.Register(
 		ErrCommentInvalidTags,
-		"评论标签无效，请从允许的标签中选择且最多选择 4 个",
+		"comment tags must be unique allowed values with at most 4 items",
 		code.WithAffectStability(false),
 	)
 }
