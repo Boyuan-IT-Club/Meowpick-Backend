@@ -123,10 +123,15 @@ WeApp:
   AppID: "your-weapp-appid"
   AppSecret: "your-weapp-appsecret"
 
+DebugLogin:
+  Enabled: true
+  VerifyCode: "replace-with-a-local-debug-code"
+  OpenID: "debug-openid-001"
+
 AdminGrantKey: "replace-with-a-separate-admin-verification-code"
 ```
 
-`State: local` 会启用仅供本地调试的登录验证码 `test123`，部署环境不得使用该值。
+调试登录仅在 `State: local` 且 `DebugLogin.Enabled: true` 时启用；启用时必须配置非空的 `VerifyCode` 和 `OpenID`。非本地环境启用调试登录会导致服务拒绝启动。调试账号首次创建时是普通用户，后端不会在登录时修改其管理员状态；需要测试管理员功能时，通过 `/api/auth/grant_admin` 和 `AdminGrantKey` 显式切换。
 
 `Cache` 是各 MongoDB Repository 使用的文档缓存配置；`Redis` 是点赞和基础映射等显式缓存使用的连接配置。当前两者都必须提供，通常指向同一个 Redis 实例。
 
@@ -149,10 +154,10 @@ CONFIG_PATH=etc/config.yaml go run .
 ```bash
 curl -X POST http://localhost:8080/api/auth/sign_in \
   -H 'Content-Type: application/json' \
-  -d '{"authId":"local","authType":"wechat","verifyCode":"test123"}'
+  -d '{"authId":"local","authType":"wechat","verifyCode":"replace-with-a-local-debug-code"}'
 ```
 
-`State: local` 且验证码为 `test123` 时，登录本身不会调用微信接口；但服务启动仍要求配置非空的 WeApp AppID/AppSecret，昵称更新和评论发布也始终调用真实微信内容审核。占位凭据只适合测试不涉及内容审核的本地流程，不能验证昵称或评论审核。其他请求把响应中的 `accessToken` 放入 `Authorization: Bearer <token>` 请求头。
+命中启用的调试登录配置时，登录本身不会调用微信接口；但服务启动仍要求配置非空的 WeApp AppID/AppSecret，昵称更新和评论发布也始终调用真实微信内容审核。占位凭据只适合测试不涉及内容审核的本地流程，不能验证昵称或评论审核。其他请求把响应中的 `accessToken` 放入 `Authorization: Bearer <token>` 请求头。
 
 ## 开发与验证
 

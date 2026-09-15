@@ -56,14 +56,15 @@ var AuthServiceSet = wire.NewSet(
 func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto.SignInResp, err error) {
 	// 查找或创建用户
 	var openId string
-	debugSignIn := config.GetConfig().State == "local" && req.VerifyCode == "test123"
+	cfg := config.GetConfig()
+	debugSignIn := isDebugSignIn(cfg, req.VerifyCode)
 	if debugSignIn {
-		openId = "debug-openid-001" // 测试环境固定openid
+		openId = cfg.DebugLogin.OpenID
 	} else {
 		// 为微信API调用设置超时
 		openId = openid.GetWeChatOpenID(
-			config.GetConfig().WeApp.AppID,
-			config.GetConfig().WeApp.AppSecret,
+			cfg.WeApp.AppID,
+			cfg.WeApp.AppSecret,
 			req.VerifyCode,
 		)
 	}
@@ -80,24 +81,12 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 			errorx.KV("key", consts.ReqOpenID), errorx.KV("value", openId))
 	}
 
-	// 对于调试用户，强制设为管理员
-	if debugSignIn && oldUser != nil && !oldUser.Admin {
-		oldUser.Admin = true
-		if err = s.UserRepo.Update(ctx, oldUser); err != nil {
-			logs.CtxErrorf(ctx, "[AuthRepo] [Update] error: %v, userId: %s", err, oldUser.ID)
-		}
-	}
-
 	// 用户不存在则创建新用户
 	if oldUser == nil {
-		isAdmin := false
-		if debugSignIn {
-			isAdmin = true
-		}
 		newUser := model.User{ // 创建用户并存入数据库
 			ID:            primitive.NewObjectID().Hex(),
 			OpenID:        openId,
-			Admin:         isAdmin,
+			Admin:         false,
 			Email:         "",
 			EmailVerified: false,
 			Ban:           false,
@@ -146,6 +135,13 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 		UserID:      oldUser.ID,
 		IsAdmin:     oldUser.Admin,
 	}, nil
+}
+
+func isDebugSignIn(cfg *config.Config, verifyCode string) bool {
+	return cfg != nil &&
+		cfg.State == "local" &&
+		cfg.DebugLogin.Enabled &&
+		subtle.ConstantTimeCompare([]byte(verifyCode), []byte(cfg.DebugLogin.VerifyCode)) == 1
 }
 
 // IsAdmin 判断当前用户是否为管理员

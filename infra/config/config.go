@@ -38,6 +38,12 @@ type WeApp struct {
 	AppSecret string
 }
 
+type DebugLogin struct {
+	Enabled    bool
+	VerifyCode string
+	OpenID     string
+}
+
 type Config struct {
 	service.ServiceConf
 	ListenOn string
@@ -50,6 +56,7 @@ type Config struct {
 	Cache         cache.CacheConf
 	Redis         *redis.RedisConf
 	WeApp         WeApp
+	DebugLogin    DebugLogin
 	AdminGrantKey string
 }
 
@@ -70,6 +77,9 @@ func NewConfig() (*Config, error) {
 	if err = validateWeApp(c.WeApp); err != nil {
 		return nil, err
 	}
+	if err = validateDebugLogin(c.State, c.DebugLogin); err != nil {
+		return nil, err
+	}
 	config = c
 	return c, nil
 }
@@ -81,6 +91,27 @@ func validateWeApp(weApp WeApp) error {
 	}
 	if strings.TrimSpace(weApp.AppSecret) == "" {
 		missing = append(missing, "WeApp.AppSecret")
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("missing required configuration: %s", strings.Join(missing, ", "))
+	}
+	return nil
+}
+
+func validateDebugLogin(state string, debugLogin DebugLogin) error {
+	if !debugLogin.Enabled {
+		return nil
+	}
+	if state != "local" {
+		return fmt.Errorf("DebugLogin may only be enabled when State is local")
+	}
+
+	missing := make([]string, 0, 2)
+	if strings.TrimSpace(debugLogin.VerifyCode) == "" {
+		missing = append(missing, "DebugLogin.VerifyCode")
+	}
+	if strings.TrimSpace(debugLogin.OpenID) == "" {
+		missing = append(missing, "DebugLogin.OpenID")
 	}
 	if len(missing) > 0 {
 		return fmt.Errorf("missing required configuration: %s", strings.Join(missing, ", "))
