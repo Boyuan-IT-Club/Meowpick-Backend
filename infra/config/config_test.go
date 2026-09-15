@@ -37,3 +37,28 @@ func TestValidateWeApp(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateDebugLogin(t *testing.T) {
+	tests := []struct {
+		name       string
+		state      string
+		debugLogin DebugLogin
+		wantErr    bool
+	}{
+		{name: "disabled in production", state: "pro"},
+		{name: "enabled locally", state: "local", debugLogin: DebugLogin{Enabled: true, VerifyCode: "code", OpenID: "openid"}},
+		{name: "enabled in production", state: "pro", debugLogin: DebugLogin{Enabled: true, VerifyCode: "code", OpenID: "openid"}, wantErr: true},
+		{name: "missing verify code", state: "local", debugLogin: DebugLogin{Enabled: true, OpenID: "openid"}, wantErr: true},
+		{name: "missing open id", state: "local", debugLogin: DebugLogin{Enabled: true, VerifyCode: "code"}, wantErr: true},
+		{name: "blank values", state: "local", debugLogin: DebugLogin{Enabled: true, VerifyCode: " ", OpenID: "\t"}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateDebugLogin(tt.state, tt.debugLogin)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("validateDebugLogin() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
