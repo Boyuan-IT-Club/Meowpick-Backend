@@ -46,6 +46,22 @@ func CreateComment(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
+// DeleteComment godoc
+// @Summary 删除自己的评论
+// @Description 登录用户按 path 中的评论ID软删除自己发布且尚未删除的评论。不能删除他人的评论；为避免泄露评论归属，不存在、已删除或不属于当前用户均返回“评论不存在”。删除与相关点赞清理在同一事务中完成，成功后该评论不再出现在课程评论、个人评论历史、标签统计和评论总数中
+// @Tags comment
+// @Produce json
+// @Param commentId path string true "评论ID"
+// @Success 200 {object} Response[dto.DeleteCommentResp]
+// @Router /api/comment/{commentId}/delete [post]
+func DeleteComment(c *gin.Context) {
+	req := dto.DeleteCommentReq{CommentID: c.Param("commentId")}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+
+	resp, err := provider.Get().CommentService.DeleteComment(c, &req)
+	PostProcess(c, &req, resp, err)
+}
+
 // ListCourseComments godoc
 // @Summary 分页获取课程评论
 // @Description 登录后分页查询指定课程的未删除评论，按创建时间倒序返回，并为每条评论附带当前用户是否点赞及最新点赞总数。新调用使用 courseId；服务端仍兼容旧 query 参数 id，但旧参数不展示在 Swagger 中

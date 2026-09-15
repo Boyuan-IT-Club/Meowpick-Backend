@@ -38,14 +38,24 @@ const (
 )
 
 type ICommentRepo interface {
+	WithTransaction(ctx context.Context, fn func(mongo.SessionContext) error) error
 	Insert(ctx context.Context, c *model.Comment) error
 	FindByID(ctx context.Context, id string) (*model.Comment, error)
+	SoftDeleteByIDAndUserID(ctx context.Context, commentID, userID string, deletedAt time.Time) (bool, error)
 	Count(ctx context.Context) (int64, error)
 	GetTagsByCourseID(ctx context.Context, courseId string) (map[string]int64, error)
 	SoftDeleteByCourseID(ctx context.Context, courseID string) ([]string, error)
 
 	FindManyByUserID(ctx context.Context, param *dto.PageParam, userId string) ([]*model.Comment, int64, error)
 	FindManyByCourseID(ctx context.Context, param *dto.PageParam, courseId string) ([]*model.Comment, int64, error)
+}
+
+func commentOwnerDeleteFilter(commentID, userID string) bson.M {
+	return bson.M{
+		consts.ID:      commentID,
+		consts.UserID:  userID,
+		consts.Deleted: bson.M{"$ne": true},
+	}
 }
 
 // FindByID returns an active comment by ID.
@@ -85,10 +95,41 @@ func NewCommentRepo(cfg *config.Config) (*CommentRepo, error) {
 	return repository, nil
 }
 
+// WithTransaction runs comment mutations and their dependent cleanup atomically.
+func (r *CommentRepo) WithTransaction(ctx context.Context, fn func(mongo.SessionContext) error) error {
+	session, err := r.conn.Database().Client().StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(ctx)
+	_, err = session.WithTransaction(ctx, func(sessionContext mongo.SessionContext) (any, error) {
+		return nil, fn(sessionContext)
+	})
+	return err
+}
+
 // Insert 插入评论
 func (r *CommentRepo) Insert(ctx context.Context, c *model.Comment) error {
 	_, err := r.conn.InsertOneNoCache(ctx, c)
 	return err
+}
+
+// SoftDeleteByIDAndUserID marks one active comment as deleted only when it is
+// owned by the requesting user. The ownership predicate is part of the update
+// so concurrent or forged delete requests cannot bypass it.
+func (r *CommentRepo) SoftDeleteByIDAndUserID(ctx context.Context, commentID, userID string, deletedAt time.Time) (bool, error) {
+	result, err := r.conn.Database().Collection(CommentCollectionName).UpdateOne(ctx,
+		commentOwnerDeleteFilter(commentID, userID),
+		bson.M{"$set": bson.M{
+			consts.Deleted:   true,
+			consts.DeletedAt: deletedAt,
+			consts.UpdatedAt: deletedAt,
+		}},
+	)
+	if err != nil {
+		return false, err
+	}
+	return result.ModifiedCount == 1, nil
 }
 
 // SoftDeleteByCourseID marks every active comment of a course as deleted and

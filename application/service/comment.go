@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/assembler"
@@ -23,6 +24,7 @@ import (
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/cache"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/repo"
+	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/mapping"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/util/wechatsecurity"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/types/errno"
@@ -30,6 +32,7 @@ import (
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var _ ICommentService = (*CommentService)(nil)
@@ -40,12 +43,14 @@ type ICommentService interface {
 	GetTotalCommentsCount(ctx context.Context) (*dto.GetTotalCourseCommentsCountResp, error)
 	GetMyComments(ctx context.Context, req *dto.GetMyCommentsReq) (*dto.GetMyCommentsResp, error)
 	GetCourseComments(ctx context.Context, req *dto.ListCourseCommentsReq) (*dto.ListCourseCommentsResp, error)
+	DeleteComment(ctx context.Context, req *dto.DeleteCommentReq) (*dto.DeleteCommentResp, error)
 }
 
 type CommentService struct {
 	CommentRepo       *repo.CommentRepo
 	CommentCache      *cache.CommentCache
 	CommentAssembler  *assembler.CommentAssembler
+	LikeRepo          *repo.LikeRepo
 	UserRepo          *repo.UserRepo
 	ContentModeration IContentModerationService
 	ModerationLimiter cache.IModerationRateLimiter
@@ -113,6 +118,9 @@ func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateComme
 		logs.CtxErrorf(ctx, "[CommentRepo] [Insert] error_type=%T, userId=%s", err, userID)
 		return nil, errorx.WrapByCode(err, errno.ErrCommentInsertFailed)
 	}
+	if err := s.CommentCache.DeleteCount(ctx); err != nil {
+		logs.CtxWarnf(ctx, "[CommentCache] [DeleteCount] error: %v", err)
+	}
 
 	// 转换为VO
 	vo, err := s.CommentAssembler.ToCommentVO(ctx, comment, userID)
@@ -125,6 +133,48 @@ func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateComme
 	return &dto.CreateCommentResp{
 		Resp:      dto.Success(),
 		CommentVO: vo,
+	}, nil
+}
+
+// DeleteComment 软删除当前用户自己的评论，并同步清理其点赞记录。
+func (s *CommentService) DeleteComment(ctx context.Context, req *dto.DeleteCommentReq) (*dto.DeleteCommentResp, error) {
+	userID, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userID == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+
+	deletedAt := time.Now()
+	deleted := false
+	errCommentNotFound := errors.New("active comment owned by user not found")
+	err := s.CommentRepo.WithTransaction(ctx, func(txCtx mongo.SessionContext) error {
+		var err error
+		deleted, err = s.CommentRepo.SoftDeleteByIDAndUserID(txCtx, req.CommentID, userID, deletedAt)
+		if err != nil {
+			return err
+		}
+		if !deleted {
+			return errCommentNotFound
+		}
+		commentTargetType := mapping.Data.GetLikeTargetTypeIDByName(consts.LikeTargetTypeComment)
+		return s.LikeRepo.DeleteByTargets(txCtx, []string{req.CommentID}, commentTargetType)
+	})
+	if err != nil {
+		if errors.Is(err, errCommentNotFound) {
+			return nil, errorx.New(errno.ErrCommentNotFound, errorx.KV("comment_id", req.CommentID))
+		}
+		logs.CtxErrorf(ctx, "[CommentService] [DeleteComment] error: %v, commentId: %s", err, req.CommentID)
+		return nil, errorx.WrapByCode(err, errno.ErrCommentDeleteFailed,
+			errorx.KV("comment_id", req.CommentID))
+	}
+
+	if err := s.CommentCache.DeleteCount(ctx); err != nil {
+		logs.CtxWarnf(ctx, "[CommentCache] [DeleteCount] error: %v", err)
+	}
+	return &dto.DeleteCommentResp{
+		Resp:      dto.Success(),
+		CommentID: req.CommentID,
+		DeletedAt: deletedAt,
+		Deleted:   true,
 	}, nil
 }
 

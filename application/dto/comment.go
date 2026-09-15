@@ -48,6 +48,19 @@ type CreateCommentResp struct {
 	*CommentVO
 }
 
+// DeleteCommentReq 对应 /api/comment/{commentId}/delete 的路径参数。
+type DeleteCommentReq struct {
+	CommentID string `json:"-"`
+}
+
+// DeleteCommentResp 是用户成功软删除自己评论后的响应。
+type DeleteCommentResp struct {
+	*Resp
+	CommentID string    `json:"commentId"` // 被软删除的评论ID
+	DeletedAt time.Time `json:"deletedAt"` // 本次删除完成时间
+	Deleted   bool      `json:"deleted"`   // 是否成功软删除
+}
+
 // GetTotalCourseCommentsCountResp 对应 /api/search/total 的响应体
 type GetTotalCourseCommentsCountResp struct {
 	*Resp
