@@ -51,6 +51,7 @@ func NewProvider() (*Provider, error) {
 		CommentRepo:       commentRepo,
 		CommentCache:      commentCache,
 		CommentAssembler:  commentAssembler,
+		LikeRepo:          likeRepo,
 		UserRepo:          userRepo,
 		ContentModeration: contentModerationService,
 		ModerationLimiter: moderationRateLimiter,

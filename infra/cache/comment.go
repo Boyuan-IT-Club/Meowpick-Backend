@@ -32,6 +32,7 @@ const (
 type ICommentCache interface {
 	GetCount(ctx context.Context) (int64, bool, error)
 	SetCount(ctx context.Context, count int64, ttl time.Duration) error
+	DeleteCount(ctx context.Context) error
 }
 
 type CommentCache struct {
@@ -63,4 +64,10 @@ func (c *CommentCache) GetCount(ctx context.Context) (int64, bool, error) {
 // SetCount 设置评论总数缓存
 func (c *CommentCache) SetCount(ctx context.Context, count int64, ttl time.Duration) error {
 	return c.cache.SetexCtx(ctx, CommentCountCacheKey, strconv.FormatInt(count, 10), int(ttl.Seconds()))
+}
+
+// DeleteCount removes the aggregate count after a comment mutation.
+func (c *CommentCache) DeleteCount(ctx context.Context) error {
+	_, err := c.cache.DelCtx(ctx, CommentCountCacheKey)
+	return err
 }

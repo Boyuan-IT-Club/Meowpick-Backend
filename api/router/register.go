@@ -25,9 +25,10 @@ func SetupRoutes() *gin.Engine {
 	// CommentApi
 	commentGroup := router.Group("/api/comment")
 	{
-		commentGroup.POST("/add", handler.CreateComment)       // 发布评论
-		commentGroup.GET("/query", handler.ListCourseComments) // 分页获取课程下的评论
-		commentGroup.POST("/history", handler.GetMyComments)   // 获得我的吐槽
+		commentGroup.POST("/add", handler.CreateComment)               // 发布评论
+		commentGroup.GET("/query", handler.ListCourseComments)         // 分页获取课程下的评论
+		commentGroup.POST("/history", handler.GetMyComments)           // 获得我的吐槽
+		commentGroup.POST("/:commentId/delete", handler.DeleteComment) // 删除自己的评论
 	}
 
 	// SearchApi

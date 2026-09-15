@@ -26,6 +26,7 @@ type Comment struct {
 	Tags     []string `bson:"tags"             json:"tags"`
 	// Edited   bool               `bson:"edited"           json:"edited"`
 	Deleted   bool      `bson:"deleted"          json:"-"` // 软删除标记通常不在API中返回
+	DeletedAt time.Time `bson:"deletedAt,omitempty" json:"-"`
 	CreatedAt time.Time `bson:"createdAt"        json:"createdAt"`
 	UpdatedAt time.Time `bson:"updatedAt"        json:"updatedAt"`
 }

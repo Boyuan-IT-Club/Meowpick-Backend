@@ -25,6 +25,8 @@ const (
 	ErrCommentFindFailed     = 105000004
 	ErrCommentInvalidContent = 105000005
 	ErrCommentInvalidTags    = 105000006
+	ErrCommentNotFound       = 105000007
+	ErrCommentDeleteFailed   = 105000008
 )
 
 func init() {
@@ -56,6 +58,16 @@ func init() {
 	code.Register(
 		ErrCommentInvalidTags,
 		"comment tags must be unique allowed values with at most 4 items",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCommentNotFound,
+		"comment not found: {comment_id}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrCommentDeleteFailed,
+		"failed to delete comment: {comment_id}",
 		code.WithAffectStability(false),
 	)
 }
