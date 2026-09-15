@@ -45,7 +45,7 @@ jobs:
 
           # The openai/ prefix selects LiteLLM's OpenAI-compatible transport.
           config.model: "openai/ecnu-max"
-          config.fallback_models: '[]'
+          config.fallback_models: '["openai/ecnu-plus"]'
           config.custom_model_max_tokens: "128000"
           config.response_language: "zh-CN"
 
