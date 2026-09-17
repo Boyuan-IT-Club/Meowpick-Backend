@@ -36,8 +36,9 @@ func TestFieldSuggestionVOCoursesJSON(t *testing.T) {
 
 	t.Run("teacher without courses emits empty array", func(t *testing.T) {
 		courses := []CourseBrief{}
+		title := "教授"
 		payload, err := json.Marshal(FieldSuggestionVO{
-			ID: "teacher-1", Value: "张三", Label: "张三 - 教授", Title: "教授", Courses: &courses,
+			ID: "teacher-1", Value: "张三", Label: "张三 - 教授", Title: &title, Courses: &courses,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -56,6 +57,24 @@ func TestFieldSuggestionVOCoursesJSON(t *testing.T) {
 		}
 		if got["title"] != "教授" {
 			t.Fatalf("title = %#v, want 教授", got["title"])
+		}
+	})
+
+	t.Run("legacy teacher emits empty title", func(t *testing.T) {
+		courses := []CourseBrief{}
+		title := ""
+		payload, err := json.Marshal(FieldSuggestionVO{
+			ID: "teacher-legacy", Value: "旧老师", Label: "旧老师", Title: &title, Courses: &courses,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got map[string]any
+		if err = json.Unmarshal(payload, &got); err != nil {
+			t.Fatal(err)
+		}
+		if titleValue, exists := got["title"]; !exists || titleValue != "" {
+			t.Fatalf("title = %#v (exists=%v), want empty string", titleValue, exists)
 		}
 	})
 }

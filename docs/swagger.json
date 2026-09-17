@@ -476,7 +476,7 @@
                         "type": "string"
                     },
                     "title": {
-                        "description": "仅 teacherName 建议返回教师职称；其他字段省略",
+                        "description": "teacherName 建议固定返回教师职称（历史教师无职称时为空字符串）；其他字段省略",
                         "type": "string"
                     },
                     "value": {
@@ -1197,7 +1197,7 @@
                         "type": "string"
                     },
                     "title": {
-                        "description": "仅教师建议返回职称；其他类型省略",
+                        "description": "教师建议固定返回职称（历史教师无职称时为空字符串）；其他类型省略",
                         "type": "string"
                     },
                     "type": {

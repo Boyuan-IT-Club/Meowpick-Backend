@@ -99,7 +99,7 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 					VO: &dto.SearchSuggestionsVO{
 						Type:        consts.SuggestionTargetTypeTeacher,
 						Name:        teacher.Name,
-						Title:       teacher.Title,
+						Title:       &teacher.Title,
 						SearchValue: teacher.Name + teacher.Title,
 					},
 					Rank:         group.Rank,

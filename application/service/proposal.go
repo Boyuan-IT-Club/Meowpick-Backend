@@ -935,7 +935,7 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 				ID:      teacher.ID,
 				Value:   teacher.Name,
 				Label:   teacherSuggestionLabel(teacher.Name, teacher.Title),
-				Title:   teacher.Title,
+				Title:   &teacher.Title,
 				Courses: &briefs,
 			})
 		}

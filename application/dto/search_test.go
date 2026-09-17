@@ -21,10 +21,11 @@ import (
 )
 
 func TestSearchSuggestionsVOJSON(t *testing.T) {
+	title := "副教授"
 	teacherPayload, err := json.Marshal(SearchSuggestionsVO{
 		Type:        "teacher",
 		Name:        "张丹",
-		Title:       "副教授",
+		Title:       &title,
 		SearchValue: "张丹副教授",
 	})
 	if err != nil {
@@ -34,6 +35,20 @@ func TestSearchSuggestionsVOJSON(t *testing.T) {
 		if !strings.Contains(string(teacherPayload), field) {
 			t.Fatalf("teacher payload %s does not contain %s", teacherPayload, field)
 		}
+	}
+
+	emptyTitle := ""
+	legacyTeacherPayload, err := json.Marshal(SearchSuggestionsVO{
+		Type:        "teacher",
+		Name:        "旧老师",
+		Title:       &emptyTitle,
+		SearchValue: "旧老师",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(legacyTeacherPayload), `"title":""`) {
+		t.Fatalf("legacy teacher payload should contain an empty title: %s", legacyTeacherPayload)
 	}
 
 	coursePayload, err := json.Marshal(SearchSuggestionsVO{Type: "course", Name: "测试课程", SearchValue: "测试课程"})
