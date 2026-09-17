@@ -89,9 +89,10 @@ func TestGroupTeacherSuggestionCandidatesMergesSearchValue(t *testing.T) {
 }
 
 func TestSortAndPageSearchSuggestionsUsesRelevanceBeforeType(t *testing.T) {
+	title := "副教授"
 	candidates := []*rankedSearchSuggestion{
 		{VO: &dto.SearchSuggestionsVO{Type: consts.SuggestionTargetTypeCourse, Name: "课程张丹", SearchValue: "课程张丹"}, Rank: 20, TypePriority: 0},
-		{VO: &dto.SearchSuggestionsVO{Type: consts.SuggestionTargetTypeTeacher, Name: "张丹", Title: "副教授", SearchValue: "张丹副教授"}, Rank: 10, TypePriority: 1},
+		{VO: &dto.SearchSuggestionsVO{Type: consts.SuggestionTargetTypeTeacher, Name: "张丹", Title: &title, SearchValue: "张丹副教授"}, Rank: 10, TypePriority: 1},
 		{VO: &dto.SearchSuggestionsVO{Type: consts.SuggestionTargetTypeCourse, Name: "张丹", SearchValue: "张丹"}, Rank: 0, TypePriority: 0},
 	}
 	got := sortAndPageSearchSuggestions(candidates, &dto.PageParam{Page: 1, PageSize: 2})

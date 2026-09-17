@@ -362,7 +362,7 @@ components:
           description: 前端展示文本；教师有职称时格式为“姓名 - 职称”
           type: string
         title:
-          description: 仅 teacherName 建议返回教师职称；其他字段省略
+          description: teacherName 建议固定返回教师职称（历史教师无职称时为空字符串）；其他字段省略
           type: string
         value:
           description: 选中建议后写入请求字段的值
@@ -876,7 +876,7 @@ components:
           description: 点击后传给 /api/search 的精确搜索值；教师为无分隔的姓名+职称（职称为空时等于姓名），其他类型等于 name
           type: string
         title:
-          description: 仅教师建议返回职称；其他类型省略
+          description: 教师建议固定返回职称（历史教师无职称时为空字符串）；其他类型省略
           type: string
         type:
           description: 建议类型：course、teacher、category、department
