@@ -930,12 +930,13 @@ func (s *ProposalService) GetProposalFieldSuggestions(ctx context.Context, req *
 
 		for _, group := range groups {
 			teacher := group.Teacher
+			title := teacher.Title
 			briefs := recentCourseBriefsForTeacherIDs(group.TeacherIDs, coursesByTeacher, 2)
 			suggestions = append(suggestions, &dto.FieldSuggestionVO{
 				ID:      teacher.ID,
 				Value:   teacher.Name,
 				Label:   teacherSuggestionLabel(teacher.Name, teacher.Title),
-				Title:   &teacher.Title,
+				Title:   &title,
 				Courses: &briefs,
 			})
 		}

@@ -95,11 +95,12 @@ func (s *SearchService) GetSearchSuggestions(ctx context.Context, req *dto.GetSe
 			result := make([]*rankedSearchSuggestion, 0, len(groups))
 			for _, group := range groups {
 				teacher := group.Teacher
+				title := teacher.Title
 				result = append(result, &rankedSearchSuggestion{
 					VO: &dto.SearchSuggestionsVO{
 						Type:        consts.SuggestionTargetTypeTeacher,
 						Name:        teacher.Name,
-						Title:       &teacher.Title,
+						Title:       &title,
 						SearchValue: teacher.Name + teacher.Title,
 					},
 					Rank:         group.Rank,
