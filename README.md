@@ -149,6 +149,13 @@ CONFIG_PATH=etc/config.yaml go run .
 - Swagger UI：<http://localhost:8080/swagger/index.html>
 - OpenAPI JSON：<http://localhost:8080/openapi.json>
 
+OpenAPI 使用相对于规范文件位置的服务地址，同一镜像可同时部署在域名根路径和网关前缀下：
+
+- 独立域名：`https://api.meowpick.eagle233.top/openapi.json`
+- Kubernetes 网关：`https://api.xhpolaris.com/meowpick-new/openapi.json`
+
+对应的 Swagger UI 分别位于 `/swagger/index.html` 和 `/meowpick-new/swagger/index.html`。
+
 本地调试登录示例：
 
 ```bash

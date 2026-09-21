@@ -15,7 +15,7 @@
 // @title Meowpick Backend API
 // @version 1.0
 // @description 选课猫后端接口文档
-// @servers.url /
+// @servers.url ./
 // @security Bearer
 // @securitydefinitions.bearerauth Bearer
 package main
@@ -35,17 +35,22 @@ import (
 
 func main() {
 	provider.Init()
-	r := router.SetupRoutes()
+	r := setupRouter()
 	setLogLevel()
-	r.GET("/openapi.json", func(c *gin.Context) {
-		c.Data(http.StatusOK, "application/json; charset=utf-8", []byte(docs.SwaggerInfo.ReadDoc()))
-	})
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/openapi.json")))
 
 	err := r.Run(":8080")
 	if err != nil {
 		panic(err)
 	}
+}
+
+func setupRouter() *gin.Engine {
+	r := router.SetupRoutes()
+	r.GET("/openapi.json", func(c *gin.Context) {
+		c.Data(http.StatusOK, "application/json; charset=utf-8", []byte(docs.SwaggerInfo.ReadDoc()))
+	})
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("../openapi.json")))
+	return r
 }
 
 func setLogLevel() {
