@@ -56,13 +56,13 @@ func TestOpenAPIServerURLSupportsRootAndPrefixedGateways(t *testing.T) {
 	}{
 		{
 			name:     "dedicated domain",
-			specURL:  "https://api.meowpick.eagle233.top/openapi.json",
-			expected: "https://api.meowpick.eagle233.top/",
+			specURL:  "https://api.example.com/openapi.json",
+			expected: "https://api.example.com/",
 		},
 		{
 			name:     "Kubernetes gateway prefix",
-			specURL:  "https://api.xhpolaris.com/meowpick-new/openapi.json",
-			expected: "https://api.xhpolaris.com/meowpick-new/",
+			specURL:  "https://gateway.example.com/service-prefix/openapi.json",
+			expected: "https://gateway.example.com/service-prefix/",
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
