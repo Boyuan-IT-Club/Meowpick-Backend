@@ -67,12 +67,12 @@ func TestValidateRequiredTarget(t *testing.T) {
 
 func TestSnapshotHashIncludesResolvedCourseRepair(t *testing.T) {
 	department := int32(10)
-	first, err := snapshotHash(nil, nil, []courseRepair{{ID: "course", Department: &department}}, nil, nil, nil)
+	first, err := snapshotHash(nil, nil, []courseRepair{{ID: "course", Department: &department}}, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	department = 11
-	second, err := snapshotHash(nil, nil, []courseRepair{{ID: "course", Department: &department}}, nil, nil, nil)
+	second, err := snapshotHash(nil, nil, []courseRepair{{ID: "course", Department: &department}}, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,11 +82,11 @@ func TestSnapshotHashIncludesResolvedCourseRepair(t *testing.T) {
 }
 
 func TestSnapshotHashIncludesLikeRepairs(t *testing.T) {
-	first, err := snapshotHash(nil, nil, nil, nil, nil, []likeRepair{{SourceID: "like-1", SourceIDType: "string", Delete: true, Reason: "missing target"}})
+	first, err := snapshotHash(nil, nil, nil, nil, nil, nil, nil, []likeRepair{{SourceID: "like-1", SourceIDType: "string", Delete: true, Reason: "missing target"}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := snapshotHash(nil, nil, nil, nil, nil, []likeRepair{{SourceID: "like-2", SourceIDType: "string", Delete: true, Reason: "missing target"}})
+	second, err := snapshotHash(nil, nil, nil, nil, nil, nil, nil, []likeRepair{{SourceID: "like-2", SourceIDType: "string", Delete: true, Reason: "missing target"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestSnapshotHashIsOrderIndependent(t *testing.T) {
 	first, err := snapshotHash(
 		[]legacyMapping{{Name: "B", Code: 2}, {Name: "A", Code: 1}},
 		[]brokenCourse{{ID: "B"}, {ID: "A"}},
-		nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -128,12 +128,45 @@ func TestSnapshotHashIsOrderIndependent(t *testing.T) {
 	second, err := snapshotHash(
 		[]legacyMapping{{Name: "A", Code: 1}, {Name: "B", Code: 2}},
 		[]brokenCourse{{ID: "A"}, {ID: "B"}},
-		nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if first != second {
 		t.Fatal("snapshot hash depends on MongoDB iteration order")
+	}
+}
+
+func TestSnapshotHashIncludesUserRepairs(t *testing.T) {
+	first, err := snapshotHash(nil, nil, nil,
+		[]userRepair{{ID: "user-1", Username: placeholderUsername}}, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := snapshotHash(nil, nil, nil,
+		[]userRepair{{ID: "user-2", Username: placeholderUsername}}, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first == second {
+		t.Fatal("snapshot hash must change when placeholder user repairs change")
+	}
+}
+
+func TestSnapshotHashIncludesOrphanCommentRepairs(t *testing.T) {
+	courseID := "missing-course"
+	first, err := snapshotHash(nil, nil, nil, nil,
+		[]orphanCommentRepair{{SourceID: "comment-1", SourceIDType: "string", CourseID: &courseID}}, nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := snapshotHash(nil, nil, nil, nil,
+		[]orphanCommentRepair{{SourceID: "comment-2", SourceIDType: "string", CourseID: &courseID}}, nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first == second {
+		t.Fatal("snapshot hash must change when orphan comment repairs change")
 	}
 }
