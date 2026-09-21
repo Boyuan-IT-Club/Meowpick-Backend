@@ -9,7 +9,6 @@ const docTemplate = `{
     "components": {
         "schemas": {
             "dto.AdminActionVO": {
-                "description": "最近一次管理员操作；尚无管理员操作时省略",
                 "properties": {
                     "action": {
                         "description": "最近动作名称，例如 approve、reject、delete、update",
@@ -154,7 +153,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.CourseContributorVO": {
-                "description": "课程由审批提案创建时返回来源信息；历史课程无来源提案时省略",
                 "properties": {
                     "proposalId": {
                         "description": "创建该课程的已通过提案ID",
@@ -176,7 +174,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.CourseVO": {
-                "description": "未被软删除的课程完整信息",
                 "properties": {
                     "campuses": {
                         "description": "开设校区名称列表",
@@ -195,7 +192,8 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "contributor": {
-                        "$ref": "#/components/schemas/dto.CourseContributorVO"
+                        "$ref": "#/components/schemas/dto.CourseContributorVO",
+                        "description": "课程由审批提案创建时返回来源信息；历史课程无来源提案时省略"
                     },
                     "department": {
                         "description": "课程开课院系名称；不是教师所属院系",
@@ -266,7 +264,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.CreateCommentResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "category": {
                         "description": "“我的评论”中附带的课程分类；普通课程评论列表中为空",
@@ -338,7 +335,8 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "course": {
-                        "$ref": "#/components/schemas/dto.ProposalCourseVO"
+                        "$ref": "#/components/schemas/dto.ProposalCourseVO",
+                        "description": "提议新增的课程完整信息"
                     },
                     "showUsername": {
                         "description": "是否允许公开展示提案创建者昵称；false 表示匿名展示",
@@ -356,10 +354,10 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.CreateProposalResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "proposal": {
-                        "$ref": "#/components/schemas/dto.ProposalVO"
+                        "$ref": "#/components/schemas/dto.ProposalVO",
+                        "description": "新建后的完整待审核提案"
                     },
                     "proposalId": {
                         "description": "新建提案ID",
@@ -391,7 +389,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.CreateTeacherResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "department": {
                         "description": "教师所属院系；提案场景允许为空，表示暂未维护",
@@ -413,7 +410,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.CreatorVO": {
-                "description": "提案创建者信息",
                 "properties": {
                     "createTime": {
                         "description": "提案创建时间，格式 YYYY-MM-DD HH:mm:ss",
@@ -431,7 +427,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.DeleteCommentResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "commentId": {
                         "description": "被软删除的评论ID",
@@ -449,7 +444,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.DeleteProposalResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "deleted": {
                         "description": "是否成功软删除",
@@ -500,7 +494,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetCourseCampusesResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "campuses": {
                         "description": "同名未删除课程涉及的去重开设校区名称",
@@ -514,7 +507,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetCourseCategoriesResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "categories": {
                         "description": "同名未删除课程涉及的去重课程分类名称",
@@ -528,7 +520,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetCourseDepartmentsResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "departments": {
                         "description": "同名未删除课程涉及的去重开课院系名称",
@@ -542,10 +533,10 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetCourseResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "course": {
-                        "$ref": "#/components/schemas/dto.CourseVO"
+                        "$ref": "#/components/schemas/dto.CourseVO",
+                        "description": "未被软删除的课程完整信息"
                     }
                 },
                 "type": "object"
@@ -566,7 +557,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetMyCommentsResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "comments": {
                         "description": "当前分页评论，附带对应课程信息及当前点赞状态",
@@ -584,7 +574,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetMyProposalsResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "proposals": {
                         "description": "当前分页的个人提案历史",
@@ -623,7 +612,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetProposalResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "proposal": {
                         "$ref": "#/components/schemas/dto.ProposalVO"
@@ -632,7 +620,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetSearchHistoriesResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "histories": {
                         "description": "当前用户最近15条搜索历史，按最近搜索时间倒序",
@@ -646,7 +633,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetSearchSuggestionsResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "suggestions": {
                         "description": "合并后的建议列表，最多 pageSize 条",
@@ -660,7 +646,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetTeacherSuggestionsResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "teachers": {
                         "description": "当前分页教师建议列表",
@@ -674,7 +659,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetTotalCourseCommentsCountResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "count": {
                         "description": "系统中所有未删除课程评论总数",
@@ -684,7 +668,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetUserProfileResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "avatar": {
                         "description": "当前头像引用，未设置时为空字符串",
@@ -714,7 +697,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GetUsernameByUserIDResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "username": {
                         "description": "目标用户昵称，尚未设置时为空字符串",
@@ -737,7 +719,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.GrantAdminResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "isAdmin": {
                         "description": "切换后的管理员状态；true 表示已授予，false 表示已撤销",
@@ -747,7 +728,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.IsAdminResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "isAdmin": {
                         "description": "当前登录用户是否为管理员",
@@ -786,7 +766,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ListChangeLogsResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "changeLogs": {
                         "description": "当前分页日志，按时间倒序",
@@ -804,7 +783,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ListCourseCommentsResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "comments": {
                         "description": "当前分页评论，按创建时间倒序",
@@ -837,7 +815,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ListCoursesResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "courses": {
                         "description": "当前页的课程列表",
@@ -865,7 +842,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ListProposalLogsGroupedResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "proposals": {
                         "description": "当前分页提案及其最近一次管理员操作摘要",
@@ -883,7 +859,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ListProposalLogsTimelineResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "logs": {
                         "description": "当前分页时间线日志，严格按操作时间倒序",
@@ -901,7 +876,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ListProposalResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "proposals": {
                         "description": "当前分页提案列表，无结果时为空数组",
@@ -919,7 +893,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ProposalCourseVO": {
-                "description": "用户提交的课程快照",
                 "properties": {
                     "campuses": {
                         "description": "开设校区名称列表，至少一项且必须是系统已有校区，不允许由提案创建新校区",
@@ -963,17 +936,20 @@ const docTemplate = `{
             "dto.ProposalLogVO": {
                 "properties": {
                     "adminAction": {
-                        "$ref": "#/components/schemas/dto.AdminActionVO"
+                        "$ref": "#/components/schemas/dto.AdminActionVO",
+                        "description": "最近一次管理员操作；尚无管理员操作时省略"
                     },
                     "content": {
                         "description": "提案补充说明",
                         "type": "string"
                     },
                     "course": {
-                        "$ref": "#/components/schemas/dto.ProposalCourseVO"
+                        "$ref": "#/components/schemas/dto.ProposalCourseVO",
+                        "description": "用户提交的课程快照"
                     },
                     "creator": {
-                        "$ref": "#/components/schemas/dto.CreatorVO"
+                        "$ref": "#/components/schemas/dto.CreatorVO",
+                        "description": "提案创建者信息"
                     },
                     "proposalId": {
                         "description": "提案ID",
@@ -991,7 +967,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ProposalSnapshotVO": {
-                "description": "能找到关联提案时返回当前提案摘要",
                 "properties": {
                     "category": {
                         "description": "提案课程分类",
@@ -1044,13 +1019,13 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "proposalSnapshot": {
-                        "$ref": "#/components/schemas/dto.ProposalSnapshotVO"
+                        "$ref": "#/components/schemas/dto.ProposalSnapshotVO",
+                        "description": "能找到关联提案时返回当前提案摘要"
                     }
                 },
                 "type": "object"
             },
             "dto.ProposalVO": {
-                "description": "新建后的完整待审核提案",
                 "properties": {
                     "content": {
                         "description": "提案补充说明，可能为空",
@@ -1061,7 +1036,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "course": {
-                        "$ref": "#/components/schemas/dto.ProposalCourseVO"
+                        "$ref": "#/components/schemas/dto.ProposalCourseVO",
+                        "description": "用户最初提交的课程内容，审批时不会被 finalCourse 覆盖"
                     },
                     "createdAt": {
                         "description": "提案创建时间",
@@ -1072,7 +1048,8 @@ const docTemplate = `{
                         "type": "boolean"
                     },
                     "finalCourse": {
-                        "$ref": "#/components/schemas/dto.ProposalCourseVO"
+                        "$ref": "#/components/schemas/dto.ProposalCourseVO",
+                        "description": "审批通过后的正式课程；历史/列表/筛选接口对已通过提案返回，详情接口仅创建者或管理员可见，课程已删除或查询失败时省略"
                     },
                     "id": {
                         "description": "提案ID",
@@ -1127,7 +1104,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.RejectProposalResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "pendingCount": {
                         "description": "操作后剩余待审核提案数量",
@@ -1147,7 +1123,8 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "course": {
-                        "$ref": "#/components/schemas/dto.ProposalCourseVO"
+                        "$ref": "#/components/schemas/dto.ProposalCourseVO",
+                        "description": "新提案的完整课程信息"
                     },
                     "showUsername": {
                         "description": "是否允许公开展示新提案创建者昵称",
@@ -1165,14 +1142,14 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ResubmitProposalResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "previousProposalId": {
                         "description": "已软删除的原拒绝提案ID",
                         "type": "string"
                     },
                     "proposal": {
-                        "$ref": "#/components/schemas/dto.ProposalVO"
+                        "$ref": "#/components/schemas/dto.ProposalVO",
+                        "description": "新建后的完整待审核提案"
                     },
                     "proposalId": {
                         "description": "新建待审核提案ID",
@@ -1191,7 +1168,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.RevokeProposalResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "proposalId": {
                         "description": "已恢复为 pending 的提案ID",
@@ -1261,7 +1237,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.SignInResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "accessToken": {
                         "description": "Bearer 访问令牌；已有令牌仍有效且无需续期时可能原样返回",
@@ -1320,7 +1295,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ToggleLikeResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "like": {
                         "description": "当前登录用户在操作后或查询时是否已点赞",
@@ -1336,7 +1310,8 @@ const docTemplate = `{
             "dto.ToggleProposalReq": {
                 "properties": {
                     "finalCourse": {
-                        "$ref": "#/components/schemas/dto.ProposalCourseVO"
+                        "$ref": "#/components/schemas/dto.ProposalCourseVO",
+                        "description": "管理员最终确认的课程；省略、null 或空请求体时使用用户原始 course"
                     },
                     "proposalID": {
                         "description": "提案ID，由 URL path 写入，请求体无需传",
@@ -1350,7 +1325,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ToggleProposalResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "proposal": {
                         "description": "是否成功通过提案",
@@ -1370,7 +1344,8 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "course": {
-                        "$ref": "#/components/schemas/dto.ProposalCourseVO"
+                        "$ref": "#/components/schemas/dto.ProposalCourseVO",
+                        "description": "更新后的完整课程信息，不支持仅传部分字段"
                     },
                     "title": {
                         "description": "更新后的提案标题，不能为空",
@@ -1385,7 +1360,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.UpdateProposalResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "proposalId": {
                         "description": "更新成功的提案ID",
@@ -1408,7 +1382,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.UpdateUserProfileResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "avatar": {
                         "description": "更新后的头像引用",
@@ -1429,7 +1402,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.CreateCommentResp"
+                        "$ref": "#/components/schemas/dto.CreateCommentResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1447,7 +1421,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.CreateProposalResp"
+                        "$ref": "#/components/schemas/dto.CreateProposalResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1465,7 +1440,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.CreateTeacherResp"
+                        "$ref": "#/components/schemas/dto.CreateTeacherResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1483,7 +1459,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.DeleteCommentResp"
+                        "$ref": "#/components/schemas/dto.DeleteCommentResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1501,7 +1478,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.DeleteProposalResp"
+                        "$ref": "#/components/schemas/dto.DeleteProposalResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1519,7 +1497,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetCourseCampusesResp"
+                        "$ref": "#/components/schemas/dto.GetCourseCampusesResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1537,7 +1516,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetCourseCategoriesResp"
+                        "$ref": "#/components/schemas/dto.GetCourseCategoriesResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1555,7 +1535,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetCourseDepartmentsResp"
+                        "$ref": "#/components/schemas/dto.GetCourseDepartmentsResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1573,7 +1554,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetCourseResp"
+                        "$ref": "#/components/schemas/dto.GetCourseResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1591,7 +1573,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetMyCommentsResp"
+                        "$ref": "#/components/schemas/dto.GetMyCommentsResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1609,7 +1592,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetMyProposalsResp"
+                        "$ref": "#/components/schemas/dto.GetMyProposalsResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1627,7 +1611,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetProposalResp"
+                        "$ref": "#/components/schemas/dto.GetProposalResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1645,7 +1630,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetSearchHistoriesResp"
+                        "$ref": "#/components/schemas/dto.GetSearchHistoriesResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1663,7 +1649,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetSearchSuggestionsResp"
+                        "$ref": "#/components/schemas/dto.GetSearchSuggestionsResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1681,7 +1668,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetTeacherSuggestionsResp"
+                        "$ref": "#/components/schemas/dto.GetTeacherSuggestionsResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1699,7 +1687,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetTotalCourseCommentsCountResp"
+                        "$ref": "#/components/schemas/dto.GetTotalCourseCommentsCountResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1717,7 +1706,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetUserProfileResp"
+                        "$ref": "#/components/schemas/dto.GetUserProfileResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1735,7 +1725,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GetUsernameByUserIDResp"
+                        "$ref": "#/components/schemas/dto.GetUsernameByUserIDResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1753,7 +1744,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.GrantAdminResp"
+                        "$ref": "#/components/schemas/dto.GrantAdminResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1771,7 +1763,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.IsAdminResp"
+                        "$ref": "#/components/schemas/dto.IsAdminResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1789,7 +1782,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.ListChangeLogsResp"
+                        "$ref": "#/components/schemas/dto.ListChangeLogsResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1807,7 +1801,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.ListCourseCommentsResp"
+                        "$ref": "#/components/schemas/dto.ListCourseCommentsResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1825,7 +1820,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.ListCoursesResp"
+                        "$ref": "#/components/schemas/dto.ListCoursesResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1843,7 +1839,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.ListProposalLogsGroupedResp"
+                        "$ref": "#/components/schemas/dto.ListProposalLogsGroupedResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1861,7 +1858,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.ListProposalLogsTimelineResp"
+                        "$ref": "#/components/schemas/dto.ListProposalLogsTimelineResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1879,7 +1877,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.ListProposalResp"
+                        "$ref": "#/components/schemas/dto.ListProposalResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1897,7 +1896,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.RejectProposalResp"
+                        "$ref": "#/components/schemas/dto.RejectProposalResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1915,7 +1915,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.ResubmitProposalResp"
+                        "$ref": "#/components/schemas/dto.ResubmitProposalResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1933,7 +1934,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.RevokeProposalResp"
+                        "$ref": "#/components/schemas/dto.RevokeProposalResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1951,7 +1953,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.SignInResp"
+                        "$ref": "#/components/schemas/dto.SignInResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1969,7 +1972,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.ToggleLikeResp"
+                        "$ref": "#/components/schemas/dto.ToggleLikeResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -1987,7 +1991,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.ToggleProposalResp"
+                        "$ref": "#/components/schemas/dto.ToggleProposalResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -2005,7 +2010,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.UpdateProposalResp"
+                        "$ref": "#/components/schemas/dto.UpdateProposalResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -2023,7 +2029,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.UpdateUserProfileResp"
+                        "$ref": "#/components/schemas/dto.UpdateUserProfileResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -2058,16 +2065,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.GrantAdminReq",
-                                        "summary": "body",
-                                        "description": "目标用户ID和管理员授权密钥"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.GrantAdminReq",
+                                "summary": "body",
+                                "description": "目标用户ID和管理员授权密钥"
                             }
                         }
                     },
@@ -2120,16 +2120,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.SignInReq",
-                                        "summary": "body",
-                                        "description": "登录参数；authId、authType、verifyCode 均必填"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.SignInReq",
+                                "summary": "body",
+                                "description": "登录参数；authId、authType、verifyCode 均必填"
                             }
                         }
                     },
@@ -2162,16 +2155,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.ListChangeLogsReq",
-                                        "summary": "req",
-                                        "description": "可选类型、内容关键词和分页参数"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.ListChangeLogsReq",
+                                "summary": "req",
+                                "description": "可选类型、内容关键词和分页参数"
                             }
                         }
                     },
@@ -2303,16 +2289,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.CreateCommentReq",
-                                        "summary": "body",
-                                        "description": "课程ID、1至140字符的评论正文，以及最多4个预定义标签"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.CreateCommentReq",
+                                "summary": "body",
+                                "description": "课程ID、1至140字符的评论正文，以及最多4个预定义标签"
                             }
                         }
                     },
@@ -2344,16 +2323,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.GetMyCommentsReq",
-                                        "summary": "body",
-                                        "description": "分页参数；page 小于1按1处理，pageSize 范围1-100且非法值按10处理"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.GetMyCommentsReq",
+                                "summary": "body",
+                                "description": "分页参数；page 小于1按1处理，pageSize 范围1-100且非法值按10处理"
                             }
                         }
                     },
@@ -2606,16 +2578,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.ToggleLikeReq",
-                                        "summary": "body",
-                                        "description": "点赞请求参数"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.ToggleLikeReq",
+                                "summary": "body",
+                                "description": "点赞请求参数"
                             }
                         }
                     },
@@ -2647,16 +2612,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.CreateProposalReq",
-                                        "summary": "req",
-                                        "description": "创建提案的请求参数"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.CreateProposalReq",
+                                "summary": "req",
+                                "description": "创建提案的请求参数"
                             }
                         }
                     },
@@ -2969,16 +2927,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.ToggleProposalReq",
-                                        "summary": "req",
-                                        "description": "可选审批参数；title 非空时修改提案标题，finalCourse 省略或为 null 时使用提案原始课程"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.ToggleProposalReq",
+                                "summary": "req",
+                                "description": "可选审批参数；title 非空时修改提案标题，finalCourse 省略或为 null 时使用提案原始课程"
                             }
                         }
                     },
@@ -3061,16 +3012,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.RejectProposalReq",
-                                        "summary": "body",
-                                        "description": "拒绝参数（可选理由）"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.RejectProposalReq",
+                                "summary": "body",
+                                "description": "拒绝参数（可选理由）"
                             }
                         }
                     },
@@ -3113,16 +3057,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.ResubmitProposalReq",
-                                        "summary": "req",
-                                        "description": "重新提交后的完整提案内容"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.ResubmitProposalReq",
+                                "summary": "req",
+                                "description": "重新提交后的完整提案内容"
                             }
                         }
                     },
@@ -3165,16 +3102,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.RevokeProposalReq",
-                                        "summary": "req",
-                                        "description": "撤回类型：approve 撤回通过，reject 撤回拒绝"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.RevokeProposalReq",
+                                "summary": "req",
+                                "description": "撤回类型：approve 撤回通过，reject 撤回拒绝"
                             }
                         }
                     },
@@ -3217,16 +3147,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.UpdateProposalReq",
-                                        "summary": "body",
-                                        "description": "完整更新参数；title、content、course 必填"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.UpdateProposalReq",
+                                "summary": "body",
+                                "description": "完整更新参数；title、content、course 必填"
                             }
                         }
                     },
@@ -3258,16 +3181,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.ListCoursesReq",
-                                        "summary": "body",
-                                        "description": "搜索类型、关键词和分页；type 支持 course/teacher/category/department"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.ListCoursesReq",
+                                "summary": "body",
+                                "description": "搜索类型、关键词和分页；type 支持 course/teacher/category/department"
                             }
                         }
                     },
@@ -3391,16 +3307,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.CreateTeacherReq",
-                                        "summary": "body",
-                                        "description": "正式教师信息；name、title、department 均必填"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.CreateTeacherReq",
+                                "summary": "body",
+                                "description": "正式教师信息；name、title、department 均必填"
                             }
                         }
                     },
@@ -3504,16 +3413,9 @@ const docTemplate = `{
                     "content": {
                         "application/json": {
                             "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/dto.UpdateUserProfileReq",
-                                        "summary": "body",
-                                        "description": "昵称和头像的局部更新；字段省略/null 保持，空字符串清空"
-                                    }
-                                ]
+                                "$ref": "#/components/schemas/dto.UpdateUserProfileReq",
+                                "summary": "body",
+                                "description": "昵称和头像的局部更新；字段省略/null 保持，空字符串清空"
                             }
                         }
                     },
