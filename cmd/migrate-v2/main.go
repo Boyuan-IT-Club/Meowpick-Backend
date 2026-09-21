@@ -41,23 +41,28 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const planVersion = 4
+const (
+	planVersion         = 5
+	placeholderUsername = "meowpick.user"
+)
 
 type plan struct {
-	Version              int             `json:"version"`
-	GeneratedAt          time.Time       `json:"generatedAt"`
-	Database             string          `json:"database"`
-	SnapshotSHA256       string          `json:"snapshotSha256"`
-	PlanSHA256           string          `json:"planSha256"`
-	Deployment           string          `json:"deployment"`
-	Conflicts            []string        `json:"conflicts"`
-	Warnings             []string        `json:"warnings"`
-	Mappings             []planMapping   `json:"mappings"`
-	CourseRepairs        []courseRepair  `json:"courseRepairs"`
-	CommentIDRepairs     []commentRepair `json:"commentIdRepairs"`
-	TeacherTimeRepairs   []teacherRepair `json:"teacherTimeRepairs"`
-	LikeRepairs          []likeRepair    `json:"likeRepairs"`
-	LegacyMappingIDCount int             `json:"legacyMappingIdCount"`
+	Version              int                   `json:"version"`
+	GeneratedAt          time.Time             `json:"generatedAt"`
+	Database             string                `json:"database"`
+	SnapshotSHA256       string                `json:"snapshotSha256"`
+	PlanSHA256           string                `json:"planSha256"`
+	Deployment           string                `json:"deployment"`
+	Conflicts            []string              `json:"conflicts"`
+	Warnings             []string              `json:"warnings"`
+	Mappings             []planMapping         `json:"mappings"`
+	CourseRepairs        []courseRepair        `json:"courseRepairs"`
+	UserRepairs          []userRepair          `json:"userRepairs"`
+	OrphanCommentRepairs []orphanCommentRepair `json:"orphanCommentRepairs"`
+	CommentIDRepairs     []commentRepair       `json:"commentIdRepairs"`
+	TeacherTimeRepairs   []teacherRepair       `json:"teacherTimeRepairs"`
+	LikeRepairs          []likeRepair          `json:"likeRepairs"`
+	LegacyMappingIDCount int                   `json:"legacyMappingIdCount"`
 }
 
 type planMapping struct {
@@ -72,6 +77,19 @@ type courseRepair struct {
 	Department *int32  `json:"department,omitempty"`
 	Category   *int32  `json:"category,omitempty"`
 	Campuses   []int32 `json:"campuses,omitempty"`
+}
+
+type userRepair struct {
+	ID                string     `json:"id"`
+	Username          string     `json:"username"`
+	UsernameUpdatedAt *time.Time `json:"usernameUpdatedAt,omitempty"`
+}
+
+type orphanCommentRepair struct {
+	SourceID     string    `json:"sourceId"`
+	SourceIDType string    `json:"sourceIdType"`
+	CourseID     *string   `json:"courseId"`
+	DeletedAt    time.Time `json:"deletedAt"`
 }
 
 type commentRepair struct {
@@ -175,8 +193,8 @@ func main() {
 		if err = writePlan(reportPath, current); err != nil {
 			fatal(err)
 		}
-		fmt.Printf("dry-run complete: %s\nconflicts=%d mappings=%d courseRepairs=%d commentIdRepairs=%d teacherTimeRepairs=%d likeRepairs=%d\n",
-			reportPath, len(current.Conflicts), len(current.Mappings), len(current.CourseRepairs), len(current.CommentIDRepairs), len(current.TeacherTimeRepairs), len(current.LikeRepairs))
+		fmt.Printf("dry-run complete: %s\nconflicts=%d mappings=%d courseRepairs=%d userRepairs=%d orphanCommentRepairs=%d commentIdRepairs=%d teacherTimeRepairs=%d likeRepairs=%d\n",
+			reportPath, len(current.Conflicts), len(current.Mappings), len(current.CourseRepairs), len(current.UserRepairs), len(current.OrphanCommentRepairs), len(current.CommentIDRepairs), len(current.TeacherTimeRepairs), len(current.LikeRepairs))
 		if len(current.Conflicts) > 0 {
 			os.Exit(2)
 		}
@@ -256,10 +274,35 @@ func buildPlan(ctx context.Context, client *mongo.Client, database string) (*pla
 	result := &plan{Version: planVersion, GeneratedAt: time.Now().UTC(), Database: database}
 	result.Deployment, result.Conflicts = deployment(ctx, client)
 
+	// The legacy client assigned the same placeholder nickname to users who had
+	// never chosen one. Clear only that exact value so the partial unique index
+	// can be created and those users can choose a real nickname immediately.
+	placeholderCursor, err := db.Collection("user").Find(ctx,
+		bson.M{"username": placeholderUsername},
+		options.Find().SetProjection(bson.M{"_id": 1, "username": 1, "usernameUpdatedAt": 1}),
+	)
+	if err != nil {
+		return nil, err
+	}
+	var placeholderUsers []struct {
+		ID                string     `bson:"_id"`
+		Username          string     `bson:"username"`
+		UsernameUpdatedAt *time.Time `bson:"usernameUpdatedAt"`
+	}
+	if err = placeholderCursor.All(ctx, &placeholderUsers); err != nil {
+		return nil, err
+	}
+	for _, user := range placeholderUsers {
+		result.UserRepairs = append(result.UserRepairs, userRepair{
+			ID: user.ID, Username: user.Username, UsernameUpdatedAt: user.UsernameUpdatedAt,
+		})
+	}
+	sort.Slice(result.UserRepairs, func(i, j int) bool { return result.UserRepairs[i].ID < result.UserRepairs[j].ID })
+
 	// Startup creates a case-insensitive partial unique nickname index. Detect
-	// legacy collisions before deployment so startup cannot fail unexpectedly.
+	// collisions other than the explicitly approved legacy placeholder repair.
 	usernameCursor, err := db.Collection("user").Aggregate(ctx, mongo.Pipeline{
-		{{Key: "$match", Value: bson.M{"username": bson.M{"$type": "string", "$gt": ""}}}},
+		{{Key: "$match", Value: bson.M{"username": bson.M{"$type": "string", "$gt": "", "$ne": placeholderUsername}}}},
 		{{Key: "$group", Value: bson.M{
 			"_id": bson.M{"$toLower": bson.M{"$trim": bson.M{"input": "$username"}}},
 			"ids": bson.M{"$push": "$_id"}, "count": bson.M{"$sum": 1},
@@ -439,6 +482,49 @@ func buildPlan(ctx context.Context, client *mongo.Client, database string) (*pla
 		result.CourseRepairs = append(result.CourseRepairs, repair)
 	}
 
+	orphanCursor, err := db.Collection("comment").Aggregate(ctx, mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{"deleted": bson.M{"$ne": true}}}},
+		{{Key: "$lookup", Value: bson.M{
+			"from": "course", "localField": "courseId", "foreignField": "_id", "as": "matchedCourse",
+		}}},
+		{{Key: "$match", Value: bson.M{"$or": bson.A{
+			bson.M{"matchedCourse.0": bson.M{"$exists": false}},
+			bson.M{"matchedCourse.0.deleted": true},
+		}}}},
+		{{Key: "$project", Value: bson.M{"_id": 1, "courseId": 1}}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	var orphanComments []struct {
+		ID       any `bson:"_id"`
+		CourseID any `bson:"courseId"`
+	}
+	if err = orphanCursor.All(ctx, &orphanComments); err != nil {
+		return nil, err
+	}
+	orphanCommentIDs := make(map[string]struct{}, len(orphanComments))
+	for _, comment := range orphanComments {
+		sourceID, sourceIDType, ok := migrationDocumentID(comment.ID)
+		if !ok {
+			result.Conflicts = append(result.Conflicts, fmt.Sprintf("orphan comment has unsupported _id=%v", comment.ID))
+			continue
+		}
+		var courseID *string
+		if value, ok := comment.CourseID.(string); ok {
+			courseID = &value
+		}
+		result.OrphanCommentRepairs = append(result.OrphanCommentRepairs, orphanCommentRepair{
+			SourceID: sourceID, SourceIDType: sourceIDType, CourseID: courseID, DeletedAt: result.GeneratedAt,
+		})
+		orphanCommentIDs[sourceID] = struct{}{}
+	}
+	sort.Slice(result.OrphanCommentRepairs, func(i, j int) bool {
+		left := result.OrphanCommentRepairs[i].SourceIDType + ":" + result.OrphanCommentRepairs[i].SourceID
+		right := result.OrphanCommentRepairs[j].SourceIDType + ":" + result.OrphanCommentRepairs[j].SourceID
+		return left < right
+	})
+
 	commentCursor, err := db.Collection("comment").Find(ctx, bson.M{"_id": bson.M{"$type": "objectId"}}, options.Find().SetProjection(bson.M{"_id": 1}))
 	if err != nil {
 		return nil, err
@@ -510,6 +596,11 @@ func buildPlan(ctx context.Context, client *mongo.Client, database string) (*pla
 		}
 		for _, target := range targets {
 			if id, ok := documentIDString(target.ID); ok {
+				if targetType == 2 {
+					if _, orphan := orphanCommentIDs[id]; orphan {
+						continue
+					}
+				}
 				activeTargets[targetType][id] = struct{}{}
 			}
 		}
@@ -629,7 +720,8 @@ func buildPlan(ctx context.Context, client *mongo.Client, database string) (*pla
 	})
 	sort.Strings(result.Conflicts)
 	sort.Strings(result.Warnings)
-	result.SnapshotSHA256, err = snapshotHash(existing, broken, result.CourseRepairs, result.CommentIDRepairs, result.TeacherTimeRepairs, result.LikeRepairs)
+	result.SnapshotSHA256, err = snapshotHash(existing, broken, result.CourseRepairs, result.UserRepairs,
+		result.OrphanCommentRepairs, result.CommentIDRepairs, result.TeacherTimeRepairs, result.LikeRepairs)
 	return result, err
 }
 
@@ -647,8 +739,10 @@ func deployment(ctx context.Context, client *mongo.Client) (string, []string) {
 	return "standalone", []string{"MongoDB deployment is standalone; proposal approval and migration require replica-set or sharded transactions"}
 }
 
-func snapshotHash(mappings []legacyMapping, courses []brokenCourse, repairs []courseRepair, comments []commentRepair, teachers []teacherRepair, likes []likeRepair) (string, error) {
-	parts := make([]string, 0, len(mappings)+len(courses)+len(repairs)+len(comments)+len(teachers)+len(likes))
+func snapshotHash(mappings []legacyMapping, courses []brokenCourse, repairs []courseRepair, users []userRepair,
+	orphans []orphanCommentRepair, comments []commentRepair, teachers []teacherRepair, likes []likeRepair,
+) (string, error) {
+	parts := make([]string, 0, len(mappings)+len(courses)+len(repairs)+len(users)+len(orphans)+len(comments)+len(teachers)+len(likes))
 	for _, item := range mappings {
 		parts = append(parts, fmt.Sprintf("m|%v|%d|%d|%s", item.ID, item.Type, item.Code, item.Name))
 	}
@@ -660,6 +754,20 @@ func snapshotHash(mappings []legacyMapping, courses []brokenCourse, repairs []co
 	// broken course document itself stayed unchanged.
 	for _, item := range repairs {
 		parts = append(parts, fmt.Sprintf("r|%s|%s|%s|%v", item.ID, optionalInt32(item.Department), optionalInt32(item.Category), item.Campuses))
+	}
+	for _, item := range users {
+		updatedAt := "-"
+		if item.UsernameUpdatedAt != nil {
+			updatedAt = item.UsernameUpdatedAt.UTC().Format(time.RFC3339Nano)
+		}
+		parts = append(parts, fmt.Sprintf("u|%s|%s|%s", item.ID, item.Username, updatedAt))
+	}
+	for _, item := range orphans {
+		courseID := "<null>"
+		if item.CourseID != nil {
+			courseID = *item.CourseID
+		}
+		parts = append(parts, fmt.Sprintf("x|%s|%s|%s", item.SourceIDType, item.SourceID, courseID))
 	}
 	for _, item := range comments {
 		parts = append(parts, "o|"+item.ObjectID)
@@ -754,6 +862,37 @@ func apply(ctx context.Context, client *mongo.Client, approved *plan) error {
 				if updateErr != nil || res.MatchedCount != 1 {
 					return nil, fmt.Errorf("repair course %s matched=%d: %w", repair.ID, res.MatchedCount, updateErr)
 				}
+			}
+		}
+		for _, repair := range approved.UserRepairs {
+			result, updateErr := db.Collection("user").UpdateOne(tx,
+				bson.M{"_id": repair.ID, "username": repair.Username},
+				bson.M{
+					"$set":   bson.M{"username": ""},
+					"$unset": bson.M{"usernameUpdatedAt": ""},
+				},
+			)
+			if updateErr != nil {
+				return nil, fmt.Errorf("clear placeholder username for user %s: %w", repair.ID, updateErr)
+			}
+			if result.MatchedCount != 1 {
+				return nil, fmt.Errorf("clear placeholder username for user %s matched=%d", repair.ID, result.MatchedCount)
+			}
+		}
+		for _, repair := range approved.OrphanCommentRepairs {
+			filter, filterErr := sourceIDFilter("comment", repair.SourceID, repair.SourceIDType)
+			if filterErr != nil {
+				return nil, filterErr
+			}
+			filter["deleted"] = bson.M{"$ne": true}
+			result, updateErr := db.Collection("comment").UpdateOne(tx, filter, bson.M{"$set": bson.M{
+				"deleted": true, "deletedAt": repair.DeletedAt, "updatedAt": repair.DeletedAt,
+			}})
+			if updateErr != nil {
+				return nil, fmt.Errorf("soft-delete orphan comment %s: %w", repair.SourceID, updateErr)
+			}
+			if result.MatchedCount != 1 {
+				return nil, fmt.Errorf("soft-delete orphan comment %s matched=%d", repair.SourceID, result.MatchedCount)
 			}
 		}
 		for _, repair := range approved.CommentIDRepairs {
@@ -904,17 +1043,21 @@ func normalizeLikeTargetType(value any) (targetType int32, recognized bool, cano
 }
 
 func likeSourceFilter(repair likeRepair) (bson.M, error) {
-	switch repair.SourceIDType {
+	return sourceIDFilter("like", repair.SourceID, repair.SourceIDType)
+}
+
+func sourceIDFilter(kind, sourceID, sourceIDType string) (bson.M, error) {
+	switch sourceIDType {
 	case "string":
-		return bson.M{"_id": repair.SourceID}, nil
+		return bson.M{"_id": sourceID}, nil
 	case "objectId":
-		id, err := primitive.ObjectIDFromHex(repair.SourceID)
+		id, err := primitive.ObjectIDFromHex(sourceID)
 		if err != nil {
 			return nil, err
 		}
 		return bson.M{"_id": id}, nil
 	default:
-		return nil, fmt.Errorf("unsupported like source id type %q", repair.SourceIDType)
+		return nil, fmt.Errorf("unsupported %s source id type %q", kind, sourceIDType)
 	}
 }
 
