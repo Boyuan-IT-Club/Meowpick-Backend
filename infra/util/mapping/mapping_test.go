@@ -262,16 +262,13 @@ func TestData_双向映射一致性(t *testing.T) {
 		}
 	}*/
 
-	// 验证分类双向映射（只测试前10个）
-	count := 0
+	// 历史分类允许多个 ID 共用名称；反查选中的 ID 必须仍对应相同名称。
+	// 检查全部分类，避免 map 随机遍历的抽样遗漏或误判历史别名。
 	for id, name := range Data.CategoryNameByID {
-		reverseID := Data.CategoryIDByName[name]
-		if reverseID != id {
-			t.Errorf("分类双向映射不一致: ID %d → %q → ID %d", id, name, reverseID)
-		}
-		count++
-		if count >= 10 {
-			break
+		reverseID, exists := Data.CategoryIDByName[name]
+		reverseName, idExists := Data.CategoryNameByID[reverseID]
+		if !exists || !idExists || reverseName != name {
+			t.Errorf("分类双向映射不一致: ID %d → %q → ID %d → %q", id, name, reverseID, reverseName)
 		}
 	}
 }
