@@ -33,8 +33,8 @@ import (
 )
 
 // StaticData retains static process-local maps for immutable enum-like values.
-// Campus, department, and category maps are only fallbacks before runtime
-// dependencies are initialized (primarily unit tests and migration seeds).
+// Department and category snapshots start empty and are loaded from MongoDB.
+// Campus defaults remain available before runtime dependencies are initialized.
 type StaticData struct {
 	CampusNameByID              map[int32]string
 	DepartmentNameByID          map[int32]string
@@ -59,8 +59,8 @@ var Data = newStaticData()
 func newStaticData() *StaticData {
 	d := &StaticData{
 		CampusNameByID:              cloneMap(typemapping.CampusesMap),
-		DepartmentNameByID:          cloneMap(typemapping.DepartmentsMap),
-		CategoryNameByID:            cloneMap(typemapping.CategoriesMap),
+		DepartmentNameByID:          map[int32]string{},
+		CategoryNameByID:            map[int32]string{},
 		ProposalStatusNameByID:      cloneMap(typemapping.ProposalStatusMap),
 		LikeTargetTypeNameByID:      cloneMap(typemapping.LikeTargetTypeMap),
 		ChangeLogTargetTypeNameByID: cloneMap(typemapping.ChangeLogTargetTypeMap),

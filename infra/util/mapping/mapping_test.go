@@ -15,6 +15,7 @@
 package mapping
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
@@ -178,123 +179,65 @@ func TestData_GetChangeLogTargetTypeNameByID(t *testing.T) {
 	}
 }
 
-// TestData_GetCategoryIDsByKeyword 测试分类模糊搜索
-func TestData_GetCategoryIDsByKeyword(t *testing.T) {
-	tests := []struct {
+// Reference mapping search tests use a small snapshot, independent of production data.
+func TestReferenceMappingSearch(t *testing.T) {
+	d := newStaticData()
+	d.CategoryNameByID = map[int32]string{1: "通识课程", 2: "专业课程", 3: "English"}
+	d.CategoryIDByName = reverseMap(d.CategoryNameByID)
+	d.DepartmentNameByID = map[int32]string{1: "计算机学院", 2: "教育学院", 3: "教育研究所"}
+	d.DepartmentIDByName = reverseMap(d.DepartmentNameByID)
+	for _, tt := range []struct {
 		name    string
+		search  func(string) []int32
 		keyword string
-		minLen  int // 最少返回几个
+		want    []int32
 	}{
-		{"前缀匹配-通识", "通识", 1},  // 至少返回1个
-		{"前缀匹配-体育", "体育", 1},  // 至少返回1个
-		{"包含匹配-课程", "课程", 10}, // 至少返回10个（因为很多含"课程"）
-		{"大小写不敏感", "通识", 1},
-		{"空关键词", "", 0},
-		{"不存在的关键词", "不存在的分类xxx", 0},
-	}
-
-	for _, tt := range tests {
+		{"category prefix", d.GetCategoryIDsByKeyword, "通识", []int32{1}},
+		{"category substring", d.GetCategoryIDsByKeyword, "课程", []int32{1, 2}},
+		{"case insensitive", d.GetCategoryIDsByKeyword, "english", []int32{3}},
+		{"category missing", d.GetCategoryIDsByKeyword, "不存在", []int32{}},
+		{"department prefix", d.GetDepartmentIDsByKeyword, "教育", []int32{2, 3}},
+		{"department substring", d.GetDepartmentIDsByKeyword, "学院", []int32{1, 2}},
+		{"department missing", d.GetDepartmentIDsByKeyword, "不存在", []int32{}},
+	} {
 		t.Run(tt.name, func(t *testing.T) {
-			results := Data.GetCategoryIDsByKeyword(tt.keyword)
-			if len(results) < tt.minLen {
-				t.Errorf("GetCategoryIDsByKeyword(%q) 返回 %d 个结果, 期望至少 %d",
-					tt.keyword, len(results), tt.minLen)
+			got := tt.search(tt.keyword)
+			slices.Sort(got)
+			if !slices.Equal(got, tt.want) {
+				t.Fatalf("search(%q) = %v, want %v", tt.keyword, got, tt.want)
 			}
 		})
 	}
-}
-
-// TestData_GetBestCategoryIDByKeyword 测试最佳匹配
-func TestData_GetBestCategoryIDByKeyword(t *testing.T) {
-	// 前缀匹配应该返回第一个
-	id := Data.GetBestCategoryIDByKeyword("通识")
-	if id == 0 {
-		t.Error("GetBestCategoryIDByKeyword 应该返回匹配的 ID")
+	if got := d.GetBestCategoryIDByKeyword("通识"); got != 1 {
+		t.Fatalf("best category = %d, want 1", got)
 	}
-
-	// 不匹配应该返回 0
-	id = Data.GetBestCategoryIDByKeyword("不存在的分类")
-	if id != 0 {
-		t.Errorf("不匹配时应该返回 0, 得到 %d", id)
+	if got := d.GetBestCategoryIDByKeyword("不存在"); got != 0 {
+		t.Fatalf("missing category = %d, want 0", got)
 	}
-}
-
-// TestData_GetDepartmentIDsByKeyword 测试院系模糊搜索
-func TestData_GetDepartmentIDsByKeyword(t *testing.T) {
-	tests := []struct {
-		name    string
-		keyword string
-		minLen  int
-	}{
-		{"前缀匹配-计算机", "计算机", 1},
-		{"前缀匹配-教育", "教育", 10}, // 很多含"教育"的院系
-		{"包含匹配-学院", "学院", 20}, // 很多含"学院"的院系
-		{"空关键词", "", 0},
-		{"不存在的关键词", "不存在的院系", 0},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			results := Data.GetDepartmentIDsByKeyword(tt.keyword)
-			if len(results) < tt.minLen {
-				t.Errorf("GetDepartmentIDsByKeyword(%q) 返回 %d 个结果, 期望至少 %d",
-					tt.keyword, len(results), tt.minLen)
-			}
-		})
-	}
-}
-
-// TestData_双向映射一致性 测试 ID↔Name 双向映射是否一致
-func TestData_双向映射一致性(t *testing.T) {
-	// 遍历所有校区，验证双向映射一致
-	for id, name := range Data.CampusNameByID {
-		reverseID := Data.CampusIDByName[name]
-		if reverseID != id {
-			t.Errorf("校区双向映射不一致: ID %d → %q → ID %d", id, name, reverseID)
+	for id, name := range d.CategoryNameByID {
+		if d.GetCategoryNameByID(id) != name || d.GetCategoryIDByName(name) != id {
+			t.Fatalf("category round trip failed for %d", id)
 		}
 	}
-
-	// 验证院系双向映射（院系有重名 这个暂时没做测试）
-	/*for id, name := range Data.DepartmentNameByID {
-		reverseID := Data.DepartmentIDByName[name]
-		if reverseID != id {
-			t.Errorf("院系双向映射不一致: ID %d → %q → ID %d", id, name, reverseID)
-		}
-	}*/
-
-	// 历史分类允许多个 ID 共用名称；反查选中的 ID 必须仍对应相同名称。
-	// 检查全部分类，避免 map 随机遍历的抽样遗漏或误判历史别名。
-	for id, name := range Data.CategoryNameByID {
-		reverseID, exists := Data.CategoryIDByName[name]
-		reverseName, idExists := Data.CategoryNameByID[reverseID]
-		if !exists || !idExists || reverseName != name {
-			t.Errorf("分类双向映射不一致: ID %d → %q → ID %d → %q", id, name, reverseID, reverseName)
+	for id, name := range d.DepartmentNameByID {
+		if d.GetDepartmentNameByID(id) != name || d.GetDepartmentIDByName(name) != id {
+			t.Fatalf("department round trip failed for %d", id)
 		}
 	}
 }
 
-// TestData_init初始化完整性 测试 init 函数是否正确初始化所有映射
-func TestData_init初始化完整性(t *testing.T) {
-	// 验证校区映射不为空
-	if len(Data.CampusNameByID) == 0 {
-		t.Error("CampusNameByID 映射为空，init 可能未执行")
+func TestReferenceMappingsStartEmpty(t *testing.T) {
+	d := newStaticData()
+	if len(d.DepartmentNameByID) != 0 || len(d.DepartmentIDByName) != 0 || len(d.CategoryNameByID) != 0 || len(d.CategoryIDByName) != 0 {
+		t.Fatal("department and category mappings must be loaded from MongoDB")
 	}
-	if len(Data.CampusIDByName) == 0 {
-		t.Error("CampusIDByName 映射为空，init 可能未执行")
+	if d.GetDepartmentIDByName("软件学院院部") != 0 || d.GetCategoryIDByName("通识课程") != 0 {
+		t.Fatal("unexpected legacy mapping fallback")
 	}
-
-	// 验证院系映射不为空
-	if len(Data.DepartmentNameByID) == 0 {
-		t.Error("DepartmentNameByID 映射为空，init 可能未执行")
+	if d.GetDepartmentNameByID(1) != "未知开课院系" || d.GetCategoryNameByID(1) != "未知分类" {
+		t.Fatal("missing mappings must return unknown labels")
 	}
-
-	// 验证分类映射不为空
-	if len(Data.CategoryNameByID) == 0 {
-		t.Error("CategoryNameByID 映射为空，init 可能未执行")
-	}
-
-	// 验证提案状态映射不为空
-	if len(Data.ProposalStatusNameByID) == 0 {
-		t.Error("ProposalStatusNameByID 映射为空，init 可能未执行")
+	if len(d.CampusNameByID) == 0 || len(d.ProposalStatusNameByID) == 0 {
+		t.Fatal("campus and fixed enum defaults must remain available")
 	}
 }
