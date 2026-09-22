@@ -68,6 +68,7 @@ type ProposalService struct {
 	UserRepo          *repo.UserRepo
 	TeacherRepo       *repo.TeacherRepo
 	MappingRepo       *repo.MappingRepo
+	ChangeLogRepo     *repo.ChangeLogRepo
 	ChangeLogService  IChangeLogService
 }
 
@@ -1403,6 +1404,24 @@ func filterContributionVisibility(vos []*dto.ProposalVO, userId string) {
 	}
 }
 
+const approvalRevokeWindow = 24 * time.Hour
+
+func validateApprovalRevocation(proposal *model.Proposal, approvedStatusID int32, loggedApprovalAt, now time.Time) error {
+	if proposal.Status != approvedStatusID {
+		return errorx.New(errno.ErrProposalStatusNotApproved, errorx.KV("proposalId", proposal.ID))
+	}
+	// Legacy likes could overwrite UpdatedAt. The latest approval log caps the
+	// window at the approval time; new approvals write UpdatedAt just before it.
+	approvedAt := proposal.UpdatedAt
+	if !loggedApprovalAt.IsZero() && (approvedAt.IsZero() || loggedApprovalAt.Before(approvedAt)) {
+		approvedAt = loggedApprovalAt
+	}
+	if approvedAt.IsZero() || !now.Before(approvedAt.Add(approvalRevokeWindow)) {
+		return errorx.New(errno.ErrProposalRevokeTimeLimitExceeded, errorx.KV("proposalId", proposal.ID))
+	}
+	return nil
+}
+
 // RevokeProposal 撤回提案操作（通过/拒绝）
 func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokeProposalReq) (*dto.RevokeProposalResp, error) {
 	// 鉴权
@@ -1455,8 +1474,16 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 			expectedStatusID = approvedStatusID
 			action = consts.ActionTypeRevokeApproveProposal
 			content = "撤回提案审批：通过→待审核"
-			if proposal.Status != approvedStatusID {
-				return errorx.New(errno.ErrProposalStatusNotApproved, errorx.KV("proposalId", req.ProposalID))
+			var loggedApprovalAt time.Time
+			if proposal.Status == approvedStatusID {
+				var logErr error
+				loggedApprovalAt, logErr = s.ChangeLogRepo.FindLatestProposalApprovalTime(txCtx, req.ProposalID)
+				if logErr != nil {
+					return errorx.WrapByCode(logErr, errno.ErrChangeLogFindFailed)
+				}
+			}
+			if validationErr := validateApprovalRevocation(proposal, approvedStatusID, loggedApprovalAt, time.Now()); validationErr != nil {
+				return validationErr
 			}
 			associatedCourse, courseErr := s.CourseRepo.FindByProposalIDIncludeDeleted(txCtx, req.ProposalID)
 			if courseErr != nil {

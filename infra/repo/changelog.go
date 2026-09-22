@@ -17,6 +17,7 @@ package repo
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/config"
@@ -39,6 +40,7 @@ type IChangeLogRepo interface {
 	Insert(ctx context.Context, changelog *model.ChangeLog) error
 	FindMany(ctx context.Context, param *dto.PageParam) ([]*model.ChangeLog, int64, error)
 	FindByProposalIDs(ctx context.Context, proposalIDs []string) ([]*model.ChangeLog, error)
+	FindLatestProposalApprovalTime(ctx context.Context, proposalID string) (time.Time, error)
 	FindManyByTypeOrKeyword(ctx context.Context, targetType int32, keyword string, param *dto.PageParam) ([]*model.ChangeLog, int64, error)
 	FindByID(ctx context.Context, changeLogID string) (*model.ChangeLog, error)
 }
@@ -140,4 +142,22 @@ func (r *ChangeLogRepo) FindByProposalIDs(ctx context.Context, proposalIDs []str
 	}
 
 	return logs, nil
+}
+
+// FindLatestProposalApprovalTime 返回最近一次审批通过的日志时间，避免点赞更新影响撤回期限。
+func (r *ChangeLogRepo) FindLatestProposalApprovalTime(ctx context.Context, proposalID string) (time.Time, error) {
+	filter := bson.M{
+		consts.TargetID:   proposalID,
+		consts.TargetType: consts.TargetTypeProposal,
+		"action":          consts.ActionTypeApproveProposal,
+	}
+	opts := options.FindOne().SetSort(page.DSort(consts.UpdatedAt, -1))
+	var changelog model.ChangeLog
+	if err := r.conn.FindOneNoCache(ctx, &changelog, filter, opts); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return time.Time{}, nil
+		}
+		return time.Time{}, err
+	}
+	return changelog.UpdatedAt, nil
 }

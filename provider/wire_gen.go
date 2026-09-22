@@ -130,6 +130,7 @@ func NewProvider() (*Provider, error) {
 		UserRepo:          userRepo,
 		TeacherRepo:       teacherRepo,
 		MappingRepo:       mappingRepo,
+		ChangeLogRepo:     changeLogRepo,
 		ChangeLogService:  changeLogService,
 	}
 	serviceChangeLogService := service.ChangeLogService{
