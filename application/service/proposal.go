@@ -96,6 +96,9 @@ func validateProposalInput(title string, course *dto.ProposalCourseVO) error {
 	if course == nil {
 		return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "course"))
 	}
+	if strings.TrimSpace(course.Code) == "" {
+		return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "course.code"))
+	}
 	if strings.TrimSpace(course.Name) == "" || strings.TrimSpace(course.Department) == "" ||
 		strings.TrimSpace(course.Category) == "" || len(course.Campuses) == 0 {
 		return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "course required fields"))

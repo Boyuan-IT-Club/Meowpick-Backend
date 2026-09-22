@@ -48,12 +48,12 @@ func TestValidateProposalInputRequiredFields(t *testing.T) {
 		title  string
 		course *dto.ProposalCourseVO
 	}{
-		{name: "blank title", title: " ", course: &dto.ProposalCourseVO{Name: "课程", Department: "院系", Category: "分类", Campuses: []string{"校区"}}},
+		{name: "blank title", title: " ", course: &dto.ProposalCourseVO{Code: "CS101", Name: "课程", Department: "院系", Category: "分类", Campuses: []string{"校区"}}},
 		{name: "missing course", title: "标题"},
-		{name: "blank course name", title: "标题", course: &dto.ProposalCourseVO{Department: "院系", Category: "分类", Campuses: []string{"校区"}}},
-		{name: "blank department", title: "标题", course: &dto.ProposalCourseVO{Name: "课程", Category: "分类", Campuses: []string{"校区"}}},
-		{name: "blank category", title: "标题", course: &dto.ProposalCourseVO{Name: "课程", Department: "院系", Campuses: []string{"校区"}}},
-		{name: "missing campuses", title: "标题", course: &dto.ProposalCourseVO{Name: "课程", Department: "院系", Category: "分类"}},
+		{name: "blank course name", title: "标题", course: &dto.ProposalCourseVO{Code: "CS101", Department: "院系", Category: "分类", Campuses: []string{"校区"}}},
+		{name: "blank department", title: "标题", course: &dto.ProposalCourseVO{Code: "CS101", Name: "课程", Category: "分类", Campuses: []string{"校区"}}},
+		{name: "blank category", title: "标题", course: &dto.ProposalCourseVO{Code: "CS101", Name: "课程", Department: "院系", Campuses: []string{"校区"}}},
+		{name: "missing campuses", title: "标题", course: &dto.ProposalCourseVO{Code: "CS101", Name: "课程", Department: "院系", Category: "分类"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -67,6 +67,7 @@ func TestValidateProposalInputRequiredFields(t *testing.T) {
 func TestValidateProposalInputAllowsTeacherWithoutDepartment(t *testing.T) {
 	course := &dto.ProposalCourseVO{
 		Name:       "测试课程",
+		Code:       "CS101",
 		Department: "软件工程学院",
 		Category:   "专业必修",
 		Campuses:   []string{"普陀校区"},
@@ -163,5 +164,28 @@ func TestRevokedCourseMappingReferencesIncludesDeletedTeacherDepartments(t *test
 	}
 	if got := revokedCourseMappingReferences(course, teachers); !reflect.DeepEqual(got, want) {
 		t.Fatalf("revokedCourseMappingReferences() = %#v, want %#v", got, want)
+	}
+}
+
+func TestValidateProposalInputCourseCode(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		code      string
+		wantError bool
+	}{
+		{"empty", "", true},
+		{"space", " ", true},
+		{"tabs and newlines", "\t\n", true},
+		{"unicode whitespace", "　", true},
+		{"valid", "CS101", false},
+		{"valid with surrounding spaces", " CS101 ", false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			course := &dto.ProposalCourseVO{Name: "测试课程", Code: tt.code, Department: "软件工程学院", Category: "专业必修", Campuses: []string{"普陀校区"}}
+			err := validateProposalInput("测试提案", course)
+			if (err != nil) != tt.wantError {
+				t.Fatalf("code %q: error = %v, wantError = %v", tt.code, err, tt.wantError)
+			}
+		})
 	}
 }
