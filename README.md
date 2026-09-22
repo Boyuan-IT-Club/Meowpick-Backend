@@ -36,7 +36,6 @@
 │   ├── assembler/        # 数据模型与 DTO 转换
 │   ├── dto/              # API 请求和响应结构
 │   └── service/          # 业务逻辑
-├── cmd/migrate-v2/       # 独立数据库迁移工具
 ├── docs/                 # OpenAPI 与设计、迁移说明
 ├── infra/
 │   ├── cache/            # Redis 缓存
