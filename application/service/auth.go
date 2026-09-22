@@ -139,7 +139,6 @@ func (s *AuthService) SignIn(ctx context.Context, req *dto.SignInReq) (Resp *dto
 
 func isDebugSignIn(cfg *config.Config, verifyCode string) bool {
 	return cfg != nil &&
-		cfg.State == "local" &&
 		cfg.DebugLogin.Enabled &&
 		subtle.ConstantTimeCompare([]byte(verifyCode), []byte(cfg.DebugLogin.VerifyCode)) == 1
 }
