@@ -131,7 +131,7 @@ DebugLogin:
 AdminGrantKey: "replace-with-a-separate-admin-verification-code"
 ```
 
-调试登录仅在 `State: local` 且 `DebugLogin.Enabled: true` 时启用；启用时必须配置非空的 `VerifyCode` 和 `OpenID`。非本地环境启用调试登录会导致服务拒绝启动。调试账号首次创建时是普通用户，后端不会在登录时修改其管理员状态；需要测试管理员功能时，通过 `/api/auth/grant_admin` 和 `AdminGrantKey` 显式切换。
+调试登录由 `DebugLogin.Enabled: true` 显式启用，不受 `State` 环境限制；启用时必须配置非空的 `VerifyCode` 和 `OpenID`。非本地环境也可通过 Apifox 使用配置的 `VerifyCode` 登录对应调试账号。调试账号首次创建时是普通用户，后端不会在登录时修改其管理员状态；需要测试管理员功能时，通过 `/api/auth/grant_admin` 和 `AdminGrantKey` 显式切换。
 
 `Cache` 是各 MongoDB Repository 使用的文档缓存配置；`Redis` 是点赞和基础映射等显式缓存使用的连接配置。当前两者都必须提供，通常指向同一个 Redis 实例。
 
@@ -149,7 +149,7 @@ CONFIG_PATH=etc/config.yaml go run .
 - Swagger UI：<http://localhost:8080/swagger/index.html>
 - OpenAPI JSON：<http://localhost:8080/openapi.json>
 
-本地调试登录示例：
+调试登录示例（适用于已启用 DebugLogin 的各环境）：
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/sign_in \

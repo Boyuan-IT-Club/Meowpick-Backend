@@ -77,7 +77,7 @@ func NewConfig() (*Config, error) {
 	if err = validateWeApp(c.WeApp); err != nil {
 		return nil, err
 	}
-	if err = validateDebugLogin(c.State, c.DebugLogin); err != nil {
+	if err = validateDebugLogin(c.DebugLogin); err != nil {
 		return nil, err
 	}
 	config = c
@@ -98,12 +98,9 @@ func validateWeApp(weApp WeApp) error {
 	return nil
 }
 
-func validateDebugLogin(state string, debugLogin DebugLogin) error {
+func validateDebugLogin(debugLogin DebugLogin) error {
 	if !debugLogin.Enabled {
 		return nil
-	}
-	if state != "local" {
-		return fmt.Errorf("DebugLogin may only be enabled when State is local")
 	}
 
 	missing := make([]string, 0, 2)

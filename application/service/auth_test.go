@@ -29,7 +29,10 @@ func TestIsDebugSignIn(t *testing.T) {
 	}{
 		{name: "nil config"},
 		{name: "disabled", cfg: debugLoginConfig("local", false)},
-		{name: "production", cfg: debugLoginConfig("pro", true), verifyCode: "secret"},
+		{name: "production", cfg: debugLoginConfig("pro", true), verifyCode: "secret", want: true},
+		{name: "production disabled", cfg: debugLoginConfig("pro", false), verifyCode: "secret"},
+		{name: "production wrong code", cfg: debugLoginConfig("pro", true), verifyCode: "wrong"},
+		{name: "staging", cfg: debugLoginConfig("staging", true), verifyCode: "secret", want: true},
 		{name: "wrong code", cfg: debugLoginConfig("local", true), verifyCode: "wrong"},
 		{name: "matching local code", cfg: debugLoginConfig("local", true), verifyCode: "secret", want: true},
 	}
