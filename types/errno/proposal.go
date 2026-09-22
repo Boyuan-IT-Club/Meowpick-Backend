@@ -46,6 +46,7 @@ const (
 	ErrRevokeActionTypeInvalid             = 108000025
 	ErrProposalInvalidCampus               = 108000026
 	ErrDailyProposalLimitReached           = 108000027
+	ErrProposalRevokeTimeLimitExceeded     = 108000028
 )
 
 func init() {
@@ -182,6 +183,11 @@ func init() {
 	code.Register(
 		ErrDailyProposalLimitReached,
 		"daily proposal limit reached: {limit}",
+		code.WithAffectStability(false),
+	)
+	code.Register(
+		ErrProposalRevokeTimeLimitExceeded,
+		"cannot revoke approval after 24 hours",
 		code.WithAffectStability(false),
 	)
 }

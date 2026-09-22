@@ -133,7 +133,7 @@ type ToggleProposalResp struct {
 
 type RevokeProposalReq struct {
 	ProposalID string `json:"-"`          // 从 URL path 获取
-	ActionType string `json:"actionType"` // 必填；approve 撤回已通过提案，reject 撤回已拒绝提案
+	ActionType string `json:"actionType"` // 必填；approve 仅可在最近审批通过后不足 24 小时内撤回，reject 撤回已拒绝提案且无时间限制
 }
 
 type RevokeProposalResp struct {
