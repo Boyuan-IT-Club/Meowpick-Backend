@@ -20,7 +20,7 @@ import "time"
 type ProposalCourseVO struct {
 	ID         string       `json:"id,omitempty"` // 课程ID；创建提案时无需传入，finalCourse 返回正式课程时可能携带
 	Name       string       `json:"name"`         // 课程名称，去除首尾空白后不能为空
-	Code       string       `json:"code"`         // 课程代码，可为空
+	Code       string       `json:"code"`         // 课程代码，去除首尾空白后不能为空
 	Category   string       `json:"category"`     // 课程分类名称，不能为空；审批时可落库为新分类
 	Campuses   []string     `json:"campuses"`     // 开设校区名称列表，至少一项且必须是系统已有校区，不允许由提案创建新校区
 	Department string       `json:"department"`   // 课程开课院系，不能为空；与教师所属院系是两个独立字段
