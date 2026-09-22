@@ -38,6 +38,7 @@ const (
 )
 
 type ICommentRepo interface {
+	SoftDeleteByID(ctx context.Context, commentID string, deletedAt time.Time) (bool, error)
 	WithTransaction(ctx context.Context, fn func(mongo.SessionContext) error) error
 	Insert(ctx context.Context, c *model.Comment) error
 	FindByID(ctx context.Context, id string) (*model.Comment, error)
@@ -56,6 +57,10 @@ func commentOwnerDeleteFilter(commentID, userID string) bson.M {
 		consts.UserID:  userID,
 		consts.Deleted: bson.M{"$ne": true},
 	}
+}
+
+func commentAdminDeleteFilter(commentID string) bson.M {
+	return bson.M{consts.ID: commentID, consts.Deleted: bson.M{"$ne": true}}
 }
 
 // FindByID returns an active comment by ID.
@@ -118,8 +123,18 @@ func (r *CommentRepo) Insert(ctx context.Context, c *model.Comment) error {
 // owned by the requesting user. The ownership predicate is part of the update
 // so concurrent or forged delete requests cannot bypass it.
 func (r *CommentRepo) SoftDeleteByIDAndUserID(ctx context.Context, commentID, userID string, deletedAt time.Time) (bool, error) {
+	return r.softDelete(ctx, commentOwnerDeleteFilter(commentID, userID), deletedAt)
+}
+
+// SoftDeleteByID deletes an active comment after service-level administrator authorization.
+func (r *CommentRepo) SoftDeleteByID(ctx context.Context, commentID string, deletedAt time.Time) (bool, error) {
+	return r.softDelete(ctx, commentAdminDeleteFilter(commentID), deletedAt)
+}
+
+func (r *CommentRepo) softDelete(ctx context.Context, filter bson.M, deletedAt time.Time) (bool, error) {
+
 	result, err := r.conn.Database().Collection(CommentCollectionName).UpdateOne(ctx,
-		commentOwnerDeleteFilter(commentID, userID),
+		filter,
 		bson.M{"$set": bson.M{
 			consts.Deleted:   true,
 			consts.DeletedAt: deletedAt,

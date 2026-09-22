@@ -28,7 +28,7 @@ func SetupRoutes() *gin.Engine {
 		commentGroup.POST("/add", handler.CreateComment)               // 发布评论
 		commentGroup.GET("/query", handler.ListCourseComments)         // 分页获取课程下的评论
 		commentGroup.POST("/history", handler.GetMyComments)           // 获得我的吐槽
-		commentGroup.POST("/:commentId/delete", handler.DeleteComment) // 删除自己的评论
+		commentGroup.POST("/:commentId/delete", handler.DeleteComment) // 用户删除自己的评论，管理员可删除任意评论
 	}
 
 	// SearchApi
@@ -84,6 +84,7 @@ func SetupRoutes() *gin.Engine {
 		proposalGroup.POST("/add", handler.CreateProposal)
 		proposalGroup.POST("/:proposalId/resubmit", handler.ResubmitProposal)
 		proposalGroup.GET("/list", handler.ListProposals)
+		proposalGroup.GET("/pending", handler.ListPendingProposals)
 		proposalGroup.GET("/suggest", handler.SuggestProposals)
 		proposalGroup.GET("/:proposalId", handler.GetProposal)
 		proposalGroup.POST("/:proposalId/update", handler.UpdateProposal)

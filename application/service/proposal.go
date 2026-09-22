@@ -44,6 +44,7 @@ import (
 var _ IProposalService = (*ProposalService)(nil)
 
 type IProposalService interface {
+	ListPendingProposals(ctx context.Context, req *dto.PageParam) (*dto.ListProposalResp, error)
 	CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error)
 	ResubmitProposal(ctx context.Context, req *dto.ResubmitProposalReq) (*dto.ResubmitProposalResp, error)
 	ListProposals(ctx context.Context, req *dto.ListProposalReq) (*dto.ListProposalResp, error)
@@ -449,6 +450,25 @@ func (s *ProposalService) ListProposals(ctx context.Context, req *dto.ListPropos
 		Total:     total,
 		Proposals: vos,
 	}, nil
+}
+
+// ListPendingProposals exposes only active pending proposals to authenticated users.
+func (s *ProposalService) ListPendingProposals(ctx context.Context, req *dto.PageParam) (*dto.ListProposalResp, error) {
+	userID, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || userID == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+	status := mapping.Data.GetProposalStatusIDByName(consts.ProposalStatusPending)
+	proposals, total, err := s.ProposalRepo.FindManyByStatus(ctx, req, status)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
+	}
+	vos, err := s.ProposalAssembler.ToProposalVOArray(ctx, proposals, userID)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrProposalCvtFailed, errorx.KV("src", "database proposals"), errorx.KV("dst", "proposal vos"))
+	}
+	filterContributionVisibility(vos, userID)
+	return &dto.ListProposalResp{Resp: dto.Success(), Total: total, Proposals: vos}, nil
 }
 
 // normalizeJSONArrayParam 兼容前端将数组序列化为 JSON 字符串的 query 传参方式

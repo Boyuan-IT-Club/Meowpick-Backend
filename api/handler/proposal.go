@@ -99,6 +99,26 @@ func ListProposals(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
+// ListPendingProposals godoc
+// @Summary 分页获取待审核提案
+// @Description 所有登录用户均可查看未删除的待审核提案，固定只返回 pending，不接受状态筛选。返回完整提案列表信息及点赞状态；贡献值仅创建者可见，其他用户为 -1；昵称展示遵循 showUsername。原列表、搜索及详情接口权限不变
+// @Tags proposal
+// @Produce json
+// @Param page query int false "页码，小于1按1处理" default(1)
+// @Param pageSize query int false "每页数量，范围1-100，超出范围按10处理" default(10)
+// @Success 200 {object} Response[dto.ListProposalResp]
+// @Router /api/proposal/pending [get]
+func ListPendingProposals(c *gin.Context) {
+	var req dto.PageParam
+	if err := c.ShouldBindQuery(&req); err != nil {
+		PostProcess(c, &req, nil, err)
+		return
+	}
+	c.Set(consts.CtxUserID, token.GetUserID(c))
+	resp, err := provider.Get().ProposalService.ListPendingProposals(c, &req)
+	PostProcess(c, &req, resp, err)
+}
+
 // SuggestProposals godoc
 // @Summary 分页搜索并筛选提案列表
 // @Description 登录后按提案标题关键词、状态、校区、课程开课院系和课程分类组合筛选提案。keyword 对提案原始 title 进行大小写不敏感模糊匹配；status 与 campus 支持重复 query 参数或 JSON 数组字符串；普通用户的状态条件固定为 approved。校区必须是系统已有名称，院系和分类按名称精确匹配；所有条件均为空时管理员查询全部、普通用户查询全部已通过提案；已通过提案附带关联正式课程 finalCourse，课程查询失败或已删除时省略

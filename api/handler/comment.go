@@ -47,8 +47,8 @@ func CreateComment(c *gin.Context) {
 }
 
 // DeleteComment godoc
-// @Summary 删除自己的评论
-// @Description 登录用户按 path 中的评论ID软删除自己发布且尚未删除的评论。不能删除他人的评论；为避免泄露评论归属，不存在、已删除或不属于当前用户均返回“评论不存在”。删除与相关点赞清理在同一事务中完成，成功后该评论不再出现在课程评论、个人评论历史、标签统计和评论总数中
+// @Summary 删除评论
+// @Description 登录用户按 path 中的评论ID软删除尚未删除的评论：普通用户只能删除自己的评论，管理员可删除任意用户的评论；不存在、已删除或普通用户尝试删除他人的评论均返回“评论不存在”。删除与相关点赞清理在同一事务中完成，成功后该评论不再出现在课程评论、个人评论历史、标签统计和评论总数中
 // @Tags comment
 // @Produce json
 // @Param commentId path string true "评论ID"

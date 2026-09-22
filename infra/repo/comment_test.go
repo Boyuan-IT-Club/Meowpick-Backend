@@ -32,3 +32,10 @@ func TestCommentOwnerDeleteFilter(t *testing.T) {
 		t.Fatalf("commentOwnerDeleteFilter() = %#v, want %#v", got, want)
 	}
 }
+
+func TestCommentAdminDeleteFilter(t *testing.T) {
+	want := bson.M{consts.ID: "comment-1", consts.Deleted: bson.M{"$ne": true}}
+	if got := commentAdminDeleteFilter("comment-1"); !reflect.DeepEqual(got, want) {
+		t.Fatalf("administrator delete filter = %#v, want %#v", got, want)
+	}
+}

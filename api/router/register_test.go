@@ -73,3 +73,12 @@ func TestProposalResubmitRouteIsRegistered(t *testing.T) {
 	}
 	t.Fatal("POST /api/proposal/:proposalId/resubmit route is not registered")
 }
+
+func TestPendingProposalRouteIsRegistered(t *testing.T) {
+	for _, route := range SetupRoutes().Routes() {
+		if route.Method == "GET" && route.Path == "/api/proposal/pending" {
+			return
+		}
+	}
+	t.Fatal("GET /api/proposal/pending route is not registered")
+}

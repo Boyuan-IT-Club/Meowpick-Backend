@@ -136,19 +136,28 @@ func (s *CommentService) CreateComment(ctx context.Context, req *dto.CreateComme
 	}, nil
 }
 
-// DeleteComment 软删除当前用户自己的评论，并同步清理其点赞记录。
+// DeleteComment 允许作者或管理员软删除评论，并同步清理其点赞记录。
 func (s *CommentService) DeleteComment(ctx context.Context, req *dto.DeleteCommentReq) (*dto.DeleteCommentResp, error) {
 	userID, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || userID == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
 	}
 
+	isAdmin, adminErr := s.UserRepo.IsAdminByID(ctx, userID)
+	if adminErr != nil {
+		return nil, errorx.WrapByCode(adminErr, errno.ErrUserFindFailed)
+	}
+
 	deletedAt := time.Now()
 	deleted := false
-	errCommentNotFound := errors.New("active comment owned by user not found")
+	errCommentNotFound := errors.New("active comment available for deletion not found")
 	err := s.CommentRepo.WithTransaction(ctx, func(txCtx mongo.SessionContext) error {
 		var err error
-		deleted, err = s.CommentRepo.SoftDeleteByIDAndUserID(txCtx, req.CommentID, userID, deletedAt)
+		if isAdmin {
+			deleted, err = s.CommentRepo.SoftDeleteByID(txCtx, req.CommentID, deletedAt)
+		} else {
+			deleted, err = s.CommentRepo.SoftDeleteByIDAndUserID(txCtx, req.CommentID, userID, deletedAt)
+		}
 		if err != nil {
 			return err
 		}

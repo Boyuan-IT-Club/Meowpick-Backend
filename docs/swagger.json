@@ -2395,7 +2395,7 @@
         },
         "/api/comment/{commentId}/delete": {
             "post": {
-                "description": "登录用户按 path 中的评论ID软删除自己发布且尚未删除的评论。不能删除他人的评论；为避免泄露评论归属，不存在、已删除或不属于当前用户均返回“评论不存在”。删除与相关点赞清理在同一事务中完成，成功后该评论不再出现在课程评论、个人评论历史、标签统计和评论总数中",
+                "description": "登录用户按 path 中的评论ID软删除尚未删除的评论：普通用户只能删除自己的评论，管理员可删除任意用户的评论；不存在、已删除或普通用户尝试删除他人的评论均返回“评论不存在”。删除与相关点赞清理在同一事务中完成，成功后该评论不再出现在课程评论、个人评论历史、标签统计和评论总数中",
                 "parameters": [
                     {
                         "description": "评论ID",
@@ -2419,7 +2419,7 @@
                         "description": "OK"
                     }
                 },
-                "summary": "删除自己的评论",
+                "summary": "删除评论",
                 "tags": [
                     "comment"
                 ]
@@ -2776,6 +2776,47 @@
                     }
                 },
                 "summary": "分页获取提案列表",
+                "tags": [
+                    "proposal"
+                ]
+            }
+        },
+        "/api/proposal/pending": {
+            "get": {
+                "description": "所有登录用户均可查看未删除的待审核提案，固定只返回 pending，不接受状态筛选。返回完整提案列表信息及点赞状态；贡献值仅创建者可见，其他用户为 -1；昵称展示遵循 showUsername。原列表、搜索及详情接口权限不变",
+                "parameters": [
+                    {
+                        "description": "页码，小于1按1处理",
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "default": 1,
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "每页数量，范围1-100，超出范围按10处理",
+                        "in": "query",
+                        "name": "pageSize",
+                        "schema": {
+                            "default": 10,
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.Response-dto_ListProposalResp"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "分页获取待审核提案",
                 "tags": [
                     "proposal"
                 ]
