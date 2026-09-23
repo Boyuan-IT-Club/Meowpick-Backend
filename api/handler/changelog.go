@@ -24,7 +24,7 @@ import (
 
 // ListChangeLogs godoc
 // @Summary 分页查询变更记录
-// @Description 仅管理员可用。按可选目标类型和日志正文关键词分页查询全部变更记录，type 支持 course、proposal、teacher、user，keyword 使用大小写不敏感模糊匹配；两者为空时查询全部，结果按时间倒序
+// @Description 仅管理员可用。按可选目标类型和日志正文关键词分页查询全部变更记录，type 支持 course、proposal、teacher、user，keyword 使用大小写不敏感模糊匹配；两者为空时查询全部，结果按时间倒序。每条日志同时返回操作者 userId 和 userName，昵称未设置时回退为 OpenID
 // @Tags changeLog
 // @Accept json
 // @Produce json

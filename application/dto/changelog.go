@@ -50,6 +50,7 @@ type ChangeLogVO struct {
 	UpdateSource int32     `json:"updateSource"`         // 操作来源内部编号，例如用户或管理员
 	ProposalID   string    `json:"proposalId,omitempty"` // 与提案相关时返回提案ID，否则省略
 	UserID       string    `json:"userId"`               // 操作者用户ID
+	UserName     string    `json:"userName"`             // 操作者昵称；未设置时回退为 OpenID，用户不存在时为空
 	UpdatedAt    time.Time `json:"updatedAt"`            // 操作记录时间
 }
 

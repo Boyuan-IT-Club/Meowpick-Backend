@@ -93,6 +93,28 @@ func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChan
 		return nil, errorx.WrapByCode(err, errno.ErrChangeLogFindFailed)
 	}
 
+	userIDSet := make(map[string]struct{}, len(changeLogs))
+	for _, cl := range changeLogs {
+		if cl.UserID != "" {
+			userIDSet[cl.UserID] = struct{}{}
+		}
+	}
+	userIDs := make([]string, 0, len(userIDSet))
+	for id := range userIDSet {
+		userIDs = append(userIDs, id)
+	}
+	users, err := s.UserRepo.FindByIDs(ctx, userIDs)
+	if err != nil {
+		logs.CtxWarnf(ctx, "[UserRepo] [FindByIDs] error: %v", err)
+	}
+	userNames := make(map[string]string, len(users))
+	for _, user := range users {
+		userNames[user.ID] = user.Username
+		if userNames[user.ID] == "" {
+			userNames[user.ID] = user.OpenID
+		}
+	}
+
 	// 转换为 VO
 	vos := make([]*dto.ChangeLogVO, len(changeLogs))
 	for i, cl := range changeLogs {
@@ -103,6 +125,7 @@ func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChan
 			Action:       cl.Action,
 			Content:      cl.Content,
 			UserID:       cl.UserID,
+			UserName:     userNames[cl.UserID],
 			UpdateSource: cl.UpdateSource,
 			ProposalID:   cl.ProposalID,
 			UpdatedAt:    cl.UpdatedAt,
