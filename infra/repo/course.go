@@ -211,13 +211,19 @@ func (r *CourseRepo) FindManyByName(ctx context.Context, name string, param *dto
 	return courses, total, nil
 }
 
+// courseNameSearchFilter treats user input as literal text, including parentheses
+// and other regex metacharacters commonly found in course names.
+func courseNameSearchFilter(name string) bson.M {
+	return bson.M{
+		consts.Name:    bson.M{"$regex": primitive.Regex{Pattern: regexp.QuoteMeta(name), Options: "i"}},
+		consts.Deleted: bson.M{"$ne": true},
+	}
+}
+
 // FindManyByNameLike 根据课程名称分页模糊查询课程
 func (r *CourseRepo) FindManyByNameLike(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	filter := bson.M{
-		consts.Name:    bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}},
-		consts.Deleted: bson.M{"$ne": true},
-	}
+	filter := courseNameSearchFilter(name)
 	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param)); err != nil {
 		return nil, 0, err
 	}
@@ -413,10 +419,7 @@ func (r *CourseRepo) GetCampusesByName(ctx context.Context, name string) ([]int3
 // GetSuggestionsByName 根据课程名称模糊分页查询课程
 func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error) {
 	courses := []*model.Course{}
-	filter := bson.M{
-		consts.Name:    bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}},
-		consts.Deleted: bson.M{"$ne": true},
-	}
+	filter := courseNameSearchFilter(name)
 
 	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param)); err != nil {
 		return nil, 0, err

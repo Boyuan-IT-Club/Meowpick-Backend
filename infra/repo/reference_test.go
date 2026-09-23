@@ -16,6 +16,7 @@ package repo
 
 import (
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
@@ -114,5 +115,39 @@ func TestBuildProposalFilterCombinesKeywordAndFields(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("buildProposalFilter() = %#v, want %#v", got, want)
+	}
+}
+
+func TestCourseNameSearchMatchesLiteralNames(t *testing.T) {
+	for _, name := range []string{"数据结构", "数据结构(I)", "C++程序设计", "课程[实验]", "数学（上）", "课程.*", "课程\\实验", "课程["} {
+		t.Run(name, func(t *testing.T) {
+			filter := courseNameSearchFilter(name)
+			regex := filter[consts.Name].(bson.M)["$regex"].(primitive.Regex)
+			pattern, err := regexp.Compile("(?" + regex.Options + ")" + regex.Pattern)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !pattern.MatchString(name) || !pattern.MatchString("前缀"+name+"后缀") {
+				t.Fatalf("course name %q must match itself and literal substrings", name)
+			}
+			if !reflect.DeepEqual(filter[consts.Deleted], bson.M{"$ne": true}) {
+				t.Fatalf("deleted courses must be excluded: %#v", filter)
+			}
+		})
+	}
+	for _, tt := range []struct {
+		keyword, value string
+		want           bool
+	}{
+		{"C++", "c++程序设计", true},
+		{"数据结构(I)", "数据结构I", false},
+		{"课程.*", "课程任意内容", false},
+		{"课程[实验]", "课程实", false},
+	} {
+		regex := courseNameSearchFilter(tt.keyword)[consts.Name].(bson.M)["$regex"].(primitive.Regex)
+		got := regexp.MustCompile("(?" + regex.Options + ")" + regex.Pattern).MatchString(tt.value)
+		if got != tt.want {
+			t.Errorf("search %q in %q = %v, want %v", tt.keyword, tt.value, got, tt.want)
+		}
 	}
 }
