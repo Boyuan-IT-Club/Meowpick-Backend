@@ -1121,7 +1121,6 @@ const docTemplate = `{
                 "type": "object"
             },
             "dto.ResetUsernameCooldownResp": {
-                "description": "实际业务数据",
                 "properties": {
                     "canEditUsername": {
                         "type": "boolean"
@@ -1931,7 +1930,8 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.ResetUsernameCooldownResp"
+                        "$ref": "#/components/schemas/dto.ResetUsernameCooldownResp",
+                        "description": "实际业务数据"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -3515,38 +3515,6 @@ const docTemplate = `{
                 ]
             }
         },
-        "/api/user/{userId}/username/cooldown/reset": {
-            "post": {
-                "description": "仅管理员可调用。清除目标用户的 usernameUpdatedAt，使其可以立即再次设置或修改非空昵称；不修改当前昵称。重复调用也成功，目标用户不存在则返回用户不存在错误。用户下次成功修改非空昵称后重新开始 30 天冷却期",
-                "parameters": [
-                    {
-                        "description": "目标用户 ID",
-                        "in": "path",
-                        "name": "userId",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/handler.Response-dto_ResetUsernameCooldownResp"
-                                }
-                            }
-                        },
-                        "description": "OK"
-                    }
-                },
-                "summary": "管理员清除用户昵称修改冷却期",
-                "tags": [
-                    "user"
-                ]
-            }
-        },
         "/api/user/{userId}/username": {
             "get": {
                 "description": "登录后查询指定用户昵称。查询本人或管理员查询任意用户时无需 proposalId；普通用户跨用户查询必须提供属于目标用户且 showUsername=true 的未删除提案ID，否则拒绝，避免绕过匿名提案设置。目标用户尚未设置昵称时成功返回空字符串",
@@ -3582,6 +3550,38 @@ const docTemplate = `{
                     }
                 },
                 "summary": "根据用户 ID 获取昵称",
+                "tags": [
+                    "user"
+                ]
+            }
+        },
+        "/api/user/{userId}/username/cooldown/reset": {
+            "post": {
+                "description": "仅管理员可调用。清除目标用户的 usernameUpdatedAt，使其可以立即再次设置或修改非空昵称；不修改当前昵称。重复调用也成功，目标用户不存在则返回用户不存在错误。用户下次成功修改非空昵称后重新开始 30 天冷却期",
+                "parameters": [
+                    {
+                        "description": "目标用户 ID",
+                        "in": "path",
+                        "name": "userId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.Response-dto_ResetUsernameCooldownResp"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "管理员清除用户昵称修改冷却期",
                 "tags": [
                     "user"
                 ]

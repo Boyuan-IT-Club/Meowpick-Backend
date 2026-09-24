@@ -817,7 +817,6 @@ components:
           type: boolean
       type: object
     dto.ResetUsernameCooldownResp:
-      description: 实际业务数据
       properties:
         canEditUsername:
           type: boolean
@@ -1406,6 +1405,7 @@ components:
           type: integer
         data:
           $ref: '#/components/schemas/dto.ResetUsernameCooldownResp'
+          description: 实际业务数据
         msg:
           description: 提示信息
           example: success
