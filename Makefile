@@ -1,9 +1,15 @@
-.PHONY: license wire swagger meowpick-run meowpick-clean
+.PHONY: license license-check wire swagger meowpick-run meowpick-clean
 
 license:
 	@ROOT=$$(git rev-parse --show-toplevel); \
 	echo "Generating LICENSE..."; \
 	cd $$ROOT && addlicense -c "Boyuan-IT-Club" -l apache .
+
+license-check:
+	@test -s LICENSE
+	@grep -q 'Apache License' LICENSE
+	@grep -q 'Version 2.0' LICENSE
+	@git ls-files -z | xargs -0 addlicense -check -c "Boyuan-IT-Club" -l apache
 
 wire:
 	@echo "Running wire code generation..."
