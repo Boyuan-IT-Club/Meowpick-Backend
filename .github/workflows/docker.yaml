@@ -18,6 +18,20 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - 'Makefile'
+      - '.gitignore'
+      - '.github/dependabot.yaml'
+      - '.github/workflows/docker.yaml'
+      - '.github/workflows/license-check.yml'
+      - '.github/workflows/pr-agent.yml'
+      - 'docs/*.md'
+      - 'docs/**/*.md'
+      - 'docs/swagger.json'
+      - 'docs/swagger.yaml'
+      - '**/*_test.go'
   workflow_dispatch:
     inputs:
       version:
@@ -35,9 +49,6 @@ env:
 
 jobs:
   build:
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && !contains(github.event.head_commit.message, '[workflow-auto]'))
     runs-on: ubuntu-latest
     outputs:
       VERSION: ${{ env.VERSION }}

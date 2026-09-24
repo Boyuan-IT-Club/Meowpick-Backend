@@ -1,6 +1,6 @@
 # Meowpick Backend
 
-![花狮选课猫 Logo](https://s2.loli.net/2025/11/05/lBgG3iYP1MkhwnX.png)
+![花狮选课猫 Logo](https://raw.githubusercontent.com/Boyuan-IT-Club/Meowpick-Frontend/main/src/images/logo.png)
 
 花狮选课猫是面向微信小程序的课程评价平台。本仓库提供后端 API，覆盖微信登录、用户资料、课程与教师搜索、评论、点赞、课程新增提案、管理员审批和操作日志。
 
