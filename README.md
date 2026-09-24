@@ -222,10 +222,3 @@ docker run --rm \
 ## License
 
 [Apache License 2.0](LICENSE)
-
-### 待审核提案与评论管理
-
-- `GET /api/proposal/pending?page=1&pageSize=10`：所有登录用户均可分页查看未删除的待审核提案，固定返回 `pending`；传入其他 `status` 不会改变筛选结果。响应沿用提案列表结构，贡献值仅创建者可见，昵称展示遵循 `showUsername`。原列表、搜索和详情权限不变。
-- `POST /api/comment/{commentId}/delete`：普通用户仅可删除自己的评论，管理员可删除任意用户的评论；软删除和关联点赞清理在同一事务完成。
-
-权限集成测试可在一次性 MongoDB 副本集和 Redis 上运行：设置 `MEOWPICK_TEST_MONGO_URI` 和 `MEOWPICK_TEST_REDIS_ADDR`，执行 `go test ./application/service -run TestPendingAndCommentPermissionsIntegration -count=1`。测试只清理其创建的独立数据库，Redis 必须使用专门的测试实例。
