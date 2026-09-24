@@ -50,8 +50,8 @@ type UpdateUserProfileResp struct {
 	Avatar   string `json:"avatar"`   // 更新后的头像引用
 }
 
-// ResetUsernameCooldownResp 管理员清除目标用户昵称修改冷却期的结果。
-type ResetUsernameCooldownResp struct {
+// ClearUsernameCooldownResp 管理员清除目标用户昵称修改冷却期的结果。
+type ClearUsernameCooldownResp struct {
 	*Resp
 	UserID          string `json:"userId"`
 	CanEditUsername bool   `json:"canEditUsername"`

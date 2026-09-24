@@ -1120,7 +1120,7 @@ const docTemplate = `{
                 },
                 "type": "object"
             },
-            "dto.ResetUsernameCooldownResp": {
+            "dto.ClearUsernameCooldownResp": {
                 "properties": {
                     "canEditUsername": {
                         "type": "boolean"
@@ -1922,7 +1922,7 @@ const docTemplate = `{
                 },
                 "type": "object"
             },
-            "handler.Response-dto_ResetUsernameCooldownResp": {
+            "handler.Response-dto_ClearUsernameCooldownResp": {
                 "properties": {
                     "code": {
                         "description": "业务代码, 0表示成功",
@@ -1930,7 +1930,7 @@ const docTemplate = `{
                         "type": "integer"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/dto.ResetUsernameCooldownResp",
+                        "$ref": "#/components/schemas/dto.ClearUsernameCooldownResp",
                         "description": "实际业务数据"
                     },
                     "msg": {
@@ -3555,7 +3555,7 @@ const docTemplate = `{
                 ]
             }
         },
-        "/api/user/{userId}/username/cooldown/reset": {
+        "/api/user/{userId}/username/cooldown/clear": {
             "post": {
                 "description": "仅管理员可调用。清除目标用户的 usernameUpdatedAt，使其可以立即再次设置或修改非空昵称；不修改当前昵称。重复调用也成功，目标用户不存在则返回用户不存在错误。用户下次成功修改非空昵称后重新开始 30 天冷却期",
                 "parameters": [
@@ -3574,7 +3574,7 @@ const docTemplate = `{
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/handler.Response-dto_ResetUsernameCooldownResp"
+                                    "$ref": "#/components/schemas/handler.Response-dto_ClearUsernameCooldownResp"
                                 }
                             }
                         },

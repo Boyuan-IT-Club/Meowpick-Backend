@@ -33,7 +33,7 @@ import (
 )
 
 // Run only against disposable MongoDB and Redis instances.
-func TestResetUsernameCooldownIntegration(t *testing.T) {
+func TestClearUsernameCooldownIntegration(t *testing.T) {
 	uri, redisHost := os.Getenv("MEOWPICK_TEST_MONGO_URI"), os.Getenv("MEOWPICK_TEST_REDIS_ADDR")
 	if uri == "" || redisHost == "" {
 		t.Skip("set MEOWPICK_TEST_MONGO_URI and MEOWPICK_TEST_REDIS_ADDR for isolated integration tests")
@@ -72,15 +72,15 @@ func TestResetUsernameCooldownIntegration(t *testing.T) {
 		t.Fatalf("target should initially be in cooldown: user=%+v err=%v", user, err)
 	}
 	for _, id := range []string{"", "ordinary"} {
-		if _, err := s.ResetUsernameCooldown(actor(id), "target"); err == nil {
+		if _, err := s.ClearUsernameCooldown(actor(id), "target"); err == nil {
 			t.Fatalf("actor %q should be rejected", id)
 		}
 	}
-	if _, err := s.ResetUsernameCooldown(actor("admin"), "missing"); err == nil {
+	if _, err := s.ClearUsernameCooldown(actor("admin"), "missing"); err == nil {
 		t.Fatal("missing target should be rejected")
 	}
 	for i := 0; i < 2; i++ {
-		result, err := s.ResetUsernameCooldown(actor("admin"), "target")
+		result, err := s.ClearUsernameCooldown(actor("admin"), "target")
 		if err != nil || result == nil || result.UserID != "target" || !result.CanEditUsername {
 			t.Fatalf("reset %d: result=%+v err=%v", i, result, err)
 		}

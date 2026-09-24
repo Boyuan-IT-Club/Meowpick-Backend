@@ -54,7 +54,7 @@ func SetupRoutes() *gin.Engine {
 		userGroup.GET("/profile", handler.GetUserProfile)
 		userGroup.POST("/profile/update", handler.UpdateUserProfile)
 		userGroup.GET("/:userId/username", handler.GetUsernameByUserID)
-		userGroup.POST("/:userId/username/cooldown/reset", handler.ResetUsernameCooldown)
+		userGroup.POST("/:userId/username/cooldown/clear", handler.ClearUsernameCooldown)
 	}
 
 	// LikeApi

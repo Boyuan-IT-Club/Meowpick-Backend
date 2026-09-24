@@ -45,7 +45,7 @@ type IUserService interface {
 	GetUserProfile(ctx context.Context) (*dto.GetUserProfileResp, error)
 	GetUsernameByUserID(ctx context.Context, userID, proposalID string) (*dto.GetUsernameByUserIDResp, error)
 	UpdateUserProfile(ctx context.Context, req *dto.UpdateUserProfileReq) (*dto.UpdateUserProfileResp, error)
-	ResetUsernameCooldown(ctx context.Context, userID string) (*dto.ResetUsernameCooldownResp, error)
+	ClearUsernameCooldown(ctx context.Context, userID string) (*dto.ClearUsernameCooldownResp, error)
 }
 
 type UserService struct {
@@ -232,8 +232,8 @@ func (s *UserService) UpdateUserProfile(ctx context.Context, req *dto.UpdateUser
 	}, nil
 }
 
-// ResetUsernameCooldown 允许管理员清除目标用户的昵称修改时间，不改变昵称。
-func (s *UserService) ResetUsernameCooldown(ctx context.Context, userID string) (*dto.ResetUsernameCooldownResp, error) {
+// ClearUsernameCooldown 允许管理员清除目标用户的昵称修改时间，不改变昵称。
+func (s *UserService) ClearUsernameCooldown(ctx context.Context, userID string) (*dto.ClearUsernameCooldownResp, error) {
 	operatorID, ok := ctx.Value(consts.CtxUserID).(string)
 	if !ok || operatorID == "" {
 		return nil, errorx.New(errno.ErrUserNotLogin)
@@ -250,15 +250,15 @@ func (s *UserService) ResetUsernameCooldown(ctx context.Context, userID string) 
 		return nil, errorx.New(errno.ErrUserNotFound,
 			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userID))
 	}
-	if err := s.UserRepo.ResetUsernameCooldown(ctx, userID); err != nil {
+	if err := s.UserRepo.ClearUsernameCooldown(ctx, userID); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return nil, errorx.New(errno.ErrUserNotFound,
 				errorx.KV("key", consts.CtxUserID), errorx.KV("value", userID))
 		}
-		logs.CtxErrorf(ctx, "[UserRepo] [ResetUsernameCooldown] error: %v, userId: %s", err, userID)
+		logs.CtxErrorf(ctx, "[UserRepo] [ClearUsernameCooldown] error: %v, userId: %s", err, userID)
 		return nil, errorx.WrapByCode(err, errno.ErrUserUpdateFailed, errorx.KV("id", userID))
 	}
-	return &dto.ResetUsernameCooldownResp{
+	return &dto.ClearUsernameCooldownResp{
 		Resp:            dto.Success(),
 		UserID:          userID,
 		CanEditUsername: true,

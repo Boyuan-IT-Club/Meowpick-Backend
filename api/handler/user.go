@@ -76,16 +76,16 @@ func UpdateUserProfile(c *gin.Context) {
 	PostProcess(c, &req, resp, err)
 }
 
-// ResetUsernameCooldown godoc
+// ClearUsernameCooldown godoc
 // @Summary 管理员清除用户昵称修改冷却期
 // @Description 仅管理员可调用。清除目标用户的 usernameUpdatedAt，使其可以立即再次设置或修改非空昵称；不修改当前昵称。重复调用也成功，目标用户不存在则返回用户不存在错误。用户下次成功修改非空昵称后重新开始 30 天冷却期
 // @Tags user
 // @Produce json
 // @Param userId path string true "目标用户 ID"
-// @Success 200 {object} Response[dto.ResetUsernameCooldownResp]
-// @Router /api/user/{userId}/username/cooldown/reset [post]
-func ResetUsernameCooldown(c *gin.Context) {
+// @Success 200 {object} Response[dto.ClearUsernameCooldownResp]
+// @Router /api/user/{userId}/username/cooldown/clear [post]
+func ClearUsernameCooldown(c *gin.Context) {
 	c.Set(consts.CtxUserID, token.GetUserID(c))
-	resp, err := provider.Get().UserService.ResetUsernameCooldown(c, c.Param("userId"))
+	resp, err := provider.Get().UserService.ClearUsernameCooldown(c, c.Param("userId"))
 	PostProcess(c, nil, resp, err)
 }
