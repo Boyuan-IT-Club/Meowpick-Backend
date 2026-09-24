@@ -78,6 +78,17 @@ const docTemplate = `{
                 },
                 "type": "object"
             },
+            "dto.ClearUsernameCooldownResp": {
+                "properties": {
+                    "canEditUsername": {
+                        "type": "boolean"
+                    },
+                    "userId": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "dto.CommentVO": {
                 "properties": {
                     "category": {
@@ -1120,17 +1131,6 @@ const docTemplate = `{
                 },
                 "type": "object"
             },
-            "dto.ClearUsernameCooldownResp": {
-                "properties": {
-                    "canEditUsername": {
-                        "type": "boolean"
-                    },
-                    "userId": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "dto.ResubmitProposalReq": {
                 "properties": {
                     "content": {
@@ -1404,6 +1404,25 @@ const docTemplate = `{
                     },
                     "username": {
                         "description": "更新后的昵称",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "handler.Response-dto_ClearUsernameCooldownResp": {
+                "properties": {
+                    "code": {
+                        "description": "业务代码, 0表示成功",
+                        "example": 0,
+                        "type": "integer"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/dto.ClearUsernameCooldownResp",
+                        "description": "实际业务数据"
+                    },
+                    "msg": {
+                        "description": "提示信息",
+                        "example": "success",
                         "type": "string"
                     }
                 },
@@ -1912,25 +1931,6 @@ const docTemplate = `{
                     },
                     "data": {
                         "$ref": "#/components/schemas/dto.RejectProposalResp",
-                        "description": "实际业务数据"
-                    },
-                    "msg": {
-                        "description": "提示信息",
-                        "example": "success",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "handler.Response-dto_ClearUsernameCooldownResp": {
-                "properties": {
-                    "code": {
-                        "description": "业务代码, 0表示成功",
-                        "example": 0,
-                        "type": "integer"
-                    },
-                    "data": {
-                        "$ref": "#/components/schemas/dto.ClearUsernameCooldownResp",
                         "description": "实际业务数据"
                     },
                     "msg": {
