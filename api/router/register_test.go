@@ -25,6 +25,15 @@ func TestGetUsernameByUserIDRoute(t *testing.T) {
 	t.Fatal("GET /api/user/:userId/username route is not registered")
 }
 
+func TestResetUsernameCooldownRoute(t *testing.T) {
+	for _, route := range SetupRoutes().Routes() {
+		if route.Method == "POST" && route.Path == "/api/user/:userId/username/cooldown/reset" {
+			return
+		}
+	}
+	t.Fatal("POST /api/user/:userId/username/cooldown/reset route is not registered")
+}
+
 func TestCorrectedRoutesAreRegistered(t *testing.T) {
 	want := map[string]bool{
 		"POST /api/teacher/add":       false,

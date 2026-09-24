@@ -48,6 +48,7 @@ type IUserRepo interface {
 	FindByOpenID(ctx context.Context, openId string) (user *model.User, err error)
 	IsUsernameExist(ctx context.Context, username, excludeUserID string) (bool, error)
 	UpdateProfile(ctx context.Context, id string, username, avatar *string, usernameUpdatedAt, expectedUsernameUpdatedAt *time.Time) (bool, error)
+	ResetUsernameCooldown(ctx context.Context, id string) error
 	SetAdmin(ctx context.Context, id string, admin bool) error
 	InvalidateByID(ctx context.Context, id string) error
 
@@ -224,6 +225,24 @@ func (r *UserRepo) SetAdmin(ctx context.Context, id string, admin bool) error {
 	result, err := r.conn.UpdateOneNoCache(ctx,
 		bson.M{consts.ID: id},
 		bson.M{"$set": bson.M{"admin": admin, consts.UpdatedAt: time.Now()}},
+	)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount != 1 {
+		return monc.ErrNotFound
+	}
+	return r.InvalidateByID(ctx, id)
+}
+
+// ResetUsernameCooldown 清除昵称修改时间，使目标用户可以再次设置非空昵称。
+func (r *UserRepo) ResetUsernameCooldown(ctx context.Context, id string) error {
+	result, err := r.conn.UpdateOneNoCache(ctx,
+		bson.M{consts.ID: id},
+		bson.M{
+			"$unset": bson.M{consts.UsernameUpdatedAt: ""},
+			"$set":   bson.M{consts.UpdatedAt: time.Now()},
+		},
 	)
 	if err != nil {
 		return err

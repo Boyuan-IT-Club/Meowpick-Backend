@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 	"unicode"
@@ -29,6 +30,7 @@ import (
 	"github.com/Boyuan-IT-Club/go-kit/errorx"
 	"github.com/Boyuan-IT-Club/go-kit/logs"
 	"github.com/google/wire"
+	"github.com/zeromicro/go-zero/core/stores/monc"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -43,6 +45,7 @@ type IUserService interface {
 	GetUserProfile(ctx context.Context) (*dto.GetUserProfileResp, error)
 	GetUsernameByUserID(ctx context.Context, userID, proposalID string) (*dto.GetUsernameByUserIDResp, error)
 	UpdateUserProfile(ctx context.Context, req *dto.UpdateUserProfileReq) (*dto.UpdateUserProfileResp, error)
+	ResetUsernameCooldown(ctx context.Context, userID string) (*dto.ResetUsernameCooldownResp, error)
 }
 
 type UserService struct {
@@ -226,6 +229,39 @@ func (s *UserService) UpdateUserProfile(ctx context.Context, req *dto.UpdateUser
 		Resp:     dto.Success(),
 		Username: user.Username,
 		Avatar:   user.Avatar,
+	}, nil
+}
+
+// ResetUsernameCooldown 允许管理员清除目标用户的昵称修改时间，不改变昵称。
+func (s *UserService) ResetUsernameCooldown(ctx context.Context, userID string) (*dto.ResetUsernameCooldownResp, error) {
+	operatorID, ok := ctx.Value(consts.CtxUserID).(string)
+	if !ok || operatorID == "" {
+		return nil, errorx.New(errno.ErrUserNotLogin)
+	}
+	isAdmin, err := s.UserRepo.IsAdminByID(ctx, operatorID)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrUserFindFailed,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", operatorID))
+	}
+	if !isAdmin {
+		return nil, errorx.New(errno.ErrUserNotAdmin, errorx.KV("id", operatorID))
+	}
+	if userID == "" {
+		return nil, errorx.New(errno.ErrUserNotFound,
+			errorx.KV("key", consts.CtxUserID), errorx.KV("value", userID))
+	}
+	if err := s.UserRepo.ResetUsernameCooldown(ctx, userID); err != nil {
+		if errors.Is(err, monc.ErrNotFound) {
+			return nil, errorx.New(errno.ErrUserNotFound,
+				errorx.KV("key", consts.CtxUserID), errorx.KV("value", userID))
+		}
+		logs.CtxErrorf(ctx, "[UserRepo] [ResetUsernameCooldown] error: %v, userId: %s", err, userID)
+		return nil, errorx.WrapByCode(err, errno.ErrUserUpdateFailed, errorx.KV("id", userID))
+	}
+	return &dto.ResetUsernameCooldownResp{
+		Resp:            dto.Success(),
+		UserID:          userID,
+		CanEditUsername: true,
 	}, nil
 }
 

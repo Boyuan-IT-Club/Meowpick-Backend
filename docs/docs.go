@@ -1120,6 +1120,18 @@ const docTemplate = `{
                 },
                 "type": "object"
             },
+            "dto.ResetUsernameCooldownResp": {
+                "description": "实际业务数据",
+                "properties": {
+                    "canEditUsername": {
+                        "type": "boolean"
+                    },
+                    "userId": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "dto.ResubmitProposalReq": {
                 "properties": {
                     "content": {
@@ -1902,6 +1914,24 @@ const docTemplate = `{
                     "data": {
                         "$ref": "#/components/schemas/dto.RejectProposalResp",
                         "description": "实际业务数据"
+                    },
+                    "msg": {
+                        "description": "提示信息",
+                        "example": "success",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "handler.Response-dto_ResetUsernameCooldownResp": {
+                "properties": {
+                    "code": {
+                        "description": "业务代码, 0表示成功",
+                        "example": 0,
+                        "type": "integer"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/dto.ResetUsernameCooldownResp"
                     },
                     "msg": {
                         "description": "提示信息",
@@ -3480,6 +3510,38 @@ const docTemplate = `{
                     }
                 },
                 "summary": "更新当前用户资料",
+                "tags": [
+                    "user"
+                ]
+            }
+        },
+        "/api/user/{userId}/username/cooldown/reset": {
+            "post": {
+                "description": "仅管理员可调用。清除目标用户的 usernameUpdatedAt，使其可以立即再次设置或修改非空昵称；不修改当前昵称。重复调用也成功，目标用户不存在则返回用户不存在错误。用户下次成功修改非空昵称后重新开始 30 天冷却期",
+                "parameters": [
+                    {
+                        "description": "目标用户 ID",
+                        "in": "path",
+                        "name": "userId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.Response-dto_ResetUsernameCooldownResp"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "管理员清除用户昵称修改冷却期",
                 "tags": [
                     "user"
                 ]
