@@ -221,11 +221,6 @@ docker run --rm \
 
 准确的请求参数、权限与响应结构以运行时 Swagger 和 [`docs/swagger.yaml`](docs/swagger.yaml) 为准。
 
-## 相关文档
-
-- [基础映射运行时设计](docs/REFERENCE-MAPPINGS.md)
-- [用户与提案接口修复、验收项和已知限制](docs/USER-PROPOSAL-API-FIXES.md)
-
 ## License
 
 [Apache License 2.0](LICENSE)
