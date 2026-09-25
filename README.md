@@ -168,12 +168,19 @@ gofmt -w path/to/changed.go
 go test ./...
 go vet ./...
 
-# 生成依赖注入代码和 OpenAPI 文档
+# 依赖注入关系变化时重新生成 Wire 代码
 make wire
+
+# 完成改动前重新生成 OpenAPI 文档
 make swagger
+
+# 每次提交前检查 LICENSE 和已跟踪文件的许可证头
+make license-check
 ```
 
-修改 Wire 依赖关系后必须运行 `make wire`；修改 Handler 注释或 DTO 后必须运行 `make swagger`，并提交生成文件。
+修改 Wire 依赖关系后必须运行 `make wire`。完成改动前运行 `make swagger`；接口、Handler 注释或 DTO 有变化时，一并提交更新后的 `docs/docs.go`、`docs/swagger.json` 和 `docs/swagger.yaml`。推送后不会再由 CI 自动生成和提交 Swagger 文件。
+
+每次提交前运行 `make license-check`；CI 也会检查 `LICENSE` 和已跟踪文件的许可证头。`make license` 会写入或补齐许可证头，只在新增文件缺少文件头等需要修复的情况下运行，之后再运行 `make license-check`。不要把 `make license` 当作每次提交必跑的检查命令。
 
 首次执行生成命令前安装对应 CLI：
 
