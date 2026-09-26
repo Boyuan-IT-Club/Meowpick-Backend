@@ -219,7 +219,7 @@ docker run --rm \
 | 提案 | `/api/proposal` | 创建、查询、修改、审批、拒绝和撤回；`/history` 为“我的提案” |
 | 变更日志 | `/api/changelog` | 管理操作列表和提案时间线 |
 
-准确的请求参数、权限与响应结构以运行时 Swagger 和 [`docs/swagger.yaml`](docs/swagger.yaml) 为准。
+请求参数、权限与响应结构可查阅运行时 Swagger 和 [`docs/swagger.yaml`](docs/swagger.yaml)。这些文档由 `make swagger` 生成并提交；服务启动和代码推送不会自动更新它们，接口实际行为以当前后端实现为准。
 
 ## License
 
