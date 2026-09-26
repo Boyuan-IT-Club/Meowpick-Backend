@@ -36,7 +36,7 @@
 │   ├── assembler/        # 数据模型与 DTO 转换
 │   ├── dto/              # API 请求和响应结构
 │   └── service/          # 业务逻辑
-├── docs/                 # OpenAPI 与设计、迁移说明
+├── docs/                 # 编译进服务的 OpenAPI 文档与设计说明
 ├── infra/
 │   ├── cache/            # Redis 缓存
 │   ├── config/           # 配置加载
@@ -44,8 +44,7 @@
 │   ├── repo/             # 数据访问
 │   └── util/             # 通用工具与运行时映射
 ├── provider/             # Wire 依赖注入
-├── scripts/              # BSON 迁移编排脚本
-└── types/                # 常量、错误码和迁移种子映射
+└── types/                # 常量、错误码和固定业务映射
 ```
 
 ## 本地运行
@@ -178,7 +177,7 @@ make swagger
 make license-check
 ```
 
-修改 Wire 依赖关系后必须运行 `make wire`。完成改动前运行 `make swagger`；接口、Handler 注释或 DTO 有变化时，一并提交更新后的 `docs/docs.go`、`docs/swagger.json` 和 `docs/swagger.yaml`。推送后不会再由 CI 自动生成和提交 Swagger 文件。
+修改 Wire 依赖关系后必须运行 `make wire`。完成改动前运行 `make swagger`；接口、Handler 注释或 DTO 有变化时，提交更新后的 `docs/docs.go`。该文件编译进服务，由 `/openapi.json` 和 Swagger UI 提供接口文档。服务启动和代码推送都不会自动重新生成它。
 
 每次提交前运行 `make license-check`；CI 也会检查 `LICENSE` 和已跟踪文件的许可证头。`make license` 会写入或补齐许可证头，只在新增文件缺少文件头等需要修复的情况下运行，之后再运行 `make license-check`。不要把 `make license` 当作每次提交必跑的检查命令。
 
@@ -219,7 +218,7 @@ docker run --rm \
 | 提案 | `/api/proposal` | 创建、查询、修改、审批、拒绝和撤回；`/history` 为“我的提案” |
 | 变更日志 | `/api/changelog` | 管理操作列表和提案时间线 |
 
-请求参数、权限与响应结构可查阅运行时 Swagger 和 [`docs/swagger.yaml`](docs/swagger.yaml)。这些文档由 `make swagger` 生成并提交；服务启动和代码推送不会自动更新它们，接口实际行为以当前后端实现为准。
+请求参数、权限与响应结构可查阅运行时 Swagger UI 或 `/openapi.json`；接口实际行为以当前后端实现为准。
 
 ## License
 

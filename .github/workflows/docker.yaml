@@ -29,8 +29,6 @@ on:
       - '.github/workflows/pr-agent.yml'
       - 'docs/*.md'
       - 'docs/**/*.md'
-      - 'docs/swagger.json'
-      - 'docs/swagger.yaml'
       - '**/*_test.go'
   workflow_dispatch:
     inputs:
