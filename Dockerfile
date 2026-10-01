@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# 使用官方 Go 1.25.5 Alpine 镜像
-FROM golang:1.25.5-alpine AS builder
+# 使用官方 Go 1.27.1 Alpine 镜像
+FROM golang:1.27.1-alpine AS builder
 
 # 安装必要工具（可选，根据需求）
 RUN apk add --no-cache git bash
