@@ -1,6 +1,6 @@
 module github.com/Boyuan-IT-Club/Meowpick-Backend
 
-go 1.25.5
+go 1.26.0
 
 require (
 	github.com/Boyuan-IT-Club/go-kit v0.0.0-20251208085541-b33f68a15880
@@ -15,7 +15,7 @@ require (
 	github.com/swaggo/swag/v2 v2.0.0-rc5
 	github.com/zeromicro/go-zero v1.8.5
 	go.mongodb.org/mongo-driver v1.17.10
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.23.0
 )
 
 require (
