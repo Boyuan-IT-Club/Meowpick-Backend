@@ -6,7 +6,7 @@
 
 ## 技术栈
 
-- Go 1.25.5
+- Go 1.26.0
 - Gin
 - MongoDB（审批和撤回依赖事务，必须使用副本集或分片集群）
 - Redis（缓存；MongoDB 是业务数据和基础映射的真源）
@@ -51,7 +51,7 @@
 
 ### 环境要求
 
-- Go 1.25.5 或兼容的更新版本；
+- Go 1.26.0 或更新版本（以 `go.mod` 为准）；
 - MongoDB 副本集或分片集群，不能使用 standalone；
 - Redis；
 - 生产登录所需的微信小程序 AppID 和 AppSecret。
@@ -164,8 +164,9 @@ curl -X POST http://localhost:8080/api/auth/sign_in \
 gofmt -w path/to/changed.go
 
 # 单元测试和静态检查
-go test ./...
+go test -count=1 ./...
 go vet ./...
+go build ./...
 
 # 依赖注入关系变化时重新生成 Wire 代码
 make wire
@@ -181,6 +182,12 @@ make license-check
 
 每次提交前运行 `make license-check`；CI 也会检查 `LICENSE` 和已跟踪文件的许可证头。`make license` 会写入或补齐许可证头，只在新增文件缺少文件头等需要修复的情况下运行，之后再运行 `make license-check`。不要把 `make license` 当作每次提交必跑的检查命令。
 
+### CI 与发布
+
+Pull Request 和推送到 `main` 时，[Go and Docker CI](.github/workflows/go-ci.yml) 会按 `go.mod` 选择 Go 版本，运行无缓存测试、`go vet ./...`、`go build ./...`，并构建 Docker 镜像验证 Dockerfile；该检查不会发布镜像。单独的 [License headers](.github/workflows/license-check.yml) 工作流会检查许可证。
+
+[Docker Build and Push](.github/workflows/docker.yaml) 是独立的发布工作流：符合其路径过滤条件的 `main` 推送会构建并推送镜像，然后执行远程更新；也可以手动触发。提交前请同时检查代码 CI 和发布工作流的结果。
+
 首次执行生成命令前安装对应 CLI：
 
 ```bash
@@ -189,6 +196,8 @@ go install github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc5
 ```
 
 ## Docker
+
+Dockerfile 的构建阶段使用 Go 1.27.1 Alpine，运行阶段使用 Alpine；本地开发的最低 Go 版本仍由 `go.mod` 决定。
 
 ```bash
 docker build -t meowpick-backend .
