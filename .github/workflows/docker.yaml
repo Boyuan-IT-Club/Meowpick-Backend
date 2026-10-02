@@ -26,6 +26,7 @@ on:
       - '.github/dependabot.yaml'
       - '.github/workflows/docker.yaml'
       - '.github/workflows/license-check.yml'
+      - '.github/workflows/go-ci.yml'
       - '.github/workflows/pr-agent.yml'
       - 'docs/*.md'
       - 'docs/**/*.md'
