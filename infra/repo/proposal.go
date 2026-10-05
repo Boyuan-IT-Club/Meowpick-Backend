@@ -215,7 +215,7 @@ func (r *ProposalRepo) FindMany(ctx context.Context, param *dto.PageParam) ([]*m
 		ctx,
 		&proposals,
 		filter,
-		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+		page.FindPageOption(param).SetSort(bson.D{{Key: consts.CreatedAt, Value: -1}, {Key: consts.ID, Value: -1}}),
 	); err != nil {
 		return nil, 0, err
 	}
@@ -240,7 +240,7 @@ func (r *ProposalRepo) FindManyByStatus(ctx context.Context, param *dto.PagePara
 		ctx,
 		&proposals,
 		filter,
-		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+		page.FindPageOption(param).SetSort(bson.D{{Key: consts.CreatedAt, Value: -1}, {Key: consts.ID, Value: -1}}),
 	); err != nil {
 		return nil, 0, err
 	}
@@ -262,7 +262,7 @@ func (r *ProposalRepo) FindManyByFilter(ctx context.Context, req *dto.SuggestPro
 		ctx,
 		&proposals,
 		filter,
-		page.FindPageOption(req.PageParam).SetSort(page.DSort(consts.CreatedAt, -1)),
+		page.FindPageOption(req.PageParam).SetSort(bson.D{{Key: consts.CreatedAt, Value: -1}, {Key: consts.ID, Value: -1}}),
 	); err != nil {
 		return nil, 0, err
 	}
@@ -429,7 +429,7 @@ func (r *ProposalRepo) FindManyByUserID(ctx context.Context, param *dto.PagePara
 		return nil, 0, err
 	}
 	if err = r.conn.Find(ctx, &proposals, filter,
-		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+		page.FindPageOption(param).SetSort(bson.D{{Key: consts.CreatedAt, Value: -1}, {Key: consts.ID, Value: -1}}),
 	); err != nil {
 		return nil, 0, err
 	}

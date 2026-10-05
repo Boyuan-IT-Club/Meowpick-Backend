@@ -15,6 +15,8 @@
 package page
 
 import (
+	"math"
+
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -28,7 +30,11 @@ func FindPageOption(param dto.IPageParam) *options.FindOptions {
 		return ops
 	}
 	page, size := param.UnWrap()
-	ops.SetSkip((page - 1) * size)
+	offset := int64(math.MaxInt64)
+	if page-1 <= math.MaxInt64/size {
+		offset = (page - 1) * size
+	}
+	ops.SetSkip(offset)
 	ops.SetLimit(size)
 
 	return ops

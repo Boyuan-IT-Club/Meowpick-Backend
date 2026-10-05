@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"sync"
 	"testing"
@@ -52,7 +53,7 @@ func TestProposalWorkflowIntegration(t *testing.T) {
 	if uri == "" || redisAddr == "" {
 		t.Skip("isolated replica-set MongoDB and Redis required")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
@@ -62,6 +63,14 @@ func TestProposalWorkflowIntegration(t *testing.T) {
 	cfg := &config.Config{Redis: &redis.RedisConf{Host: redisAddr, Type: "node"}}
 	cfg.Mongo.URL = uri
 	cfg.Mongo.DB = fmt.Sprintf("proposal_workflow_test_%d", time.Now().UnixNano())
+	testURI, err := url.Parse(uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := testURI.Query()
+	query.Set("appName", cfg.Mongo.DB)
+	testURI.RawQuery = query.Encode()
+	cfg.Mongo.URL = testURI.String()
 	cfg.Cache = storecache.CacheConf{{RedisConf: *cfg.Redis, Weight: 100}}
 	db := client.Database(cfg.Mongo.DB)
 	defer db.Drop(context.Background())
@@ -478,4 +487,5 @@ func TestProposalWorkflowIntegration(t *testing.T) {
 	})
 	exerciseWorkflowEdges(t, ctx, s, feedback, db, active.ID, userPrefix)
 	exerciseWorkflowCrossOps(t, ctx, s, cfg, userPrefix)
+	exerciseWorkflowResilience(t, ctx, s, feedback, cfg, userPrefix)
 }

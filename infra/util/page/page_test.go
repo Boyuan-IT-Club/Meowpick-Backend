@@ -15,6 +15,7 @@
 package page
 
 import (
+	"math"
 	"testing"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
@@ -28,6 +29,18 @@ func TestFindPageOption(t *testing.T) {
 		wantSkip  int64
 		wantLimit int64
 	}{
+		{
+			name:      "最大页码不产生负数偏移",
+			pageParam: &dto.PageParam{Page: math.MaxInt64, PageSize: 100},
+			wantSkip:  math.MaxInt64,
+			wantLimit: 100,
+		},
+		{
+			name:      "最后一个不溢出的页码",
+			pageParam: &dto.PageParam{Page: math.MaxInt64/100 + 1, PageSize: 100},
+			wantSkip:  (math.MaxInt64 / 100) * 100,
+			wantLimit: 100,
+		},
 		{
 			name:      "正常情况: page=1, size=10",
 			pageParam: &dto.PageParam{Page: 1, PageSize: 10},

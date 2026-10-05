@@ -137,8 +137,8 @@ func (s *ProposalService) EntityHistory(ctx context.Context, req *dto.EntityHist
 				if req.PageParam != nil {
 					count, size = req.PageParam.UnWrap()
 				}
-				offset := (count - 1) * size
-				if offset <= total && offset+size > total {
+				offset := *page.FindPageOption(&dto.PageParam{Page: count, PageSize: size}).Skip
+				if offset <= total && total-offset < size {
 					contributors, err := s.CourseAssembler.PublicContributors(ctx, []*model.Proposal{source})
 					if err != nil {
 						return nil, err

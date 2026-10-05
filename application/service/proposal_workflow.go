@@ -593,11 +593,12 @@ func (s *ProposalService) buildApproval(ctx context.Context, req *dto.ToggleProp
 		}
 	}
 	previewAuthors := map[string]bool{}
-	for _, p := range relevant {
-		vo, err := s.ProposalAssembler.ToProposalVO(ctx, p, actor)
-		if err != nil {
-			return nil, err
-		}
+	previewProposals, err := s.ProposalAssembler.ToProposalVOArray(ctx, relevant, actor)
+	if err != nil {
+		return nil, err
+	}
+	for i, p := range relevant {
+		vo := previewProposals[i]
 		candidate := &dto.ProposalCandidate{Proposal: vo, Differences: []dto.ProposalDifference{}, Automatic: proposalAutoKey(p) == proposalAutoKey(primary)}
 		if state.Course != nil && p.EffectiveType() == model.ProposalCreateCourse {
 			original := copyAs[dto.ProposalCourseVO](p.Course)

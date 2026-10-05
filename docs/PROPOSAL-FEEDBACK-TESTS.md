@@ -21,6 +21,10 @@
 | 重新提交 | 他人不能替换拒绝提案；拒绝→原作者重提→两人共同通过→从任一成员撤回→再次通过；旧提案保留为软删除记录，课程 ID 复用，积分与贡献者无重复 |
 | 非法批量选择 | 混入已删除、已审批、不同类型或不同目标的提案；预览及审批失败且无日志/结算；批量拒绝失败不改变其他成员 |
 | 关联撤回 | 课程含评价及点赞，预热评论总数缓存再撤回；评价不可公开读取、点赞清理、统计缓存失效，另一门课程的评价和点赞保持有效 |
+| 事务故障 | 对本轮唯一 appName 注入一次事务中途失败、提交结果未知、提交时断连；确认每个故障恰好触发一次，最终只创建一份实体并结算一次 |
+| 失败与重试 | 不可重试的提交失败后，实体、积分、决策、日志全部回滚；恢复后同一请求成功；成功请求重放不重复结算；已取消请求不写业务数据 |
+| 批量数据 | 1,000 条同名待审提案，100 条精确相同、900 条疑似；共同通过只生成一门课程、一名教师和100名贡献者；用37/100两种页大小遍历提案 |
+| 分页边界 | 201条同时间反馈、消息和修改历史，逐页核对 ID 无重复或漏项；搜索元字符按普通文字处理；最大整数页码返回空列表，旧来源历史也不错误回显 |
 
 ## 本轮发现并修复
 
@@ -28,6 +32,9 @@
 2. 反馈错误码与通用请求错误码冲突，反馈改为 `112000001`—`112000004`，Swagger 和前端对接说明已同步。
 3. 审批及管理员草稿传入错误提案类型的字段会被忽略，现返回 `108000015`。
 4. 撤回新建课程会清理评价，但未失效评论总数缓存，现提交事务后清理统计缓存；Wire 已重新生成。
+5. 相同创建时间的提案跨页重复，提案列表统一增加 ID 作为第二排序条件。
+6. 极大页码造成偏移量溢出为负数，统一分页计算和旧来源历史判断已修复。
+7. 审批预览逐条查询点赞数据，改为复用批量查询；本地1,000条候选的单次样本由约6.8秒降至约0.23秒，点赞数及查看者状态保持一致。这不是生产环境性能承诺。
 
 ## 验证结果与复现
 
@@ -35,7 +42,8 @@
 - 相关 HTTP/服务集成测试 `-race -p 1 -count=2`：连续两轮通过。
 - `go vet ./...`、`make swagger`：通过。
 - 集成测试须设置 `MEOWPICK_TEST_MONGO_URI`（支持事务的副本集）及 `MEOWPICK_TEST_REDIS_ADDR`；未设置时跳过数据库集成用例。
+- 故障注入还须显式设置 `MEOWPICK_TEST_FAILPOINTS=1`，并在隔离 MongoDB 启用 `enableTestCommands=1`；只针对本轮唯一 appName，结束时关闭故障点。不要在业务数据库启用测试命令。使用 MongoDB 官方 [failCommand 测试机制](https://github.com/mongodb/mongo/wiki/The-failCommand-fail-point)。
 
-主要用例：`application/service/proposal_workflow_integration_test.go`、`application/service/proposal_workflow_edgecases_test.go`、`application/service/proposal_workflow_crossops_test.go`、`application/service/proposal_workflow_fuzz_test.go`、`api/router/workflow_integration_test.go`。
+主要用例：`application/service/proposal_workflow_integration_test.go`、`application/service/proposal_workflow_edgecases_test.go`、`application/service/proposal_workflow_crossops_test.go`、`application/service/proposal_workflow_resilience_test.go`、`application/service/proposal_workflow_fuzz_test.go`、`api/router/workflow_integration_test.go`。
 
-这是已执行的测试范围；随机输入结果不代表穷尽所有组合，也未进行生产规模的负载测试。
+这是已执行的测试范围；随机输入结果不代表穷尽所有组合。上述规模用例验证数据正确性，未进行生产规模持续压测、真实多节点主从切换或 Redis 故障注入。
