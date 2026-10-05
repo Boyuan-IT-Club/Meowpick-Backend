@@ -104,9 +104,13 @@ AdminGrantKey: test-unused
 	routes := SetupRoutes()
 	call := func(t *testing.T, user, method, path string, body any, wantCode int) map[string]any {
 		t.Helper()
-		payload, err := json.Marshal(body)
-		if err != nil {
-			t.Fatal(err)
+		payload, raw := body.([]byte)
+		if !raw {
+			var err error
+			payload, err = json.Marshal(body)
+			if err != nil {
+				t.Fatal(err)
+			}
 		}
 		req := httptest.NewRequest(method, path, bytes.NewReader(payload))
 		req.Header.Set("Content-Type", "application/json")
@@ -119,7 +123,7 @@ AdminGrantKey: test-unused
 			Code int            `json:"code"`
 			Data map[string]any `json:"data"`
 		}
-		if err = json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
 			t.Fatalf("%s %s returned invalid JSON: %s", method, path, recorder.Body.String())
 		}
 		if recorder.Code != http.StatusOK || response.Code != wantCode {
@@ -155,6 +159,12 @@ AdminGrantKey: test-unused
 		}
 		call(t, "http-a", "POST", "/api/proposal/"+proposalA+"/preview", map[string]any{}, errno.ErrUserNotAdmin)
 		call(t, admin, "POST", "/api/proposal/"+proposalA+"/approve", map[string]any{}, errno.ErrProposalPreviewRequired)
+		for _, raw := range []string{"{", "[]", "", `{"course":{"name":{"$ne":""}}}`} {
+			call(t, "http-a", "POST", "/api/proposal/add", []byte(raw), errno.ErrRequestInvalid)
+		}
+		call(t, "http-a", "POST", "/api/proposal/add", []byte("null"), errno.ErrProposalInvalidField)
+		call(t, admin, "POST", "/api/proposal/"+proposalA+"/preview", map[string]any{"final": map[string]any{"name": "不应被静默忽略"}}, errno.ErrProposalInvalidField)
+
 	})
 	t.Run("shared approval and public course", func(t *testing.T) {
 		duplicate := call(t, "http-b", "POST", "/api/proposal/add", courseBody, 0)
@@ -177,6 +187,7 @@ AdminGrantKey: test-unused
 	})
 	t.Run("course and teacher edits", func(t *testing.T) {
 		edit := call(t, "http-a", "POST", "/api/proposal/add", map[string]any{"type": "update_course", "targetId": courseID, "suggested": map[string]any{"code": "HTTP2"}}, 0)
+		call(t, admin, "POST", "/api/proposal/"+edit["proposalId"].(string)+"/preview", map[string]any{"finalCourse": courseBody["course"]}, errno.ErrProposalInvalidField)
 		approve(t, edit["proposalId"].(string), map[string]any{})
 		call(t, "http-b", "POST", "/api/proposal/add", map[string]any{"type": "update_course", "targetId": courseID, "suggested": map[string]any{"code": "HTTP2"}}, errno.ErrProposalNoChanges)
 		teacherEdit := call(t, "http-b", "POST", "/api/proposal/add", map[string]any{"type": "update_teacher", "targetId": teacherID, "suggested": map[string]any{"title": "教授", "department": ""}}, 0)

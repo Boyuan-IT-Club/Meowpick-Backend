@@ -17,10 +17,10 @@ package errno
 import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 
 const (
-	ErrFeedbackNotFound   = 110000001
-	ErrFeedbackInvalid    = 110000002
-	ErrFeedbackRateLimit  = 110000003
-	ErrFeedbackDailyLimit = 110000004
+	ErrFeedbackNotFound   = 112000001
+	ErrFeedbackInvalid    = 112000002
+	ErrFeedbackRateLimit  = 112000003
+	ErrFeedbackDailyLimit = 112000004
 )
 
 func init() {

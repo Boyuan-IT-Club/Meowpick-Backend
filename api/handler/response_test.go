@@ -16,6 +16,8 @@ package handler
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -63,5 +65,15 @@ func TestPostProcessHidesInternalErrorDetails(t *testing.T) {
 	}
 	if !strings.Contains(body, "internal server error") {
 		t.Fatalf("response = %s, want generic error", body)
+	}
+}
+
+func TestTruncatedJSONUsesBusinessRequestError(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/test", strings.NewReader("{"))
+	PostProcess(ctx, nil, nil, io.ErrUnexpectedEOF)
+	if recorder.Code != http.StatusOK || !strings.Contains(recorder.Body.String(), fmt.Sprintf(`"code":%d`, errno.ErrRequestInvalid)) {
+		t.Fatalf("truncated JSON became server error: %s", recorder.Body.String())
 	}
 }

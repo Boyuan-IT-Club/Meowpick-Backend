@@ -328,6 +328,12 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 		if kind != old.EffectiveType() || target != old.TargetID {
 			return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "type/targetId"))
 		}
+		if kind == model.ProposalCreateCourse && req.Suggested != nil {
+			return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "suggested"))
+		}
+		if kind != model.ProposalCreateCourse && req.Course != nil {
+			return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "course"))
+		}
 		var finalCourse *model.ProposalCourse
 		var finalPatch *model.ProposalPatch
 		if kind == model.ProposalCreateCourse {
@@ -405,6 +411,12 @@ func (s *ProposalService) buildApproval(ctx context.Context, req *dto.ToggleProp
 	primary := byID[req.ProposalID]
 	if primary == nil {
 		return nil, errorx.New(errno.ErrProposalAlreadyProcessed)
+	}
+	if primary.EffectiveType() == model.ProposalCreateCourse && req.Final != nil {
+		return nil, errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "final"))
+	}
+	if primary.EffectiveType() != model.ProposalCreateCourse && req.FinalCourse != nil {
+		return nil, errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "finalCourse"))
 	}
 	selected := map[string]bool{primary.ID: true}
 	for _, id := range req.ProposalIDs {

@@ -24,7 +24,7 @@ import (
 
 // CreateFeedback godoc
 // @Summary 提交私密反馈
-// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Accept json
@@ -44,7 +44,7 @@ func CreateFeedback(c *gin.Context) {
 
 // ListMyFeedback godoc
 // @Summary 我的反馈列表
-// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Param page query int false "页码" default(1)
@@ -67,7 +67,7 @@ func ListMyFeedback(c *gin.Context) {
 
 // ListAdminFeedback godoc
 // @Summary 管理员反馈列表
-// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Param page query int false "页码" default(1)
@@ -90,7 +90,7 @@ func ListAdminFeedback(c *gin.Context) {
 
 // GetFeedback godoc
 // @Summary 我的反馈对话
-// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Param feedbackId path string true "反馈ID"
@@ -111,7 +111,7 @@ func GetFeedback(c *gin.Context) {
 
 // GetAdminFeedback godoc
 // @Summary 管理员反馈对话
-// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Param feedbackId path string true "反馈ID"
@@ -132,7 +132,7 @@ func GetAdminFeedback(c *gin.Context) {
 
 // SendFeedbackMessage godoc
 // @Summary 作者继续回复
-// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Param feedbackId path string true "反馈ID"
@@ -153,7 +153,7 @@ func SendFeedbackMessage(c *gin.Context) {
 
 // ReplyFeedback godoc
 // @Summary 管理员回复反馈
-// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Param feedbackId path string true "反馈ID"
@@ -174,7 +174,7 @@ func ReplyFeedback(c *gin.Context) {
 
 // ReadFeedback godoc
 // @Summary 标记作者已读位置
-// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Param feedbackId path string true "反馈ID"
@@ -195,7 +195,7 @@ func ReadFeedback(c *gin.Context) {
 
 // ReadAdminFeedback godoc
 // @Summary 标记管理员已读位置
-// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Param feedbackId path string true "反馈ID"
@@ -216,7 +216,7 @@ func ReadAdminFeedback(c *gin.Context) {
 
 // CloseFeedback godoc
 // @Summary 作者关闭反馈
-// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Param feedbackId path string true "反馈ID"
@@ -230,7 +230,7 @@ func CloseFeedback(c *gin.Context) {
 
 // CloseAdminFeedback godoc
 // @Summary 管理员关闭反馈
-// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Param feedbackId path string true "反馈ID"
@@ -244,7 +244,7 @@ func CloseAdminFeedback(c *gin.Context) {
 
 // FeedbackUnread godoc
 // @Summary 我的未读反馈回复数
-// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Success 200 {object} Response[dto.FeedbackUnreadResp]
@@ -257,7 +257,7 @@ func FeedbackUnread(c *gin.Context) {
 
 // AdminFeedbackUnread godoc
 // @Summary 管理员未读反馈消息数
-// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
+// @Description 仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。
 // @Tags feedback
 // @Produce json
 // @Success 200 {object} Response[dto.FeedbackUnreadResp]

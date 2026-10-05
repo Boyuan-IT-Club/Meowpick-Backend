@@ -82,7 +82,7 @@ func normalizeRequestError(err error) error {
 
 	var syntaxError *json.SyntaxError
 	var typeError *json.UnmarshalTypeError
-	if errors.Is(err, io.EOF) || errors.As(err, &syntaxError) || errors.As(err, &typeError) {
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || errors.As(err, &syntaxError) || errors.As(err, &typeError) {
 		return errorx.New(errno.ErrRequestInvalid, errorx.KV("field", "body"))
 	}
 	return err

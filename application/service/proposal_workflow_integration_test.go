@@ -476,4 +476,5 @@ func TestProposalWorkflowIntegration(t *testing.T) {
 			t.Fatal("rate failure wrote partial message", detail, err)
 		}
 	})
+	exerciseWorkflowEdges(t, ctx, s, feedback, db, active.ID, userPrefix)
 }

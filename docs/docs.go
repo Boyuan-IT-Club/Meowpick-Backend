@@ -2654,7 +2654,7 @@ const docTemplate = `{
     "paths": {
         "/api/admin/feedback": {
             "get": {
-                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "parameters": [
                     {
                         "description": "页码",
@@ -2719,7 +2719,7 @@ const docTemplate = `{
         },
         "/api/admin/feedback/unread": {
             "get": {
-                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "responses": {
                     "200": {
                         "content": {
@@ -2740,7 +2740,7 @@ const docTemplate = `{
         },
         "/api/admin/feedback/{feedbackId}": {
             "get": {
-                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "parameters": [
                     {
                         "description": "反馈ID",
@@ -2790,7 +2790,7 @@ const docTemplate = `{
         },
         "/api/admin/feedback/{feedbackId}/close": {
             "post": {
-                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "parameters": [
                     {
                         "description": "反馈ID",
@@ -2822,7 +2822,7 @@ const docTemplate = `{
         },
         "/api/admin/feedback/{feedbackId}/read": {
             "post": {
-                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "parameters": [
                     {
                         "description": "反馈ID",
@@ -2874,7 +2874,7 @@ const docTemplate = `{
         },
         "/api/admin/feedback/{feedbackId}/reply": {
             "post": {
-                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅管理员可操作，查看全体用户的私密反馈。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "parameters": [
                     {
                         "description": "反馈ID",
@@ -3513,7 +3513,7 @@ const docTemplate = `{
         },
         "/api/feedback": {
             "post": {
-                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -3554,7 +3554,7 @@ const docTemplate = `{
         },
         "/api/feedback/mine": {
             "get": {
-                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "parameters": [
                     {
                         "description": "页码",
@@ -3619,7 +3619,7 @@ const docTemplate = `{
         },
         "/api/feedback/unread": {
             "get": {
-                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "responses": {
                     "200": {
                         "content": {
@@ -3640,7 +3640,7 @@ const docTemplate = `{
         },
         "/api/feedback/{feedbackId}": {
             "get": {
-                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "parameters": [
                     {
                         "description": "反馈ID",
@@ -3690,7 +3690,7 @@ const docTemplate = `{
         },
         "/api/feedback/{feedbackId}/close": {
             "post": {
-                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "parameters": [
                     {
                         "description": "反馈ID",
@@ -3722,7 +3722,7 @@ const docTemplate = `{
         },
         "/api/feedback/{feedbackId}/messages": {
             "post": {
-                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "parameters": [
                     {
                         "description": "反馈ID",
@@ -3774,7 +3774,7 @@ const docTemplate = `{
         },
         "/api/feedback/{feedbackId}/read": {
             "post": {
-                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误110000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误110000003/110000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
+                "description": "仅登录作者可查看和操作自己的反馈，他人反馈与不存在返回同一错误112000001。纯文字，每条1-2000 Unicode字符，无外部内容审核；每位用户每分钟最多5条消息、每天UTC+8最多新建10条，超限错误112000003/112000004。状态pending为等待管理员，管理员回复变answered，作者回复回pending，双方可关闭，作者在closed中继续回复重新打开。GET详情不自动标记已读，展示消息后POST read携带已展示的最大sequence，已读位置只前进；管理员各自独立未读，共用待处理列表。无删除消息、附件或微信推送功能。",
                 "parameters": [
                     {
                         "description": "反馈ID",
@@ -4330,7 +4330,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/preview": {
             "post": {
-                "description": "管理员先调用此接口，使用与approve完全相同的finalCourse/final/proposalIds/confirmedNewTeachers。新增课程只有名称、代码、完整教师身份集合、校区集合、分类、开课院系六项均一致才自动归组；已有教师按ID、新教师按去首尾空格后的姓名比较，职称/content/匿名不比较，集合顺序无关。同名待审提案列入suspicious，可借助GET /api/proposal/suggest?status=pending\u0026keyword=课程名\u0026type=create_course模糊搜索并手动选入proposalIds。手动选择会纳入所选提案的自动组。existingCourses是正式课程，不能作为共同通过成员；管理员发现课程已有时手动拒绝，可批量同理由拒绝。teacherCandidates提示同名正式教师，复用时把finalCourse教师改为已有ID；仍新建时把姓名加入confirmedNewTeachers并再次预览。修改提案conflicts.state为unchanged/realized/conflict；冲突字段须明确传final并再次预览。canApprove=false表示无实际变更、正式课程重复或未确认的冲突。确认审批必须原样携带previewToken和本次预览参数；变化返回108000031，重新预览。业务错误均HTTP200、非零code、data=null，候选详情从本成功接口获取。",
+                "description": "管理员先调用此接口，使用与approve完全相同的finalCourse/final/proposalIds/confirmedNewTeachers。新增课程只有名称、代码、完整教师身份集合、校区集合、分类、开课院系六项均一致才自动归组；已有教师按ID、新教师按去首尾空格后的姓名比较，职称/content/匿名不比较，集合顺序无关。同名待审提案列入suspicious，可借助GET /api/proposal/suggest?status=pending\u0026keyword=课程名\u0026type=create_course模糊搜索并手动选入proposalIds。手动选择会纳入所选提案的自动组。existingCourses是正式课程，不能作为共同通过成员；管理员发现课程已有时手动拒绝，可批量同理由拒绝。teacherCandidates提示同名正式教师，复用时把finalCourse教师改为已有ID；仍新建时把姓名加入confirmedNewTeachers并再次预览。final仅用于修改提案，finalCourse仅用于新增提案；传错类型字段返回108000015，不静默忽略。修改提案conflicts.state为unchanged/realized/conflict；冲突字段须明确传final并再次预览。canApprove=false表示无实际变更、正式课程重复或未确认的冲突。确认审批必须原样携带previewToken和本次预览参数；变化返回108000031，重新预览。业务错误均HTTP200、非零code、data=null，候选详情从本成功接口获取。",
                 "parameters": [
                     {
                         "description": "主提案ID",

@@ -24,7 +24,7 @@ import (
 
 // PreviewProposalApproval godoc
 // @Summary 预览共同审批、重复候选与字段冲突
-// @Description 管理员先调用此接口，使用与approve完全相同的finalCourse/final/proposalIds/confirmedNewTeachers。新增课程只有名称、代码、完整教师身份集合、校区集合、分类、开课院系六项均一致才自动归组；已有教师按ID、新教师按去首尾空格后的姓名比较，职称/content/匿名不比较，集合顺序无关。同名待审提案列入suspicious，可借助GET /api/proposal/suggest?status=pending&keyword=课程名&type=create_course模糊搜索并手动选入proposalIds。手动选择会纳入所选提案的自动组。existingCourses是正式课程，不能作为共同通过成员；管理员发现课程已有时手动拒绝，可批量同理由拒绝。teacherCandidates提示同名正式教师，复用时把finalCourse教师改为已有ID；仍新建时把姓名加入confirmedNewTeachers并再次预览。修改提案conflicts.state为unchanged/realized/conflict；冲突字段须明确传final并再次预览。canApprove=false表示无实际变更、正式课程重复或未确认的冲突。确认审批必须原样携带previewToken和本次预览参数；变化返回108000031，重新预览。业务错误均HTTP200、非零code、data=null，候选详情从本成功接口获取。
+// @Description 管理员先调用此接口，使用与approve完全相同的finalCourse/final/proposalIds/confirmedNewTeachers。新增课程只有名称、代码、完整教师身份集合、校区集合、分类、开课院系六项均一致才自动归组；已有教师按ID、新教师按去首尾空格后的姓名比较，职称/content/匿名不比较，集合顺序无关。同名待审提案列入suspicious，可借助GET /api/proposal/suggest?status=pending&keyword=课程名&type=create_course模糊搜索并手动选入proposalIds。手动选择会纳入所选提案的自动组。existingCourses是正式课程，不能作为共同通过成员；管理员发现课程已有时手动拒绝，可批量同理由拒绝。teacherCandidates提示同名正式教师，复用时把finalCourse教师改为已有ID；仍新建时把姓名加入confirmedNewTeachers并再次预览。final仅用于修改提案，finalCourse仅用于新增提案；传错类型字段返回108000015，不静默忽略。修改提案conflicts.state为unchanged/realized/conflict；冲突字段须明确传final并再次预览。canApprove=false表示无实际变更、正式课程重复或未确认的冲突。确认审批必须原样携带previewToken和本次预览参数；变化返回108000031，重新预览。业务错误均HTTP200、非零code、data=null，候选详情从本成功接口获取。
 // @Tags proposal
 // @Accept json
 // @Produce json
