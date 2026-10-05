@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Review pull request with ChatECNU
-        uses: The-PR-Agent/pr-agent@v0.46.0
+        uses: The-PR-Agent/pr-agent@v0.47.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
