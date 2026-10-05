@@ -98,12 +98,13 @@ func TestProposalWorkflowIntegration(t *testing.T) {
 	pa := &assembler.ProposalAssembler{CourseAssembler: ca, LikeRepo: likes}
 	s := &ProposalService{ProposalRepo: proposals, UserRepo: users, CourseRepo: courses, TeacherRepo: teachers, CommentRepo: comments, LikeRepo: likes, CourseAssembler: ca, ProposalAssembler: pa, ChangeLogRepo: logs, MappingRepo: mappings, ChangeLogService: &ChangeLogService{ChangeLogRepo: logs}}
 	feedback := &FeedbackService{ProposalRepo: proposals, UserRepo: users, ChangeLogRepo: logs}
+	userPrefix := cfg.Mongo.DB + "_"
 	for _, id := range []string{"a", "b", "c", "d", "e", "admin", "admin2"} {
-		if _, err = db.Collection("user").InsertOne(ctx, &model.User{ID: id, Username: id, Admin: id == "admin" || id == "admin2", Contribution: 100}); err != nil {
+		if _, err = db.Collection("user").InsertOne(ctx, &model.User{ID: userPrefix + id, Username: id, Admin: id == "admin" || id == "admin2", Contribution: 100}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	as := func(id string) context.Context { return context.WithValue(ctx, consts.CtxUserID, id) }
+	as := func(id string) context.Context { return context.WithValue(ctx, consts.CtxUserID, userPrefix+id) }
 	course := func(name string) *dto.ProposalCourseVO {
 		return &dto.ProposalCourseVO{Name: name, Code: "CS101", Department: "测试学院", Category: "测试分类", Campuses: []string{"普陀校区"}, Teachers: []*dto.TeacherVO{{Name: "新教师", Title: "讲师"}}}
 	}
@@ -363,7 +364,7 @@ func TestProposalWorkflowIntegration(t *testing.T) {
 		if err != nil || len(contributors) != 0 {
 			t.Fatal("anonymous contributor exposed", contributors, err)
 		}
-		if _, err = db.Collection("user").UpdateOne(ctx, bson.M{"_id": "a"}, bson.M{"$set": bson.M{"username": "改名后的昵称"}}); err != nil {
+		if _, err = db.Collection("user").UpdateOne(ctx, bson.M{"_id": userPrefix + "a"}, bson.M{"$set": bson.M{"username": "改名后的昵称"}}); err != nil {
 			t.Fatal(err)
 		}
 		contributors, err = ca.EntityContributors(ctx, "course", active.ID, "")
@@ -372,7 +373,7 @@ func TestProposalWorkflowIntegration(t *testing.T) {
 		}
 		found := false
 		for _, contributor := range contributors {
-			if contributor.UserID == "a" {
+			if contributor.UserID == userPrefix+"a" {
 				found = contributor.Username == "改名后的昵称"
 			}
 		}
@@ -391,7 +392,7 @@ func TestProposalWorkflowIntegration(t *testing.T) {
 		if err = db.Collection("changelog").FindOne(ctx, bson.M{"proposalId": discarded.ProposalID, "action": consts.ActionTypeDeleteProposal}).Decode(&event); err != nil || event.Snapshot == nil || !event.Snapshot.Deleted {
 			t.Fatal("missing immutable delete snapshot", event, err)
 		}
-		legacy := &model.Proposal{ID: "legacy-source", UserID: "a", Status: 2, ShowUsername: true, Course: copyAs[model.ProposalCourse](course("历史课程")), CreatedAt: time.Now().Add(-time.Hour), UpdatedAt: time.Now().Add(-time.Minute)}
+		legacy := &model.Proposal{ID: "legacy-source", UserID: userPrefix + "a", Status: 2, ShowUsername: true, Course: copyAs[model.ProposalCourse](course("历史课程")), CreatedAt: time.Now().Add(-time.Hour), UpdatedAt: time.Now().Add(-time.Minute)}
 		if _, err = db.Collection("proposal").InsertOne(ctx, legacy); err != nil {
 			t.Fatal(err)
 		}

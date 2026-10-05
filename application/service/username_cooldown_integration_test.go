@@ -55,11 +55,13 @@ func TestClearUsernameCooldownIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// User cache keys are shared across databases, so IDs must be unique too.
+	adminID, ordinaryID, targetID := cfg.Mongo.DB+"_admin", cfg.Mongo.DB+"_ordinary", cfg.Mongo.DB+"_target"
 	now := time.Now()
 	for _, user := range []*model.User{
-		{ID: "admin", Admin: true},
-		{ID: "ordinary"},
-		{ID: "target", Username: "Alice", UsernameUpdatedAt: now},
+		{ID: adminID, Admin: true},
+		{ID: ordinaryID},
+		{ID: targetID, Username: "Alice", UsernameUpdatedAt: now},
 	} {
 		if _, err := db.Collection("user").InsertOne(ctx, user); err != nil {
 			t.Fatal(err)
@@ -68,31 +70,31 @@ func TestClearUsernameCooldownIntegration(t *testing.T) {
 	s := &UserService{UserRepo: users}
 	actor := func(id string) context.Context { return context.WithValue(ctx, consts.CtxUserID, id) }
 	// Warm the cache to catch stale profile reads after the reset.
-	if user, err := users.FindByID(ctx, "target"); err != nil || canEditUsername(user.UsernameUpdatedAt, now) {
+	if user, err := users.FindByID(ctx, targetID); err != nil || canEditUsername(user.UsernameUpdatedAt, now) {
 		t.Fatalf("target should initially be in cooldown: user=%+v err=%v", user, err)
 	}
-	for _, id := range []string{"", "ordinary"} {
-		if _, err := s.ClearUsernameCooldown(actor(id), "target"); err == nil {
+	for _, id := range []string{"", ordinaryID} {
+		if _, err := s.ClearUsernameCooldown(actor(id), targetID); err == nil {
 			t.Fatalf("actor %q should be rejected", id)
 		}
 	}
-	if _, err := s.ClearUsernameCooldown(actor("admin"), "missing"); err == nil {
+	if _, err := s.ClearUsernameCooldown(actor(adminID), "missing"); err == nil {
 		t.Fatal("missing target should be rejected")
 	}
 	for i := 0; i < 2; i++ {
-		result, err := s.ClearUsernameCooldown(actor("admin"), "target")
-		if err != nil || result == nil || result.UserID != "target" || !result.CanEditUsername {
+		result, err := s.ClearUsernameCooldown(actor(adminID), targetID)
+		if err != nil || result == nil || result.UserID != targetID || !result.CanEditUsername {
 			t.Fatalf("reset %d: result=%+v err=%v", i, result, err)
 		}
 	}
 	var stored model.User
-	if err := db.Collection("user").FindOne(ctx, bson.M{consts.ID: "target"}).Decode(&stored); err != nil {
+	if err := db.Collection("user").FindOne(ctx, bson.M{consts.ID: targetID}).Decode(&stored); err != nil {
 		t.Fatal(err)
 	}
 	if stored.Username != "Alice" || !stored.UsernameUpdatedAt.IsZero() {
 		t.Fatalf("reset changed nickname or preserved cooldown: %+v", stored)
 	}
-	if user, err := users.FindByID(ctx, "target"); err != nil || user.Username != "Alice" || !canEditUsername(user.UsernameUpdatedAt, time.Now()) {
+	if user, err := users.FindByID(ctx, targetID); err != nil || user.Username != "Alice" || !canEditUsername(user.UsernameUpdatedAt, time.Now()) {
 		t.Fatalf("cached target was not refreshed: user=%+v err=%v", user, err)
 	}
 }
