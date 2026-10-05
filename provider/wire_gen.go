@@ -122,6 +122,7 @@ func NewProvider() (*Provider, error) {
 	proposalService := service.ProposalService{
 		CourseRepo:        courseRepo,
 		CommentRepo:       commentRepo,
+		CommentCache:      commentCache,
 		CourseAssembler:   courseAssembler,
 		ProposalRepo:      proposalRepo,
 		ProposalAssembler: proposalAssembler,

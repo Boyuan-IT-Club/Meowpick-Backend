@@ -17,12 +17,17 @@
 | 反馈边界 | UTC+8 自然日额度、八次并发发送只允许五次且无部分写入、2000/2001 个 emoji、双方并发回复的连续序号和最终状态 |
 | 随机输入 | 20 秒 JSON fuzz，共 137,033 次执行；检查规范化幂等性、不崩溃、相同值不产生修改 |
 | 错误码 | 解析全部 errno 常量，检查业务错误码无重复 |
+| 交叉操作 | 通过与拒绝、通过与作者删除、撤回与后续修改审批分别并发竞争，每类重复五次；只有一个成功，最终实体和积分与成功操作一致 |
+| 重新提交 | 他人不能替换拒绝提案；拒绝→原作者重提→两人共同通过→从任一成员撤回→再次通过；旧提案保留为软删除记录，课程 ID 复用，积分与贡献者无重复 |
+| 非法批量选择 | 混入已删除、已审批、不同类型或不同目标的提案；预览及审批失败且无日志/结算；批量拒绝失败不改变其他成员 |
+| 关联撤回 | 课程含评价及点赞，预热评论总数缓存再撤回；评价不可公开读取、点赞清理、统计缓存失效，另一门课程的评价和点赞保持有效 |
 
 ## 本轮发现并修复
 
 1. 截断 JSON 可能返回 500，现归一化为请求参数错误。
 2. 反馈错误码与通用请求错误码冲突，反馈改为 `112000001`—`112000004`，Swagger 和前端对接说明已同步。
 3. 审批及管理员草稿传入错误提案类型的字段会被忽略，现返回 `108000015`。
+4. 撤回新建课程会清理评价，但未失效评论总数缓存，现提交事务后清理统计缓存；Wire 已重新生成。
 
 ## 验证结果与复现
 
@@ -31,6 +36,6 @@
 - `go vet ./...`、`make swagger`：通过。
 - 集成测试须设置 `MEOWPICK_TEST_MONGO_URI`（支持事务的副本集）及 `MEOWPICK_TEST_REDIS_ADDR`；未设置时跳过数据库集成用例。
 
-主要用例：`application/service/proposal_workflow_integration_test.go`、`application/service/proposal_workflow_edgecases_test.go`、`application/service/proposal_workflow_fuzz_test.go`、`api/router/workflow_integration_test.go`。
+主要用例：`application/service/proposal_workflow_integration_test.go`、`application/service/proposal_workflow_edgecases_test.go`、`application/service/proposal_workflow_crossops_test.go`、`application/service/proposal_workflow_fuzz_test.go`、`api/router/workflow_integration_test.go`。
 
 这是已执行的测试范围；随机输入结果不代表穷尽所有组合，也未进行生产规模的负载测试。

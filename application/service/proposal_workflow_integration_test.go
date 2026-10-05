@@ -96,7 +96,7 @@ func TestProposalWorkflowIntegration(t *testing.T) {
 	}
 	ca := &assembler.CourseAssembler{CourseRepo: courses, TeacherRepo: teachers, CommentRepo: comments, ProposalRepo: proposals, UserRepo: users}
 	pa := &assembler.ProposalAssembler{CourseAssembler: ca, LikeRepo: likes}
-	s := &ProposalService{ProposalRepo: proposals, UserRepo: users, CourseRepo: courses, TeacherRepo: teachers, CommentRepo: comments, LikeRepo: likes, CourseAssembler: ca, ProposalAssembler: pa, ChangeLogRepo: logs, MappingRepo: mappings, ChangeLogService: &ChangeLogService{ChangeLogRepo: logs}}
+	s := &ProposalService{ProposalRepo: proposals, UserRepo: users, CourseRepo: courses, TeacherRepo: teachers, CommentRepo: comments, CommentCache: cache.NewCommentCache(cfg), LikeRepo: likes, CourseAssembler: ca, ProposalAssembler: pa, ChangeLogRepo: logs, MappingRepo: mappings, ChangeLogService: &ChangeLogService{ChangeLogRepo: logs}}
 	feedback := &FeedbackService{ProposalRepo: proposals, UserRepo: users, ChangeLogRepo: logs}
 	userPrefix := cfg.Mongo.DB + "_"
 	for _, id := range []string{"a", "b", "c", "d", "e", "admin", "admin2"} {
@@ -477,4 +477,5 @@ func TestProposalWorkflowIntegration(t *testing.T) {
 		}
 	})
 	exerciseWorkflowEdges(t, ctx, s, feedback, db, active.ID, userPrefix)
+	exerciseWorkflowCrossOps(t, ctx, s, cfg, userPrefix)
 }

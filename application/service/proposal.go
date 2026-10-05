@@ -60,6 +60,7 @@ type IProposalService interface {
 type ProposalService struct {
 	CourseRepo        *repo.CourseRepo
 	CommentRepo       *repo.CommentRepo
+	CommentCache      *cache.CommentCache
 	CourseAssembler   *assembler.CourseAssembler
 	ProposalRepo      *repo.ProposalRepo
 	ProposalAssembler *assembler.ProposalAssembler

@@ -1096,6 +1096,11 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 			logs.CtxWarnf(ctx, "teacher invalidation: %v", err)
 		}
 	}
+	if batch.AfterCourse != nil && batch.BeforeCourse == nil && s.CommentCache != nil {
+		if err := s.CommentCache.DeleteCount(ctx); err != nil {
+			logs.CtxWarnf(ctx, "workflow comment count invalidation failed: %v", err)
+		}
+	}
 	s.afterWorkflow(ctx, users)
 	return &dto.RevokeProposalResp{Resp: dto.Success(), ProposalID: req.ProposalID, ProposalIDs: batch.ProposalIDs, DecisionBatchID: batch.ID, TargetID: batch.TargetID}, nil
 }
