@@ -140,6 +140,11 @@ func NewProvider() (*Provider, error) {
 		ProposalRepo:       proposalRepo,
 		CourseAssembler:    courseAssembler,
 	}
+	feedbackService := service.FeedbackService{
+		ProposalRepo:  proposalRepo,
+		UserRepo:      userRepo,
+		ChangeLogRepo: changeLogRepo,
+	}
 	mappingCache := cache.NewMappingCache(configConfig)
 	providerProvider := &Provider{
 		Config:               configConfig,
@@ -153,6 +158,7 @@ func NewProvider() (*Provider, error) {
 		SearchService:        searchService,
 		ProposalService:      proposalService,
 		ChangeLogService:     serviceChangeLogService,
+		FeedbackService:      feedbackService,
 		MappingRepo:          mappingRepo,
 		MappingCache:         mappingCache,
 	}

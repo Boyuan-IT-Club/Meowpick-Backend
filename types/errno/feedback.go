@@ -12,14 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mapping
+package errno
 
-import "github.com/Boyuan-IT-Club/Meowpick-Backend/types/consts"
+import "github.com/Boyuan-IT-Club/go-kit/errorx/code"
 
-var ChangeLogTargetTypeMap = map[int32]string{
-	1: consts.ChangeLogTargetTypeCourse,
-	2: consts.ChangeLogTargetTypeProposal,
-	3: consts.ChangeLogTargetTypeTeacher,
-	4: consts.ChangeLogTargetTypeUser,
-	5: "feedback",
+const (
+	ErrFeedbackNotFound   = 110000001
+	ErrFeedbackInvalid    = 110000002
+	ErrFeedbackRateLimit  = 110000003
+	ErrFeedbackDailyLimit = 110000004
+)
+
+func init() {
+	for value, message := range map[int32]string{
+		ErrFeedbackNotFound:   "feedback not found",
+		ErrFeedbackInvalid:    "invalid feedback input",
+		ErrFeedbackRateLimit:  "at most 5 feedback messages per minute",
+		ErrFeedbackDailyLimit: "at most 10 new feedback entries per day",
+	} {
+		code.Register(value, message, code.WithAffectStability(false))
+	}
 }

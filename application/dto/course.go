@@ -16,15 +16,16 @@ package dto
 
 // CourseVO 传递给前端的课程类型 模糊搜索和精确搜索结果都可用此类型
 type CourseVO struct {
-	ID          string               `json:"id"`                    // 正式课程ID
-	Name        string               `json:"name"`                  // 课程名称
-	Code        string               `json:"code"`                  // 课程代码，历史数据中可能为空
-	Category    string               `json:"category"`              // 课程分类名称；映射缺失时返回未知分类
-	Campuses    []string             `json:"campuses"`              // 开设校区名称列表
-	Department  string               `json:"department"`            // 课程开课院系名称；不是教师所属院系
-	Teachers    []*TeacherVO         `json:"teachers"`              // 任课教师详情；教师所属院系暂未维护时返回未知开课院系
-	TagCount    map[string]int64     `json:"tagCount"`              // 当前未删除评论中出现次数最多的至多三个非空标签及计数
-	Contributor *CourseContributorVO `json:"contributor,omitempty"` // 课程由审批提案创建时返回来源信息；历史课程无来源提案时省略
+	Contributors []*CourseContributorVO `json:"contributors"` // 历史有效公开贡献者，按用户去重，昵称取当前值
+	ID           string                 `json:"id"`           // 正式课程ID
+	Name         string                 `json:"name"`         // 课程名称
+	Code         string                 `json:"code"`         // 课程代码，历史数据中可能为空
+	Category     string                 `json:"category"`     // 课程分类名称；映射缺失时返回未知分类
+	Campuses     []string               `json:"campuses"`     // 开设校区名称列表
+	Department   string                 `json:"department"`   // 课程开课院系名称；不是教师所属院系
+	Teachers     []*TeacherVO           `json:"teachers"`     // 任课教师详情；教师所属院系暂未维护时返回未知开课院系
+	TagCount     map[string]int64       `json:"tagCount"`     // 当前未删除评论中出现次数最多的至多三个非空标签及计数
+	Contributor  *CourseContributorVO   `json:"-"`            // 课程由审批提案创建时返回来源信息；历史课程无来源提案时省略
 }
 
 // CourseContributorVO describes the proposal source of a dynamically added

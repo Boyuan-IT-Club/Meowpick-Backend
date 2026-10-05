@@ -418,18 +418,43 @@ func (r *CourseRepo) GetCampusesByName(ctx context.Context, name string) ([]int3
 
 // GetSuggestionsByName 根据课程名称模糊分页查询课程
 func (r *CourseRepo) GetSuggestionsByName(ctx context.Context, name string, param *dto.PageParam) ([]*model.Course, int64, error) {
+	pageNumber, pageSize := int64(1), int64(10)
+	if param != nil {
+		pageNumber, pageSize = param.UnWrap()
+	}
+	pattern := regexp.QuoteMeta(name)
+	pipeline := []bson.M{
+		{"$match": courseNameSearchFilter(name)},
+		{"$group": bson.M{"_id": "$name", "id": bson.M{"$min": "$_id"}}},
+		{"$addFields": bson.M{"rank": bson.M{"$switch": bson.M{"branches": bson.A{
+			bson.M{"case": bson.M{"$regexMatch": bson.M{"input": "$_id", "regex": "^" + pattern + "$", "options": "i"}}, "then": 0},
+			bson.M{"case": bson.M{"$regexMatch": bson.M{"input": "$_id", "regex": "^" + pattern, "options": "i"}}, "then": 1},
+		}, "default": 2}}}},
+		{"$sort": bson.D{{Key: "rank", Value: 1}, {Key: "_id", Value: 1}}},
+		{"$facet": bson.M{"items": bson.A{bson.M{"$skip": (pageNumber - 1) * pageSize}, bson.M{"$limit": pageSize}}, "total": bson.A{bson.M{"$count": "count"}}}},
+	}
+	var result []struct {
+		Items []struct {
+			Name string `bson:"_id"`
+			ID   string `bson:"id"`
+		} `bson:"items"`
+		Total []struct {
+			Count int64 `bson:"count"`
+		} `bson:"total"`
+	}
+	if err := r.conn.Aggregate(ctx, &result, pipeline); err != nil {
+		return nil, 0, err
+	}
 	courses := []*model.Course{}
-	filter := courseNameSearchFilter(name)
-
-	if err := r.conn.Find(ctx, &courses, filter, page.FindPageOption(param)); err != nil {
-		return nil, 0, err
+	var total int64
+	if len(result) > 0 {
+		for _, item := range result[0].Items {
+			courses = append(courses, &model.Course{ID: item.ID, Name: item.Name})
+		}
+		if len(result[0].Total) > 0 {
+			total = result[0].Total[0].Count
+		}
 	}
-
-	total, err := r.conn.CountDocuments(ctx, filter)
-	if err != nil {
-		return nil, 0, err
-	}
-
 	return courses, total, nil
 }
 

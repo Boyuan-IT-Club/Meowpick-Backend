@@ -91,6 +91,9 @@ func NewProposalRepo(cfg *config.Config) (*ProposalRepo, error) {
 		return nil, err
 	}
 
+	if err := repository.ensureWorkflowIndexes(context.Background()); err != nil {
+		return nil, err
+	}
 	return repository, nil
 }
 
@@ -270,19 +273,26 @@ func (r *ProposalRepo) FindManyByFilter(ctx context.Context, req *dto.SuggestPro
 func buildProposalFilter(req *dto.SuggestProposalReq, statuses []int32) bson.M {
 	filter := bson.M{consts.Deleted: bson.M{"$ne": true}}
 	if req.Keyword != "" {
-		filter["title"] = bson.M{"$regex": primitive.Regex{Pattern: regexp.QuoteMeta(req.Keyword), Options: "i"}}
+		filter["$or"] = []bson.M{{"displayName": bson.M{"$regex": primitive.Regex{Pattern: regexp.QuoteMeta(req.Keyword), Options: "i"}}}, {"course.name": bson.M{"$regex": primitive.Regex{Pattern: regexp.QuoteMeta(req.Keyword), Options: "i"}}}, {"title": bson.M{"$regex": primitive.Regex{Pattern: regexp.QuoteMeta(req.Keyword), Options: "i"}}}}
+	}
+	if req.Type != "" {
+		if req.Type == model.ProposalCreateCourse {
+			filter["$and"] = []bson.M{{"$or": []bson.M{{"type": req.Type}, {"type": bson.M{"$exists": false}}, {"type": ""}}}}
+		} else {
+			filter["type"] = req.Type
+		}
 	}
 	if len(statuses) > 0 {
 		filter[consts.Status] = bson.M{"$in": statuses}
 	}
 	if len(req.Campuses) > 0 {
-		filter[consts.PathCourseCampuses] = bson.M{"$in": req.Campuses}
+		filter["$and"] = appendFilterClause(filter["$and"], bson.M{"$or": []bson.M{{consts.PathCourseCampuses: bson.M{"$in": req.Campuses}}, {"suggested.campuses": bson.M{"$in": req.Campuses}}}})
 	}
 	if req.Department != "" {
-		filter[consts.PathCourseDepartment] = req.Department
+		filter["$and"] = appendFilterClause(filter["$and"], bson.M{"$or": []bson.M{{consts.PathCourseDepartment: req.Department}, {"suggested.department": req.Department}}})
 	}
 	if req.Category != "" {
-		filter[consts.PathCourseCategory] = req.Category
+		filter["$and"] = appendFilterClause(filter["$and"], bson.M{"$or": []bson.M{{consts.PathCourseCategory: req.Category}, {"suggested.category": req.Category}}})
 	}
 	return filter
 }
@@ -478,4 +488,50 @@ func (r *ProposalRepo) UpdateContributionByID(ctx context.Context, proposalID st
 	update := bson.M{"$set": bson.M{consts.Contribution: contribution}}
 	_, err := r.conn.UpdateOneNoCache(ctx, filter, update)
 	return err
+}
+
+// Database exposes the transaction-coordinated proposal workflow collections.
+func (r *ProposalRepo) Database() *mongo.Database { return r.conn.Database() }
+
+func (r *ProposalRepo) ensureWorkflowIndexes(ctx context.Context) error {
+	definitions := map[string][]mongo.IndexModel{
+		ProposalCollectionName: {
+			{Keys: bson.D{{Key: "status", Value: 1}, {Key: "deleted", Value: 1}, {Key: "course.name", Value: 1}}},
+			{Keys: bson.D{{Key: "type", Value: 1}, {Key: "targetId", Value: 1}, {Key: "status", Value: 1}}},
+		},
+		"proposal_decision": {
+			{Keys: bson.D{{Key: "targetId", Value: 1}, {Key: "revoked", Value: 1}, {Key: "createdAt", Value: -1}}},
+			{Keys: bson.D{{Key: "createdTeacherIds", Value: 1}, {Key: "revoked", Value: 1}}},
+		},
+		"feedback": {
+			{Keys: bson.D{{Key: "userId", Value: 1}, {Key: "updatedAt", Value: -1}}},
+			{Keys: bson.D{{Key: "status", Value: 1}, {Key: "updatedAt", Value: -1}}},
+			{Keys: bson.D{{Key: "userId", Value: 1}, {Key: "createdAt", Value: -1}}},
+		},
+		"feedback_message": {
+			{Keys: bson.D{{Key: "feedbackId", Value: 1}, {Key: "sequence", Value: -1}}, Options: options.Index().SetUnique(true)},
+			{Keys: bson.D{{Key: "userId", Value: 1}, {Key: "createdAt", Value: -1}}},
+		},
+	}
+	for collection, indexes := range definitions {
+		if _, err := r.Database().Collection(collection).Indexes().CreateMany(ctx, indexes); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *ProposalRepo) FindManyIncludingDeleted(ctx context.Context, param *dto.PageParam) ([]*model.Proposal, int64, error) {
+	result := []*model.Proposal{}
+	total, err := r.conn.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return nil, 0, err
+	}
+	err = r.conn.Find(ctx, &result, bson.M{}, page.FindPageOption(param).SetSort(bson.D{{Key: "createdAt", Value: -1}, {Key: "_id", Value: -1}}))
+	return result, total, err
+}
+
+func appendFilterClause(existing interface{}, clause bson.M) []bson.M {
+	clauses, _ := existing.([]bson.M)
+	return append(clauses, clause)
 }

@@ -42,12 +42,18 @@ func TestClearUsernameCooldownRoute(t *testing.T) {
 
 func TestCorrectedRoutesAreRegistered(t *testing.T) {
 	want := map[string]bool{
-		"POST /api/teacher/add":       false,
-		"POST /api/changelog/list":    false,
-		"GET /api/course/departments": false,
+		"GET /api/teacher/:teacherId":            false,
+		"POST /api/proposal/:proposalId/preview": false,
+		"POST /api/feedback":                     false,
+		"GET /api/admin/feedback":                false,
+		"POST /api/changelog/list":               false,
+		"GET /api/course/departments":            false,
 	}
 	for _, route := range SetupRoutes().Routes() {
 		key := route.Method + " " + route.Path
+		if key == "POST /api/teacher/add" || key == "GET /api/teacher/suggest" {
+			t.Fatal("removed direct teacher endpoint is still registered")
+		}
 		if key == "GET /api/course/departs" {
 			t.Fatal("removed GET /api/course/departs route is still registered")
 		}

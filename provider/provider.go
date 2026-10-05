@@ -64,6 +64,7 @@ type Provider struct {
 	SearchService        service.SearchService
 	ProposalService      service.ProposalService
 	ChangeLogService     service.ChangeLogService
+	FeedbackService      service.FeedbackService
 
 	// 新增的映射相关依赖
 	MappingRepo  *repo.MappingRepo
@@ -81,6 +82,7 @@ var ApplicationSet = wire.NewSet(
 	service.SearchServiceSet,
 	service.ProposalServiceSet,
 	service.ChangeLogServiceSet,
+	service.FeedbackServiceSet,
 	service.ContentModerationServiceSet,
 	// Assembler 相关
 	assembler.CommentAssemblerSet,

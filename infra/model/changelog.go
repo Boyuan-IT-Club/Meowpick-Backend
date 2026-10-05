@@ -19,6 +19,16 @@ import (
 )
 
 type ChangeLog struct {
+	BeforeValues      *ProposalPatch `bson:"beforeValues,omitempty"`
+	AfterValues       *ProposalPatch `bson:"afterValues,omitempty"`
+	ProposalType      string         `bson:"proposalType,omitempty"`
+	EntityType        string         `bson:"entityType,omitempty"`
+	EntityID          string         `bson:"entityId,omitempty"`
+	DecisionBatchID   string         `bson:"decisionBatchId,omitempty"`
+	TriggerProposalID string         `bson:"triggerProposalId,omitempty"`
+	Automatic         bool           `bson:"automatic,omitempty"`
+	Snapshot          *Proposal      `bson:"snapshot,omitempty"`
+
 	ID           string    `bson:"_id,omitempty"         json:"-"`
 	TargetID     string    `bson:"targetId"              json:"-"`
 	TargetType   int32     `bson:"targetType"            json:"-"`

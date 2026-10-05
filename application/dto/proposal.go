@@ -29,14 +29,20 @@ type ProposalCourseVO struct {
 
 // CreateProposalReq 新增投票请求参数
 type CreateProposalReq struct {
-	Title        string            `json:"title" binding:"required"`  // 提案标题，去除首尾空白后不能为空
-	Content      string            `json:"content"`                   // 提案补充说明，可为空
-	Course       *ProposalCourseVO `json:"course" binding:"required"` // 提议新增的课程完整信息
-	ShowUsername bool              `json:"showUsername"`              // 是否允许公开展示提案创建者昵称；false 表示匿名展示
+	Type      string         `json:"type"`                // create_course、update_course、update_teacher；缺失兼容 create_course
+	TargetID  string         `json:"targetId,omitempty"`  // 修改提案必填，目标正式课程或教师ID
+	Suggested *ProposalPatch `json:"suggested,omitempty"` // 修改提案只提交拟改字段；未传表示不修改
+
+	Title        string            `json:"-"`                // 仅内部旧数据兼容，不接收或返回title
+	Content      string            `json:"content"`          // 提案补充说明，可为空
+	Course       *ProposalCourseVO `json:"course,omitempty"` // 提议新增的课程完整信息
+	ShowUsername bool              `json:"showUsername"`     // 是否允许公开展示提案创建者昵称；false 表示匿名展示
 }
 
 // CreateProposalResp 新增投票响应
 type CreateProposalResp struct {
+	PendingDuplicateIDs []string `json:"pendingDuplicateIds"` // 非阻断提示：相同业务建议的其他作者待审提案
+
 	*Resp
 	ProposalID string      `json:"proposalId"` // 新建提案ID
 	Proposal   *ProposalVO `json:"proposal"`   // 新建后的完整待审核提案
@@ -44,11 +50,15 @@ type CreateProposalResp struct {
 
 // ResubmitProposalReq 重新提交被拒绝提案的完整内容。
 type ResubmitProposalReq struct {
+	Type      string         `json:"type"`                // create_course、update_course、update_teacher；缺失兼容 create_course
+	TargetID  string         `json:"targetId,omitempty"`  // 修改提案必填，目标正式课程或教师ID
+	Suggested *ProposalPatch `json:"suggested,omitempty"` // 修改提案只提交拟改字段；未传表示不修改
+
 	ProposalID   string            `json:"-"`
-	Title        string            `json:"title" binding:"required"`  // 新提案标题，不能为空
-	Content      string            `json:"content"`                   // 新提案补充说明，可为空
-	Course       *ProposalCourseVO `json:"course" binding:"required"` // 新提案的完整课程信息
-	ShowUsername bool              `json:"showUsername"`              // 是否允许公开展示新提案创建者昵称
+	Title        string            `json:"-"`                // 仅内部历史兼容
+	Content      string            `json:"content"`          // 新提案补充说明，可为空
+	Course       *ProposalCourseVO `json:"course,omitempty"` // 新提案的完整课程信息
+	ShowUsername bool              `json:"showUsername"`     // 是否允许公开展示新提案创建者昵称
 }
 
 // ResubmitProposalResp 返回被替换的旧提案和新建提案。
@@ -60,16 +70,24 @@ type ResubmitProposalResp struct {
 }
 
 type ProposalVO struct {
-	ID           string            `json:"id"`           // 提案ID
-	UserID       string            `json:"userId"`       // 提案创建者用户ID；是否展示昵称由 showUsername 控制
-	Title        string            `json:"title"`        // 提案标题
-	Content      string            `json:"content"`      // 提案补充说明，可能为空
-	Status       string            `json:"status"`       // 提案状态：pending 待审核、approved 已通过、rejected 已拒绝
-	Deleted      bool              `json:"deleted"`      // 是否已被创建者软删除
-	RejectReason string            `json:"rejectReason"` // 拒绝理由；未拒绝或未填写理由时为空
+	Type            string         `json:"type"`
+	TargetID        string         `json:"targetId,omitempty"`
+	DisplayName     string         `json:"displayName"`
+	Suggested       *ProposalPatch `json:"suggested,omitempty"`
+	Before          *ProposalPatch `json:"before,omitempty"`
+	Final           *ProposalPatch `json:"final,omitempty"`
+	DecisionBatchID string         `json:"decisionBatchId,omitempty"`
+
+	ID           string            `json:"id"`               // 提案ID
+	UserID       string            `json:"userId,omitempty"` // 匿名时对其他普通用户省略；作者和管理员可见
+	Title        string            `json:"-"`                // 内部历史标题，不对外返回
+	Content      string            `json:"content"`          // 提案补充说明，可能为空
+	Status       string            `json:"status"`           // 提案状态：pending 待审核、approved 已通过、rejected 已拒绝
+	Deleted      bool              `json:"deleted"`          // 是否已被创建者软删除
+	RejectReason string            `json:"rejectReason"`     // 拒绝理由；未拒绝或未填写理由时为空
 	*LikeVO                        // 当前用户的点赞状态及提案点赞数
-	Course       *ProposalCourseVO `json:"course"`                 // 用户最初提交的课程内容，审批时不会被 finalCourse 覆盖
-	FinalCourse  *ProposalCourseVO `json:"finalCourse,omitempty"`  // 审批通过后的正式课程；历史/列表/筛选接口对已通过提案返回，详情接口仅创建者或管理员可见，课程已删除或查询失败时省略
+	Course       *ProposalCourseVO `json:"course,omitempty"`       // 用户最初提交的课程内容，审批时不会被 finalCourse 覆盖
+	FinalCourse  *ProposalCourseVO `json:"finalCourse,omitempty"`  // 管理员最终课程快照；pending时为共同草稿，approved时为审批当时快照
 	ShowUsername bool              `json:"showUsername"`           // 是否允许公开展示创建者昵称
 	Contribution int64             `json:"contribution,omitempty"` // 本提案结算贡献值；仅创建者可见，其他用户响应中为 -1
 	CreatedAt    time.Time         `json:"createdAt"`              // 提案创建时间
@@ -84,7 +102,9 @@ type ListProposalReq struct {
 
 // SuggestProposalReq 对应 /api/proposal/suggest 的请求参数（分页搜索与筛选）
 type SuggestProposalReq struct {
-	Keyword    string   `form:"keyword"`    // 提案标题普通文本模糊搜索关键词；为空时不按标题筛选
+	Type string `form:"type"` // 可选提案类型
+
+	Keyword    string   `form:"keyword"`    // 按显示名、课程名和兼容历史标题进行普通文本模糊搜索
 	Statuses   []string `form:"status"`     // 状态多选；支持重复 query 参数及 JSON 数组字符串，普通用户传值会被忽略并固定为 approved
 	Campuses   []string `form:"campus"`     // 校区多选；支持重复 query 参数及 JSON 数组字符串，值必须是已有校区名称
 	Department string   `form:"department"` // 课程开课院系名称，精确匹配；为空时不筛选
@@ -109,23 +129,38 @@ type GetProposalResp struct {
 }
 
 type RejectProposalReq struct {
+	ProposalIDs []string `json:"proposalIds,omitempty"` // 额外勾选的待审提案，与path提案一起拒绝，共用reason；不会自动扩展范围
+
 	ProposalID string `json:"proposalId"` // 提案ID，由 URL path 写入，请求体无需传
 	Reason     string `json:"reason"`     // 拒绝理由，可为空
 }
 
 type RejectProposalResp struct {
+	DecisionBatchID string   `json:"decisionBatchId,omitempty"`
+	ProposalIDs     []string `json:"proposalIds"`
+	TargetID        string   `json:"targetId,omitempty"`
+
 	*Resp
 	Rejected     bool  `json:"rejected"`     // 是否成功拒绝
 	PendingCount int64 `json:"pendingCount"` // 操作后剩余待审核提案数量
 }
 
 type ToggleProposalReq struct {
+	ProposalIDs          []string       `json:"proposalIds,omitempty"`          // 管理员手动选择共同审批的待审新增课程提案；各自自动组也会纳入
+	Final                *ProposalPatch `json:"final,omitempty"`                // 修改类型最终字段；省略时采用已保存共同草稿，否则采用suggested
+	PreviewToken         string         `json:"previewToken,omitempty"`         // 审批确认必填，先调用preview取得；变化时重新preview
+	ConfirmedNewTeachers []string       `json:"confirmedNewTeachers,omitempty"` // 有同名正式教师时，明确仍新建的教师姓名
+
 	ProposalID  string            `json:"proposalID"`  // 提案ID，由 URL path 写入，请求体无需传
-	Title       string            `json:"title"`       // 管理员确认的提案标题；省略、空字符串或纯空格时保留原标题
-	FinalCourse *ProposalCourseVO `json:"finalCourse"` // 管理员最终确认的课程；省略、null 或空请求体时使用用户原始 course
+	Title       string            `json:"-"`           // 管理员确认的提案标题；省略、空字符串或纯空格时保留原标题
+	FinalCourse *ProposalCourseVO `json:"finalCourse"` // 新增类型的最终完整课程；省略时采用已保存共同草稿，否则采用原始course
 }
 
 type ToggleProposalResp struct {
+	DecisionBatchID string   `json:"decisionBatchId,omitempty"`
+	ProposalIDs     []string `json:"proposalIds"`
+	TargetID        string   `json:"targetId,omitempty"`
+
 	Proposal    bool  `json:"proposal"`    // 是否成功通过提案
 	ProposalCnt int64 `json:"proposalCnt"` // 操作后剩余待审核提案数量
 	*Resp
@@ -137,6 +172,10 @@ type RevokeProposalReq struct {
 }
 
 type RevokeProposalResp struct {
+	DecisionBatchID string   `json:"decisionBatchId,omitempty"`
+	ProposalIDs     []string `json:"proposalIds"`
+	TargetID        string   `json:"targetId,omitempty"`
+
 	*Resp
 	ProposalID string `json:"proposalId"` // 已恢复为 pending 的提案ID
 }
@@ -155,16 +194,20 @@ type DeleteProposalResp struct {
 
 // UpdateProposalReq 更新提案请求参数
 type UpdateProposalReq struct {
+	Type      string         `json:"type"`                // create_course、update_course、update_teacher；缺失兼容 create_course
+	TargetID  string         `json:"targetId,omitempty"`  // 修改提案必填，目标正式课程或教师ID
+	Suggested *ProposalPatch `json:"suggested,omitempty"` // 修改提案只提交拟改字段；未传表示不修改
+
 	ProposalID string            `json:"-"`
-	Title      string            `json:"title" binding:"required"`   // 更新后的提案标题，不能为空
-	Content    string            `json:"content" binding:"required"` // 更新后的补充说明，当前接口要求非空
-	Course     *ProposalCourseVO `json:"course" binding:"required"`  // 更新后的完整课程信息，不支持仅传部分字段
+	Title      string            `json:"-"`                // 内部历史兼容，不接收
+	Content    string            `json:"content"`          // 内部兼容；管理员更新不覆盖作者说明
+	Course     *ProposalCourseVO `json:"course,omitempty"` // 新增类型管理员最终资料草稿，完整列表
 }
 
 // UpdateProposalResp 更新提案响应参数
 type UpdateProposalResp struct {
 	*Resp      `json:",inline"`
-	ProposalID string `json:"proposalId"` // 更新成功的提案ID
+	ProposalID string `json:"proposalId"` // 主提案ID；自动组各成员共同保存最终资料草稿
 }
 
 // GetProposalFieldSuggestionsReq 获取提案字段建议请求

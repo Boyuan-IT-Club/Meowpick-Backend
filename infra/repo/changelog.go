@@ -17,6 +17,7 @@ package repo
 import (
 	"context"
 	"errors"
+	"regexp"
 	"time"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
@@ -71,7 +72,7 @@ func (r *ChangeLogRepo) FindManyByTypeOrKeyword(ctx context.Context, targetType 
 	}
 
 	if keyword != "" {
-		regex := primitive.Regex{Pattern: keyword, Options: "i"}
+		regex := primitive.Regex{Pattern: regexp.QuoteMeta(keyword), Options: "i"}
 		filter[consts.Content] = regex
 	}
 
@@ -85,7 +86,7 @@ func (r *ChangeLogRepo) FindManyByTypeOrKeyword(ctx context.Context, targetType 
 		ctx,
 		&changeLogs,
 		filter,
-		page.FindPageOption(param).SetSort(page.DSort(consts.CreatedAt, -1)),
+		page.FindPageOption(param).SetSort(page.DSort(consts.UpdatedAt, -1)),
 	); err != nil {
 		return nil, 0, err
 	}

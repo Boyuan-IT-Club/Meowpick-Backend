@@ -78,6 +78,9 @@ func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChan
 	var targetType int32
 	if req.Type != "" {
 		targetType = mapping.Data.GetChangeLogTargetTypeIDByName(req.Type)
+		if req.Type == "feedback" {
+			targetType = feedbackTargetType
+		}
 		if targetType == 0 {
 			return nil, errorx.New(errno.ErrChangeLogTargetTypeInvalid,
 				errorx.KV("key", "type"),
@@ -120,6 +123,7 @@ func (s *ChangeLogService) ListChangeLogs(ctx context.Context, req *dto.ListChan
 	for i, cl := range changeLogs {
 		vos[i] = &dto.ChangeLogVO{
 			ID:           cl.ID,
+			ProposalType: cl.ProposalType, EntityType: cl.EntityType, EntityID: cl.EntityID, DecisionBatchID: cl.DecisionBatchID, TriggerProposalID: cl.TriggerProposalID, Automatic: cl.Automatic, Snapshot: auditSnapshotVO(cl.Snapshot), Before: copyAs[dto.ProposalPatch](cl.BeforeValues), Final: copyAs[dto.ProposalPatch](cl.AfterValues),
 			TargetID:     cl.TargetID,
 			TargetType:   cl.TargetType,
 			Action:       cl.Action,
@@ -207,7 +211,7 @@ func (s *ChangeLogService) ListProposalLogsGrouped(ctx context.Context, req *dto
 	}
 
 	// 查询所有提案
-	proposals, total, err := s.ProposalRepo.FindMany(ctx, req.PageParam)
+	proposals, total, err := s.ProposalRepo.FindManyIncludingDeleted(ctx, req.PageParam)
 	if err != nil {
 		logs.CtxErrorf(ctx, "[ProposalRepo] [FindMany] error: %v", err)
 		return nil, errorx.WrapByCode(err, errno.ErrProposalFindFailed)
@@ -287,10 +291,11 @@ func (s *ChangeLogService) ListProposalLogsGrouped(ctx context.Context, req *dto
 
 		proposalVO := &dto.ProposalLogVO{
 			ProposalID: proposal.ID,
-			Title:      proposal.Title,
-			Content:    proposal.Content,
-			Status:     s.getProposalStatusName(proposal.Status),
-			Course:     courseVO,
+			Type:       proposal.EffectiveType(), TargetID: proposal.TargetID, DisplayName: displayName(proposal), Suggested: copyAs[dto.ProposalPatch](proposal.Suggested), Before: copyAs[dto.ProposalPatch](proposal.Before), Final: copyAs[dto.ProposalPatch](proposal.Final), DecisionBatchID: proposal.DecisionBatchID,
+			Title:   proposal.Title,
+			Content: proposal.Content,
+			Status:  s.getProposalStatusName(proposal.Status),
+			Course:  courseVO,
 			Creator: &dto.CreatorVO{
 				CreatorID:   proposal.UserID,
 				CreatorName: creatorName,
@@ -433,11 +438,22 @@ func (s *ChangeLogService) ListProposalLogsTimeline(ctx context.Context, req *dt
 			ActionTime:   log.UpdatedAt.Format("2006-01-02 15:04:05"),
 		}
 
+		timelineLog.DecisionBatchID = log.DecisionBatchID
+		timelineLog.EntityType = log.EntityType
+		timelineLog.EntityID = log.EntityID
+		timelineLog.TriggerProposalID = log.TriggerProposalID
+		timelineLog.Automatic = log.Automatic
 		// 添加提案快照信息
 		if log.ProposalID != "" {
-			if proposal, ok := proposalMap[log.ProposalID]; ok {
+			proposal, ok := proposalMap[log.ProposalID]
+			if log.Snapshot != nil {
+				proposal = log.Snapshot
+				ok = true
+			}
+			if ok && log.Snapshot != nil {
 				snapshot := &dto.ProposalSnapshotVO{
 					Title: proposal.Title,
+					Type:  proposal.EffectiveType(), TargetID: proposal.TargetID, DisplayName: displayName(proposal), Suggested: copyAs[dto.ProposalPatch](proposal.Suggested), Before: copyAs[dto.ProposalPatch](proposal.Before), Final: copyAs[dto.ProposalPatch](proposal.Final), FinalCourse: copyAs[dto.ProposalCourseVO](proposal.FinalCourse),
 				}
 				if proposal.Course != nil {
 					snapshot.CourseName = proposal.Course.Name
@@ -467,21 +483,20 @@ func (s *ChangeLogService) ListProposalLogsTimeline(ctx context.Context, req *dt
 
 // getProposalStatusName 获取提案状态名称
 func (s *ChangeLogService) getProposalStatusName(status int32) string {
-	switch status {
-	case 0:
-		return "pending"
-	case 1:
-		return "approved"
-	case 2:
-		return "rejected"
-	default:
-		return "unknown"
-	}
+	return mapping.Data.GetProposalStatusNameByID(status)
 }
 
 // getActionTypeName 获取操作类型名称
 func (s *ChangeLogService) getActionTypeName(action int32) string {
 	switch action {
+	case consts.ActionTypeRevokeApproveProposal:
+		return "revoke_approve"
+	case consts.ActionTypeRevokeRejectProposal:
+		return "revoke_reject"
+	case feedbackReplyAction:
+		return "feedback_reply"
+	case feedbackCloseAction:
+		return "feedback_close"
 	case consts.ActionTypeCreateProposal:
 		return "create"
 	case consts.ActionTypeDeleteProposal:
@@ -500,6 +515,14 @@ func (s *ChangeLogService) getActionTypeName(action int32) string {
 // getTimelineActionType 获取时间线操作类型
 func (s *ChangeLogService) getTimelineActionType(action int32) string {
 	switch action {
+	case consts.ActionTypeRevokeApproveProposal:
+		return "REVOKE_APPROVE"
+	case consts.ActionTypeRevokeRejectProposal:
+		return "REVOKE_REJECT"
+	case feedbackReplyAction:
+		return "FEEDBACK_REPLY"
+	case feedbackCloseAction:
+		return "FEEDBACK_CLOSE"
 	case consts.ActionTypeGrantAdmin:
 		return "GRANT_ADMIN"
 	case consts.ActionTypeRevokeAdmin:
@@ -527,4 +550,20 @@ func (s *ChangeLogService) getDepartmentName(id int32) string {
 // getCategoryName 获取课程类别名称
 func (s *ChangeLogService) getCategoryName(id int32) string {
 	return mapping.Data.GetCategoryNameByID(id)
+}
+
+func displayName(p *model.Proposal) string {
+	if p.DisplayName != "" {
+		return p.DisplayName
+	}
+	if p.Course != nil {
+		return p.Course.Name
+	}
+	return p.Title
+}
+func auditSnapshotVO(p *model.Proposal) *dto.ProposalVO {
+	if p == nil {
+		return nil
+	}
+	return &dto.ProposalVO{ID: p.ID, UserID: p.UserID, Type: p.EffectiveType(), TargetID: p.TargetID, DisplayName: displayName(p), Content: p.Content, Contribution: p.Contribution, RejectReason: p.RejectReason, Deleted: p.Deleted, Status: mapping.Data.GetProposalStatusNameByID(p.Status), Course: copyAs[dto.ProposalCourseVO](p.Course), Before: copyAs[dto.ProposalPatch](p.Before), Suggested: copyAs[dto.ProposalPatch](p.Suggested), Final: copyAs[dto.ProposalPatch](p.Final), FinalCourse: copyAs[dto.ProposalCourseVO](p.FinalCourse), DecisionBatchID: p.DecisionBatchID, ShowUsername: p.ShowUsername, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt}
 }

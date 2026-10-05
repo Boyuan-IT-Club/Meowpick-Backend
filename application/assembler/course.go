@@ -117,7 +117,7 @@ func (a *CourseAssembler) ToCourseVO(ctx context.Context, db *model.Course) (*dt
 					ID:         teacher.ID,
 					Name:       teacher.Name,
 					Title:      teacher.Title,
-					Department: mappingNameFromContext(ctx, model.MappingTypeDepartment, teacher.Department),
+					Department: optionalTeacherDepartmentName(ctx, teacher.Department),
 				})
 				mu.Unlock()
 			}
@@ -132,16 +132,21 @@ func (a *CourseAssembler) ToCourseVO(ctx context.Context, db *model.Course) (*dt
 		return nil, err
 	}
 
+	contributors, err := a.EntityContributors(ctx, "course", db.ID, db.ProposalID)
+	if err != nil {
+		return nil, err
+	}
 	return &dto.CourseVO{
-		ID:          db.ID,
-		Name:        db.Name,
-		Code:        db.Code,
-		Category:    mappingNameFromContext(ctx, model.MappingTypeCategory, db.Category),
-		Campuses:    campuses,
-		Department:  mappingNameFromContext(ctx, model.MappingTypeDepartment, db.Department),
-		Teachers:    teacherVOs,
-		TagCount:    tagCount,
-		Contributor: contributor,
+		Contributors: contributors,
+		ID:           db.ID,
+		Name:         db.Name,
+		Code:         db.Code,
+		Category:     mappingNameFromContext(ctx, model.MappingTypeCategory, db.Category),
+		Campuses:     campuses,
+		Department:   mappingNameFromContext(ctx, model.MappingTypeDepartment, db.Department),
+		Teachers:     teacherVOs,
+		TagCount:     tagCount,
+		Contributor:  contributor,
 	}, nil
 }
 
@@ -444,7 +449,7 @@ func (a *CourseAssembler) ToProposalCourseVOFromCourse(ctx context.Context, db *
 				ID:         teacher.ID,
 				Name:       teacher.Name,
 				Title:      teacher.Title,
-				Department: mappingNameFromContext(ctx, model.MappingTypeDepartment, teacher.Department),
+				Department: optionalTeacherDepartmentName(ctx, teacher.Department),
 			})
 		}
 	}
@@ -720,4 +725,11 @@ func mappingNameFromContext(ctx context.Context, mappingType model.MappingType, 
 	default:
 		return ""
 	}
+}
+
+func optionalTeacherDepartmentName(ctx context.Context, id int32) string {
+	if id == 0 {
+		return ""
+	}
+	return mappingNameFromContext(ctx, model.MappingTypeDepartment, id)
 }

@@ -18,8 +18,8 @@ import "time"
 
 // ListChangeLogsReq 变更记录列表查询请求
 type ListChangeLogsReq struct {
-	Type    string `json:"type" binding:"omitempty,oneof=course proposal teacher user"` // 可选目标类型：course、proposal、teacher、user；为空时不过滤类型
-	Keyword string `json:"keyword"`                                                     // 可选日志内容关键词，大小写不敏感模糊匹配
+	Type    string `json:"type" binding:"omitempty,oneof=course proposal teacher user feedback"` // 可选目标类型：course、proposal、teacher、user、feedback；为空时不过滤类型
+	Keyword string `json:"keyword"`                                                              // 可选日志内容关键词，大小写不敏感模糊匹配
 	*PageParam
 }
 
@@ -42,6 +42,16 @@ type CreateChangeLogResp struct {
 }
 
 type ChangeLogVO struct {
+	Before            *ProposalPatch `json:"before,omitempty"` // 一次实际实体变更的原值
+	Final             *ProposalPatch `json:"final,omitempty"`  // 一次实际实体变更的最终值
+	ProposalType      string         `json:"proposalType,omitempty"`
+	EntityType        string         `json:"entityType,omitempty"`
+	EntityID          string         `json:"entityId,omitempty"`
+	DecisionBatchID   string         `json:"decisionBatchId,omitempty"`
+	TriggerProposalID string         `json:"triggerProposalId,omitempty"`
+	Automatic         bool           `json:"automatic"`
+	Snapshot          *ProposalVO    `json:"snapshot,omitempty"` // 操作当时的不可变提案快照；旧日志没有时省略
+
 	ID           string    `json:"id"`                   // 变更日志ID
 	TargetID     string    `json:"targetId"`             // 被操作业务对象ID
 	TargetType   int32     `json:"targetType"`           // 目标类型内部编号
@@ -75,8 +85,16 @@ type ListProposalLogsGroupedResp struct {
 
 // ProposalLogVO 提案日志展示对象
 type ProposalLogVO struct {
+	Type            string         `json:"type"`
+	TargetID        string         `json:"targetId,omitempty"`
+	DisplayName     string         `json:"displayName"`
+	Suggested       *ProposalPatch `json:"suggested,omitempty"`
+	Before          *ProposalPatch `json:"before,omitempty"`
+	Final           *ProposalPatch `json:"final,omitempty"`
+	DecisionBatchID string         `json:"decisionBatchId,omitempty"`
+
 	ProposalID  string            `json:"proposalId"`            // 提案ID
-	Title       string            `json:"title"`                 // 提案标题
+	Title       string            `json:"-"`                     // 提案标题
 	Content     string            `json:"content"`               // 提案补充说明
 	Status      string            `json:"status"`                // 当前提案状态
 	Course      *ProposalCourseVO `json:"course"`                // 用户提交的课程快照
@@ -114,6 +132,12 @@ type ListProposalLogsTimelineResp struct {
 
 // ProposalTimelineLogVO 提案时间线日志展示对象
 type ProposalTimelineLogVO struct {
+	DecisionBatchID   string `json:"decisionBatchId,omitempty"`
+	EntityType        string `json:"entityType,omitempty"`
+	EntityID          string `json:"entityId,omitempty"`
+	TriggerProposalID string `json:"triggerProposalId,omitempty"`
+	Automatic         bool   `json:"automatic"`
+
 	LogID            string                 `json:"logId"`                      // 变更日志ID
 	ProposalID       string                 `json:"proposalId,omitempty"`       // 关联提案ID；非提案操作时省略
 	ActionType       string                 `json:"actionType"`                 // CREATE/APPROVE/REJECT/DELETE/UPDATE/GRANT_ADMIN/REVOKE_ADMIN
@@ -126,7 +150,15 @@ type ProposalTimelineLogVO struct {
 
 // ProposalSnapshotVO 提案快照信息
 type ProposalSnapshotVO struct {
-	Title      string `json:"title"`                // 提案标题
+	Type        string            `json:"type"`
+	TargetID    string            `json:"targetId,omitempty"`
+	DisplayName string            `json:"displayName"`
+	Suggested   *ProposalPatch    `json:"suggested,omitempty"`
+	Before      *ProposalPatch    `json:"before,omitempty"`
+	Final       *ProposalPatch    `json:"final,omitempty"`
+	FinalCourse *ProposalCourseVO `json:"finalCourse,omitempty"`
+
+	Title      string `json:"-"`                    // 提案标题
 	CourseName string `json:"courseName,omitempty"` // 提案课程名称
 	Department string `json:"department,omitempty"` // 提案课程开课院系
 	Category   string `json:"category,omitempty"`   // 提案课程分类

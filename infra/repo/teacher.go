@@ -121,7 +121,7 @@ func (r *TeacherRepo) IsExistByID(ctx context.Context, id string) (bool, error) 
 // FindByID 根据教师ID查询教师
 func (r *TeacherRepo) FindByID(ctx context.Context, id string) (*model.Teacher, error) {
 	teacher := &model.Teacher{}
-	if err := r.conn.FindOne(ctx, TeacherID2DBKey+id, teacher, bson.M{consts.ID: id}); err != nil {
+	if err := r.conn.FindOneNoCache(ctx, teacher, bson.M{consts.ID: id}); err != nil {
 		if errors.Is(err, monc.ErrNotFound) {
 			return nil, nil
 		}

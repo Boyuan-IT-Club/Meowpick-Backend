@@ -191,3 +191,25 @@ func init() {
 		code.WithAffectStability(false),
 	)
 }
+
+const (
+	ErrProposalNoChanges           = 108000029
+	ErrProposalPreviewRequired     = 108000030
+	ErrProposalPreviewStale        = 108000031
+	ErrProposalFieldConflict       = 108000032
+	ErrProposalTargetNotFound      = 108000033
+	ErrProposalTeacherConfirmation = 108000034
+)
+
+func init() {
+	for value, message := range map[int32]string{
+		ErrProposalNoChanges:           "proposal makes no actual change",
+		ErrProposalPreviewRequired:     "approval preview is required",
+		ErrProposalPreviewStale:        "approval preview changed; preview again",
+		ErrProposalFieldConflict:       "proposal fields conflict; explicitly supply final fields and preview again",
+		ErrProposalTargetNotFound:      "proposal target does not exist",
+		ErrProposalTeacherConfirmation: "confirm new teachers or select existing teacher IDs",
+	} {
+		code.Register(value, message, code.WithAffectStability(false))
+	}
+}

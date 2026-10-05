@@ -66,6 +66,7 @@ func SetupRoutes() *gin.Engine {
 	// CourseApi
 	courseGroup := router.Group("/api/course")
 	{
+		courseGroup.GET("/:courseId/history", handler.GetCourseHistory)
 		courseGroup.GET("/:courseId", handler.GetCourse)              // 精确搜索某个课程
 		courseGroup.GET("/departments", handler.GetCourseDepartments) // 获得某课程的“所属部门”信息
 		courseGroup.GET("/categories", handler.GetCourseCategories)   // 获得某课程的“课程类型”信息
@@ -75,8 +76,9 @@ func SetupRoutes() *gin.Engine {
 	// TeacherApi
 	teacherGroup := router.Group("/api/teacher")
 	{
-		teacherGroup.POST("/add", handler.CreateTeacher)            // 新建教师
-		teacherGroup.GET("/suggest", handler.GetTeacherSuggestions) // 获取教师搜索建议
+		teacherGroup.GET("/:teacherId", handler.GetTeacher)
+		teacherGroup.GET("/:teacherId/history", handler.GetTeacherHistory)
+
 	}
 
 	// ProposalApi
@@ -92,6 +94,7 @@ func SetupRoutes() *gin.Engine {
 		proposalGroup.POST("/:proposalId/delete", handler.DeleteProposal)
 		proposalGroup.GET("/history", handler.GetMyProposals)
 		proposalGroup.GET("/field-suggestions", handler.GetProposalFieldSuggestions) // 获取提案字段建议
+		proposalGroup.POST("/:proposalId/preview", handler.PreviewProposalApproval)
 		proposalGroup.POST("/:proposalId/approve", handler.ApproveProposal)
 		proposalGroup.POST("/:proposalId/revoke", handler.RevokeProposal)
 		proposalGroup.POST("/:proposalId/reject", handler.RejectProposal)
@@ -105,5 +108,20 @@ func SetupRoutes() *gin.Engine {
 		changeLogGroup.POST("/list", handler.ListChangeLogs)
 	}
 
+	feedbackGroup := router.Group("/api/feedback")
+	feedbackGroup.POST("", handler.CreateFeedback)
+	feedbackGroup.GET("/mine", handler.ListMyFeedback)
+	feedbackGroup.GET("/unread", handler.FeedbackUnread)
+	feedbackGroup.GET("/:feedbackId", handler.GetFeedback)
+	feedbackGroup.POST("/:feedbackId/messages", handler.SendFeedbackMessage)
+	feedbackGroup.POST("/:feedbackId/read", handler.ReadFeedback)
+	feedbackGroup.POST("/:feedbackId/close", handler.CloseFeedback)
+	adminFeedback := router.Group("/api/admin/feedback")
+	adminFeedback.GET("", handler.ListAdminFeedback)
+	adminFeedback.GET("/unread", handler.AdminFeedbackUnread)
+	adminFeedback.GET("/:feedbackId", handler.GetAdminFeedback)
+	adminFeedback.POST("/:feedbackId/reply", handler.ReplyFeedback)
+	adminFeedback.POST("/:feedbackId/read", handler.ReadAdminFeedback)
+	adminFeedback.POST("/:feedbackId/close", handler.CloseAdminFeedback)
 	return router
 }

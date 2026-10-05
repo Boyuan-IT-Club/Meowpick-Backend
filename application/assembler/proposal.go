@@ -16,6 +16,7 @@ package assembler
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/application/dto"
 	"github.com/Boyuan-IT-Club/Meowpick-Backend/infra/model"
@@ -78,10 +79,11 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 		return nil, err
 	}
 
-	return &dto.ProposalVO{
-		ID:           db.ID,
-		UserID:       db.UserID,
-		Title:        db.Title,
+	vo := &dto.ProposalVO{
+		ID:     db.ID,
+		UserID: db.UserID,
+		Title:  db.Title,
+		Type:   db.EffectiveType(), TargetID: db.TargetID, DisplayName: proposalDisplayName(db), Suggested: patchVO(db.Suggested), Before: patchVO(db.Before), Final: patchVO(db.Final), DecisionBatchID: db.DecisionBatchID, FinalCourse: courseSnapshotVO(db.FinalCourse),
 		Content:      db.Content,
 		Course:       courseVO,
 		Status:       mapping.Data.GetProposalStatusNameByID(db.Status),
@@ -95,7 +97,9 @@ func (a *ProposalAssembler) ToProposalVO(ctx context.Context, db *model.Proposal
 		},
 		CreatedAt: db.CreatedAt,
 		UpdatedAt: db.UpdatedAt,
-	}, nil
+	}
+	a.sanitizeAuthor(ctx, db, userId, vo)
+	return vo, nil
 }
 
 // ToProposalVOArray ProposalDB数组转ProposalVO数组 (DB Array to VO Array)
@@ -158,9 +162,10 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 			}
 		}
 		proposalVO := &dto.ProposalVO{
-			ID:           db.ID,
-			Content:      db.Content,
-			Title:        db.Title,
+			ID:      db.ID,
+			Content: db.Content,
+			Title:   db.Title,
+			Type:    db.EffectiveType(), TargetID: db.TargetID, DisplayName: proposalDisplayName(db), Suggested: patchVO(db.Suggested), Before: patchVO(db.Before), Final: patchVO(db.Final), DecisionBatchID: db.DecisionBatchID, FinalCourse: courseSnapshotVO(db.FinalCourse),
 			UserID:       db.UserID,
 			Status:       mapping.Data.GetProposalStatusNameByID(db.Status),
 			Deleted:      db.Deleted,
@@ -171,11 +176,12 @@ func (a *ProposalAssembler) ToProposalVOArray(ctx context.Context, dbs []*model.
 				Like:    active,
 				LikeCnt: likeCnt,
 			},
-		Course:    courseVO,
-		CreatedAt: db.CreatedAt,
-		UpdatedAt: db.UpdatedAt,
-	}
-	vos = append(vos, proposalVO)
+			Course:    courseVO,
+			CreatedAt: db.CreatedAt,
+			UpdatedAt: db.UpdatedAt,
+		}
+		a.sanitizeAuthor(ctx, db, userId, proposalVO)
+		vos = append(vos, proposalVO)
 	}
 
 	return vos, nil
@@ -233,4 +239,45 @@ func (a *ProposalAssembler) ToProposalDBArray(ctx context.Context, vos []*dto.Pr
 	}
 
 	return dbs, nil
+}
+
+func proposalDisplayName(p *model.Proposal) string {
+	if p.DisplayName != "" {
+		return p.DisplayName
+	}
+	if p.Course != nil {
+		return p.Course.Name
+	}
+	return p.Title
+}
+func patchVO(p *model.ProposalPatch) *dto.ProposalPatch {
+	if p == nil {
+		return nil
+	}
+	data, _ := json.Marshal(p)
+	var v dto.ProposalPatch
+	_ = json.Unmarshal(data, &v)
+	return &v
+}
+func courseSnapshotVO(p *model.ProposalCourse) *dto.ProposalCourseVO {
+	if p == nil {
+		return nil
+	}
+	data, _ := json.Marshal(p)
+	var v dto.ProposalCourseVO
+	_ = json.Unmarshal(data, &v)
+	return &v
+}
+
+func (a *ProposalAssembler) sanitizeAuthor(ctx context.Context, p *model.Proposal, viewer string, vo *dto.ProposalVO) {
+	if p.ShowUsername || p.UserID == viewer {
+		return
+	}
+	admin := false
+	if a.CourseAssembler != nil && a.CourseAssembler.UserRepo != nil {
+		admin, _ = a.CourseAssembler.UserRepo.IsAdminByID(ctx, viewer)
+	}
+	if !admin {
+		vo.UserID = ""
+	}
 }

@@ -106,12 +106,18 @@ func TestBuildProposalFilterCombinesKeywordAndFields(t *testing.T) {
 	got := buildProposalFilter(req, []int32{2})
 
 	want := bson.M{
-		consts.Deleted:              bson.M{"$ne": true},
-		consts.Status:               bson.M{"$in": []int32{2}},
-		consts.PathCourseCampuses:   bson.M{"$in": []string{"普陀校区"}},
-		consts.PathCourseDepartment: "计算机科学与技术学院",
-		consts.PathCourseCategory:   "专业必修",
-		"title":                     bson.M{"$regex": primitive.Regex{Pattern: `测试\.\*`, Options: "i"}},
+		consts.Deleted: bson.M{"$ne": true},
+		consts.Status:  bson.M{"$in": []int32{2}},
+		"$and": []bson.M{
+			{"$or": []bson.M{{consts.PathCourseCampuses: bson.M{"$in": []string{"普陀校区"}}}, {"suggested.campuses": bson.M{"$in": []string{"普陀校区"}}}}},
+			{"$or": []bson.M{{consts.PathCourseDepartment: "计算机科学与技术学院"}, {"suggested.department": "计算机科学与技术学院"}}},
+			{"$or": []bson.M{{consts.PathCourseCategory: "专业必修"}, {"suggested.category": "专业必修"}}},
+		},
+		"$or": []bson.M{
+			{"displayName": bson.M{"$regex": primitive.Regex{Pattern: `测试\.\*`, Options: "i"}}},
+			{"course.name": bson.M{"$regex": primitive.Regex{Pattern: `测试\.\*`, Options: "i"}}},
+			{"title": bson.M{"$regex": primitive.Regex{Pattern: `测试\.\*`, Options: "i"}}},
+		},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("buildProposalFilter() = %#v, want %#v", got, want)

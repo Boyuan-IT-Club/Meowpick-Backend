@@ -19,6 +19,15 @@ import (
 )
 
 type Proposal struct {
+	Type            string          `bson:"type,omitempty" json:"type"`
+	TargetID        string          `bson:"targetId,omitempty" json:"targetId,omitempty"`
+	DisplayName     string          `bson:"displayName,omitempty" json:"displayName"`
+	Suggested       *ProposalPatch  `bson:"suggested,omitempty" json:"suggested,omitempty"`
+	Before          *ProposalPatch  `bson:"before,omitempty" json:"before,omitempty"`
+	Final           *ProposalPatch  `bson:"final,omitempty" json:"final,omitempty"`
+	FinalCourse     *ProposalCourse `bson:"finalCourse,omitempty" json:"finalCourse,omitempty"`
+	DecisionBatchID string          `bson:"decisionBatchId,omitempty" json:"decisionBatchId,omitempty"`
+
 	ID           string          `bson:"_id,omitempty"          json:"id"`
 	UserID       string          `bson:"userId"                 json:"userId"`              // 提出Proposal的用户ID
 	Title        string          `bson:"title"                  json:"title"`               // 标题
@@ -48,6 +57,6 @@ type ProposalCourse struct {
 type ProposalTeacher struct {
 	Name       string `bson:"name"                 json:"name"`
 	Department string `bson:"department"           json:"department"`
-	Title      string `bson:"title,omitempty"      json:"title,omitempty"`     // 教师职称
-	TeacherID  string `bson:"teacherId,omitempty"  json:"teacherId,omitempty"` // 关联正式教师ID，空表示新教师
+	Title      string `bson:"title,omitempty"      json:"title,omitempty"` // 教师职称
+	TeacherID  string `bson:"teacherId,omitempty"  json:"id,omitempty"`    // 关联正式教师ID，空表示新教师
 }

@@ -47,7 +47,7 @@ func (a *TeacherAssembler) ToTeacherVO(ctx context.Context, db *model.Teacher) *
 		ID:         db.ID,
 		Name:       db.Name,
 		Title:      db.Title,
-		Department: mapping.Data.GetDepartmentNameByID(db.Department),
+		Department: optionalTeacherDepartmentName(ctx, db.Department),
 	}
 }
 
