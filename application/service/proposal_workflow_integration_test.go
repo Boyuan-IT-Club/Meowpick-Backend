@@ -254,8 +254,8 @@ func TestProposalWorkflowIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if count, _ = db.Collection("teacher").CountDocuments(ctx, bson.M{}); count != 0 {
-		t.Fatalf("unreferenced batch-owned teacher should be removed after later update is revoked, count=%d", count)
+	if count, _ = db.Collection("teacher").CountDocuments(ctx, bson.M{}); count != 1 {
+		t.Fatalf("teacher targeted by the reverted pending modification must survive, count=%d", count)
 	}
 	// Concurrent attempts with the same preview must write exactly once.
 	req := &dto.ToggleProposalReq{ProposalID: a.ProposalID}

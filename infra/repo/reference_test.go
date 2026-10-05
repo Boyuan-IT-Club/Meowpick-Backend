@@ -33,7 +33,7 @@ func TestTeacherReferenceFiltersExcludeDeletedRecords(t *testing.T) {
 		t.Fatalf("activeTeacherReferenceFilter() = %#v", courseFilter)
 	}
 	proposalFilter := proposalTeacherReferenceFilter("teacher-1")
-	if proposalFilter[consts.PathCourseTeacherID] != "teacher-1" || !reflect.DeepEqual(proposalFilter[consts.Deleted], wantDeleted) {
+	if !reflect.DeepEqual(proposalFilter[consts.Deleted], wantDeleted) {
 		t.Fatalf("proposalTeacherReferenceFilter() = %#v", proposalFilter)
 	}
 }

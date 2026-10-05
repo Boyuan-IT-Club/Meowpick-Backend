@@ -67,8 +67,14 @@ type IProposalRepo interface {
 
 func proposalTeacherReferenceFilter(teacherID string) bson.M {
 	return bson.M{
-		consts.PathCourseTeacherID: teacherID,
-		consts.Deleted:             bson.M{"$ne": true},
+		consts.Deleted: bson.M{"$ne": true},
+		"$or": []bson.M{
+			{consts.PathCourseTeacherID: teacherID},
+			{"suggested.teachers.teacherId": teacherID},
+			{"final.teachers.teacherId": teacherID},
+			{"finalCourse.teachers.teacherId": teacherID},
+			{"type": model.ProposalUpdateTeacher, "targetId": teacherID},
+		},
 	}
 }
 

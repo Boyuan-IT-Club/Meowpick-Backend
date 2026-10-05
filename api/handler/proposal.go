@@ -249,7 +249,7 @@ func RejectProposal(c *gin.Context) {
 }
 
 // UpdateProposal 更新提案接口
-// @Description 管理员保存待审自动组的共同最终资料草稿，不改变各作者原始course/suggested/before/content。新增类型传完整course，修改类型传suggested中拟改字段的最终值，不能扩展原建议的字段范围或更换type/targetId。草稿同步至自动组全部成员，后续相同待审提案继承草稿，仍需preview确认审批；改动记录逐份保存不可变日志。
+// @Description 管理员保存待审自动组的共同最终资料草稿，不改变各作者原始course/suggested/before/content。新增类型传完整course，修改类型传suggested中拟改字段的最终值，不能扩展原建议的字段范围或更换type/targetId。修改草稿缺席字段保留此前管理员草稿值；教师ID、重复教师及校区须校验，失败不保存草稿或日志。草稿同步至自动组全部成员，后续相同待审提案继承草稿，仍需preview确认审批；改动记录逐份保存不可变日志。
 // @Summary 更新提案内容
 // @Tags proposal
 // @Accept json

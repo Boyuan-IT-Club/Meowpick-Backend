@@ -847,7 +847,7 @@ func (s *ProposalService) legacyRevokeProposal(ctx context.Context, req *dto.Rev
 	var proposalUserID string
 	var deletedTeachers []*model.Teacher
 	var deletedMappings []*model.Mapping
-	err = s.ProposalRepo.WithTransaction(ctx, func(txCtx mongo.SessionContext) error {
+	err = s.workflowTransaction(ctx, func(txCtx mongo.SessionContext) error {
 		deletedTeachers = nil
 		deletedMappings = nil
 		proposal, findErr := s.ProposalRepo.FindByID(txCtx, req.ProposalID)
@@ -882,6 +882,9 @@ func (s *ProposalService) legacyRevokeProposal(ctx context.Context, req *dto.Rev
 				return errorx.WrapByCode(courseErr, errno.ErrCourseNotFoundCannotRevoke)
 			}
 			if associatedCourse != nil {
+				if associatedCourse.DecisionBatchID != "" {
+					return errorx.New(errno.ErrCourseModifiedCannotRevoke)
+				}
 				if !associatedCourse.Deleted {
 					if courseErr = s.CourseRepo.SoftDeleteByID(txCtx, associatedCourse.ID); courseErr != nil {
 						return errorx.WrapByCode(courseErr, errno.ErrProposalUpdateFailed, errorx.KV("proposalId", req.ProposalID))
@@ -966,6 +969,11 @@ func (s *ProposalService) legacyRevokeProposal(ctx context.Context, req *dto.Rev
 		return nil, err
 	}
 	if req.ActionType == consts.RevokeActionApprove {
+		if s.CommentCache != nil {
+			if invalidateErr := s.CommentCache.DeleteCount(ctx); invalidateErr != nil {
+				logs.CtxWarnf(ctx, "[CommentCache] post-revoke count invalidation failed: %v", invalidateErr)
+			}
+		}
 		for _, teacher := range deletedTeachers {
 			if invalidateErr := s.TeacherRepo.InvalidateDeleted(ctx, teacher); invalidateErr != nil {
 				logs.CtxWarnf(ctx, "[TeacherRepo] post-revoke cache invalidation failed: %v", invalidateErr)

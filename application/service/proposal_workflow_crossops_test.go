@@ -302,4 +302,187 @@ func exerciseWorkflowCrossOps(t *testing.T, ctx context.Context, s *ProposalServ
 			t.Fatal("comment count cache stale", hit, err)
 		}
 	})
+	t.Run("successive partial draft updates preserve prior final values", func(t *testing.T) {
+		base := approve(create("audit-draft-base", "草稿连续编辑目标"))
+		seed("audit-draft-author")
+		edit, err := s.CreateProposal(as("audit-draft-author"), &dto.CreateProposalReq{Type: model.ProposalUpdateCourse, TargetID: base.TargetID, Suggested: &dto.ProposalPatch{Name: textPointer("用户建议名称"), Code: textPointer("USER")}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		seed("audit-draft-author2")
+		second, err := s.CreateProposal(as("audit-draft-author2"), &dto.CreateProposalReq{Type: model.ProposalUpdateCourse, TargetID: base.TargetID, Suggested: &dto.ProposalPatch{Name: textPointer("用户建议名称"), Code: textPointer("USER")}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, patch := range []*dto.ProposalPatch{{Name: textPointer("管理员确定名称")}, {Code: textPointer("ADMIN")}} {
+			if _, err = s.UpdateProposal(as("admin"), &dto.UpdateProposalReq{ProposalID: edit.ProposalID, Suggested: patch}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		for _, id := range []string{edit.ProposalID, second.ProposalID} {
+			p, err := s.ProposalRepo.FindByID(ctx, id)
+			if err != nil || p.Final == nil || p.Final.Name == nil || *p.Final.Name != "管理员确定名称" || p.Final.Code == nil || *p.Final.Code != "ADMIN" || *p.Suggested.Name != "用户建议名称" || *p.Suggested.Code != "USER" {
+				t.Fatal("partial draft discarded prior edit or author suggestion", p, err)
+			}
+		}
+
+		approved := approve(edit.ProposalID)
+		current, err := s.CourseRepo.FindByID(ctx, approved.TargetID)
+		if err != nil || current.Name != "管理员确定名称" || current.Code != "ADMIN" || len(approved.ProposalIDs) != 2 || points("audit-draft-author") != 501 || points("audit-draft-author2") != 501 {
+			t.Fatal("approval lost shared draft or settlement", current, err)
+		}
+	})
+	t.Run("invalid administrator draft references write nothing", func(t *testing.T) {
+		base := approve(create("audit-invalid-base", "无效草稿目标"))
+		seed("audit-invalid-author")
+		if _, err := db.Collection("mapping").InsertOne(ctx, &model.Mapping{Type: model.MappingTypeCampus, Name: "草稿测试校区", Code: 99, Canonical: true}); err != nil {
+			t.Fatal(err)
+		}
+		if err := mapping.Data.Refresh(ctx); err != nil {
+			t.Fatal(err)
+		}
+		ts := []*dto.TeacherVO{{Name: "草稿待建教师"}}
+		cs := []string{"草稿测试校区"}
+		edit, err := s.CreateProposal(as("audit-invalid-author"), &dto.CreateProposalReq{Type: model.ProposalUpdateCourse, TargetID: base.TargetID, Suggested: &dto.ProposalPatch{Teachers: &ts, Campuses: &cs}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, tt := range []struct {
+			patch *dto.ProposalPatch
+			code  int32
+		}{
+			{&dto.ProposalPatch{Campuses: &[]string{"不存在校区"}}, errno.ErrProposalInvalidCampus},
+			{&dto.ProposalPatch{Teachers: &[]*dto.TeacherVO{{ID: "missing-draft-teacher", Name: "不存在教师"}}}, errno.ErrProposalTargetNotFound},
+			{&dto.ProposalPatch{Teachers: &[]*dto.TeacherVO{{Name: "重复老师"}, {Name: " 重复老师 "}}}, errno.ErrProposalInvalidField},
+		} {
+			n, err := db.Collection("changelog").CountDocuments(ctx, bson.M{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = s.UpdateProposal(as("admin"), &dto.UpdateProposalReq{ProposalID: edit.ProposalID, Suggested: tt.patch})
+			assertWorkflowCode(t, err, tt.code)
+			p, _ := s.ProposalRepo.FindByID(ctx, edit.ProposalID)
+			after, _ := db.Collection("changelog").CountDocuments(ctx, bson.M{})
+			if p.Final != nil || n != after {
+				t.Fatal("invalid draft wrote state or audit", p)
+			}
+		}
+	})
+	t.Run("revoke preserves teacher targeted by a pending teacher proposal", func(t *testing.T) {
+		first := approve(create("audit-reference-base", "教师引用保护"))
+		c, err := s.CourseRepo.FindByID(ctx, first.TargetID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		teacherID := c.TeacherIDs[0]
+		seed("audit-reference-editor")
+		edit, err := s.CreateProposal(as("audit-reference-editor"), &dto.CreateProposalReq{Type: model.ProposalUpdateTeacher, TargetID: teacherID, Suggested: &dto.ProposalPatch{Title: textPointer("教授")}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = s.RevokeProposal(as("admin"), &dto.RevokeProposalReq{ProposalID: first.ProposalIDs[0], ActionType: "approve"}); err != nil {
+			t.Fatal(err)
+		}
+		teacher, err := s.TeacherRepo.FindByID(ctx, teacherID)
+		if err != nil || teacher == nil {
+			t.Fatal("pending teacher proposal lost target", teacher, err)
+		}
+		approve(edit.ProposalID)
+		teacher, err = s.TeacherRepo.FindByID(ctx, teacherID)
+		if err != nil || teacher.Title != "教授" {
+			t.Fatal("preserved teacher proposal cannot approve", teacher, err)
+		}
+	})
+
+	t.Run("legacy creation revoke cannot erase an active course modification", func(t *testing.T) {
+		role := "audit-legacy-base"
+		first := approve(create(role, "旧提案后续修改保护"))
+		id := first.ProposalIDs[0]
+		// Convert this isolated fixture to the pre-batch data format.
+		if _, err := db.Collection("proposal").UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$unset": bson.M{"type": "", "targetId": "", "decisionBatchId": "", "finalCourse": ""}}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := db.Collection("course").UpdateOne(ctx, bson.M{"_id": first.TargetID}, bson.M{"$unset": bson.M{"decisionBatchId": ""}}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := db.Collection(decisionCollection).DeleteOne(ctx, bson.M{"_id": first.DecisionBatchID}); err != nil {
+			t.Fatal(err)
+		}
+		seed("audit-legacy-editor")
+		edit, err := s.CreateProposal(as("audit-legacy-editor"), &dto.CreateProposalReq{Type: model.ProposalUpdateCourse, TargetID: first.TargetID, Suggested: &dto.ProposalPatch{Code: textPointer("AFTER-LEGACY")}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		approve(edit.ProposalID)
+		_, err = s.RevokeProposal(as("admin"), &dto.RevokeProposalReq{ProposalID: id, ActionType: "approve"})
+		assertWorkflowCode(t, err, errno.ErrCourseModifiedCannotRevoke)
+		c, err := s.CourseRepo.FindByID(ctx, first.TargetID)
+		if err != nil || c == nil || c.Code != "AFTER-LEGACY" || points(role) != 506 {
+			t.Fatal("legacy revoke overwrote later change", c, err)
+		}
+		if _, err = s.RevokeProposal(as("admin"), &dto.RevokeProposalReq{ProposalID: edit.ProposalID, ActionType: "approve"}); err != nil {
+			t.Fatal(err)
+		}
+		cc := cache.NewCommentCache(cfg)
+		if err = cc.SetCount(ctx, 123, time.Minute); err != nil {
+			t.Fatal(err)
+		}
+		if _, err = s.RevokeProposal(as("admin"), &dto.RevokeProposalReq{ProposalID: id, ActionType: "approve"}); err != nil {
+			t.Fatal(err)
+		}
+		if _, hit, err := cc.GetCount(ctx); err != nil || hit {
+			t.Fatal("legacy revoke left stale comment count", hit, err)
+		}
+	})
+	t.Run("revoke preserves teachers selected only in administrator drafts", func(t *testing.T) {
+		for _, kind := range []string{model.ProposalCreateCourse, model.ProposalUpdateCourse} {
+			role := "audit-final-reference-" + kind
+			first := approve(create(role, role))
+			baseCourse, err := s.CourseRepo.FindByID(ctx, first.TargetID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			teacherID := baseCourse.TeacherIDs[0]
+			teacher, err := s.TeacherRepo.FindByID(ctx, teacherID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			editor := role + "-editor"
+			var pendingID string
+			if kind == model.ProposalCreateCourse {
+				pendingID = create(editor, editor)
+				draft := input(editor)
+				draft.Teachers = []*dto.TeacherVO{{ID: teacherID, Name: teacher.Name}}
+				if _, err = s.UpdateProposal(as("admin"), &dto.UpdateProposalReq{ProposalID: pendingID, Course: draft}); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				other := approve(create(role+"-other", role+"-other"))
+				seed(editor)
+				proposed := []*dto.TeacherVO{{Name: role + "-suggested-new"}}
+				p, err := s.CreateProposal(as(editor), &dto.CreateProposalReq{Type: kind, TargetID: other.TargetID, Suggested: &dto.ProposalPatch{Teachers: &proposed}})
+				if err != nil {
+					t.Fatal(err)
+				}
+				pendingID = p.ProposalID
+				final := []*dto.TeacherVO{{ID: teacherID, Name: teacher.Name}}
+				if _, err = s.UpdateProposal(as("admin"), &dto.UpdateProposalReq{ProposalID: pendingID, Suggested: &dto.ProposalPatch{Teachers: &final}}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if _, err = s.RevokeProposal(as("admin"), &dto.RevokeProposalReq{ProposalID: first.ProposalIDs[0], ActionType: "approve"}); err != nil {
+				t.Fatal(err)
+			}
+			kept, err := s.TeacherRepo.FindByID(ctx, teacherID)
+			if err != nil || kept == nil {
+				t.Fatal("final draft lost teacher reference", kind, err)
+			}
+			approved := approve(pendingID)
+			c, err := s.CourseRepo.FindByID(ctx, approved.TargetID)
+			if err != nil || len(c.TeacherIDs) != 1 || c.TeacherIDs[0] != teacherID {
+				t.Fatal("draft cannot reuse preserved teacher", kind, c, err)
+			}
+		}
+	})
+
 }

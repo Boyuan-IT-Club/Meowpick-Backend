@@ -149,17 +149,8 @@ func (s *ProposalService) prepareProposal(ctx context.Context, req *dto.CreatePr
 		if len(patchValues(changes)) == 0 {
 			return nil, errorx.New(errno.ErrProposalNoChanges)
 		}
-		if changes.Teachers != nil {
-			if err := s.validateTeacherIDs(ctx, *changes.Teachers); err != nil {
-				return nil, err
-			}
-		}
-		if changes.Campuses != nil {
-			for _, campus := range *changes.Campuses {
-				if mapping.Data.GetCampusIDByName(campus) == 0 {
-					return nil, errorx.New(errno.ErrProposalInvalidCampus)
-				}
-			}
+		if err := s.validatePatchReferences(ctx, changes); err != nil {
+			return nil, err
 		}
 		p.Before = copyAs[model.ProposalPatch](base)
 		p.Suggested = copyAs[model.ProposalPatch](changes)
@@ -193,6 +184,23 @@ func (s *ProposalService) validateTeacherIDs(ctx context.Context, teachers []*dt
 	}
 	return nil
 }
+
+func (s *ProposalService) validatePatchReferences(ctx context.Context, patch *dto.ProposalPatch) error {
+	if patch.Teachers != nil {
+		if err := s.validateTeacherIDs(ctx, *patch.Teachers); err != nil {
+			return err
+		}
+	}
+	if patch.Campuses != nil {
+		for _, campus := range *patch.Campuses {
+			if mapping.Data.GetCampusIDByName(campus) == 0 {
+				return errorx.New(errno.ErrProposalInvalidCampus)
+			}
+		}
+	}
+	return nil
+}
+
 func (s *ProposalService) CreateProposal(ctx context.Context, req *dto.CreateProposalReq) (*dto.CreateProposalResp, error) {
 	return s.createUnified(ctx, req, "")
 }
@@ -351,14 +359,22 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 			if err := validatePatch(kind, patch); err != nil {
 				return err
 			}
+			allowed := patchValues(copyAs[dto.ProposalPatch](old.Suggested))
 			suggested := patchValues(copyAs[dto.ProposalPatch](old.Suggested))
+			if old.Final != nil {
+				suggested = patchValues(copyAs[dto.ProposalPatch](old.Final))
+			}
 			for field, value := range patchValues(patch) {
-				if _, ok := suggested[field]; !ok {
+				if _, ok := allowed[field]; !ok {
 					return errorx.New(errno.ErrProposalInvalidField, errorx.KV("field", "suggested."+field))
 				}
 				suggested[field] = value
 			}
-			finalPatch = copyAs[model.ProposalPatch](patchFromValues(suggested))
+			finalDraft := patchFromValues(suggested)
+			if err := s.validatePatchReferences(tx, finalDraft); err != nil {
+				return err
+			}
+			finalPatch = copyAs[model.ProposalPatch](finalDraft)
 		}
 		pending, err := s.pending(tx)
 		if err != nil {
@@ -1064,11 +1080,11 @@ func (s *ProposalService) RevokeProposal(ctx context.Context, req *dto.RevokePro
 			if err != nil {
 				return err
 			}
-			refs, err := s.ProposalRepo.Database().Collection(repo.ProposalCollectionName).CountDocuments(tx, bson.M{"deleted": bson.M{"$ne": true}, "$or": []bson.M{{"course.teachers.teacherId": id}, {"suggested.teachers.teacherId": id}}})
+			referenced, err := s.ProposalRepo.IsTeacherReferenced(tx, id)
 			if err != nil {
 				return err
 			}
-			if count > 0 || refs > 0 {
+			if count > 0 || referenced {
 				continue
 			}
 			var teacher model.Teacher
