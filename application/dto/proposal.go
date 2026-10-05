@@ -87,7 +87,7 @@ type ProposalVO struct {
 	RejectReason string            `json:"rejectReason"`     // 拒绝理由；未拒绝或未填写理由时为空
 	*LikeVO                        // 当前用户的点赞状态及提案点赞数
 	Course       *ProposalCourseVO `json:"course,omitempty"`       // 用户最初提交的课程内容，审批时不会被 finalCourse 覆盖
-	FinalCourse  *ProposalCourseVO `json:"finalCourse,omitempty"`  // 管理员最终课程快照；pending时为共同草稿，approved时为审批当时快照
+	FinalCourse  *ProposalCourseVO `json:"finalCourse,omitempty"`  // 管理员最终课程快照；pending时为管理员修改后的待审内容，approved时为审批当时快照
 	ShowUsername bool              `json:"showUsername"`           // 是否允许公开展示创建者昵称
 	Contribution int64             `json:"contribution,omitempty"` // 本提案结算贡献值；仅创建者可见，其他用户响应中为 -1
 	CreatedAt    time.Time         `json:"createdAt"`              // 提案创建时间
@@ -147,13 +147,13 @@ type RejectProposalResp struct {
 
 type ToggleProposalReq struct {
 	ProposalIDs          []string       `json:"proposalIds,omitempty"`          // 管理员手动选择共同审批的待审新增课程提案；各自自动组也会纳入
-	Final                *ProposalPatch `json:"final,omitempty"`                // 修改类型最终字段；省略时采用已保存共同草稿，否则采用suggested
+	Final                *ProposalPatch `json:"final,omitempty"`                // 修改类型最终字段；省略时优先采用管理员修改值，未修改过则采用suggested
 	PreviewToken         string         `json:"previewToken,omitempty"`         // 审批确认必填，先调用preview取得；变化时重新preview
 	ConfirmedNewTeachers []string       `json:"confirmedNewTeachers,omitempty"` // 有同名正式教师时，明确仍新建的教师姓名
 
 	ProposalID  string            `json:"proposalID"`  // 提案ID，由 URL path 写入，请求体无需传
-	Title       string            `json:"-"`           // 管理员确认的提案标题；省略、空字符串或纯空格时保留原标题
-	FinalCourse *ProposalCourseVO `json:"finalCourse"` // 新增类型的最终完整课程；省略时采用已保存共同草稿，否则采用原始course
+	Title       string            `json:"-"`           // 内部历史兼容，不接收标题
+	FinalCourse *ProposalCourseVO `json:"finalCourse"` // 新增类型的最终完整课程；省略时优先采用管理员修改值，未修改过则采用原始course
 }
 
 type ToggleProposalResp struct {
@@ -201,13 +201,13 @@ type UpdateProposalReq struct {
 	ProposalID string            `json:"-"`
 	Title      string            `json:"-"`                // 内部历史兼容，不接收
 	Content    string            `json:"content"`          // 内部兼容；管理员更新不覆盖作者说明
-	Course     *ProposalCourseVO `json:"course,omitempty"` // 新增类型管理员最终资料草稿，完整列表
+	Course     *ProposalCourseVO `json:"course,omitempty"` // 新增类型管理员修改后的待审资料，完整列表
 }
 
 // UpdateProposalResp 更新提案响应参数
 type UpdateProposalResp struct {
 	*Resp      `json:",inline"`
-	ProposalID string `json:"proposalId"` // 主提案ID；自动组各成员共同保存最终资料草稿
+	ProposalID string `json:"proposalId"` // 主提案ID；管理员修改待审提案时同步自动组各成员
 }
 
 // GetProposalFieldSuggestionsReq 获取提案字段建议请求

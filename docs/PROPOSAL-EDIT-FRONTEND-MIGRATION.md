@@ -61,7 +61,7 @@
 | 方法和路径 | 用途／前端注意事项 |
 | --- | --- |
 | `POST /api/proposal/add` | 三类提交；响应 `pendingDuplicateIds` 可非阻断提示 |
-| `POST /api/proposal/:id/update` | 管理员保存共同草稿：新增传完整 `course`，修改传 `suggested` 的最终值；原建议保持不变 |
+| `POST /api/proposal/:id/update` | 管理员修改待审提案：新增传完整 `course`，修改传 `suggested` 的最终值；原建议保持不变 |
 | `POST /api/proposal/:id/preview` | 传 `proposalIds`、`finalCourse` 或 `final`、`confirmedNewTeachers`；返回 `previewToken`、成员、疑似项、正式课程、教师候选、差异和预计积分 |
 | `POST /api/proposal/:id/approve` | 原样提交本次预览参数，加 `previewToken`；不能直接审批 |
 | `POST /api/proposal/:id/reject` | 传额外 `proposalIds` 和共同 `reason`；只拒绝明确选择的成员 |
@@ -80,7 +80,7 @@
 
 `changes` 不是客户端必填字段；使用 `suggested` 表达想改的值，`before` 为后端保存的原值，`final` 为管理员确认值。新增课程继续用 `course`／`finalCourse`。
 
-管理员保存修改草稿可以只提交本次编辑的字段：缺席字段保留此前管理员草稿值，不能扩展作者原建议的字段范围。无效教师 ID、重复教师或未知校区会立即返回业务错误，草稿和日志均不保存。
+管理员修改待审提案可以只提交本次编辑的字段：缺席字段保留此前管理员修改的值，不能扩展作者原建议的字段范围。无效教师 ID、重复教师或未知校区会立即返回业务错误，修改和日志均不保存。
 
 ### 审批错误码
 

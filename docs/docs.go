@@ -1854,7 +1854,7 @@ const docTemplate = `{
                 "description": "实际业务数据",
                 "properties": {
                     "proposalId": {
-                        "description": "主提案ID；自动组各成员共同保存最终资料草稿",
+                        "description": "主提案ID；管理员修改待审提案时同步自动组各成员",
                         "type": "string"
                     }
                 },
@@ -4238,7 +4238,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/approve": {
             "post": {
-                "description": "管理员确认审批，必须先POST preview，再使用相同参数及previewToken调用本接口。未预览108000030、资料或候选变化108000031、未明确重审冲突108000032、无实际变更108000029、未确认新教师108000034、正式课程精确重复108000009。待审新增课程六项一致自动共同通过；手动选择的proposalIds及其自动组也共同通过，统一最终资料，但每份原建议保持不变，分别结算贡献值，数据库只写一次目标资料。贡献值、所有成员状态、资料历史和不可变操作日志同事务提交；失败全部回滚。修改类型使用final调整suggested中的字段，未传采用管理员已保存草稿或作者建议；不会覆盖未修改字段。",
+                "description": "管理员确认审批，必须先POST preview，再使用相同参数及previewToken调用本接口。未预览108000030、资料或候选变化108000031、未明确重审冲突108000032、无实际变更108000029、未确认新教师108000034、正式课程精确重复108000009。待审新增课程六项一致自动共同通过；手动选择的proposalIds及其自动组也共同通过，统一最终资料，但每份原建议保持不变，分别结算贡献值，数据库只写一次目标资料。贡献值、所有成员状态、资料历史和不可变操作日志同事务提交；失败全部回滚。修改类型使用final调整suggested中的字段，未传采用管理员已修改的待审内容或作者建议；不会覆盖未修改字段。",
                 "parameters": [
                     {
                         "description": "提案ID",
@@ -4538,7 +4538,7 @@ const docTemplate = `{
         },
         "/api/proposal/{proposalId}/update": {
             "post": {
-                "description": "管理员保存待审自动组的共同最终资料草稿，不改变各作者原始course/suggested/before/content。新增类型传完整course，修改类型传suggested中拟改字段的最终值，不能扩展原建议的字段范围或更换type/targetId。修改草稿缺席字段保留此前管理员草稿值；教师ID、重复教师及校区须校验，失败不保存草稿或日志。草稿同步至自动组全部成员，后续相同待审提案继承草稿，仍需preview确认审批；改动记录逐份保存不可变日志。",
+                "description": "管理员修改待审自动组的共同资料，不改变各作者原始course/suggested/before/content。新增类型传完整course，修改类型传suggested中拟改字段的最终值，不能扩展原建议的字段范围或更换type/targetId。局部修改缺席字段保留此前管理员修改的值；教师ID、重复教师及校区须校验，失败不保存修改或日志。修改同步至自动组全部成员，后续相同待审提案继承管理员修改后的内容，仍需preview确认审批；改动记录逐份保存不可变日志。",
                 "parameters": [
                     {
                         "description": "提案唯一ID",

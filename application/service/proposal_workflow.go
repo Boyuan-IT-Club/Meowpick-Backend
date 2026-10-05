@@ -370,11 +370,11 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 				}
 				suggested[field] = value
 			}
-			finalDraft := patchFromValues(suggested)
-			if err := s.validatePatchReferences(tx, finalDraft); err != nil {
+			editedValues := patchFromValues(suggested)
+			if err := s.validatePatchReferences(tx, editedValues); err != nil {
 				return err
 			}
-			finalPatch = copyAs[model.ProposalPatch](finalDraft)
+			finalPatch = copyAs[model.ProposalPatch](editedValues)
 		}
 		pending, err := s.pending(tx)
 		if err != nil {
@@ -384,7 +384,7 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 			if member.EffectiveType() != kind || proposalAutoKey(member) != proposalAutoKey(old) {
 				continue
 			}
-			// Administrator adjustments are final drafts. Author submissions and their
+			// Administrator edits apply to pending proposals. Author submissions and their
 			// original baselines remain immutable for scoring and attribution.
 			member.FinalCourse = copyAs[model.ProposalCourse](finalCourse)
 			member.Final = copyAs[model.ProposalPatch](finalPatch)
@@ -392,7 +392,7 @@ func (s *ProposalService) UpdateProposal(ctx context.Context, req *dto.UpdatePro
 			if _, err = s.ProposalRepo.Database().Collection(repo.ProposalCollectionName).ReplaceOne(tx, bson.M{"_id": member.ID}, member); err != nil {
 				return err
 			}
-			if err = s.auditProposal(tx, member, consts.ActionTypeUpdateProposal, actor, "共同更新管理员最终资料草稿", old.ID, member.ID != old.ID); err != nil {
+			if err = s.auditProposal(tx, member, consts.ActionTypeUpdateProposal, actor, "管理员修改待审提案资料（同步相同提案）", old.ID, member.ID != old.ID); err != nil {
 				return err
 			}
 		}
