@@ -15,7 +15,7 @@ require (
 	github.com/swaggo/swag/v2 v2.0.0-rc5
 	github.com/zeromicro/go-zero v1.8.5
 	go.mongodb.org/mongo-driver v1.17.10
-	golang.org/x/sync v0.23.0
+	golang.org/x/sync v0.24.0
 )
 
 require (
